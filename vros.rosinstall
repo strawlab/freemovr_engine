@@ -1,0 +1,4 @@
+- git:
+    local-name: vros
+    uri: git://github.com/strawlab/vros.git
+    version: master

@@ -1,9 +1,12 @@
 <stack>
-  <description brief="vros">vros</description>
-  <author>Maintained by strawlab</author>
-  <license>BSD</license>  
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/vros</url>
-  <depend stack="ros" />
+  <description brief="The VROS project">
 
+    VROS (Virtual reality for the Robot Operating System) manages
+    multi-computer realtime tracking and display.
+
+  </description>
+  <author>Andrew D. Straw</author>
+  <review status="unreviewed" notes=""/>
+  <url>http://github.com/strawlab/vros</url>
+  <depend stack="ros" />
 </stack>
