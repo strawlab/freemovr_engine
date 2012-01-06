@@ -1,0 +1,8 @@
+<config>
+  <stimulus_plugins>
+    <plugin path="libstimulus_3d_demo"/>
+    <plugin path="libstimulus_2d_blit"/>
+    <plugin path="libstimulus_standby"/>
+  </stimulus_plugins>
+  <display_geometry path="geom.json"/>
+</config>
