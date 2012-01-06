@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   define-viewports-on-virtual-displays
+   manual-display-calibration
 
 
 Indices and tables
