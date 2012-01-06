@@ -4,11 +4,24 @@
      vros_display
 
   </description>
-  <author>strawlab</author>
+  <author>Andrew Straw</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/vros_display</url>
 
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="dynamic_reconfigure" />
+  <depend package="opencv2"/>
+  <depend package="camera_calibration"/>
+  <depend package="tf" />
+
+  <rosdep name="osg"/>
+  <rosdep name="openexr"/>
+  <rosdep name="glut"/>
+  <rosdep name="libxmu"/>
+  <rosdep name="libxi"/>
+  <rosdep name="poco"/>
+  <rosdep name="jansson"/>
 </package>
-
-
