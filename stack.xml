@@ -1,0 +1,9 @@
+<stack>
+  <description brief="vros">vros</description>
+  <author>Maintained by strawlab</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/vros</url>
+  <depend stack="ros" />
+
+</stack>
