@@ -5,9 +5,6 @@
 
   </description>
   <author>Andrew Straw</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/vros_display</url>
 
   <depend package="roscpp"/>
   <depend package="sensor_msgs"/>
