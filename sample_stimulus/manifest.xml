@@ -5,9 +5,7 @@
 
   </description>
   <author>strawlab</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/sample_stimulus</url>
+  <depend package="vros_display"/>
 
 </package>
 
