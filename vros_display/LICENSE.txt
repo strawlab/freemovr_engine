@@ -1,9 +1,16 @@
+vros_display
+============
+
 The vros_display package was written by Andrew Straw at the Research
 Institute of Molecular Pathology (IMP), Vienna, Austria.
 
-It includes the following pieces of software:
+other parts
+===========
 
-   base64.cpp and base64.h
+The vros_display package includes the following other parts.
+
+src/base64.cpp and src/base64.h
+-------------------------------
 
    Copyright (C) 2004-2008 René Nyffenegger
 
@@ -26,3 +33,31 @@ It includes the following pieces of software:
    3. This notice may not be removed or altered from any source distribution.
 
    René Nyffenegger rene.nyffenegger@adp-gmbh.ch
+
+Pond cubemap
+------------
+
+Downloaded on Jan 6, 2012 from page at
+http://www.humus.name/index.php?page=Textures&&start=88 from URL
+http://www.humus.name/Textures/Pond.zip
+
+   Author
+   ======
+
+   This is the work of Emil Persson, aka Humus.
+   http://www.humus.name
+   humus@comhem.se
+
+
+
+   Legal stuff
+   ===========
+
+   This work is free and may be used by anyone for any purpose
+   and may be distributed freely to anyone using any distribution
+   media or distribution method as long as this file is included.
+   Distribution without this file is allowed if it's distributed
+   with free non-commercial software; however, fair credit of the
+   original author is expected.
+   Any commercial distribution of this software requires the written
+	approval of Emil Persson.

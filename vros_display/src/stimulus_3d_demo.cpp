@@ -23,12 +23,12 @@
 void add_skybox(osg::ref_ptr<osg::Group> top, std::string config_data_dir, std::string shader_dir) {
  if (1) {
 	  // add skybox
-	  osg::Image* posx = osgDB::readImageFile(join_path(config_data_dir, "brightday1_cubemap/posx.png"));
-	  osg::Image* posy = osgDB::readImageFile(join_path(config_data_dir, "brightday1_cubemap/posy.png"));
-	  osg::Image* posz = osgDB::readImageFile(join_path(config_data_dir, "brightday1_cubemap/posz.png"));
-	  osg::Image* negx = osgDB::readImageFile(join_path(config_data_dir, "brightday1_cubemap/negx.png"));
-	  osg::Image* negy = osgDB::readImageFile(join_path(config_data_dir, "brightday1_cubemap/negy.png"));
-	  osg::Image* negz = osgDB::readImageFile(join_path(config_data_dir, "brightday1_cubemap/negz.png"));
+	  osg::Image* posx = osgDB::readImageFile(join_path(config_data_dir, "Pond/posx.jpg"));
+	  osg::Image* posy = osgDB::readImageFile(join_path(config_data_dir, "Pond/posy.jpg"));
+	  osg::Image* posz = osgDB::readImageFile(join_path(config_data_dir, "Pond/posz.jpg"));
+	  osg::Image* negx = osgDB::readImageFile(join_path(config_data_dir, "Pond/negx.jpg"));
+	  osg::Image* negy = osgDB::readImageFile(join_path(config_data_dir, "Pond/negy.jpg"));
+	  osg::Image* negz = osgDB::readImageFile(join_path(config_data_dir, "Pond/negz.jpg"));
 
 	  posx->flipVertical();
 	  posy->flipVertical();
