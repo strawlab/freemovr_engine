@@ -1,10 +1,11 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#include "stimulus_interface.h"
+#include "vros_display/stimulus_interface.h"
 #include "util.h"
 
 #include "Poco/ClassLibrary.h"
 
 #include <iostream>
+#include <stdexcept>
 
 #include <osg/Texture2D>
 
@@ -22,8 +23,8 @@ std::string name() const {
     return "StimulusStandby";
 }
 
-virtual void post_init(std::string config_data_dir, std::string shader_dir) {
-    std::string fname = config_data_dir + std::string("/brightday1_cubemap/posz.png");
+virtual void post_init(std::string config_data_dir) {
+    std::string fname = config_data_dir + std::string("/Pond/posz.png");
     osg::Image* image = osgDB::readImageFile(fname);
     osg::Texture2D* texture = new osg::Texture2D(image);
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
@@ -54,7 +55,7 @@ std::vector<std::string> get_topic_names() {
 }
 
 std::string get_message_type(std::string topic_name) {
-	throw 0; // TODO: better error handling
+	throw std::runtime_error("no message types to get");
 }
 
 void send_json_message(std::string topic_name, std::string json_message) {

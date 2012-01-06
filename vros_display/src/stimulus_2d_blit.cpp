@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#include "stimulus_interface.h"
+#include "vros_display/stimulus_interface.h"
 #include "util.h"
 #include "base64.h"
 
@@ -13,6 +13,8 @@
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
+
+#include <stdexcept>
 
 #include <jansson.h>
 
@@ -73,7 +75,7 @@ void create_HUD_group(unsigned int width, unsigned int height, osg::Texture* tex
 
 }
 
-virtual void post_init(std::string config_data_dir, std::string shader_dir) {
+virtual void post_init(std::string config_data_dir) {
     // TODO: show with 1:1 pixel scaling.
 
     std::string fname = config_data_dir + std::string("/brightday1_cubemap/posz.png");
@@ -122,19 +124,19 @@ void send_json_message(std::string topic_name, std::string json_message) {
 
     if(!root) {
 		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
-		throw 0;
+		throw std::runtime_error("error in json file");
     }
 
     json_t *image_data_base64_json = json_object_get(root, "data (base64)");
     if(!json_is_string(image_data_base64_json)){
 		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw 0;
+		throw std::runtime_error("error in json file");
     }
 
     json_t *image_format_json = json_object_get(root, "format");
     if(!json_is_string(image_format_json)){
 		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw 0;
+		throw std::runtime_error("error in json file");
     }
 
     std::string image_data_base64( json_string_value( image_data_base64_json ) );

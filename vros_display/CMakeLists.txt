@@ -69,15 +69,23 @@ SET(DS_SOURCES
 
 # ${OPENEXR_INCLUDE_PATHS}
 
+# the vros_display library (for building stimulus plugins) --------------------
+
+rosbuild_add_library(vros_display src/stimulus_interface.cpp)
+target_link_libraries(vros_display)
+rosbuild_link_boost(vros_display filesystem)
+
 # default stimulus plugins --------------------
-rosbuild_add_library(stimulus_3d_demo src/stimulus_3d_demo.cpp src/stimulus_interface.cpp src/util.cpp)
-target_link_libraries(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES})
 
-rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp src/stimulus_interface.cpp)
-target_link_libraries(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
+rosbuild_add_library(stimulus_3d_demo src/stimulus_3d_demo.cpp src/util.cpp)
+target_link_libraries(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+rosbuild_link_boost(stimulus_3d_demo system filesystem)
 
-rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp src/stimulus_interface.cpp)
-target_link_libraries(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES})
+rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
+target_link_libraries(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+
+rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp)
+target_link_libraries(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
 # build the main display server node ----------
 

@@ -1,8 +1,12 @@
 <config>
   <stimulus_plugins>
-    <plugin path="libstimulus_3d_demo"/>
-    <plugin path="libstimulus_2d_blit"/>
-    <plugin path="libstimulus_standby"/>
+    <!-- Your plugins go here. They look like this:
+
+    <plugin path="../lib/" name="stimulus_sample"/>
+
+    path is relative to this config file. See the sample_stimulus
+    package for an example. -->
+
   </stimulus_plugins>
   <display_geometry path="geom.json"/>
 </config>

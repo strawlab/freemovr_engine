@@ -14,6 +14,10 @@
   <depend package="camera_calibration"/>
   <depend package="tf" />
 
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lvros_display"/>
+  </export>
+
   <rosdep name="osg"/>
   <rosdep name="openexr"/>
   <rosdep name="glut"/>

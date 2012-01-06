@@ -70,7 +70,7 @@ cdef extern from "osg/Geode" namespace "osg":
 # -------------------------------------------- DSOSG -----
 cdef extern from "dsosg.h" namespace "dsosg":
     cdef cppclass DSOSG:
-        DSOSG(std_string shader_dir,
+        DSOSG(std_string vros_display_basepath,
               std_string mode,
               float observer_radius,
               std_string config_data_dir,
@@ -159,6 +159,9 @@ cdef class MyNode:
         self.virtual_display_configs = {}
         self._commands = Queue.Queue()
 
+
+        default_config = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.xml')
+
         parser = argparse.ArgumentParser(
             description="VR display generator",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -170,6 +173,7 @@ cdef class MyNode:
         parser.add_argument('--observer_radius', default=0.1, type=float)
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
+        parser.add_argument('--config', default=default_config, type=str, help='config file describing the setup')
 
         rospy.init_node('display_server')
 
@@ -184,13 +188,14 @@ cdef class MyNode:
 
         self.physical_display_dict = get_physical_display_dict()
 
-        shader_dir = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'src/shaders')
-        config_data_dir = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data')
+        vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
+        config_file = args.config
+        print 'using config file',config_file
 
-        self.dsosg = new DSOSG(std_string(shader_dir),
+        self.dsosg = new DSOSG(std_string(vros_display_basepath),
                                std_string(args.mode),
                                args.observer_radius,
-                               std_string(config_data_dir),
+                               std_string(config_file),
                                args.two_pass,
                                args.show_geom_coords,
                                )

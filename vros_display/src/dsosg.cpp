@@ -328,8 +328,10 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 }
 
 // constructor
-DSOSG::DSOSG(std::string shader_dir, std::string mode, float observer_radius, std::string config_data_dir, bool two_pass, bool show_geom_coords) : _current_stimulus(NULL), _mode(mode), _shader_dir(shader_dir)
+DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass, bool show_geom_coords) : _current_stimulus(NULL), _mode(mode), _vros_display_basepath(vros_display_basepath)
 {
+	std::string _shader_dir = (_vros_display_basepath/"src"/"shaders").string();
+
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
 		  _mode==std::string("virtual_world") || _mode==std::string("overview") ||
@@ -355,13 +357,27 @@ DSOSG::DSOSG(std::string shader_dir, std::string mode, float observer_radius, st
 
 	std::string geom_filename;
 	std::vector<std::string> stimulus_plugin_paths;
+	std::vector<std::string> stimulus_plugin_names;
+	std::string config_data_dir;
+
+	{
+		// Add the vros_display defaut stimulus plugins
+		std::string default_path = (_vros_display_basepath/"lib").string();
+		stimulus_plugin_paths.push_back(default_path); stimulus_plugin_names.push_back("stimulus_3d_demo");
+		stimulus_plugin_paths.push_back(default_path); stimulus_plugin_names.push_back("stimulus_2d_blit");
+		stimulus_plugin_paths.push_back(default_path); stimulus_plugin_names.push_back("stimulus_standby");
+	}
+
 	{
 		// get all the plugin paths
-		//std::string config_full_path = config_data_dir + std::string("/config.xml");
-		fs::path config_dir = fs::path(config_data_dir);
-		fs::path config_full_path = config_dir / "config.xml";
+		fs::path config_full_path(config_fname);
+		fs::path config_dir = boost::filesystem3::complete(config_full_path.parent_path()).normalize();
+		config_data_dir = config_dir.string();
 
-		std::cout << "config path: " << config_full_path.string() << std::endl;
+		if (!fs::exists(config_full_path)) {
+			std::cerr << "configuration file " << config_full_path.string() << " does not exist." << std::endl;
+			exit(1);
+		}
 		AutoPtr<XMLConfiguration> pConf(new XMLConfiguration(config_full_path.string()));
 
 		{
@@ -370,25 +386,36 @@ DSOSG::DSOSG(std::string shader_dir, std::string mode, float observer_radius, st
 			stimulus_plugin_config->keys(k);
 			for (AbstractConfiguration::Keys::const_iterator ki=k.begin(); ki!=k.end(); ++ki) {
 				std::string pathkey = std::string((*ki)+std::string("[@path]"));
-				std::string plugin_path = stimulus_plugin_config->getString(pathkey);
-				stimulus_plugin_paths.push_back( plugin_path );
+				std::string namekey = std::string((*ki)+std::string("[@name]"));
+				fs::path plugin_path = stimulus_plugin_config->getString(pathkey); // this is relative to config_dir
+				if (plugin_path.has_relative_path()) {
+					plugin_path = fs::absolute(plugin_path,config_dir).normalize();
+				}
+
+				std::string plugin_name = stimulus_plugin_config->getString(namekey);
+				stimulus_plugin_paths.push_back( plugin_path.string() );
+				stimulus_plugin_names.push_back( plugin_name );
 			}
 		}
 
-		fs::path geom_path = config_dir / pConf->getString("display_geometry[@path]");
+		std::string geom_path_raw = pConf->getString("display_geometry[@path]");
+		fs::path geom_path = fs::absolute(geom_path_raw,config_dir).normalize();
+		if (!fs::exists(geom_path)) {
+			std::cerr << "geometry file " << geom_path.string() << " does not exist." << std::endl;
+			exit(1);
+		}
 		geom_filename = geom_path.string();
 
 	}
 
 	{
 		// load the shared library for each plugin path
-		std::string libpath( config_data_dir + std::string("/../lib/"));
+		for (int i=0; i<stimulus_plugin_paths.size(); i++) {
+			fs::path path_parent = stimulus_plugin_paths.at(i);
+			fs::path path_leaf = "lib" + stimulus_plugin_names.at(i) + Poco::SharedLibrary::suffix(); // append .dll or .so
 
-		for (std::vector<std::string>::const_iterator pi=stimulus_plugin_paths.begin();
-			 pi!=stimulus_plugin_paths.end();
-			 ++pi) {
-			std::string libName(libpath + std::string(*pi));
-			libName += Poco::SharedLibrary::suffix(); // append .dll or .so
+			std::string libName = (path_parent/path_leaf).normalize().string();
+
 			try {
 				_stimulus_loader.loadLibrary(libName);
 			}
@@ -410,7 +437,8 @@ DSOSG::DSOSG(std::string shader_dir, std::string mode, float observer_radius, st
 			for (; itMan != endMan; ++itMan) {
 				assert( _stimulus_plugins.count( itMan->name() ) == 0);
 				_stimulus_plugins[ itMan->name() ] = itMan->create();
-				_stimulus_plugins[ itMan->name() ]->post_init(config_data_dir,_shader_dir);
+				_stimulus_plugins[ itMan->name() ]->set_vros_display_base_path(_vros_display_basepath.string());
+				_stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
 				if (_current_stimulus == NULL) {
 					_current_stimulus = _stimulus_plugins[ itMan->name() ];
 				}
