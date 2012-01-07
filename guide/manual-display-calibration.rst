@@ -113,7 +113,7 @@ This will emit the file ``display2tcs-picop-tcs-lowres.png``. You can
 verify the results by viewing the file. Quit
 ``caldc4_manual_camera_calibration`` if it still running and launch the display server.::
 
-    rosrun vros_display ds_highlevel
+    rosrun vros_display display_server
 
 Now, show our new image.::
 

@@ -263,7 +263,7 @@ cdef class MyNode:
 
             viewport = virtual_display_config['viewport']
             #self.dsosg.update_viewport(my_id, _get_verts_from_viewport(viewport))
-            print 'NOT DONE: update viewport ds_highlevel, line 256', viewport
+            print 'NOT DONE: update viewport display_server, line 266', viewport
 
             # Note, at this point, the display is created, but not set
             # to correct values. Make self.update_display() gets
@@ -292,7 +292,7 @@ cdef class MyNode:
         cfg = new_config.copy() # don't modify original config
         cfg.pop('id')
         assert cfg.pop('type') == 'virtual display'
-        print 'NOT DONE: update_display() ds_highlevel, line 256'
+        print 'NOT DONE: update_display() display_server, line 295'
 
     def handle_get_display_server_mode(self,request):
         # this is called in some callback thread by ROS

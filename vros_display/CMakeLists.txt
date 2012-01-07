@@ -51,10 +51,10 @@ rosbuild_add_boost_directories()
 
 set(CYTHON_EXECUTABLE cython) # hack. Should use CMAKE_FIND_PROGRAM, but that ignores $PATH.
 
-# Add ds_highlevel
-add_custom_command(OUTPUT ds_highlevel.cpp
-  COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o ds_highlevel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_highlevel.pyx"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/ds_highlevel.pyx")
+# Add display_server
+add_custom_command(OUTPUT display_server.cpp
+  COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
 
 SET(DS_SOURCES
   src/ProjectCubemapToGeometryPass.cpp
@@ -89,12 +89,12 @@ target_link_libraries(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_displa
 
 # build the main display server node ----------
 
-rosbuild_add_executable(ds_highlevel ds_highlevel.cpp src/dsosg.cpp ${DS_SOURCES})
+rosbuild_add_executable(display_server display_server.cpp src/dsosg.cpp ${DS_SOURCES})
 find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(ds_highlevel ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-rosbuild_link_boost(ds_highlevel system filesystem)
+target_link_libraries(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
+rosbuild_link_boost(display_server system filesystem)
 
 # build other calibration programs  ----------
 

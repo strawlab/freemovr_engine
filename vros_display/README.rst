@@ -5,8 +5,8 @@ vros_display
 vros_display nodes
 ==================
 
-ds_highlevel - the VROS display server
---------------------------------------
+display_server - the VROS display server
+----------------------------------------
 
 The VROS display server node runs locally on the computer(s) connected
 to the physical display. During a typical experiment, it will be
