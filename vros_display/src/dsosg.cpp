@@ -640,6 +640,7 @@ void DSOSG::setup_viewer(std::string json_config) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
     traits->windowName = "display server";
 
+    // make sure these have decent defaults
 	int width = 512;
 	int height = 512;
 
@@ -703,15 +704,21 @@ void DSOSG::setup_viewer(std::string json_config) {
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
 		_mode==std::string("ar_camera") || _mode==std::string("virtual_world")) {
 
-		// construct the viewer.
-		_viewer->setUpViewInWindow( 32, 32, width, height );
-		if (_mode==std::string("cubemap")) {
-			_viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
-		}
+        if (1) {
+            // setup in windowed mode with this resolution
+            width = 750;
+            height = 550;
 
-        _viewer->getCamera()->setProjectionMatrixAsPerspective(60.,
-                                                               (double)width/(double)height,
-                                                               0.01, 1000.);
+            // construct the viewer.
+            _viewer->setUpViewInWindow( 32, 32, width, height );
+
+            _viewer->getCamera()->setProjectionMatrixAsPerspective(60.,
+                                                                   (double)width/(double)height,
+                                                                   0.01, 1000.);
+        }
+        if (_mode==std::string("cubemap")) {
+            _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
+        }
 
 		_viewer->setCameraManipulator(new osgGA::TrackballManipulator());
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
