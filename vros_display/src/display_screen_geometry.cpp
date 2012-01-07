@@ -12,7 +12,7 @@
 class CylinderModel : public GeomModel {
 public:
 	CylinderModel(float radius, osg::Vec3 base, osg::Vec3 axis) :
-		_radius(radius), _base(base), _axis(axis), _n_segments(32) {
+		_radius(radius), _base(base), _axis(axis), _n_segments(256) {
 
 		osg::Vec3 unit_z = osg::Vec3(0.0, 0.0, 1.0);
 
