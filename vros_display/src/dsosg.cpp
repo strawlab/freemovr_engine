@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #include "dsosg.h"
 
 #include <OpenThreads/ScopedLock>
@@ -709,7 +709,9 @@ void DSOSG::setup_viewer(std::string json_config) {
 			_viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
 		}
 
-		_viewer->getCamera()->setProjectionMatrixAsPerspective(60., 1., 0.01, 1000.);
+        _viewer->getCamera()->setProjectionMatrixAsPerspective(60.,
+                                                               (double)width/(double)height,
+                                                               0.01, 1000.);
 
 		_viewer->setCameraManipulator(new osgGA::TrackballManipulator());
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
