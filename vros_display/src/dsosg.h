@@ -7,6 +7,7 @@
 #include <osg/Uniform>
 
 #include <osgViewer/Viewer>
+#include <osgGA/CameraManipulator>
 
 #include <boost/filesystem.hpp>
 
@@ -34,16 +35,16 @@ namespace dsosg{
 
 		std::vector<std::string> get_stimulus_plugin_names();
 		std::string get_current_stimulus_plugin_name() { return std::string(_current_stimulus->name()); }
-		void set_stimulus_plugin(std::string name);
+		void set_stimulus_plugin(const std::string& plugin_name);
 
-		std::vector<std::string> current_stimulus_get_topic_names();
-		std::string current_stimulus_get_message_type(std::string topic_name);
-		void current_stimulus_send_json_message(std::string topic_name, std::string json_message);
+		std::vector<std::string> stimulus_get_topic_names(const std::string& plugin_name);
+		std::string stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name);
+		void stimulus_send_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message);
 
-		void setup_viewer(std::string json_config);
-		void resized(int width, int height);
+		void setup_viewer(const std::string& json_config);
+		void resized(const int& width, const int& height);
 
-		void set_observer_pose( osg::Vec3 observer_pose);
+        void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
 		void frame();
 		bool done();
 
@@ -66,6 +67,7 @@ namespace dsosg{
 
 		int _width;
 		int _height;
+		osg::ref_ptr<osgGA::CameraManipulator> _cameraManipulator;
 	};
 
 }

@@ -21,7 +21,7 @@ def rosmsg2dict(msg):
         assert isinstance(msg, roslib.message.Message)
         for varname, vartype in zip(msg.__slots__, msg._slot_types):
             debug(varname, vartype)
-            if vartype in ['float64','string','uint32']:
+            if vartype in ['float64','float32','string','uint32','uint8']:
                 plain_dict[varname] = getattr(msg,varname)
             elif vartype == 'Header':
                 h = getattr(msg,varname)

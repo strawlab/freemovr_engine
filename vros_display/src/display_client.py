@@ -11,6 +11,10 @@ class DisplayServerProxy(object):
             rospy.logwarn('seeking display server with default name "/display_server". '\
                               'If display server has been started with a non default name, this will fail. '\
                               '(Hint remap name with display_server:=new_name )')
+        self.get_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('get_display_server_mode'),
+                                                                vros_display.srv.GetDisplayServerMode)
+        self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
+                                                                vros_display.srv.SetDisplayServerMode)
 
     def get_fullname(self,name):
         return self._server_node_name+'/'+name
@@ -18,10 +22,8 @@ class DisplayServerProxy(object):
     def _spin_wait(self,mode):
         done = False
         first_mode = None
-        get_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('get_display_server_mode'),
-                                                           vros_display.srv.GetDisplayServerMode)
         while not done:
-            response = get_display_server_mode_proxy()
+            response = self.get_display_server_mode_proxy()
             if response.mode == mode:
                 done = True
             elif mode=='rotate_forest' and response.mode == 'scene3d_metamode':
@@ -30,9 +32,7 @@ class DisplayServerProxy(object):
             time.sleep(0.02) # wait 20 msec
 
     def enter_standby_mode(self):
-        get_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('get_display_server_mode'),
-                                                           vros_display.srv.GetDisplayServerMode)
-        response = get_display_server_mode_proxy()
+        response = self.get_display_server_mode_proxy()
 
         # return to standby mode in server if needed
         if response.mode != 'standby':
@@ -48,12 +48,13 @@ class DisplayServerProxy(object):
             warnings.warn("translating stimulus name 'display2d'->'Stimulus2DBlit'",DeprecationWarning)
             mode = 'Stimulus2DBlit'
 
-        set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
-                                                           vros_display.srv.SetDisplayServerMode)
-        set_display_server_mode_proxy(mode)
+        self.set_display_server_mode_proxy(mode)
         if mode=='quit':
             return
-        self._spin_wait(mode) # wait until in desired mode
+
+        # Wait until in desired mode - important so published messages
+        # get to the receiver.
+        self._spin_wait(mode)
 
     def get_display_info(self):
         get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),

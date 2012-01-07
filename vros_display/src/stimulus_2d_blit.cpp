@@ -103,18 +103,18 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
     return _group;
 }
 
-std::vector<std::string> get_topic_names() {
+std::vector<std::string> get_topic_names() const {
 	std::vector<std::string> result;
 	result.push_back( std::string("blit_images") );
 	return result;
 }
 
-std::string get_message_type(std::string topic_name) {
+std::string get_message_type(const std::string& topic_name) const {
 	assert(topic_name=="blit_images");
 	return "vros_display.msg.VROSCompressedImage";
 }
 
-void send_json_message(std::string topic_name, std::string json_message) {
+void send_json_message(const std::string& topic_name, const std::string& json_message) {
 	assert(topic_name=="blit_images");
 
     json_t *root;

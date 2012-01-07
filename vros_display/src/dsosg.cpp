@@ -438,7 +438,12 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 				assert( _stimulus_plugins.count( itMan->name() ) == 0);
 				_stimulus_plugins[ itMan->name() ] = itMan->create();
 				_stimulus_plugins[ itMan->name() ]->set_vros_display_base_path(_vros_display_basepath.string());
-				_stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
+                try {
+                    _stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
+                } catch (...) {
+                    std::cerr << "ERROR: while calling post_init() on plugin " << itMan->name() << std::endl;
+                    throw;
+                }
 				if (_current_stimulus == NULL) {
 					_current_stimulus = _stimulus_plugins[ itMan->name() ];
 				}
@@ -611,7 +616,7 @@ std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
 	return result;
 }
 
-void DSOSG::set_stimulus_plugin(std::string name) {
+void DSOSG::set_stimulus_plugin(const std::string& name) {
 	std::cout << "setting stimulus plugin: " << name << std::endl;
 	assert( _stimulus_plugins.count(name) == 1);
 	// switch off old stimulus
@@ -622,21 +627,40 @@ void DSOSG::set_stimulus_plugin(std::string name) {
 	_current_stimulus = _stimulus_plugins[ name ];
 	_active_3d_world->addChild( _current_stimulus->get_3d_world() );
 	_active_2d_hud->addChild( _current_stimulus->get_2d_hud() );
+
+    // It we have an interactive camera manipulator, it means we can reset the view.
+    if (_cameraManipulator.valid())
+    {
+        // This will compute a new home position. (Press space to get there.)
+        _cameraManipulator->setNode(_current_stimulus->get_3d_world());
+    }
+
 }
 
-std::vector<std::string> DSOSG::current_stimulus_get_topic_names() {
-	return _current_stimulus->get_topic_names();
+std::vector<std::string> DSOSG::stimulus_get_topic_names(const std::string& plugin_name) {
+    StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
+    assert(stimulus!=NULL);
+	return stimulus->get_topic_names();
 }
 
-std::string DSOSG::current_stimulus_get_message_type(std::string topic_name) {
-	return _current_stimulus->get_message_type( topic_name );
+std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name) {
+    StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
+    assert(stimulus!=NULL);
+    try {
+        return stimulus->get_message_type( topic_name );
+    } catch (...) {
+        std::cerr << "exception while calling stimulus->get_message_type(\"" << topic_name << "\")" << std::endl;
+        throw; // rethrow the original exception
+    }
 }
 
-void DSOSG::current_stimulus_send_json_message(std::string topic_name, std::string json_message) {
-	_current_stimulus->send_json_message( topic_name, json_message );
+void DSOSG::stimulus_send_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
+    StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
+    assert(stimulus!=NULL);
+	stimulus->send_json_message( topic_name, json_message );
 }
 
-void DSOSG::setup_viewer(std::string json_config) {
+void DSOSG::setup_viewer(const std::string& json_config) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
     traits->windowName = "display server";
 
@@ -709,6 +733,12 @@ void DSOSG::setup_viewer(std::string json_config) {
             width = 750;
             height = 550;
 
+            if (_mode==std::string("cubemap")) {
+                // best aspect ratio is square for this
+                width=height;
+            }
+
+
             // construct the viewer.
             _viewer->setUpViewInWindow( 32, 32, width, height );
 
@@ -720,7 +750,11 @@ void DSOSG::setup_viewer(std::string json_config) {
             _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
         }
 
-		_viewer->setCameraManipulator(new osgGA::TrackballManipulator());
+        if (_mode==std::string("overview") || _mode==std::string("virtual_world")) {
+            _cameraManipulator = new osgGA::TrackballManipulator();
+            _cameraManipulator->setAutoComputeHomePosition(true);
+            _viewer->setCameraManipulator(_cameraManipulator);
+        }
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
@@ -752,7 +786,7 @@ void DSOSG::setup_viewer(std::string json_config) {
 	resized(width, height); // notify listeners that we have a new size
 };
 
-void DSOSG::resized(int width, int height) {
+void DSOSG::resized(const int& width, const int& height) {
 	_width = width;
 	_height = height;
 	{
@@ -766,10 +800,15 @@ void DSOSG::resized(int width, int height) {
 
 }
 
-void DSOSG::set_observer_pose(osg::Vec3 observer_pose) {
-	_observer_pat->setPosition(observer_pose);
-    _observer_cb->setObserverPosition(observer_pose);
-};
+void DSOSG::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
+    // ignoring orientation for now...
+	_observer_pat->setPosition(observer_position);
+    _observer_cb->setObserverPosition(observer_position);
+
+	if (_current_stimulus != NULL) {
+        _current_stimulus->update( time, observer_position, observer_orientation );
+    }
+}
 
 void DSOSG::frame() {
 	_viewer->frame();

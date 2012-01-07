@@ -31,7 +31,6 @@ std::string name() const {
 
 virtual void post_init(std::string config_data_dir) {
 	_virtual_world = create_virtual_world();//_vros_display_base_path);
-	std::cout << "Stimulus3DDemo: _virtual_world created" << std::endl;
 }
 
 void resized(int width,int height) {
@@ -45,15 +44,15 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
     return 0;
 }
 
-std::vector<std::string> get_topic_names() {
+std::vector<std::string> get_topic_names() const {
 	std::vector<std::string> result;
 	return result;
 }
 
-void send_json_message(std::string topic_name, std::string json_message) {
+void send_json_message(const std::string& topic_name, const std::string& json_message) {
 }
 
-std::string get_message_type(std::string topic_name) {
+std::string get_message_type(const std::string& topic_name) const {
 	throw 0; // TODO: better error handling
 }
 

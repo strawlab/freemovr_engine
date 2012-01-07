@@ -20,6 +20,8 @@ import argparse
 import numpy as np
 cimport numpy as np
 
+from cython.operator cimport dereference as deref
+
 # -------------------------------------------- std -----
 
 cdef extern from "<vector>" namespace "std": # tested on Cython 0.14.1 (older may not work)
@@ -51,6 +53,11 @@ cdef extern from "osg/Vec3" namespace "osg":
         Vec3()
         Vec3(double,double,double)
 
+cdef extern from "osg/Quat" namespace "osg":
+    cdef cppclass Quat:
+        Quat()
+        Quat(double,double,double,double)
+
 cdef extern from "osg/Array" namespace "osg":
     cdef cppclass Vec2Array:
         Vec2Array()
@@ -78,16 +85,16 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int show_geom_coords,
               ) nogil except +
         void setup_viewer(std_string json_config) nogil except +
-        void set_observer_pose( Vec3 ) nogil except +
+        void update( double, Vec3, Quat )
         void frame() nogil except +
         int done() nogil except +
 
         vector[std_string] get_stimulus_plugin_names() nogil except +
         std_string get_current_stimulus_plugin_name() nogil except +
         void set_stimulus_plugin(std_string) nogil except +
-        void current_stimulus_send_json_message(std_string, std_string) nogil except +
-        vector[std_string] current_stimulus_get_topic_names() nogil except +
-        std_string current_stimulus_get_message_type(std_string) nogil except +
+        void stimulus_send_json_message(std_string,std_string, std_string) nogil except +
+        vector[std_string] stimulus_get_topic_names(std_string) nogil except +
+        std_string stimulus_get_message_type(std_string, std_string) nogil except +
 
         int getXSize() nogil except +
         int getYSize() nogil except +
@@ -95,11 +102,22 @@ cdef extern from "dsosg.h" namespace "dsosg":
 # ================================================================
 
 def _import_message_name( message_type_name ):
+    message_type_name = message_type_name.replace('/','.') # split on '.' or '/'
     modules = message_type_name.split('.')
+
     packages = modules[:-1]
     name = modules[-1]
+    packages.append('msg')
     dotpackages = '.'.join(packages)
-    __import__( dotpackages)
+    try:
+        __import__( dotpackages)
+    except ImportError:
+        roslib.load_manifest(packages[0])
+        try:
+            __import__( dotpackages)
+        except ImportError:
+            dotpackages = '.'.join(packages[:-1])
+            __import__( dotpackages)
     real_module = sys.modules[dotpackages]
     message_type = getattr(real_module,name)
     return message_type
@@ -127,6 +145,7 @@ def _get_verts_from_viewport(viewport):
         raise ValueError('need at least 3 vertices to define viewport')
 
     # check that we have list of (x,y) tuples
+    is_list_of_2d_verts = False
     for xy in viewport:
         is_list_of_2d_verts = hasattr(xy,'__len__')
         if not is_list_of_2d_verts:
@@ -152,13 +171,22 @@ cdef class MyNode:
     cdef object physical_display_id
     cdef object virtual_display_ids
     cdef object virtual_display_configs
+    cdef object _pose_lock
+    cdef Vec3* pose_position
+    cdef Quat* pose_orientation
+    cdef object subscription_mode
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
         self.virtual_display_ids = []
         self.virtual_display_configs = {}
         self._commands = Queue.Queue()
+        self._pose_lock = threading.Lock()
+        with self._pose_lock:
+            self.pose_position = new Vec3(0,0,0)
+            self.pose_orientation = new Quat(0,0,0,1)
 
+        self.subscription_mode = 'always'
 
         default_config = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.xml')
 
@@ -170,7 +198,7 @@ cdef class MyNode:
                             choices=['virtual_world','cubemap','overview','ar_camera','vr_display'],
                             default='vr_display')
 
-        parser.add_argument('--observer_radius', default=0.1, type=float)
+        parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
         parser.add_argument('--config', default=default_config, type=str, help='config file describing the setup')
@@ -199,10 +227,6 @@ cdef class MyNode:
                                args.two_pass,
                                args.show_geom_coords,
                                )
-        plugin_names = self.dsosg.get_stimulus_plugin_names()
-        for i in range( plugin_names.size() ):
-            name = plugin_names.at(i).c_str()
-            print 'plugin:',name
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
 
         if 1:
@@ -247,6 +271,13 @@ cdef class MyNode:
                       vros_display.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
 
+        plugin_names = self.dsosg.get_stimulus_plugin_names()
+        for i in range( plugin_names.size() ):
+            name = plugin_names.at(i).c_str()
+            print 'plugin:',name
+            if self.subscription_mode == 'always':
+                self.register_subscribers(name)
+
         self._switch_to_stimulus_plugin('Stimulus3DDemo') # default stimulus
 
     def _add_displays(self, configs ):
@@ -270,6 +301,7 @@ cdef class MyNode:
             # called to set these values.
 
     def reconfigure_virtual_display_callback(self, config, level, subname=None):
+        _,_=level,subname # prevent c compiler warning
         json_dict = config['virtual_display_config_json_string']
         unpacked_config = json.loads(json_dict)
         self.update_display( unpacked_config )
@@ -344,17 +376,31 @@ cdef class MyNode:
         plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
         assert plugin == b'Stimulus2DBlit'
 
-        # this is called in some callback thread by ROS
+        # put on command queue for main thread.
         image = request.image
         json_image = rosmsg2json.rosmsg2json(image)
-        self.dsosg.current_stimulus_send_json_message(std_string('blit_images'),
-                                                      std_string(json_image))
+        self.call_pseudo_synchronous( cmd_dict={'command':'send plugin message',
+                                                'plugin': plugin,
+                                                'topic_name': 'blit_images',
+                                                'msg_json': json_image},
+                                      )
+
         return vros_display.srv.BlitCompressedImageResponse()
 
     def pose_callback(self, msg):
         # this is called in some callback thread by ROS
-        cdef Vec3 new_position = Vec3(msg.position.x, msg.position.y, msg.position.z)
-        self.dsosg.set_observer_pose( new_position )
+        new_position = new Vec3(msg.position.x,
+                                msg.position.y,
+                                msg.position.z)
+        new_orientation = new Quat(msg.orientation.x,
+                                   msg.orientation.y,
+                                   msg.orientation.z,
+                                   msg.orientation.w)
+        with self._pose_lock:
+            del self.pose_position
+            del self.pose_orientation
+            self.pose_position = new_position
+            self.pose_orientation = new_orientation
 
     def call_pseudo_synchronous(self, cmd_dict=None):
         condition = threading.Condition()
@@ -363,36 +409,57 @@ cdef class MyNode:
             condition.wait() # release the lock, wait for notify(), and re-acquire the lock
 
     def _switch_to_stimulus_plugin(self,name):
-        # tear down old topic name listeners
-        while len(self._current_subscribers):
-            sub = self._current_subscribers.pop()
-            sub.unregister()
+
+        # This is done in the main thread between frame drawing.
+
+        if self.subscription_mode == 'current_only':
+
+            # tear down old topic name listeners
+            while len(self._current_subscribers):
+                sub = self._current_subscribers.pop()
+                sub.unregister()
 
         # activate plugin
         self.dsosg.set_stimulus_plugin(std_string(name))
 
+        if self.subscription_mode == 'current_only':
+            plugin = self.dsosg.get_current_stimulus_plugin_name()
+            self.register_subscribers(plugin.c_str())
+
+    def register_subscribers(self, plugin):
         # establish new topic name listeners
-        tmp = self.dsosg.current_stimulus_get_topic_names()
+        tmp = self.dsosg.stimulus_get_topic_names(std_string(plugin))
         new_topic_names = [tmp.at(i).c_str() for i in range(tmp.size())]
 
         for tn in new_topic_names:
-            msg_type = self.dsosg.current_stimulus_get_message_type(std_string(tn))
-            self._create_subscriber( tn, msg_type.c_str() )
+            msg_type = self.dsosg.stimulus_get_message_type(std_string(plugin),std_string(tn))
+            self._create_subscriber( plugin, tn, msg_type.c_str() )
 
-    def _current_stimulus_plugin_callback(self, msg, topic_name):
-        # this is called in some callback thread by ROS
+    def _stimulus_plugin_callback(self, msg, callback_args):
+        # This is called in some callback thread by ROS. After
+        # conversion to JSON string, put on command queue for main thread.
+        plugin,topic_name = callback_args
         msg_json = rosmsg2json.rosmsg2json(msg)
-        self.dsosg.current_stimulus_send_json_message(std_string(topic_name),
-                                                      std_string(msg_json))
 
-    def _create_subscriber(self, topic_name, message_type_name ):
+        self.call_pseudo_synchronous( cmd_dict={'command':'send plugin message',
+                                                'plugin': plugin,
+                                                'topic_name': topic_name,
+                                                'msg_json': msg_json},
+                                      )
+
+
+    def _create_subscriber(self, plugin, topic_name, message_type_name ):
         message_type = _import_message_name( message_type_name )
         sub = rospy.Subscriber(topic_name, message_type,
-                               callback=self._current_stimulus_plugin_callback, callback_args=(topic_name,))
+                               callback=self._stimulus_plugin_callback, callback_args=(plugin,topic_name))
         self._current_subscribers.append(sub)
 
     def run(self):
         cdef int do_shutdown
+        cdef Vec3 position
+        cdef Quat orientation
+        cdef double now
+
         do_shutdown = 0
         while not rospy.is_shutdown():
             try:
@@ -404,10 +471,19 @@ cdef class MyNode:
                             name = cmd_dict['name']
                             self._switch_to_stimulus_plugin(name)
                             condition.notifyAll()
+                        elif cmd_dict['command'] == 'send plugin message':
+                            self.dsosg.stimulus_send_json_message(std_string(cmd_dict['plugin']),
+                                                                  std_string(cmd_dict['topic_name']),
+                                                                  std_string(cmd_dict['msg_json']))
+                            condition.notifyAll()
                         else:
                             raise ValueError('did not understand command "%s"'%cmd_dict['command'])
             except Queue.Empty:
                 pass
+
+            with self._pose_lock:
+                now = rospy.get_time()
+                self.dsosg.update( now, deref(self.pose_position), deref(self.pose_orientation))
 
             with nogil:
                 self.dsosg.frame()

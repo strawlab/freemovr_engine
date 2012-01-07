@@ -49,16 +49,16 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
     return _hud;
 }
 
-std::vector<std::string> get_topic_names() {
+std::vector<std::string> get_topic_names() const {
 	std::vector<std::string> result;
 	return result;
 }
 
-std::string get_message_type(std::string topic_name) {
+std::string get_message_type(const std::string& topic_name) const {
 	throw std::runtime_error("no message types to get");
 }
 
-void send_json_message(std::string topic_name, std::string json_message) {
+void send_json_message(const std::string& topic_name, const std::string& json_message) {
 }
 
 private:

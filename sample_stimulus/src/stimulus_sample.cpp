@@ -41,16 +41,16 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
     return 0;
 }
 
-std::vector<std::string> get_topic_names() {
+std::vector<std::string> get_topic_names() const {
 	std::vector<std::string> result;
 	return result;
 }
 
-void send_json_message(std::string topic_name, std::string json_message) {
+void send_json_message(const std::string& topic_name, const std::string& json_message) {
 }
 
-std::string get_message_type(std::string topic_name) {
-	throw 0; // TODO: better error handling
+std::string get_message_type(const std::string& topic_name) const {
+  throw std::runtime_error("unknown topic name");
 }
 
 osg::ref_ptr<osg::Group> create_virtual_world(std::string config_data_dir)
