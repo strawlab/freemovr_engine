@@ -246,6 +246,10 @@ cdef class MyNode:
 
         self._add_displays( all_virtual_displays )
         json_config = json.dumps(self.physical_display_dict)
+        if 1:
+            fd = open('/tmp/display_server.json',mode='w')
+            fd.write( json_config )
+            fd.close()
         self.dsosg.setup_viewer(std_string(json_config))
         if 1:
             for vdi_enum,virtual_display_id in enumerate(tmp_ids):
