@@ -290,7 +290,7 @@ class Geometry:
             self.model = Cylinder(base=geom_dict['base'],
                                   axis=geom_dict['axis'],
                                   radius=geom_dict['radius'])
-        if geom_dict['model']=='sphere':
+        elif geom_dict['model']=='sphere':
             self.model = Sphere(center=geom_dict['center'],
                                 radius=geom_dict['radius'])
         else:
