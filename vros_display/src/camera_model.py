@@ -147,7 +147,9 @@ class CameraModel:
             assert rotation.ndim==1
             assert rotation.shape==(4,)
             self.rot = tf.transformations.quaternion_matrix(rotation)[:3,:3]
-        assert is_rotation_matrix(self.rot)
+
+        if not np.alltrue(np.isnan( self.rot )):
+            assert is_rotation_matrix(self.rot)
 
         self.name = name
 
@@ -159,9 +161,6 @@ class CameraModel:
 
         self.pmat = np.dot( K, self.Rt )
 
-        # Cache a few values
-        self.rot_inv = np.linalg.pinv(self.rot)
-        self.t_inv = -np.dot( self.rot_inv, t )
         self._opencv_compatible = (K[0,1]==0)
 
         # And a final check
@@ -171,6 +170,16 @@ class CameraModel:
 
     # -------------------------------------------------
     # getters
+
+    def get_rot_inv(self):
+        return np.linalg.pinv(self.rot)
+    rot_inv = property(get_rot_inv)
+
+    def get_t_inv(self):
+        t = np.array(self.translation)
+        t.shape = 3,1
+        return -np.dot( self.rot_inv, t )
+    t_inv = property(get_t_inv)
 
     def is_opencv_compatible(self):
         """True iff there is no skew"""
@@ -492,7 +501,7 @@ class CameraModel:
 
 # factory function
 
-def load_camera_from_bagfile( bag_fname ):
+def load_camera_from_bagfile( bag_fname, extrinsics_required=True ):
     """factory function for class CameraModel"""
     bag = rosbag.Bag(bag_fname, 'r')
     camera_name = None
@@ -530,12 +539,20 @@ def load_camera_from_bagfile( bag_fname ):
     bag.close()
 
     if translation is None or rotation is None:
-        raise ValueError('no extrinsic parameters in bag file')
+        if extrinsics_required:
+            raise ValueError('no extrinsic parameters in bag file')
+        else:
+            translation = (np.nan, np.nan, np.nan)
+            rotation = (np.nan, np.nan, np.nan, np.nan)
+    else:
+        translation = point_msg_to_tuple(translation)
+        rotation = parse_rotation_msg(rotation)
+
     if intrinsics is None:
         raise ValueError('no intrinsic parameters in bag file')
 
-    result = CameraModel(translation=point_msg_to_tuple(translation),
-                         rotation=parse_rotation_msg(rotation),
+    result = CameraModel(translation=translation,
+                         rotation=rotation,
                          intrinsics=intrinsics,
                          name=camera_name,
                          )
