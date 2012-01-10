@@ -142,7 +142,7 @@ MyNode(int argc, char**argv)
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help", "produce help message")
-		("image", po::value<std::string>(), "filename of image to show (e.g. PNG or JPEG) or name of physical_display")
+		("image", po::value<std::string>(), "filename of image to show (e.g. PNG or JPEG) or JSON filename describing physical_display")
 		("geometry", po::value<std::string>(), "filename describing geometry in JSON format")
 		("camera", po::value<std::string>(), "name of camera (defines intrinsic parameters at /<camera>/camera_info")
 		;
