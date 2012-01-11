@@ -18,5 +18,5 @@ r=sympy.Symbol('r')
 
 t=sympy.Symbol('t')
 
-expr = (ax+sx*t)**2 + (ay+sy*t)**2 + (az+sz*t**2) - r**2
+expr = (ax+sx*t)**2 + (ay+sy*t)**2 + (az+sz*t)**2 - r**2
 print sympy.solvers.solve(expr, t)

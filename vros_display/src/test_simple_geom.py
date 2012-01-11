@@ -38,3 +38,52 @@ def test_cyl():
                          (np.nan,np.nan,np.nan),
                          ])
     assert nan_shape_allclose( actual, expected)
+
+def test_sphere():
+    center = {'x':0, 'y':0, 'z':0}
+    radius = 1
+    sphere = simple_geom.Sphere(center=center, radius=radius)
+
+    # several look-at locations
+    b=np.array([
+                (0,1,0),
+                (0,2,0),
+                ])
+
+    # the look-from location is essentially (+inf,0,0)
+    a=np.zeros( b.shape )
+    a[:,0] = 10
+    a[:,1] = 1
+
+    actual = sphere.get_first_surface(a,b)
+    expected = np.array([
+                         (0,1,0),
+                         (np.nan, np.nan, np.nan),
+                         ])
+    assert nan_shape_allclose( actual, expected)
+
+def test_sphere2():
+    center = {'x':0, 'y':0, 'z':0}
+    radius = 1
+    sphere = simple_geom.Sphere(center=center, radius=radius)
+
+    # several look-at locations
+    b=np.array([(0,0,0),
+                (0,1,0),
+                (0,-1,0),
+                (0,0,10),
+                (0,0,-10),
+                ])
+
+    # the look-from location is essentially (+inf,0,0)
+    a=np.zeros( b.shape )
+    a[:,0] = 1e10
+
+    actual = sphere.get_first_surface(a,b)
+    expected = np.array([(1,0,0),
+                         (0,1,0),
+                         (0,-1,0),
+                         (np.nan,np.nan,np.nan),
+                         (np.nan,np.nan,np.nan),
+                         ])
+    assert nan_shape_allclose( actual, expected)

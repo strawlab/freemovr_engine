@@ -163,7 +163,7 @@ class Cylinder(ModelBase):
 
 class Sphere(ModelBase):
     def __init__(self, center=None, radius=None):
-        self.center = point_dict_to_vec(base)
+        self.center = point_dict_to_vec(center)
         self.radius = radius
 
         # keep in sync with display_screen_geometry.cpp
@@ -235,9 +235,6 @@ class Sphere(ModelBase):
         assert b.shape[1]==3
         assert b.shape==inshape
 
-        # Since our cylinder is upright, we project our line into 2D,
-        # solve for the intersection with the circle.
-
         a = a.T
         b = b.T
 
@@ -259,12 +256,7 @@ class Sphere(ModelBase):
         r = self.radius
 
         # Solve for the intersections between line and sphere (see sympy_line_sphere.py for math)
-        t0 = (-ax*sx - ay*sy + (-ax**2*sy**2 - ax**2*sz + 2*ax*ay*sx*sy - ay**2*sx**2 - ay**2*sz \
-                                     - az*sx**2 - az*sy**2 - az*sz + r**2*sx**2 + r**2*sy**2 + \
-                                     r**2*sz)**(1/2))/(sx**2 + sy**2 + sz)
-        t1 = (ax*sx + ay*sy + (-ax**2*sy**2 - ax**2*sz + 2*ax*ay*sx*sy - ay**2*sx**2 - ay**2*sz \
-                                    - az*sx**2 - az*sy**2 - az*sz + r**2*sx**2 + r**2*sy**2 + \
-                                    r**2*sz)**(1/2))/(-sx**2 - sy**2 - sz)
+        t0,t1 = [(ax*sx + ay*sy + az*sz + (-ax**2*sy**2 - ax**2*sz**2 + 2*ax*ay*sx*sy + 2*ax*az*sx*sz - ay**2*sx**2 - ay**2*sz**2 + 2*ay*az*sy*sz - az**2*sx**2 - az**2*sy**2 + r**2*sx**2 + r**2*sy**2 + r**2*sz**2)**(0.5))/(-sx**2 - sy**2 - sz**2), (-ax*sx - ay*sy - az*sz + (-ax**2*sy**2 - ax**2*sz**2 + 2*ax*ay*sx*sy + 2*ax*az*sx*sz - ay**2*sx**2 - ay**2*sz**2 + 2*ay*az*sy*sz - az**2*sx**2 - az**2*sy**2 + r**2*sx**2 + r**2*sy**2 + r**2*sz**2)**(0.5))/(sx**2 + sy**2 + sz**2)]
 
         tt = np.vstack((t0,t1))
 
