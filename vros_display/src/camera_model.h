@@ -32,6 +32,9 @@ public:
 	void set_intrinsic( double K00, double K01, double K02,
 						double K11, double K12 );
 
+	bool is_intrinsic_valid() const {return intrinsic_valid;}
+	bool is_extrinsic_valid() const {return extrinsic_valid;}
+
 private:
 	unsigned int _width;
 	unsigned int _height;
