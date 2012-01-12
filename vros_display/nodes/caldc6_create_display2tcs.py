@@ -27,11 +27,12 @@ def load_params(physical_display_id, virtual_display_id):
 
 def get_verts( camera, geom):
     allw = []
-    npts = 32
-    for tc1 in [0,1]:
+    res_u = 32
+    res_v = 5
+    for tc1 in np.linspace(0,1,res_v):
         tc = np.vstack( (
-                np.linspace(0,1.,npts),
-                tc1*np.ones( (npts,) ),
+                np.linspace(0,1.,res_u),
+                tc1*np.ones( (res_u,) ),
                 )).T
         world = geom.model.texcoord2worldcoord(tc)
         allw.append(world)
@@ -41,6 +42,15 @@ def get_verts( camera, geom):
     uv = camera.project_3d_to_pixel( allw )
     return uv
 
+def plot_poly( ax, verts ):
+    xs = []; ys = [];
+    for x,y in verts:
+        xs.append(x)
+        ys.append(y)
+    # repeat first vertex
+    xs.append( verts[0][0] )
+    ys.append( verts[0][1] )
+    return ax.plot(xs,ys, 'k:')
 
 def create_display2tcs(geometry_filename,
                        display_bagfiles,
@@ -73,16 +83,12 @@ def create_display2tcs(geometry_filename,
             vdisp_params = {}
         else:
             vdisp_params = load_params(physical_display_id, virtual_display_id)
-            print virtual_display_id, display.get_camcenter()
-
 
         maskarr = np.zeros( allmask.shape, dtype=np.uint8 )
         mahotas.polygon.fill_polygon([(y,x) for (x,y) in vdisp_params.get('viewport',[])], maskarr)
         if np.max(maskarr)==0: # no mask
             maskarr += 1
 
-        print 'allmask.shape',allmask.shape
-        print 'maskarr.shape',maskarr.shape
         allmask += maskarr
         mask = np.nonzero(maskarr)
         this_tcs = geom.compute_for_camera_view( display , what = 'texture_coords')
@@ -91,15 +97,17 @@ def create_display2tcs(geometry_filename,
             uv = get_verts(display,geom)
 
             ax = fig.add_subplot(211)
-            ax.imshow( this_tcs[:,:,0] )
-            ax.plot( uv[:,0], uv[:,1], 'bo' )
+            ax.imshow( this_tcs[:,:,0], vmin=0, vmax=1 )
+            ax.plot( uv[:,0], uv[:,1], 'k.' )
             ax.set_title(display.get_name() + ', tc0')
+            plot_poly( ax, vdisp_params.get('viewport') )
 
 
             ax = fig.add_subplot(212)
-            ax.imshow( this_tcs[:,:,1] )
-            ax.plot( uv[:,0], uv[:,1], 'bo' )
+            ax.imshow( this_tcs[:,:,1], vmin=0, vmax=1 )
+            ax.plot( uv[:,0], uv[:,1], 'k.' )
             ax.set_title(display.get_name() + ', tc1')
+            plot_poly( ax, vdisp_params.get('viewport') )
 
         this_tcs[ np.isnan(this_tcs) ] = -1.0 # nan -> -1
         assert this_tcs.shape == tcs.shape
@@ -122,9 +130,6 @@ def create_display2tcs(geometry_filename,
         # Save low-res (non-HDR normalized .png) version of texture
         # coord image.
 
-        mmin = np.min(tcs)
-        mmax = np.max(tcs)
-        print 'mmin,mmax',mmin,mmax
         mmin = 0.0
         mmax = 1.0
         pngouttcs = (tcs/(mmax-mmin)-mmin)*255
