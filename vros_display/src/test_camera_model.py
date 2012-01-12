@@ -72,7 +72,7 @@ def opencv_pointmat2numpy(dst):
 
 # --------------------- testing -----------------------------
 
-def _build_test_camera(from_pmat=False,at_origin=False,ROS_test_data=False,get_input_data=False):
+def _build_test_camera(from_pmat=False,at_origin=False,ROS_test_data=False,get_input_data=False,flipped=False):
     if from_pmat:
         d = {'width': 848,
              'name': 'camera',
@@ -81,6 +81,8 @@ def _build_test_camera(from_pmat=False,at_origin=False,ROS_test_data=False,get_i
                           [ -6.19019195e+02,  -1.01292091e+03,  -2.67534989e+03, 4.51847857e+02],
                           [ -4.52548832e+00,  -3.78900498e+00,  -7.35860226e-01, 1.00000000e+00]])
         cam = camera_model.load_camera_from_pmat( pmat, **d)
+        if flipped:
+            cam = cam.get_flipped_camera()
         if get_input_data:
             return dict(cam=cam)
         return cam
@@ -139,6 +141,8 @@ def _build_test_camera(from_pmat=False,at_origin=False,ROS_test_data=False,get_i
                       intrinsics=i,
                       name='cam',
                       )
+    if flipped:
+        cam = cam.get_flipped_camera()
     if get_input_data:
         return dict(cam=cam,
                     translation=translation,
@@ -179,8 +183,9 @@ def get_default_options():
     result = []
     for at_origin in (True,False):
         for ROS_test_data in (True,False):
-            opts = dict(at_origin=at_origin,ROS_test_data=ROS_test_data)
-            result.append(opts)
+            for flipped in (True,False):
+                opts = dict(at_origin=at_origin,ROS_test_data=ROS_test_data,flipped=flipped)
+                result.append(opts)
     result.append( dict(from_pmat=True) )
     return result
 
