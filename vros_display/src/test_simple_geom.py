@@ -71,6 +71,7 @@ def test_sphere2():
     b=np.array([(0,0,0),
                 (0,1,0),
                 (0,-1,0),
+                (0,0,1),
                 (0,0,10),
                 (0,0,-10),
                 ])
@@ -83,7 +84,18 @@ def test_sphere2():
     expected = np.array([(1,0,0),
                          (0,1,0),
                          (0,-1,0),
+                         (0,0,1),
                          (np.nan,np.nan,np.nan),
                          (np.nan,np.nan,np.nan),
                          ])
     assert nan_shape_allclose( actual, expected)
+
+    actual_wcs = sphere.worldcoord2texcoord( actual )
+    expected_wcs = np.array([[0, 0.5],
+                             [0.25, 0.5],
+                             [0.75, 0.5],
+                             [0.0, 1.0],
+                             [np.nan, np.nan],
+                             [np.nan, np.nan],
+                             ])
+    assert nan_shape_allclose( actual_wcs, expected_wcs)

@@ -210,7 +210,8 @@ class Sphere(ModelBase):
         r = np.sqrt( x0**2 + y0**2 + z0**2 )
 
         az = np.arctan2( y0, x0 )
-        el = np.arcsin( z0/r )
+        el_rad = np.arcsin( z0/r )
+        el = el_rad / np.pi + 0.5
 
         tc0 = range_0_2pi(az)/(2*np.pi)
         tc1 = el
