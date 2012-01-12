@@ -56,6 +56,72 @@
 #include "display_screen_geometry.h"
 #include "camera_model.h"
 
+class MyNode {
+public:
+    MyNode(int argc, char**argv);
+    void setup_viewer(std::string json_config, int& width, int& height);
+    int run();
+    void gotTfCallback(const geometry_msgs::Transform& msg );
+    void gotCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
+    void set_tf_mode(std::string tf_mode);
+private:
+    osgViewer::Viewer* _viewer;
+	ros::NodeHandle _node_handle;
+	ros::Subscriber sub1;
+	ros::Subscriber sub2;
+    ros::Publisher pub1;
+	CameraModel* _cam1_params;
+    osgGA::TrackballManipulator* _manipulator;
+	osg::Camera*  bgcam;
+    std::string _tf_mode;
+};
+
+class KeyboardEventHandler : public osgGA::GUIEventHandler
+{
+public:
+
+    KeyboardEventHandler(MyNode* mn) : app(mn)
+    {}
+
+    virtual bool handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter& aa)
+    {
+        //osgViewer::Viewer* viewer = dynamic_cast<osgViewer::Viewer*>(&aa);
+        switch (ea.getEventType())
+        {
+            case(osgGA::GUIEventAdapter::KEYUP):
+            {
+                if (ea.getKey()==osgGA::GUIEventAdapter::KEY_Down)
+                {
+                    app->set_tf_mode("download");
+                    ROS_INFO_STREAM( "set download mode" );
+                    return true;
+                } else if (ea.getKey()==osgGA::GUIEventAdapter::KEY_Up) {
+                    app->set_tf_mode("upload");
+                    ROS_INFO_STREAM( "set up mode" );
+                    return true;
+                }
+                ROS_INFO_STREAM( "got key press" );
+
+                return false;
+            }
+            default:
+                break;
+        }
+        return false;
+    }
+
+    void pick(const osgGA::GUIEventAdapter& ea, osgViewer::Viewer* viewer)
+    {
+        std::cout << _mx << ", " << _my << std::endl;
+    }
+
+protected:
+
+    float _mx,_my;
+    MyNode* app;
+};
+
+
 osg::Camera* createBG(int width, int height)
 {
     // create a camera to set up the projection and model view matrices, and the subgraph to drawn in the HUD
@@ -132,9 +198,61 @@ osg::Node* show_point( const osg::Vec3 position, const std::string& message ){
 }
 
 
-class MyNode {
-public:
-MyNode(int argc, char**argv)
+void osgview2tf( const osg::Vec3& eye, const osg::Quat& rotation, geometry_msgs::Transform& msg ) {
+    osg::Vec3d send_t;
+    osg::Quat send_r;
+
+    osg::Matrix rmat;
+    rotation.get(rmat);
+
+    osg::Matrix rinv = osg::Matrix::inverse(rmat);
+    if (1) {
+        // Flip Y and Z coordinates to ROS/OpenCV's system
+        // with the camera looking at +Z.
+        osg::Matrix flip = osg::Matrix( 1.0, 0.0, 0.0, 0.0,
+                                        0.0,-1.0, 0.0, 0.0,
+                                        0.0, 0.0,-1.0, 0.0,
+                                        0.0, 0.0, 0.0, 1.0);
+        osg::Matrix rnew = rinv*flip;
+        send_t = -eye*rnew;
+        send_r.set(rnew);
+    } else {
+        send_t = -eye*rinv;
+        send_r.set(rinv);
+    }
+
+    {
+        msg.translation.x = send_t.x();
+        msg.translation.y = send_t.y();
+        msg.translation.z = send_t.z();
+        msg.rotation.x = send_r.x();
+        msg.rotation.y = send_r.y();
+        msg.rotation.z = send_r.z();
+        msg.rotation.w = send_r.w();
+    }
+
+}
+
+void tf2osgview(const geometry_msgs::Transform& msg, osg::Vec3& eye, osg::Quat& rotation) {
+    osg::Vec3d send_t(msg.translation.x, msg.translation.y, msg.translation.z);
+    osg::Quat send_r(msg.rotation.x, msg.rotation.y, msg.rotation.z, msg.rotation.w);
+
+    osg::Matrix rnew;
+    send_r.get(rnew);
+
+    osg::Matrix rnewinv = osg::Matrix::inverse(rnew);
+    eye = -send_t*rnewinv;
+
+    osg::Matrix flip = osg::Matrix( 1.0, 0.0, 0.0, 0.0,
+                                    0.0,-1.0, 0.0, 0.0,
+                                    0.0, 0.0,-1.0, 0.0,
+                                    0.0, 0.0, 0.0, 1.0);
+    osg::Matrix rinv = rnew*flip;
+    osg::Matrix rmat = osg::Matrix::inverse(rinv);
+    rotation.set( rmat );
+}
+
+MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
 {
 
 	namespace po = boost::program_options;
@@ -145,6 +263,7 @@ MyNode(int argc, char**argv)
 		("image", po::value<std::string>(), "filename of image to show (e.g. PNG or JPEG) or JSON filename describing physical_display")
 		("geometry", po::value<std::string>(), "filename describing geometry in JSON format")
 		("camera", po::value<std::string>(), "name of camera (defines intrinsic parameters at /<camera>/camera_info")
+		("texture", po::value<std::string>(), "texture to show on geometry")
 		;
 
 	po::variables_map vm;
@@ -170,6 +289,11 @@ MyNode(int argc, char**argv)
     std::string camera("");
 	if (vm.count("camera")) {
 		camera = vm["camera"].as<std::string>();
+	}
+
+	std::string texture_filename("");
+	if (vm.count("texture")) {
+		texture_filename = vm["texture"].as<std::string>();
 	}
 
 	osg::ref_ptr<osg::Group> root = new osg::Group; root->addDescription("root node");
@@ -201,6 +325,9 @@ MyNode(int argc, char**argv)
         _viewer->setUpViewInWindow( 32, 32, image->s(), image->t());
 
     }
+
+    _viewer->addEventHandler(new KeyboardEventHandler(this));
+
     bgcam = createBG( width, height );
 	root->addChild( bgcam );
 	if (!is_display) {
@@ -227,7 +354,12 @@ MyNode(int argc, char**argv)
 	DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry( geom_filename );
 
 	{
-		osg::ref_ptr<osg::Geometry> geom = geometry_parameters->make_geom(true);
+        osg::ref_ptr<osg::Geometry> geom;
+		if (texture_filename==std::string("")) {
+            geom = geometry_parameters->make_geom(true);
+        } else {
+            geom = geometry_parameters->make_geom(false);
+        }
 		osg::Geode* geode = new osg::Geode;
 		geode->addDescription("geometry geode");
 		geode->addDrawable(geom);
@@ -235,13 +367,17 @@ MyNode(int argc, char**argv)
 		ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 		//forcedWireFrameModeOn( geode );
 		root->addChild(geode);
-		{
+		if (texture_filename==std::string("")) {
 			KeyPointMap kpm = geometry_parameters->get_key_points();
 			for (KeyPointMap::const_iterator ki=kpm.begin(); ki!=kpm.end(); ++ki) {
 				std::cout << "point " << ki->first << " coords: " << ki->second << std::endl;
 				root->addChild( show_point( ki->second, ki->first ) );
 			}
-		}
+		} else {
+            osg::Image* image = osgDB::readImageFile(texture_filename);
+            osg::Texture2D* texture = new osg::Texture2D(image);
+			ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+        }
 	}
 
     _manipulator = new osgGA::TrackballManipulator();
@@ -261,6 +397,12 @@ MyNode(int argc, char**argv)
     info_topic = sub1.getTopic();
     ROS_INFO_STREAM( "subscribed to topic: " << info_topic);
 
+    std::string tf_topic = camera+"/tf";
+    ROS_INFO_STREAM( "trying for topic: " << tf_topic);
+	sub2 = _node_handle.subscribe(tf_topic, 10, &MyNode::gotTfCallback, this);
+    tf_topic = sub2.getTopic();
+    ROS_INFO_STREAM( "subscribed to topic: " << tf_topic);
+
     std::string transform_topic = camera+"/tf";
     pub1 = _node_handle.advertise<geometry_msgs::Transform>(transform_topic, 10);
     ROS_INFO_STREAM( "publishing extrinsic parameters to topic: " << pub1.getTopic());
@@ -269,48 +411,24 @@ MyNode(int argc, char**argv)
 
 	}
 
-	int run() {
+int MyNode::run() {
 		float znear=0.1f;
 		float zfar=10.0f;
 		while (!_viewer->done()) {
 
             if (_cam1_params) {
-                _viewer->getCamera()->setProjectionMatrix(_cam1_params->projection(znear,zfar));
+                if (_cam1_params->is_intrinsic_valid()) {
+                    _viewer->getCamera()->setProjectionMatrix(_cam1_params->projection(znear,zfar));
+                }
             }
 
             {
-                osg::Vec3d eye, send_t;
-                osg::Quat rotation, send_r;
+                osg::Vec3d eye;
+                osg::Quat rotation;
                 _manipulator->getTransformation( eye, rotation );
-
-                {
-                    osg::Matrix rmat;
-                    rotation.get(rmat);
-                    osg::Matrix rinv = osg::Matrix::inverse(rmat);
-                    if (1) {
-                        // Flip Y and Z coordinates to ROS/OpenCV's system
-                        // with the camera looking at +Z.
-                        osg::Matrix flip = osg::Matrix( 1.0, 0.0, 0.0, 0.0,
-                                                        0.0,-1.0, 0.0, 0.0,
-                                                        0.0, 0.0,-1.0, 0.0,
-                                                        0.0, 0.0, 0.0, 1.0);
-                        osg::Matrix rnew = rinv*flip;
-                        send_t = -eye*rnew;
-                        send_r.set(rnew);
-                    } else {
-                        send_t = -eye*rinv;
-                        send_r.set(rinv);
-                    }
-                }
-                {
-                    geometry_msgs::Transform msg;
-                    msg.translation.x = send_t.x();
-                    msg.translation.y = send_t.y();
-                    msg.translation.z = send_t.z();
-                    msg.rotation.x = send_r.x();
-                    msg.rotation.y = send_r.y();
-                    msg.rotation.z = send_r.z();
-                    msg.rotation.w = send_r.w();
+                geometry_msgs::Transform msg;
+                osgview2tf( eye, rotation, msg );
+                if (_tf_mode == std::string("upload")) {
                     pub1.publish(msg);
                 }
 
@@ -325,7 +443,7 @@ MyNode(int argc, char**argv)
 		return 0;
 	}
 
-void setup_viewer(std::string json_config, int& width, int& height) {
+void MyNode::setup_viewer(std::string json_config, int& width, int& height) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
     traits->windowName = "display server";
 
@@ -403,9 +521,26 @@ void setup_viewer(std::string json_config, int& width, int& height) {
 }
 
 
+void MyNode::gotTfCallback(const geometry_msgs::Transform& msg )
+{
+    if (_tf_mode == std::string("download")) {
+        //ROS_INFO_STREAM( "got transform message, setting extrinsic parameters" );
+        osg::Vec3 eye;
 
-	void gotCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg)
-	{
+        //osg::Vec3 center;
+        //osg::Vec3 up;
+        //tf2osgview( msg, eye, center, up );
+
+        osg::Quat rotation;
+        tf2osgview( msg, eye, rotation );
+
+        _manipulator->setTransformation( eye, rotation );
+
+    }
+}
+
+void MyNode::gotCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg)
+{
 		// We got new camera information, which contains the frame_id
 		// of the camera and the intrinsic parameters. We can use the
 		// frame_id to lookup the extrinsic parameters.
@@ -424,17 +559,18 @@ void setup_viewer(std::string json_config, int& width, int& height) {
         // Set background to indicate we have the intrinsic calibration.
         bgcam->setClearColor(osg::Vec4(0.0f, 0.0f, 0.3f, 1.0f)); // blue
 
-	}
+}
 
-private:
-    osgViewer::Viewer* _viewer;
-	ros::NodeHandle _node_handle;
-	ros::Subscriber sub1;
-    ros::Publisher pub1;
-	CameraModel* _cam1_params;
-    osgGA::TrackballManipulator* _manipulator;
-	osg::Camera*  bgcam;
-};
+void MyNode::set_tf_mode(std::string mode) {
+    bool ok;
+    ok = false;
+    if (mode == std::string("upload")) { ok = true; }
+    if (mode == std::string("download")) { ok = true; }
+    if (!ok) {
+        throw std::runtime_error("expected tf mode upload or download.");
+    }
+    _tf_mode = mode;
+}
 
 int main(int argc, char**argv) {
 	ros::init(argc, argv, "caldc4_manual_camera_calibration");
