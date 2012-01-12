@@ -195,7 +195,7 @@ cdef class MyNode:
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
         parser.add_argument('--mode',
-                            choices=['virtual_world','cubemap','overview','ar_camera','vr_display'],
+                            choices=['virtual_world','cubemap','overview','geometry_texture','vr_display'],
                             default='vr_display')
 
         parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters

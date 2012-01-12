@@ -335,7 +335,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
 		  _mode==std::string("virtual_world") || _mode==std::string("overview") ||
-		  _mode==std::string("ar_camera"))) {
+		  _mode==std::string("geometry_texture"))) {
 		throw std::invalid_argument("unknown mode");
 	}
 
@@ -525,20 +525,24 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		} else {
 			g = pctcp->get_textured_geometry();
 		}
+
+		if (_mode==std::string("geometry_texture")) {
+            osg::Texture2D* geomtex = pctcp->get_output_texture();
+
+			osg::Group* g = make_textured_quad(geomtex,
+											   -1.0,
+											   1.0,
+											   1.0,
+											   0, 0, 1.0, 1.0);
+			debug_hud_cam->addChild(g);
+
+		}
+
 		TexturedGeometryToCameraImagePass *tg2ci=new TexturedGeometryToCameraImagePass(g,
 																					   cam1_params);
 		root->addChild(tg2ci->get_top().get());
 		osg::Texture* mytex;
 		mytex = tg2ci->get_output_texture();
-		if (_mode==std::string("ar_camera")) {
-			osg::Group* g = make_textured_quad(mytex,
-											   -1.0,
-											   cam1_params->width(),
-											   cam1_params->height(),
-											   0, 0, 1.0, 1.0);
-			debug_hud_cam->addChild(g);
-
-		}
 		if (_mode==std::string("overview")) {
 			root->addChild( cam1_params->make_rendering(1) );
 			osg::Group* g = make_textured_quad(mytex,
@@ -726,14 +730,14 @@ void DSOSG::setup_viewer(const std::string& json_config) {
 	traits->height = height;
 
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
-		_mode==std::string("ar_camera") || _mode==std::string("virtual_world")) {
+		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
 
         if (1) {
             // setup in windowed mode with this resolution
             width = 750;
             height = 550;
 
-            if (_mode==std::string("cubemap")) {
+            if (_mode==std::string("cubemap") || _mode==std::string("geometry_texture")) {
                 // best aspect ratio is square for this
                 width=height;
             }
