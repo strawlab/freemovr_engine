@@ -387,6 +387,7 @@ cdef class MyNode:
                                                 'plugin': plugin,
                                                 'topic_name': 'blit_images',
                                                 'msg_json': json_image},
+                                      lock=False,
                                       )
 
         return vros_display.srv.BlitCompressedImageResponse()
@@ -406,11 +407,15 @@ cdef class MyNode:
             self.pose_position = new_position
             self.pose_orientation = new_orientation
 
-    def call_pseudo_synchronous(self, cmd_dict=None):
-        condition = threading.Condition()
+    def call_pseudo_synchronous(self, cmd_dict=None,lock=True):
+        if lock:
+            condition = threading.Condition()
+        else:
+            condition = None
         self._commands.put( (condition,cmd_dict) )
-        with condition: # acquire lock
-            condition.wait() # release the lock, wait for notify(), and re-acquire the lock
+        if lock:
+            with condition: # acquire lock
+                condition.wait() # release the lock, wait for notify(), and re-acquire the lock
 
     def _switch_to_stimulus_plugin(self,name):
 
@@ -449,6 +454,7 @@ cdef class MyNode:
                                                 'plugin': plugin,
                                                 'topic_name': topic_name,
                                                 'msg_json': msg_json},
+                                      lock=False,
                                       )
 
 
@@ -470,16 +476,19 @@ cdef class MyNode:
                 while 1:
                     cmd = self._commands.get_nowait()
                     (condition, cmd_dict) = cmd
-                    with condition: # acquire lock
-                        if cmd_dict['command'] == 'enter stimulus plugin':
-                            name = cmd_dict['name']
-                            self._switch_to_stimulus_plugin(name)
-                            condition.notifyAll()
-                        elif cmd_dict['command'] == 'send plugin message':
+                    if condition is not None:
+                        with condition: # acquire lock
+                            if cmd_dict['command'] == 'enter stimulus plugin':
+                                name = cmd_dict['name']
+                                self._switch_to_stimulus_plugin(name)
+                                condition.notifyAll()
+                            else:
+                                raise ValueError('did not understand command "%s"'%cmd_dict['command'])
+                    else:
+                        if cmd_dict['command'] == 'send plugin message':
                             self.dsosg.stimulus_send_json_message(std_string(cmd_dict['plugin']),
                                                                   std_string(cmd_dict['topic_name']),
                                                                   std_string(cmd_dict['msg_json']))
-                            condition.notifyAll()
                         else:
                             raise ValueError('did not understand command "%s"'%cmd_dict['command'])
             except Queue.Empty:
