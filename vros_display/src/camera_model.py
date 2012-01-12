@@ -306,7 +306,26 @@ class CameraModel:
                                   )
             return camnew
 
+    def get_flipped_camera(self):
+        """return a copy of this camera looking in the opposite direction
 
+        The returned camera has the same 3D->2D projection. (The
+        2D->3D projection results in a vector in the opposite
+        direction.)
+        """
+
+        flip = -np.eye(3)
+        rnew = np.dot( flip, self.get_rotation())
+
+        C = self.get_camcenter()
+        tnew = -np.dot(rnew, C)
+        i = self.get_intrinsics_as_msg()
+        camnew = CameraModel( translation = tnew,
+                              rotation = rnew,
+                              intrinsics = i,
+                              name = self.name + '_flip',
+                              )
+        return camnew
 
     # --------------------------------------------------
     # image coordinate operations

@@ -417,3 +417,26 @@ def check_camera_mirror_projection_roundtrip(cam_opts,distorted=False):
     expected[:,0] = cam_orig.width - uv_raw[:,0]
     assert expected.shape == uv_mirror.shape
     assert np.allclose(expected, uv_mirror, atol=1.0) # within one pixel
+
+
+def test_flip():
+    all_options = get_default_options()
+    for opts in all_options:
+        yield check_flip, opts
+
+def check_flip(cam_opts):
+    cam_orig = _build_test_camera(**cam_opts)
+    cam_flip = cam_orig.get_flipped_camera()
+
+    # They have different orientation (but same position) in space,
+    assert not np.allclose( cam_orig.get_rotation(), cam_flip.get_rotation())
+    assert np.allclose( cam_orig.get_camcenter(), cam_flip.get_camcenter())
+
+    # but they project 3D points to same pixel locations
+    verts = np.array([[ 0.042306,  0.015338,  0.036328],
+                      [ 0.03323,   0.030344,  0.041542],
+                      [ 0.036396,  0.026464,  0.052408]])
+
+    expected = cam_orig.project_3d_to_pixel(verts)
+    actual   = cam_flip.project_3d_to_pixel(verts)
+    assert np.allclose( expected, actual )
