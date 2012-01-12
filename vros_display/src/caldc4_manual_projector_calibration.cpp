@@ -58,6 +58,7 @@ private:
     void setup_viewer(std::string json_config, int &width, int &height);
     osgViewer::Viewer* _viewer;
     osg::PositionAttitudeTransform * pat;
+    int _height;
 };
 
 class KeyboardEventHandler : public osgGA::GUIEventHandler
@@ -107,15 +108,11 @@ public:
         return false;
     }
 
-    void pick(const osgGA::GUIEventAdapter& ea, osgViewer::Viewer* viewer)
-    {
-        std::cout << _mx << ", " << _my << std::endl;
-    }
-
 protected:
 
     float _mx,_my;
     MyNode* app;
+
 };
 
 
@@ -252,7 +249,7 @@ void MyNode::mouse_move( int _mx, int _my ) {
 }
 
 void MyNode::mouse_click( int _mx, int _my ) {
-    std::cout << _mx << " " << _my << std::endl;
+    std::cout << _mx << " " << _height-_my << std::endl;
     pat->setPosition(osg::Vec3(_mx,_my,0.0f));
 }
 
@@ -334,6 +331,7 @@ void MyNode::setup_viewer(std::string json_config, int& width, int& height) {
 		//_viewer->setUpViewInWindow( win_origin_x, win_origin_y, width, height );
 		_viewer->getCamera()->setGraphicsContext(gc.get());
 		_viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
+        _height= traits->height;
 		GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
 		_viewer->getCamera()->setDrawBuffer(buffer);
 		_viewer->getCamera()->setReadBuffer(buffer);
