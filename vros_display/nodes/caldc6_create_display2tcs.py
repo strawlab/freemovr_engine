@@ -109,6 +109,29 @@ def create_display2tcs(geometry_filename,
             ax.set_title(display.get_name() + ', tc1')
             plot_poly( ax, vdisp_params.get('viewport') )
 
+            if 1:
+                this_wcs = geom.compute_for_camera_view( display , what = 'world_coords')
+                fig = plt.figure()
+                uv = get_verts(display,geom)
+
+                ax = fig.add_subplot(311)
+                ax.imshow( this_wcs[:,:,0] )
+                ax.plot( uv[:,0], uv[:,1], 'k.' )
+                ax.set_title(display.get_name() + ', wc0')
+                plot_poly( ax, vdisp_params.get('viewport') )
+
+                ax = fig.add_subplot(312)
+                ax.imshow( this_wcs[:,:,1] )
+                ax.plot( uv[:,0], uv[:,1], 'k.' )
+                ax.set_title(display.get_name() + ', wc0')
+                plot_poly( ax, vdisp_params.get('viewport') )
+
+                ax = fig.add_subplot(313)
+                ax.imshow( this_wcs[:,:,2] )
+                ax.plot( uv[:,0], uv[:,1], 'k.' )
+                ax.set_title(display.get_name() + ', wc0')
+                plot_poly( ax, vdisp_params.get('viewport') )
+
         this_tcs[ np.isnan(this_tcs) ] = -1.0 # nan -> -1
         assert this_tcs.shape == tcs.shape
 
