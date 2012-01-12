@@ -7,7 +7,7 @@
 #include <osg/Uniform>
 
 #include <osgViewer/Viewer>
-#include <osgGA/CameraManipulator>
+#include <osgGA/TrackballManipulator>
 
 #include <boost/filesystem.hpp>
 
@@ -67,7 +67,7 @@ namespace dsosg{
 
 		int _width;
 		int _height;
-		osg::ref_ptr<osgGA::CameraManipulator> _cameraManipulator;
+		osg::ref_ptr<osgGA::TrackballManipulator> _cameraManipulator;
 	};
 
 }

@@ -425,7 +425,18 @@ int MyNode::run() {
             {
                 osg::Vec3d eye;
                 osg::Quat rotation;
+#if 0
+                // OSG 3.x
                 _manipulator->getTransformation( eye, rotation );
+#else
+                // OSG 2.8.x
+                osg::Vec3d _center = _manipulator->getCenter();
+                double _distance = _manipulator->getDistance();
+                osg::Quat _rotation = _manipulator->getRotation();
+
+                eye = _center - _rotation * osg::Vec3d( 0., 0., -_distance );
+                rotation = _rotation;
+#endif
                 geometry_msgs::Transform msg;
                 osgview2tf( eye, rotation, msg );
                 if (_tf_mode == std::string("upload")) {
@@ -534,7 +545,16 @@ void MyNode::gotTfCallback(const geometry_msgs::Transform& msg )
         osg::Quat rotation;
         tf2osgview( msg, eye, rotation );
 
+#if 0
+        // OSG 3.x
         _manipulator->setTransformation( eye, rotation );
+#else
+        // OSG 2.8.x
+        double _distance = _manipulator->getDistance();
+        osg::Vec3d _center = eye + rotation * osg::Vec3d( 0., 0., -_distance );
+        _manipulator->setCenter(_center);
+        _manipulator->setRotation(rotation);
+#endif
 
     }
 }
