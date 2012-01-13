@@ -445,3 +445,23 @@ def check_flip(cam_opts):
     expected = cam_orig.project_3d_to_pixel(verts)
     actual   = cam_flip.project_3d_to_pixel(verts)
     assert np.allclose( expected, actual )
+
+def test_view():
+    all_options = get_default_options()
+    for opts in all_options:
+        yield check_view, opts
+
+def check_view(cam_opts):
+
+    # This is not a very good test. (Should maybe check more eye
+    # positions, more lookat directions, and more up vectors.)
+
+    cam_orig = _build_test_camera(**cam_opts)
+    eye = (10,20,30)
+    lookat = (11,20,30) # must be unit length for below to work
+    up = (0,0,1)
+    cam_new = cam_orig.get_copy_with_view(eye, lookat, up)
+    eye2, lookat2, up2 = cam_new.get_view()
+    assert np.allclose( eye, eye2)
+    assert np.allclose( lookat, lookat2 )
+    assert np.allclose( up, up2)

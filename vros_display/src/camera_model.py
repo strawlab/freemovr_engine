@@ -208,11 +208,68 @@ class CameraModel:
     def get_camcenter(self):
         return self.t_inv[:,0] # drop dimension
 
+    def get_lookat(self,distance=1.0):
+        cam_coords = np.array([[0,0,distance]])
+        world_coords = self.project_camera_frame_to_3d( cam_coords )
+        world_coords.shape = (3,) # drop dimension
+        return world_coords
+
+    def get_up(self,distance=1.0):
+        cam_coords = np.array([[0,distance,0]])
+        world_coords = self.project_camera_frame_to_3d( cam_coords )
+        world_coords.shape = (3,) # drop dimension
+        C = np.array(self.get_camcenter())
+        C.shape=(3,)
+        return world_coords-C
+
+    def get_right(self,distance=1.0):
+        cam_coords = np.array([[distance,0,0]])
+        world_coords = self.project_camera_frame_to_3d( cam_coords )
+        world_coords.shape = (3,) # drop dimension
+        C = np.array(self.get_camcenter())
+        C.shape=(3,)
+        return world_coords-C
+
+    def get_view(self):
+        return self.get_camcenter(), self.get_lookat(), self.get_up()
+
+    def get_copy_with_view(self, eye, lookat, up, name=None):
+        eye = np.array(eye); eye.shape=(3,)
+        lookat = np.array(lookat); lookat.shape=(3,)
+        up = np.array(up); up.shape=(3,)
+
+        lv = lookat-eye
+        mag = np.sqrt(np.sum(lv**2))
+        lv = lv/mag
+
+        mag = np.sqrt(np.sum(up**2))
+        up = up/mag
+
+        right = np.cross(lv,up)
+        up = np.cross( right, lv )
+
+        R = np.array([[right[0],  up[0], lv[0]],
+                      [right[1],  up[1], lv[1]],
+                      [right[2],  up[2], lv[2]]]).T
+
+        eye.shape = (3,1)
+        t = -np.dot(R,eye)
+
+        if name is None:
+            name = self.name
+
+        result = CameraModel(translation=t,
+                             rotation=R,
+                             intrinsics=self.get_intrinsics_as_msg(),
+                             name=name,
+                             )
+        return result
+
     def get_rotation(self):
-        return self.rot
+        return np.array(self.rot,copy=True)
 
     def get_translation(self):
-        return self.translation
+        return np.array(self.translation,copy=True)
 
     def get_K(self):
         return self.K
@@ -448,7 +505,7 @@ class CameraModel:
     # --------------------------------------------------
     # 3D <-> image coordinate operations
 
-    def project_pixel_to_3d_ray(self, nparr, distorted=True ):
+    def project_pixel_to_3d_ray(self, nparr, distorted=True, distance=1.0 ):
         if distorted:
             nparr = self.undistort(nparr)
         # now nparr is undistorted (aka rectified) 2d point data
@@ -465,11 +522,11 @@ class CameraModel:
         y = (uv_rect_y - self.cy() - self.Ty()) / self.fy()
         z = np.ones_like(x)
         ray_cam = np.vstack((x,y,z))
+        rl = np.sqrt(np.sum(ray_cam**2,axis=0))
+        ray_cam = distance*(ray_cam/rl) # normalize then scale
 
         # transform to world frame
-        ray_world_ori = np.dot(self.rot_inv,ray_cam)
-        ray_world = ray_world_ori + self.t_inv
-        return ray_world.T
+        return self.project_camera_frame_to_3d( ray_cam.T )
 
     def project_3d_to_pixel(self, pts3d, distorted=True):
         pts3d = np.array(pts3d,copy=False)
@@ -493,6 +550,13 @@ class CameraModel:
             nparr = np.vstack((u,v)).T
             u,v = self.distort( nparr ).T
         return np.vstack((u,v)).T
+
+    def project_camera_frame_to_3d(self, pts3d):
+        cam_coords = pts3d.T
+        t = self.get_translation()
+        t.shape = (3,1)
+        world_coords = np.dot(self.rot_inv, cam_coords - t)
+        return world_coords.T
 
     def project_3d_to_camera_frame(self, pts3d):
         pts3d = np.array(pts3d,copy=False)
