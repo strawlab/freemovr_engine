@@ -5,11 +5,8 @@
 
 # ROS imports
 import roslib; roslib.load_manifest('vros_display')
-import rosbag
-import tf.transformations
 import geometry_msgs
 import sensor_msgs
-import tempfile
 
 import numpy as np
 
