@@ -193,6 +193,7 @@ class CameraModel:
         msg.translation.x, msg.translation.y, msg.translation.z = self.translation
         msg.rotation = list(self.rot.flatten())
         return msg
+
     def get_intrinsics_as_msg(self):
         i = sensor_msgs.msg.CameraInfo()
         # these are from image_geometry ROS package in the utest.cpp file
@@ -306,7 +307,7 @@ class CameraModel:
 
     def save_to_bagfile(self,fname):
         bagout = rosbag.Bag(fname, 'w')
-        topic = self.name + '/tf'
+        topic = self.name + '/matrix_tf'
         bagout.write(topic, self.get_extrinsics_as_msg())
         topic = self.name + '/camera_info'
         bagout.write(topic, self.get_intrinsics_as_msg())
@@ -612,7 +613,10 @@ def load_camera_from_bagfile( bag_fname, extrinsics_required=True ):
 
         if topic == 'tf':
             translation = msg.translation
-            rotation = msg.rotation
+            rotation = msg.rotation # quaternion
+        elif topic == 'matrix_tf':
+            translation = msg.translation
+            rotation = msg.rotation # matrix
         elif topic == 'camera_info':
             intrinsics = msg
         else:
