@@ -4,7 +4,7 @@
 # OpenCV to use camera_model.
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('camera_model')
 import geometry_msgs
 import sensor_msgs
 

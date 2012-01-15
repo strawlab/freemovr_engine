@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('camera_model')
 import rosbag
 import tf.transformations
-import vros_display.msg
 import sensor_msgs
+import geometry_msgs
 
 import numpy as np
 import warnings
@@ -286,9 +286,11 @@ class CameraModel(object):
         return self.name
 
     def get_extrinsics_as_msg(self):
-        msg = vros_display.msg.MatrixTransform()
-        msg.translation.x, msg.translation.y, msg.translation.z = self.translation
-        msg.rotation = list(self.rot.flatten())
+        msg = geometry_msgs.msg.Transform()
+        for i in range(3):
+            setattr(msg.translation,'xyz'[i], self.translation[i] )
+        for i in range(4):
+            setattr(msg.rotation,'xyzw'[i], self._rquat[i] )
         return msg
 
     def get_intrinsics_as_msg(self):
@@ -366,7 +368,7 @@ class CameraModel(object):
 
     def save_to_bagfile(self,fname):
         bagout = rosbag.Bag(fname, 'w')
-        topic = self.name + '/matrix_tf'
+        topic = self.name + '/tf'
         bagout.write(topic, self.get_extrinsics_as_msg())
         topic = self.name + '/camera_info'
         bagout.write(topic, self.get_intrinsics_as_msg())
