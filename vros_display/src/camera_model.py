@@ -83,29 +83,117 @@ def center(P):
 
 def is_rotation_matrix(R):
     # check if rotation matrix is really a pure rotation matrix
+
+    # test: inverse is transpose
     testI = np.dot(R.T,R)
     if not np.allclose( testI, np.eye(len(R)) ):
         return False
+
+    # test: determinant is unity
     dr = abs(np.linalg.det(R))
     if not np.allclose(dr,1):
         return False
+
+    # test: has eigenvalue of unity
+    l, W = np.linalg.eig(R.T)
+    eps = 1e-8
+    i = np.where(abs(np.real(l) - 1.0) < eps)[0]
+    if not len(i):
+        return False
     return True
+
+def get_rotation_matrix_and_quaternion(rotation):
+    rotation = np.array(rotation)
+    if rotation.ndim==2:
+        assert rotation.shape==(3,3)
+        if not np.alltrue(np.isnan( rotation )):
+            assert is_rotation_matrix(rotation)
+
+        rmat = rotation
+
+        rnew = np.eye(4)
+        rnew[:3,:3] = rmat
+        rquat = tf.transformations.quaternion_from_matrix(rnew)
+        if not np.alltrue(np.isnan( rquat )):
+            R2 = tf.transformations.quaternion_matrix(rquat)[:3,:3]
+            assert np.allclose(rmat,R2)
+    else:
+        assert rotation.ndim==1
+        assert rotation.shape==(4,)
+        rquat = rotation
+        rmat = tf.transformations.quaternion_matrix(rquat)[:3,:3]
+
+        if not np.alltrue(np.isnan( rmat )):
+            assert is_rotation_matrix(rmat)
+
+    return rmat, rquat
+
 
 # main class
 
-class CameraModel:
+class CameraModel(object):
+    """an implementation of the Camera Model used by ROS
+
+    See http://www.ros.org/wiki/image_pipeline/CameraInfo for a
+    discussion of the coordinate system used here.
+
+    """
+    __slots__ = [
+        # basic properties
+        'name', # a string with the camera name
+        'width','height', # the size of the image
+
+        # extrinsic parameters
+        '_rquat', # the rotation quaternion, np.array with shape (4,)
+        '_camcenter', # the center of the camera, np.array with shape (3,)
+
+        # intrinsic parameters
+        '_opencv_compatible',
+        # these intrinsic parameters specified like OpenCV
+        'P', # used for undistorted<->normalized, np.array with shape (3,4)
+
+        # the distortion model
+        'K', # (distortion params) used for distorted<->normalized, np.array with shape (3,3)
+        'distortion', # (distortion params) the distortion, np.array with shape (5,1) or (8,1)
+        'rect', # (distortion params) the rectification, None or np.array with shape (3,3)
+        ]
+    AXIS_FORWARD = np.array((0,0,1),dtype=np.float)
+    AXIS_UP = np.array((0,-1,0),dtype=np.float)
+    AXIS_RIGHT = np.array((1,0,0),dtype=np.float)
     def __init__(self,
                  translation=None,
                  rotation=None,
                  intrinsics=None,
                  name=None,
                  ):
+        """Instantiate a Camera Model.
+
+        params
+        ------
+        translation : converted to np.array with shape (3,)
+          the translational position of the camera (note: not the camera center)
+        rotation : converted to np.array with shape (4,) or (3,3)
+          the camera orientation as a quaternion or a 3x3 rotation vector
+        intrinsics : a ROS CameraInfo message
+          the intrinsic camera calibration
+        name : string
+          the name of the camera
+        """
         if translation is None:
             translation = (0,0,0)
         if rotation is None:
             rotation = np.eye(3)
         if name is None:
             name = 'camera'
+
+        rmat, rquat = get_rotation_matrix_and_quaternion(rotation)
+
+        t = np.array(translation)
+        t.shape = 3,1
+        self._camcenter = -np.dot( rmat.T, t )[:,0]
+        del t
+
+        self._rquat = rquat
 
         if 1:
             # Initialize the camera calibration from a CameraInfo message.
@@ -138,29 +226,10 @@ class CameraModel:
             if np.allclose(self.rect,np.eye(3)):
                 self.rect = None
 
-        self.translation=np.array(translation,copy=True)
-        rotation = np.array(rotation)
-        if rotation.ndim==2:
-            assert rotation.shape==(3,3)
-            self.rot = rotation
-        else:
-            assert rotation.ndim==1
-            assert rotation.shape==(4,)
-            self.rot = tf.transformations.quaternion_matrix(rotation)[:3,:3]
-
-        if not np.alltrue(np.isnan( self.rot )):
-            assert is_rotation_matrix(self.rot)
-
+        #self.translation=np.array(translation,copy=True)
         self.name = name
 
-        t = np.array(self.translation)
-        t.shape = 3,1
-        self.Rt = np.hstack((self.rot,t))
-
         K = self.P[:3,:3]
-
-        self.pmat = np.dot( K, self.Rt )
-
         self._opencv_compatible = (K[0,1]==0)
 
         # And a final check
@@ -169,17 +238,45 @@ class CameraModel:
                 raise NotImplementedError('distortion/undistortion for skewed pixels not implemented')
 
     # -------------------------------------------------
-    # getters
+    # properties / getters
+
+    def get_rot(self):
+        R = tf.transformations.quaternion_matrix(self._rquat)[:3,:3]
+        return R
+    rot = property(get_rot)
+
+    def get_Rt(self):
+        t = np.array(self.translation)
+        t.shape = 3,1
+        Rt = np.hstack((self.rot,t))
+        return Rt
+    Rt = property(get_Rt)
+
+    def get_pmat(self):
+        K = self.P[:3,:3]
+        pmat = np.dot( K, self.Rt )
+        return pmat
+    pmat = property(get_pmat)
+
+    def get_translation(self):
+        C = np.array(self._camcenter)
+        C.shape = (3,1)
+        t = -np.dot(self.rot, C)[:,0]
+        return t
+    translation = property(get_translation)
 
     def get_rot_inv(self):
         return np.linalg.pinv(self.rot)
     rot_inv = property(get_rot_inv)
 
     def get_t_inv(self):
-        t = np.array(self.translation)
-        t.shape = 3,1
-        return -np.dot( self.rot_inv, t )
+        ti = np.array(self._camcenter)
+        ti.shape = 3,1
+        return ti
     t_inv = property(get_t_inv)
+
+    # -------------------------------------------------
+    # other getters
 
     def is_opencv_compatible(self):
         """True iff there is no skew"""
@@ -210,67 +307,29 @@ class CameraModel:
         return self.t_inv[:,0] # drop dimension
 
     def get_lookat(self,distance=1.0):
-        cam_coords = np.array([[0,0,distance]])
-        world_coords = self.project_camera_frame_to_3d( cam_coords )
+        world_coords = self.project_camera_frame_to_3d( [distance*self.AXIS_FORWARD] )
         world_coords.shape = (3,) # drop dimension
         return world_coords
 
     def get_up(self,distance=1.0):
-        cam_coords = np.array([[0,distance,0]])
-        world_coords = self.project_camera_frame_to_3d( cam_coords )
+        world_coords = self.project_camera_frame_to_3d( [distance*self.AXIS_UP] )
         world_coords.shape = (3,) # drop dimension
-        C = np.array(self.get_camcenter())
-        C.shape=(3,)
-        return world_coords-C
+        return world_coords-self._camcenter
 
     def get_right(self,distance=1.0):
         cam_coords = np.array([[distance,0,0]])
-        world_coords = self.project_camera_frame_to_3d( cam_coords )
+        world_coords = self.project_camera_frame_to_3d( [distance*self.AXIS_RIGHT] )
         world_coords.shape = (3,) # drop dimension
-        C = np.array(self.get_camcenter())
-        C.shape=(3,)
-        return world_coords-C
+        return world_coords-self._camcenter
 
     def get_view(self):
         return self.get_camcenter(), self.get_lookat(), self.get_up()
 
-    def get_copy_with_view(self, eye, lookat, up, name=None):
-        eye = np.array(eye); eye.shape=(3,)
-        lookat = np.array(lookat); lookat.shape=(3,)
-        up = np.array(up); up.shape=(3,)
-
-        lv = lookat-eye
-        mag = np.sqrt(np.sum(lv**2))
-        lv = lv/mag
-
-        mag = np.sqrt(np.sum(up**2))
-        up = up/mag
-
-        right = np.cross(lv,up)
-        up = np.cross( right, lv )
-
-        R = np.array([[right[0],  up[0], lv[0]],
-                      [right[1],  up[1], lv[1]],
-                      [right[2],  up[2], lv[2]]]).T
-
-        eye.shape = (3,1)
-        t = -np.dot(R,eye)
-
-        if name is None:
-            name = self.name
-
-        result = CameraModel(translation=t,
-                             rotation=R,
-                             intrinsics=self.get_intrinsics_as_msg(),
-                             name=name,
-                             )
-        return result
+    def get_rotation_quat(self):
+        return np.array(self._rquat)
 
     def get_rotation(self):
-        return np.array(self.rot,copy=True)
-
-    def get_translation(self):
-        return np.array(self.translation,copy=True)
+        return self.rot
 
     def get_K(self):
         return self.K
@@ -364,26 +423,92 @@ class CameraModel:
                                   )
             return camnew
 
-    def get_flipped_camera(self):
-        """return a copy of this camera looking in the opposite direction
+    # def get_flipped_camera(self):
+    #     """return a copy of this camera looking in the opposite direction
 
-        The returned camera has the same 3D->2D projection. (The
-        2D->3D projection results in a vector in the opposite
-        direction.)
-        """
+    #     The returned camera has the same 3D->2D projection. (The
+    #     2D->3D projection results in a vector in the opposite
+    #     direction.)
+    #     """
 
-        flip = -np.eye(3)
-        rnew = np.dot( flip, self.get_rotation())
+    #     #rold = self.get_rotation()
+    #     #q = tf.transformations.quaternion_from_matrix(rold)
+    #     q = self.get_rotation_quat()
+    #     cosa2 = q[3]
+    #     theta=2*np.arccos(cosa2)
+    #     axis = q[:3]
 
-        C = self.get_camcenter()
-        tnew = -np.dot(rnew, C)
-        i = self.get_intrinsics_as_msg()
-        camnew = CameraModel( translation = tnew,
-                              rotation = rnew,
-                              intrinsics = i,
-                              name = self.name + '_flip',
-                              )
-        return camnew
+    #     eps = 1e16
+
+    #     if 1:
+    #         newtheta = theta+np.pi
+    #         axlen = np.sqrt( np.sum(axis**2 ))
+    #         if axlen > eps:
+    #             newaxis = axis
+    #         else:
+    #             newaxis = np.array((1,0,0)) # arbirtrary direction
+    #     else:
+    #         if theta > eps:
+    #             newtheta = theta
+    #             newaxis = -axis
+    #         else:
+    #             0
+
+    #     qnew = tf.transformations.quaternion_about_axis(newtheta, newaxis)
+    #     print 'theta, axis, q', theta, axis, q
+    #     print 'newtheta, newaxis, qnew', newtheta, newaxis, qnew
+    #     #qnew = tf.transformations.quaternion_from_matrix(rold)
+    #     rnew = tf.transformations.quaternion_matrix(qnew)[:3,:3]
+    #     if not is_rotation_matrix(rnew):
+    #         print 'impossible?',theta, newaxis
+    #         assert 1==0
+
+    #     # flip = -np.eye(3)
+    #     # rnew = np.dot( flip, rnew)
+    #     i = self.get_intrinsics_as_msg()
+
+    #     C = self.get_camcenter()
+    #     tnew = -np.dot(rnew, C)
+    #     camnew = CameraModel( translation = tnew,
+    #                           rotation = rnew,
+    #                           intrinsics = i,
+    #                           name = self.name + '_flip',
+    #                           )
+    #     return camnew
+
+    def get_view_camera(self, eye, lookat, up=None):
+        """return a copy of this camera with new extrinsic coordinates"""
+
+        eye = np.array(eye); eye.shape=(3,)
+        lookat = np.array(lookat); lookat.shape=(3,)
+        if up is not None:
+            raise NotImplementedError('setting up vector not implemented')
+
+        direction = lookat-eye
+        mag = np.sqrt(np.sum(direction**2))
+        direction = direction/mag
+
+        zero_axis = np.array([0,0,-1]) # the 'no rotation' vector
+        cos_theta = np.dot( zero_axis, direction )
+        cos_theta = np.clip(cos_theta, -1.0, 1.0)
+        theta = np.arccos(cos_theta)
+
+        axis = np.cross(zero_axis, direction)
+        mag = np.sqrt(np.sum(axis**2))
+        axis = axis/mag
+
+        quat = tf.transformations.quaternion_about_axis(theta,axis)
+        R = tf.transformations.quaternion_matrix(quat)[:3,:3]
+
+        eye.shape = (3,1)
+        t = -np.dot(R,eye)
+
+        result = CameraModel(translation=t,
+                             rotation=R,
+                             intrinsics=self.get_intrinsics_as_msg(),
+                             name=self.name,
+                             )
+        return result
 
     # --------------------------------------------------
     # image coordinate operations
@@ -498,7 +623,7 @@ class CameraModel:
         xpp = xp*barrel + p1*a1 + p2*(r2+2*(xp*xp))
         ypp = yp*barrel + p1*(r2+2*(yp*yp)) + p2*a1;
 
-        K = self.K
+        K = self.get_K()
         u = xpp*K[0,0] + K[0,2]
         v = ypp*K[1,1] + K[1,2]
         return np.vstack( (u,v) ).T
@@ -506,7 +631,7 @@ class CameraModel:
     # --------------------------------------------------
     # 3D <-> image coordinate operations
 
-    def project_pixel_to_3d_ray(self, nparr, distorted=True, distance=1.0 ):
+    def project_pixel_to_camera_frame(self, nparr, distorted=True, distance=1.0 ):
         if distorted:
             nparr = self.undistort(nparr)
         # now nparr is undistorted (aka rectified) 2d point data
@@ -525,9 +650,12 @@ class CameraModel:
         ray_cam = np.vstack((x,y,z))
         rl = np.sqrt(np.sum(ray_cam**2,axis=0))
         ray_cam = distance*(ray_cam/rl) # normalize then scale
+        return ray_cam.T
 
+    def project_pixel_to_3d_ray(self, nparr, distorted=True, distance=1.0 ):
+        ray_cam = self.project_pixel_to_camera_frame( nparr, distorted=distorted, distance=distance )
         # transform to world frame
-        return self.project_camera_frame_to_3d( ray_cam.T )
+        return self.project_camera_frame_to_3d( ray_cam )
 
     def project_3d_to_pixel(self, pts3d, distorted=True):
         pts3d = np.array(pts3d,copy=False)
@@ -553,14 +681,14 @@ class CameraModel:
         return np.vstack((u,v)).T
 
     def project_camera_frame_to_3d(self, pts3d):
-        cam_coords = pts3d.T
+        cam_coords = np.array(pts3d).T
         t = self.get_translation()
         t.shape = (3,1)
         world_coords = np.dot(self.rot_inv, cam_coords - t)
         return world_coords.T
 
     def project_3d_to_camera_frame(self, pts3d):
-        pts3d = np.array(pts3d,copy=False)
+        pts3d = np.array(pts3d)
         assert pts3d.ndim==2
         assert pts3d.shape[1]==3
 
