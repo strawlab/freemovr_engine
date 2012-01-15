@@ -10,7 +10,8 @@ import sensor_msgs
 
 import numpy as np
 
-from camera_model import CameraModel, point_msg_to_tuple, parse_rotation_msg
+from camera_model import CameraModel
+from camera_model.camera_model import point_msg_to_tuple, parse_rotation_msg
 import camera_model
 
 import cv
@@ -467,10 +468,12 @@ def check_view(cam_opts):
     cam_orig = _build_test_camera(**cam_opts)
     eye = (10,20,30)
     lookat = (11,20,30) # must be unit length for below to work
-    cam_new = cam_orig.get_view_camera(eye, lookat)
+    up = (0,-1,0)
+    cam_new = cam_orig.get_view_camera(eye, lookat, up)
     eye2, lookat2, up2 = cam_new.get_view()
     assert np.allclose( eye, eye2)
     assert np.allclose( lookat, lookat2 )
+    assert np.allclose( up, up2 )
 
 def test_camcenter():
     all_options = get_default_options()

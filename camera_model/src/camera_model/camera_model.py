@@ -15,6 +15,10 @@ import warnings
 def point_msg_to_tuple(d):
     return d.x, d.y, d.z
 
+def normalize(vec):
+    mag = np.sqrt(np.sum(vec**2))
+    return vec/mag
+
 def parse_rotation_msg(rotation, force_matrix=False):
     # rotation could either be a quaternion or a 3x3 matrix
 
@@ -480,27 +484,18 @@ class CameraModel(object):
 
     def get_view_camera(self, eye, lookat, up=None):
         """return a copy of this camera with new extrinsic coordinates"""
-
         eye = np.array(eye); eye.shape=(3,)
         lookat = np.array(lookat); lookat.shape=(3,)
-        if up is not None:
-            raise NotImplementedError('setting up vector not implemented')
+        if up is None:
+            up = np.array((0,-1,0))
+        lv = lookat - eye
+        f = normalize(lv)
+        s = normalize( np.cross( f, up ))
+        u = normalize( np.cross( f, s ))
 
-        direction = lookat-eye
-        mag = np.sqrt(np.sum(direction**2))
-        direction = direction/mag
-
-        zero_axis = np.array([0,0,-1]) # the 'no rotation' vector
-        cos_theta = np.dot( zero_axis, direction )
-        cos_theta = np.clip(cos_theta, -1.0, 1.0)
-        theta = np.arccos(cos_theta)
-
-        axis = np.cross(zero_axis, direction)
-        mag = np.sqrt(np.sum(axis**2))
-        axis = axis/mag
-
-        quat = tf.transformations.quaternion_about_axis(theta,axis)
-        R = tf.transformations.quaternion_matrix(quat)[:3,:3]
+        R = np.array( [[ s[0], u[0], f[0]],
+                       [ s[1], u[1], f[1]],
+                       [ s[2], u[2], f[2]]]).T
 
         eye.shape = (3,1)
         t = -np.dot(R,eye)
@@ -812,3 +807,9 @@ def load_camera_from_pmat( pmat, width=None, height=None, name='cam', _depth=0 )
                          intrinsics = i,
                          name=name)
     return result
+
+def load_default_camera( ):
+    pmat = np.array( [[ 300,   0, 320, 0],
+                      [   0, 300, 240, 0],
+                      [   0,   0,   1, 0]])
+    return load_camera_from_pmat( pmat, width=640, height=480, name='cam')
