@@ -13,7 +13,6 @@
 #include <osg/CullSettings>
 #include <osg/TextureCubeMap>
 #include <osg/TexMat>
-#include <osg/MatrixTransform>
 #include <osg/Light>
 #include <osg/LightSource>
 #include <osg/PolygonOffset>
@@ -47,7 +46,6 @@
 #include <ros/console.h>
 #include "sensor_msgs/CameraInfo.h"
 #include "geometry_msgs/Transform.h"
-#include "vros_display/MatrixTransform.h"
 
 #include <boost/program_options.hpp>
 
@@ -63,7 +61,6 @@ public:
     void setup_viewer(std::string json_config, int& width, int& height);
     int run();
     void gotTfCallback(const geometry_msgs::Transform& msg );
-    void gotMatrixTfCallback(const vros_display::MatrixTransform& msg );
     void gotCameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& msg);
     void set_tf_mode(std::string tf_mode);
 private:
@@ -255,26 +252,6 @@ void tf2osgview(const geometry_msgs::Transform& msg, osg::Vec3& eye, osg::Quat& 
     rotation.set( rmat );
 }
 
-void matrixtf2osgview(const vros_display::MatrixTransform& msg, osg::Vec3& eye, osg::Quat& rotation) {
-    osg::Vec3d send_t(msg.translation.x, msg.translation.y, msg.translation.z);
-
-    osg::Matrix rnew = osg::Matrix( msg.rotation[0], msg.rotation[3], msg.rotation[6], 0.0,
-                                    msg.rotation[1], msg.rotation[4], msg.rotation[7], 0.0,
-                                    msg.rotation[2], msg.rotation[5], msg.rotation[8], 0.0,
-                                    0.0,             0.0,             0.0,             1.0);
-
-    osg::Matrix rnewinv = osg::Matrix::inverse(rnew);
-    eye = -send_t*rnewinv;
-
-    osg::Matrix flip = osg::Matrix( 1.0, 0.0, 0.0, 0.0,
-                                    0.0,-1.0, 0.0, 0.0,
-                                    0.0, 0.0,-1.0, 0.0,
-                                    0.0, 0.0, 0.0, 1.0);
-    osg::Matrix rinv = rnew*flip;
-    osg::Matrix rmat = osg::Matrix::inverse(rinv);
-    rotation.set( rmat );
-}
-
 MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
 {
 
@@ -426,12 +403,6 @@ MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
     tf_topic = sub2.getTopic();
     ROS_INFO_STREAM( "subscribed to topic: " << tf_topic);
 
-    std::string matrix_tf_topic = camera+"/matrix_tf";
-    ROS_INFO_STREAM( "trying for topic: " << matrix_tf_topic);
-	sub3 = _node_handle.subscribe(matrix_tf_topic, 10, &MyNode::gotMatrixTfCallback, this);
-    matrix_tf_topic = sub3.getTopic();
-    ROS_INFO_STREAM( "subscribed to topic: " << matrix_tf_topic);
-
     std::string transform_topic = camera+"/tf";
     pub1 = _node_handle.advertise<geometry_msgs::Transform>(transform_topic, 10);
     ROS_INFO_STREAM( "publishing extrinsic parameters to topic: " << pub1.getTopic());
@@ -581,33 +552,6 @@ void MyNode::gotTfCallback(const geometry_msgs::Transform& msg )
 
         osg::Quat rotation;
         tf2osgview( msg, eye, rotation );
-
-#if 0
-        // OSG 3.x
-        _manipulator->setTransformation( eye, rotation );
-#else
-        // OSG 2.8.x
-        double _distance = _manipulator->getDistance();
-        osg::Vec3d _center = eye + rotation * osg::Vec3d( 0., 0., -_distance );
-        _manipulator->setCenter(_center);
-        _manipulator->setRotation(rotation);
-#endif
-
-    }
-}
-
-void MyNode::gotMatrixTfCallback(const vros_display::MatrixTransform& msg )
-{
-    if (_tf_mode == std::string("download")) {
-        //ROS_INFO_STREAM( "got transform message, setting extrinsic parameters" );
-        osg::Vec3 eye;
-
-        //osg::Vec3 center;
-        //osg::Vec3 up;
-        //tf2osgview( msg, eye, center, up );
-
-        osg::Quat rotation;
-        matrixtf2osgview( msg, eye, rotation );
 
 #if 0
         // OSG 3.x
