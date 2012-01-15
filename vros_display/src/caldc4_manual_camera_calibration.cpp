@@ -534,6 +534,14 @@ void MyNode::setup_viewer(std::string json_config, int& width, int& height) {
 		}
 
 		traits->windowDecoration = false;
+		tmp_json = json_object_get(root, "windowDecoration");
+		if (json_is_true(tmp_json)) {
+            // hmm, this doesn't seem to work?
+			traits->windowDecoration = true;
+		} else if (json_is_false(tmp_json)) {
+			traits->windowDecoration = false;
+		}
+
 		traits->overrideRedirect = true;
 		traits->doubleBuffer = true;
 		traits->sharedContext = 0;
