@@ -683,6 +683,7 @@ class CameraModel(object):
         return np.vstack((u,v)).T
 
     def project_camera_frame_to_3d(self, pts3d):
+        """take 3D coordinates in camera frame and convert to world frame"""
         cam_coords = np.array(pts3d).T
         t = self.get_translation()
         t.shape = (3,1)
@@ -690,6 +691,7 @@ class CameraModel(object):
         return world_coords.T
 
     def project_3d_to_camera_frame(self, pts3d):
+        """take 3D coordinates in world frame and convert to camera frame"""
         pts3d = np.array(pts3d)
         assert pts3d.ndim==2
         assert pts3d.shape[1]==3
