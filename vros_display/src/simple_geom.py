@@ -276,6 +276,64 @@ class Sphere(ModelBase):
         assert result.shape==inshape
         return result
 
+def get_distance_between_point_and_ray( c, a, b ):
+    """return distance between point c and ray from a in direction of point b.
+
+    c is Nx3 array of points
+    a is Nx3 array of points
+    b is Nx3 array of points
+
+    return Nx3 array of points
+    """
+    c = np.array(c,copy=False)
+    assert c.ndim==2
+    assert c.shape[1]==3
+    inshape = c.shape
+
+    a = np.array(a,copy=False)
+    assert a.ndim==2
+    assert a.shape[1]==3
+    assert a.shape==inshape
+
+    b = np.array(b,copy=False)
+    assert b.ndim==2
+    assert b.shape[1]==3
+    assert b.shape==inshape
+
+    c = c.T
+    a = a.T
+    b = b.T
+
+    # Move so that sphere center is at (0,0).
+    ax = a[0] - c[0]
+    ay = a[1] - c[1]
+    az = a[2] - c[2]
+
+    bx = b[0] - c[0]
+    by = b[1] - c[1]
+    bz = b[2] - c[2]
+
+    del a, b
+
+    # Now create vector between points a and b
+    sx = bx-ax
+    sy = by-ay
+    sz = bz-az
+
+    # See sympy_line_point.py
+    t = -(ax*sx + ay*sy + az*sz)/(sx**2 + sy**2 + sz**2)
+    t = np.max(t,0) # get point a if t opposite from b
+
+    # find the point
+    x = ax+sx*t
+    y = ay+sy*t
+    z = az+sz*t
+    verts = np.vstack((x,y,z))
+
+    # now find the distance
+    dist = np.sqrt(np.sum((verts-c)**2,axis=0))
+    return dist
+
 class Geometry:
     def __init__(self, filename):
         geom_dict = json.loads( open(filename).read() )
