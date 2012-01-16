@@ -103,7 +103,7 @@ def create_display2tcs(geometry_filename,
             plot_poly( ax, vdisp_params.get('viewport') )
 
 
-            ax = fig.add_subplot(212)
+            ax = fig.add_subplot(212,sharex=ax,sharey=ax)
             ax.imshow( this_tcs[:,:,1], vmin=0, vmax=1 )
             ax.plot( uv[:,0], uv[:,1], 'k.' )
             ax.set_title(display.get_name() + ', tc1')
@@ -114,19 +114,19 @@ def create_display2tcs(geometry_filename,
                 fig = plt.figure()
                 uv = get_verts(display,geom)
 
-                ax = fig.add_subplot(311)
+                ax = fig.add_subplot(311,sharex=ax,sharey=ax)
                 ax.imshow( this_wcs[:,:,0] )
                 ax.plot( uv[:,0], uv[:,1], 'k.' )
                 ax.set_title(display.get_name() + ', wc0')
                 plot_poly( ax, vdisp_params.get('viewport') )
 
-                ax = fig.add_subplot(312)
+                ax = fig.add_subplot(312,sharex=ax,sharey=ax)
                 ax.imshow( this_wcs[:,:,1] )
                 ax.plot( uv[:,0], uv[:,1], 'k.' )
                 ax.set_title(display.get_name() + ', wc0')
                 plot_poly( ax, vdisp_params.get('viewport') )
 
-                ax = fig.add_subplot(313)
+                ax = fig.add_subplot(313,sharex=ax,sharey=ax)
                 ax.imshow( this_wcs[:,:,2] )
                 ax.plot( uv[:,0], uv[:,1], 'k.' )
                 ax.set_title(display.get_name() + ', wc0')
