@@ -44,6 +44,18 @@ def plot_setup(geometry_filename,
         ax.set_zlabel('z')
 
     if 1:
+        fig = plt.figure()
+        n = len(displays)
+        for i in range(n):
+            display = displays[i]
+            ax = fig.add_subplot(n,1,i+1)
+            pts = display.project_3d_to_pixel(verts)
+            ax.plot(pts[:,0], pts[:,1], 'ko')
+            ax.set_xlim([0,display.width])
+            ax.set_ylim([0,display.height])
+            ax.set_title(display.name)
+
+    if 1:
         plt.show()
 
 if __name__ == '__main__':
