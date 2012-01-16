@@ -1,121 +1,295 @@
+# ROS imports
+import roslib; roslib.load_manifest('vros_display')
+
 import scipy.optimize
 import camera_model
+import simple_geom
 import numpy as np
 import cv
 
-def numpy2opencv_image(arr):
-    arr = np.array(arr)
-    assert arr.ndim==2
-    if arr.dtype in [np.float32]:
-        result = cv.CreateMat( arr.shape[0], arr.shape[1], cv.CV_32FC1)
-    elif arr.dtype in [np.float64, np.float]:
-        result = cv.CreateMat( arr.shape[0], arr.shape[1], cv.CV_64FC1)
-    elif arr.dtype in [np.uint8]:
-        result = cv.CreateMat( arr.shape[0], arr.shape[1], cv.CV_8UC1)
-    else:
-        raise ValueError('unknown numpy dtype "%s"'%arr.dtype)
-    for i in range(arr.shape[0]):
-        for j in range(arr.shape[1]):
-            result[i,j] = arr[i,j]
-    return result
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from plot_utils import get_3d_verts, plot_camera
 
-def opencv_image2numpy( cvimage ):
-    pyobj = np.asarray(cvimage)
-    if pyobj.ndim == 2:
-        # new OpenCV version
-        result = pyobj
-    else:
-        # old OpenCV, so hack this
-        width = cvimage.width
-        height = cvimage.height
-        assert cvimage.channels == 1
-        assert cvimage.nChannels == 1
-        assert cvimage.depth == 32
-        assert cvimage.origin == 0
-        result = np.empty( (height,width), dtype=np.float )
-        for i in range(height):
-            for j in range(width):
-                result[i,j] = cvimage[i,j]
-    return result
+import roslib; roslib.load_manifest('vros_display')
+from tf.transformations import quaternion_from_matrix, \
+    quaternion_matrix, rotation_from_matrix, rotation_matrix, \
+    quaternion_about_axis
+from cvnumpy import  numpy2opencv_image, opencv_image2numpy, \
+    rodrigues2matrix, matrix2rodrigues
 
-def rodrigues2matrix(params):
-    rvec = np.array(params)
-    rvec.shape = (1,3)
-    rvec = numpy2opencv_image(rvec.astype(np.float))
-    Rmat = numpy2opencv_image(np.empty( (3,3) ))
-    cv.Rodrigues2(rvec, Rmat)
-    Rmat = opencv_image2numpy(Rmat)
-    return Rmat
+def matrix2quaternion( R ):
+    rnew = np.eye(4)
+    rnew[:3,:3] = R
+    return quaternion_from_matrix(R)
 
-class ObjectiveFunction:
-    def __init__(self,X3d,x2d,bagfile,name=None):
-        if name is None:
-            name = 'fit'
-        self.name = name
+def quaternion2matrix( q ):
+    R =  quaternion_matrix(q)
+    return R[:3,:3]
+
+class ObjectiveFunctionFancy:
+    """Find pose using world-space object point relations as the error term.
+
+    For a similar idea, see 'Pose Estimation using Four Corresponding
+    Points' by Liu and Wong, 1998. This method uses arbitrary numbers
+    of points and (so far) does not use the Gauss-Newton method nor
+    require calculation of a Jacobian, although those things would be
+    straitforward from here.
+    """
+
+    def __init__(self,base_cam,X3d,x2d):
+        self.base_cam = base_cam
         self.X3d = X3d
         self.x2d = x2d
-        self.base_cam = camera_model.load_camera_from_bagfile( bagfile, extrinsics_required=False )
         self.intrinsics = self.base_cam.get_intrinsics_as_msg()
+        self._obj_dist = []
+        self.npts = len(self.X3d)
+
+        self.d_actual = self.compute_distance_vector( self.X3d )
+        self.alpha = 1.0
+
+    def compute_distance_vector(self, pts ):
+        result = []
+        for i in range(self.npts):
+            for j in range(self.npts):
+                if i<j:
+                    d = pts[i]-pts[j]
+                    result.append(np.sqrt(np.sum(d**2)))
+        return np.array(result)
+
+    def compute_shape_scalar(self, pts):
+        # Compute some value that changes based on the chirality of
+        # the object. Here we use eqn 4 from Liu and Wong.
+        v21 = pts[2]-pts[1]
+        v23 = pts[2]-pts[3]
+        v20 = pts[2]-pts[0]
+        return -np.dot(np.cross(v21,v23),v20)
+
+    def get_start_guess(self):
+        # pts = camera.project_pixel_to_3d_ray(self.x2d)
+        # vecs = pts - camera.get_camcenter()
+        # distances = np.sqrt(np.sum(vecs**2,axis=1))
+
+        return np.ones( (len(self.x2d),) )
 
     def make_cam_from_params(self, params):
-        x,y,z, rx, ry, rz = params
-        translation = (x,y,z)
-        rmat = rodrigues2matrix( (rx,ry,rz))
-        cam_model = camera_model.CameraModel( translation=translation,
-                                              rotation=rmat,
-                                              intrinsics=self.intrinsics,
-                                              name=self.name)
-        return cam_model
+
+        # find location of camcenter by finding point of best fit with
+        # N spheres of radius params each centered at a point at
+        # self.X3d
+
+        raise NotImplementedError()
 
     def err(self, params):
         #x,y,z, rx, ry, rz = params
-        cam_model = self.make_cam_from_params( params)
+        camera = self.make_cam_from_params( params)
+        pts_test = camera.project_pixel_to_3d_ray(self.x2d, distance=params)
+        d_test = self.compute_distance_vector(pts_test)
 
-        found = cam_model.project_3d_to_pixel(self.X3d)
-        orig = self.x2d
-        reproj_error = np.sqrt(np.sum((found-orig)**2, axis=1))
-        cum = np.sum(reproj_error)
+        shape_test = self.compute_shape_scalar(pts_test)
 
+        err_d = np.sum((d_test - self.d_actual)**2)
+        err_shape = abs(shape_test - self.shape_actual)
+        return (err_d + self.alpha*err_shape)
+
+class ObjectiveFunction:
+    """Find pose using reprojection error and shape term"""
+
+    def __init__(self,base_cam,X3d,x2d,geom=None):
+        self.base_cam = base_cam
+        self.X3d = X3d
+        self.x2d = x2d
+        self.intrinsics = self.base_cam.get_intrinsics_as_msg()
+        self._obj_dist = []
+        self.npts = len(self.X3d)
+        if geom is not None:
+            self.debug = True
+        else:
+            self.debug = False
+        if self.debug:
+            plt.ion()
+            self.fig = plt.figure()
+            self.ax3d = self.fig.add_subplot(211, projection='3d')
+            self.ax2d = self.fig.add_subplot(212)
+            self.ax3d.set_xlabel('x')
+            self.ax3d.set_ylabel('y')
+            self.ax3d.set_zlabel('z')
+            self.geom = geom
+            self.plot_verts = get_3d_verts(self.geom)
+
+    def get_start_guess(self):
+        if 1:
+            rod = matrix2rodrigues(self.base_cam.get_rotation())
+            t = self.base_cam.get_translation()
+            t.shape= (3,)
+            rod.shape=(3,)
+            return np.array(list(t)+list(rod),dtype=np.float)
+
+        R = np.eye(4)
+        R[:3,:3] = self.base_cam.get_rotation()
+
+        angle, direction, point = rotation_from_matrix(R)
+        q = quaternion_about_axis(angle,direction)
+        #q = matrix2quaternion(R)
+        if 1:
+            R2 = rotation_matrix(angle, direction, point)
+            #R2 = quaternion2matrix( q )
+            try:
+                assert np.allclose(R, R2)
+            except:
+                print
+                print 'R'
+                print R
+                print 'R2'
+                print R2
+                raise
+
+        C = self.base_cam.get_camcenter()
+        result = list(C) + list(q)
+        return result
+
+    def make_cam_from_params(self, params):
+        if 1:
+            t = params[:3]
+            rod = params[3:]
+            rmat = rodrigues2matrix( rod )
+            cam_model = camera_model.CameraModel( translation=t,
+                                                  rotation=rmat,
+                                                  intrinsics=self.intrinsics)
+            return cam_model
+
+        C = params[:3]
+        quat = params[3:]
+        qmag = np.sqrt(np.sum(quat**2))
+        quat = quat/qmag
+
+        R,rquat=camera_model.get_rotation_matrix_and_quaternion(quat)
+
+        t = -np.dot(R, C)
+        cam_model = camera_model.CameraModel( translation=t,
+                                              rotation=quat,
+                                              intrinsics=self.intrinsics)
+        return cam_model
+
+    def err(self, params):
+        camera = self.make_cam_from_params( params)
+        found = camera.project_3d_to_pixel(self.X3d)
+        each_err = np.sqrt(np.sum((found - self.x2d)**2,axis=1))
+
+        me = np.mean(each_err)
         if 0:
-            print 'X3d'
-            print self.X3d
+            print
+            print 'params', params
             print 'found'
-            print found
+            print np.hstack( (found, self.x2d, each_err[:,np.newaxis]) )
+            print 'mean reproj error: ',me
+            print
 
-            print 'orig'
-            print orig
+        if self.debug:
+            assert len(each_err)==len(self.x2d)
+            self.ax3d.cla()
+            verts = self.plot_verts
+            self.ax3d.plot( verts[:,0], verts[:,1], verts[:,2], 'ko' )
+            plot_camera( self.ax3d, camera )
 
-            print 'reproj_error'
-            print reproj_error
-            print 'cum',cum
-        return cum
+            self.ax2d.cla()
+            self.ax2d.plot( self.x2d[:,0], self.x2d[:,1], 'go', mfc='none')
+            self.ax2d.plot( found[:,0], found[:,1], 'rx', mfc='none')
+            for i in range( len(found)):
+                self.ax2d.plot( [found[i,0],self.x2d[i,0]],
+                                [found[i,1],self.x2d[i,1]], 'k-' )
 
-def fit_extrinsics_old(bagfile_intrinsics,X3d,x2d,name=None):
 
-    if name is None:
-        name='fit'
+            plt.draw()
+        if 1:
+            df = found[1:]-found[:-1]
+            #print 'found'
+            #print found
+            #print 'df'
+            #print df
+            bunching_penalty = 1.0/np.sum(df**2)
+        #print 'mean reproj error:  % 20.1f   bunching penalty: % 20.1f '%(me,bunching_penalty)
+        #return me + bunching_penalty
+        return me
 
-    best_error = np.inf
-    best_result = None
+def fit_extrinsics_iterative(base_cam,X3d,x2d, geom=None):
+    """find a camera with a better extrinsics than the input camera"""
+    prestages = True
+    if prestages:
+        # pre-stage 1 - point the camera in the right direction
+        world = np.array([np.mean( X3d, axis=0 )])
+        image = np.array([np.mean( x2d, axis=0 )])
+        obj = ObjectiveFunction(base_cam, world, image, geom=geom)
+        result = scipy.optimize.fmin( obj.err, obj.get_start_guess(),ftol=5.0)
+        base_cam = obj.make_cam_from_params(result)
 
-    thetas = [0, np.pi/2, np.pi, 3*np.pi/2]
-    for rx in thetas:
-        for ry in thetas:
-            for rz in thetas:
-                start_params = [3, 0.0, 0.5,  rx, ry, rz]
-                obj = ObjectiveFunction(X3d,x2d,bagfile_intrinsics,
-                                        name=name)
-                result = scipy.optimize.fmin( obj.err, start_params )
-                if obj.err(result) < best_error:
-                    best_error = obj.err(result)
-                    best_result = result
+    if prestages:
+        # pre-stage 2 - get scale approximately OK
+        world = X3d[:2,:]
+        image = x2d[:2,:]
+        obj = ObjectiveFunction(base_cam, world, image, geom=geom)
+        result = scipy.optimize.fmin( obj.err, obj.get_start_guess())
+        base_cam = obj.make_cam_from_params(result)
+
+    if prestages:
+        # pre-stage 3 - start rotations
+        world = X3d[:3,:]
+        image = x2d[:3,:]
+        obj = ObjectiveFunction(base_cam, world, image, geom=geom)
+        result = scipy.optimize.fmin( obj.err, obj.get_start_guess())
+        base_cam = obj.make_cam_from_params(result)
+
+    # now, refine our guess, held in base_cam
+
+    last_fval = np.inf
+    for i in range(10):
+        cam = obj.make_cam_from_params(result)
+        obj = ObjectiveFunction(cam, X3d, x2d, geom=geom)
+        results = scipy.optimize.fmin( obj.err, obj.get_start_guess(),
+                                       full_output=True )
+        result, fval = results[:2]
+        print 'fval, last_fval',fval, last_fval
+        if fval > last_fval:
+            # we're not getting better
+            break
+        eps = 1e-2 # this is pixel reprojection error here. don't need better than this.
+        if abs(fval-last_fval) < eps:
+            break
+        last_fval=fval
+    print 'did %d iterations'%(i+1,)
+
+    if 0:
+        obj = ObjectiveFunction(base_cam, X3d, x2d)#, geom=geom)
+        results = scipy.optimize.anneal( obj.err, obj.get_start_guess(),
+                                         learn_rate=0.5,
+                                         full_output=True, maxeval=50000, T0=1000.0,
+                                         maxiter=10000,
+                                         #disp=True,
+                                         )
+        #print 'results',results
+        result = results[0]
+        if 1:
+            result, Jmin, T, feval, iters, accept, retval = results
+            print 'Jmin',Jmin
+            print 'T',T
+            print 'fevel',feval
+            print 'iters',iters
+            print 'accept',accept
+            print 'retval',retval
     cam = obj.make_cam_from_params(result)
 
+    if 1:
+        found = cam.project_3d_to_pixel(X3d)
+        orig = x2d
+        reproj_error = np.sqrt(np.sum((found-orig)**2, axis=1))
+        cum = np.mean(reproj_error)
+
+        mean_cam_z = np.mean(cam.project_3d_to_camera_frame(X3d)[:,2])
+
+    cam.name = base_cam.name
     result = dict(
-        start_params = start_params ,
-        start_error = obj.err( start_params ),
-        final_error = obj.err( result ),
-        final_params = result,
+        mean_err=cum,
+        mean_cam_z = mean_cam_z,
         cam = cam)
     return result
 
@@ -138,18 +312,26 @@ def mk_image_points(x2d):
             ipts[i,j] = x2d[i,j]
     return ipts
 
-def fit_extrinsics(bagfile_intrinsics,X3d,x2d,name=None):
+def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     assert x2d.ndim==2
     assert x2d.shape[1]==2
 
     assert X3d.ndim==2
     assert X3d.shape[1]==3
 
+    if 1:
+        im = np.zeros( (base_cam.height, base_cam.width), dtype=np.uint8 )
+        for xy in x2d:
+            x,y=xy
+            im[y-3:y+3,x-3:x+3] = 255
+        fname = 'x2d_'+base_cam.name + '.png'
+        fname = fname.replace('/','-')
+        scipy.misc.imsave(fname,im)
+        print 'saved pt debug image to',fname
+
     ipts = mk_image_points(x2d)
     opts = mk_object_points(X3d)
 
-    base_cam = camera_model.load_camera_from_bagfile( bagfile_intrinsics,
-                                                      extrinsics_required=False )
 
     K = numpy2opencv_image(base_cam.get_K())
     D = numpy2opencv_image(base_cam.get_D())
@@ -166,11 +348,23 @@ def fit_extrinsics(bagfile_intrinsics,X3d,x2d,name=None):
     rvec = opencv_image2numpy( rvec ); rvec.shape=(3,)
     tvec = opencv_image2numpy( tvec ); tvec.shape=(3,)
 
-    rmat = rodrigues2matrix( rvec )
-    cam_model = camera_model.CameraModel( translation=tvec,
-                                          rotation=rmat,
-                                          intrinsics=base_cam.get_intrinsics_as_msg(),
-                                          name=base_cam.name)
+    print 'rvec',rvec
+    # we get two possible cameras back, figure out which one has objects in front
+    rmata = rodrigues2matrix( rvec )
+    cam_model_a = camera_model.CameraModel( translation=tvec,
+                                            rotation=rmata,
+                                            intrinsics=base_cam.get_intrinsics_as_msg(),
+                                            name=base_cam.name)
+    mza = np.mean(cam_model_a.project_3d_to_camera_frame(X3d)[:,2])
+
+    # don't bother with second - it does not have a valid rotation matrix
+
+    if 1:
+        founda = cam_model_a.project_3d_to_pixel(X3d)
+        erra = np.mean(np.sqrt(np.sum((founda-x2d)**2, axis=1)))
+
+        print 'erra',erra
+        cam_model = cam_model_a
 
     if 1:
         found = cam_model.project_3d_to_pixel(X3d)
@@ -178,8 +372,20 @@ def fit_extrinsics(bagfile_intrinsics,X3d,x2d,name=None):
         reproj_error = np.sqrt(np.sum((found-orig)**2, axis=1))
         cum = np.mean(reproj_error)
 
+        mean_cam_z = np.mean(cam_model.project_3d_to_camera_frame(X3d)[:,2])
+
+    if (mean_cam_z < 0 or cum > 20) and 0:
+        # hmm, we have a flipped view of the camera.
+        print '-'*80,'HACK ON'
+        center, lookat, up = cam_model.get_view()
+        #cam2 = cam_model.get_view_camera( -center, lookat, -up )
+        cam2 = cam_model.get_view_camera( center, lookat, up )
+        cam2.name=base_cam.name
+        return fit_extrinsics_iterative(cam2,X3d,x2d, geom=geom)
+
     result = dict(cam=cam_model,
                   mean_err=cum,
+                  mean_cam_z = mean_cam_z,
                   )
     return result
 
