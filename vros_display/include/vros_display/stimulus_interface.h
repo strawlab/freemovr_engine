@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <osg/Group>
+#include <osg/PositionAttitudeTransform>
 
 class StimulusInterface
 {
@@ -20,7 +21,7 @@ class StimulusInterface
   virtual osg::ref_ptr<osg::Group> get_2d_hud() {return 0;}
   virtual std::string name() const = 0;
 
-  virtual void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {}
+  virtual void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
 
   // what topics does the plugin subscribe to?
   virtual std::vector<std::string> get_topic_names() const = 0;
@@ -35,6 +36,8 @@ class StimulusInterface
   // your derived class can call this if you want to add a skybox
   virtual void add_skybox(osg::ref_ptr<osg::Group> top, std::string image_basepath, std::string image_extension);
   virtual void add_default_skybox(osg::ref_ptr<osg::Group> top);
+
+  osg::ref_ptr<osg::PositionAttitudeTransform> _skybox_pat;
 
  private:
   std::string _vros_display_base_path;

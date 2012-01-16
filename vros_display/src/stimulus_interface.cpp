@@ -30,7 +30,7 @@ std::string mkfname(std::string basepath, std::string middle, std::string extens
   return base.string();
 }
 
-StimulusInterface::StimulusInterface()
+StimulusInterface::StimulusInterface() :  _skybox_pat(NULL)
 {
 }
 
@@ -40,6 +40,13 @@ StimulusInterface::~StimulusInterface()
 
 void StimulusInterface::set_vros_display_base_path(std::string bp) {
   _vros_display_base_path = bp;
+}
+
+void StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
+  if (_skybox_pat.valid()) {
+    // this is a skybox - don't update the orientation with the observer
+    _skybox_pat->setPosition(observer_position);
+  }
 }
 
 void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
@@ -95,11 +102,11 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  skymap->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
 		  skymap->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
 
-		  osg::Group* group = new osg::Group;
+		  _skybox_pat = new osg::PositionAttitudeTransform;
 		  osg::Geode* geode = new osg::Geode();
 		  osg::ref_ptr<osg::ShapeDrawable> box = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 100.0));
 		  geode->addDrawable(box);
-		  group->addChild(geode);
+		  _skybox_pat->addChild(geode);
 
 		  std::vector< osg::ref_ptr<osg::Program> > _programList;
 		  osg::Program* ShowCubemapProgram;
@@ -127,7 +134,7 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ss->setMode(GL_BLEND, osg::StateAttribute::ON);
 		  ss->setAttributeAndModes(new osg::CullFace(osg::CullFace::FRONT), osg::StateAttribute::ON);
 
-		  top->addChild(group);
+		  top->addChild(_skybox_pat);
 	  }
 
   }
