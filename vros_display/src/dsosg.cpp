@@ -328,7 +328,7 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 }
 
 // constructor
-DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass, bool show_geom_coords) : _current_stimulus(NULL), _mode(mode), _vros_display_basepath(vros_display_basepath)
+DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass, bool show_geom_coords) : _current_stimulus(NULL), _mode(mode), _vros_display_basepath(vros_display_basepath), _tethered_mode(true)
 {
 	std::string _shader_dir = (_vros_display_basepath/"src"/"shaders").string();
 
@@ -428,6 +428,10 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	}
 
 	{
+        std::cout << "Now loading plugins. If you get seg faults at this point, make sure " << \
+            "your plugins are compiled against the latest stimulus_interface.h" << std::endl;
+        // XXX Should implement some kind of version checking to prevent such seg faults...
+
 		// iterate over each library's plugins
 		StimulusLoader::Iterator it(_stimulus_loader.begin());
 		StimulusLoader::Iterator end(_stimulus_loader.end());
@@ -505,6 +509,9 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
 	std::cout << "reading display geometry from " << geom_filename << std::endl;
 	DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry( geom_filename );
+    _observer_geometry_pat = new osg::PositionAttitudeTransform;
+    _observer_geometry_pat->setDataVariance(osg::Object::DYNAMIC);
+    root->addChild( _observer_geometry_pat );
 
 	// render cubemap onto geometry
 	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_shader_dir,
@@ -513,7 +520,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 																		  geometry_parameters);
 	root->addChild(pctcp->get_top().get());
 	if (_mode==std::string("overview")) {
-		root->addChild( pctcp->get_textured_geometry() );
+        // XXX should make the geometry itself move in tethered mode?
+		_observer_geometry_pat->addChild( pctcp->get_textured_geometry() );
 	}
 
 	if (two_pass) {
@@ -813,8 +821,18 @@ void DSOSG::resized(const int& width, const int& height) {
 
 void DSOSG::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
     // ignoring orientation for now...
-	_observer_pat->setPosition(observer_position);
-    _observer_cb->setObserverPosition(observer_position);
+	_observer_pat->setPosition(observer_position); // update the location of the cameras that project onto cubemap
+    if (_tethered_mode) {
+        _observer_pat->setAttitude(observer_orientation); // rotate the cameras that project onto cubemap
+        // we fix the observer at location (0,0,0) for the purposes of rendering the texture on the geometry
+        _observer_cb->setObserverPosition(osg::Vec3(0.0,0.0,0.0)); // update the shader that projects cubemap onto geometry
+        _observer_geometry_pat->setPosition(observer_position); // update the display rendering in various debug modes (e.g. overview mode)
+    } else {
+        // we let the observer move within the geometry
+        _observer_pat->setAttitude(osg::Quat()); // do not rotate the cameras that project onto cubemap
+        _observer_cb->setObserverPosition(observer_position); // update the shader that projects cubemap onto geometry
+        _observer_geometry_pat->setPosition(osg::Vec3(0.0,0.0,0.0)); // update the display rendering in various debug modes (e.g. overview mode)
+    }
 
 	if (_current_stimulus != NULL) {
         _current_stimulus->update( time, observer_position, observer_orientation );

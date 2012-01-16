@@ -59,7 +59,9 @@ namespace dsosg{
 		boost::filesystem::path _vros_display_basepath;
 		osgViewer::Viewer* _viewer;
 		osg::ref_ptr<osg::PositionAttitudeTransform> _observer_pat;
+		osg::ref_ptr<osg::PositionAttitudeTransform> _observer_geometry_pat;
 		ObserverPositionCallback* _observer_cb;
+		bool _tethered_mode;
 
 		osg::ref_ptr<osg::Camera> _hud_cam;
 		osg::ref_ptr<osg::Group> _active_3d_world;
