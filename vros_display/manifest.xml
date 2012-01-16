@@ -12,6 +12,7 @@
   <depend package="dynamic_reconfigure" />
   <depend package="opencv2"/>
   <depend package="camera_calibration"/>
+  <depend package="camera_model"/>
   <depend package="tf" />
 
   <export>
