@@ -1,20 +1,18 @@
 import sympy
+from sympy.utilities.lambdify import lambdastr
 
-# A line through (ax,ay,az) in direction (sx,sy,sz) has points
+# A line through the 3 dimensional vector a in direction s has points
 # (ax+t*sx, ay+t*sy, az+t*sz). To find the distance from a point at
 # the origin, where the derivative of the distance function (as a
 # function of t) has its inflection.
 
-ax = sympy.Symbol('ax')
-ay = sympy.Symbol('ay')
-az = sympy.Symbol('az')
-
-sx = sympy.Symbol('sx')
-sy = sympy.Symbol('sy')
-sz = sympy.Symbol('sz')
+a = sympy.DeferredVector('a')
+s = sympy.DeferredVector('x')
 
 t=sympy.Symbol('t')
 
-dist2 = (ax+sx*t)**2 + (ay+sy*t)**2 + (az+sz*t)**2
+dist2 = (a[0]+s[0]*t)**2 + (a[1]+s[1]*t)**2 + (a[2]+s[2]*t)**2
 ddist2_dt = sympy.diff(dist2,t)
-print sympy.solvers.solve(ddist2_dt, t)
+func = sympy.solvers.solve(ddist2_dt, t)
+#print func
+print lambdastr((a,s),func[0])
