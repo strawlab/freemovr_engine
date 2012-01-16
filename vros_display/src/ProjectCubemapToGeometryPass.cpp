@@ -139,7 +139,7 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
     return top_group;
 }
 
-// show texture on geometry geometry
+// show texture on geometry
 osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::get_textured_geometry()
 {
     osg::ref_ptr<osg::Group> top_group = new osg::Group;
