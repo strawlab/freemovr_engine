@@ -24,6 +24,10 @@ public:
 	// get viewer geometry
 	osg::ref_ptr<osg::Group> make_rendering(float size) const;
 
+	// project pixels
+	osg::Vec3 project_pixel_to_camera_frame(osg::Vec2 uv, bool distorted=true, double distance=1.0 );
+	osg::Vec3 project_camera_frame_to_3d(osg::Vec3 xyz_c );
+
 	// setters
 	//  - extrinsics
 	void set_extrinsic( osg::Vec3 eye, osg::Vec3 center, osg::Vec3 up );
@@ -34,6 +38,10 @@ public:
 
 	bool is_intrinsic_valid() const {return intrinsic_valid;}
 	bool is_extrinsic_valid() const {return extrinsic_valid;}
+
+	osg::Matrix get_rot() const;
+	osg::Matrix get_rot_inv() const;
+	osg::Vec3 get_translation() const;
 
 private:
 	unsigned int _width;

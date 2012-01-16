@@ -4,6 +4,8 @@
 #include <osg/Geometry>
 #include <osg/MatrixTransform>
 
+#include <stdexcept>
+
 CameraModel::CameraModel(unsigned int width, unsigned int height, bool y_up)  :
 	_width(width), _height(height), _y_up(y_up), intrinsic_valid(false), extrinsic_valid(false)
 {
@@ -65,6 +67,13 @@ osg::Matrixd CameraModel::projection(float znear, float zfar) const {
 }
 
 osg::ref_ptr<osg::Group> CameraModel::make_rendering(float size) const {
+    if (!intrinsic_valid) {
+        throw std::runtime_error("need valid intrinsics to make rendering");
+    }
+    if (!extrinsic_valid) {
+        throw std::runtime_error("need valid extrinsics to make rendering");
+    }
+
     // Projection and ModelView matrices
     osg::Matrixd proj;
     osg::Matrixd mv;
@@ -137,6 +146,67 @@ osg::ref_ptr<osg::Group> CameraModel::make_rendering(float size) const {
 	group->addDescription("camera viewer");
 	group->addChild(mt);
 	return group;
+}
+
+osg::Vec3 CameraModel::project_pixel_to_camera_frame(osg::Vec2 uv, bool distorted, double distance ) {
+    if (!intrinsic_valid) {
+        throw std::runtime_error("need valid intrinsics to project pixel to camera frame");
+    }
+
+    if (distorted) {
+        throw std::runtime_error("distortion not yet implemented");
+    }
+    double fx, fy, cx, cy, Tx, Ty, x,y,z;
+
+    fx = _K00;            cx = _K02;  Tx = 0.0;
+                 fy=_K11; cy = _K12;  Ty = 0.0;
+
+    x = (uv[0] - cx - Tx) / fx;
+    y = (uv[1] - cy - Ty) / fy;
+    z = -1.0f; // -1 because osg and ROS/OpenCV coords are flipped
+
+    osg::Vec3 result(x,y,z);
+    result.normalize();
+    result *= distance;
+    return result;
+}
+
+osg::Matrix CameraModel::get_rot() const {
+    osg::Vec3d lv( _center - _eye );
+
+    osg::Vec3d f( lv );
+    f.normalize();
+    osg::Vec3d s( f^_up );
+    s.normalize();
+    osg::Vec3d u( s^f );
+    u.normalize();
+
+    osg::Matrixd rotation_matrix( s[0], u[0], -f[0], 0.0f,
+                            s[1], u[1], -f[1], 0.0f,
+                            s[2], u[2], -f[2], 0.0f,
+                            0.0f, 0.0f,  0.0f, 1.0f );
+    return rotation_matrix;
+}
+
+osg::Matrix CameraModel::get_rot_inv() const {
+    osg::Matrix result;
+    // OSG doesn't have a transpose matrix function?
+    result.invert( get_rot() );
+    return result;
+}
+
+osg::Vec3 CameraModel::get_translation() const {
+    osg::Vec4 eye( _eye[0], _eye[1], _eye[2], 1.0);
+    osg::Vec4 t = -(eye*get_rot());
+    assert(t[3]==1.0);
+    osg::Vec3 result(t[0], t[1], t[2]);
+    return result;
+}
+
+osg::Vec3 CameraModel::project_camera_frame_to_3d(osg::Vec3 xyz_c ) {
+    osg::Vec3 diff = xyz_c-get_translation();
+    osg::Vec3 world_coords = diff*get_rot_inv();
+    return world_coords;
 }
 
 void CameraModel::set_intrinsic( double K00, double K01, double K02,
