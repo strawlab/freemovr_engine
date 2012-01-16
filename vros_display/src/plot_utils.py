@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+from camera_model.plot_utils import plot_camera
+
 def get_3d_verts(geom):
     allw = []
     res_u = 32
