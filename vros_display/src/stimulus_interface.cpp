@@ -25,8 +25,12 @@ std::string mkfname(std::string basepath, std::string middle, std::string extens
   if (extension.at(0)!='.') {
     extension = "." + extension;
   }
+#if BOOST_FILESYSTEM_VERSION >= 3
   fs::path new_extension = extension;
   base.replace_extension(new_extension);
+#else
+  base.replace_extension(extension);
+#endif
   return base.string();
 }
 
