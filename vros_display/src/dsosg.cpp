@@ -371,7 +371,11 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	{
 		// get all the plugin paths
 		fs::path config_full_path(config_fname);
+#if BOOST_FILESYSTEM_VERSION >= 3
 		fs::path config_dir = boost::filesystem3::complete(config_full_path.parent_path()).normalize();
+#else
+		fs::path config_dir = config_full_path.parent_path();
+#endif
 		config_data_dir = config_dir.string();
 
 		if (!fs::exists(config_full_path)) {
@@ -389,7 +393,11 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 				std::string namekey = std::string((*ki)+std::string("[@name]"));
 				fs::path plugin_path = stimulus_plugin_config->getString(pathkey); // this is relative to config_dir
 				if (plugin_path.has_relative_path()) {
+#if BOOST_FILESYSTEM_VERSION >= 3
 					plugin_path = fs::absolute(plugin_path,config_dir).normalize();
+#else
+                    throw std::runtime_error("not implemented: relative plugin path");
+#endif
 				}
 
 				std::string plugin_name = stimulus_plugin_config->getString(namekey);
@@ -399,7 +407,12 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
 
 		std::string geom_path_raw = pConf->getString("display_geometry[@path]");
-		fs::path geom_path = fs::absolute(geom_path_raw,config_dir).normalize();
+		fs::path geom_path;
+#if BOOST_FILESYSTEM_VERSION >= 3
+		geom_path = fs::absolute(geom_path_raw,config_dir).normalize();
+#else
+        geom_path = config_dir / geom_path_raw;
+#endif
 		if (!fs::exists(geom_path)) {
 			std::cerr << "geometry file " << geom_path.string() << " does not exist." << std::endl;
 			exit(1);
@@ -446,7 +459,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
                     _stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
                 } catch (...) {
                     std::cerr << "ERROR: while calling post_init() on plugin " << itMan->name() << std::endl;
-                    throw;
+                    throw std::runtime_error("error while calling post_init()");
                 }
 				if (_current_stimulus == NULL) {
 					_current_stimulus = _stimulus_plugins[ itMan->name() ];
