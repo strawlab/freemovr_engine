@@ -600,6 +600,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
 	} else {
 		std::string p2g_filename = join_path(config_data_dir,"p2g.exr" );
+        std::cout << "loading p2g.exr from " << p2g_filename << std::endl;
 		GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(_shader_dir,
 																						pctcp->get_output_texture(),
 																						p2g_filename,
