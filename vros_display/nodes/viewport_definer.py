@@ -17,9 +17,18 @@ import numpy as np
 import scipy.misc
 import mahotas.polygon
 
+traits_version = None
+
 try:
     # Enthought library imports
     import enthought.traits.api as traits
+    traits_version = 3
+except ImportError:
+    # traits 4
+    import traits.api as traits
+    traits_version = 4
+
+if traits_version==3:
     from enthought.enable.api import Component, ComponentEditor, Window
     from enthought.traits.api import HasTraits, Instance
     from enthought.traits.ui.api import Item, Group, View
@@ -27,9 +36,7 @@ try:
     # Chaco imports
     from enthought.chaco.api import ArrayPlotData, Plot
     from enthought.chaco.tools.api import LineSegmentTool, PanTool, ZoomTool
-except ImportError:
-    # traits 4
-    import traits.api as traits
+elif traits_version==4:
     from enable.api import Component, ComponentEditor, Window
     from traits.api import HasTraits, Instance
     from traitsui.api import Item, Group, View
@@ -37,6 +44,8 @@ except ImportError:
     # Chaco imports
     from chaco.api import ArrayPlotData, Plot
     from chaco.tools.api import LineSegmentTool, PanTool, ZoomTool
+else:
+    raise RuntimeError('could not identify traits')
 
 def posint(x,maxval=np.inf):
     x = int(x)
