@@ -396,9 +396,10 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 #if BOOST_FILESYSTEM_VERSION >= 3
 					plugin_path = fs::absolute(plugin_path,config_dir).normalize();
 #else
-                    throw std::runtime_error("not implemented: relative plugin path");
+                    std::cerr << "warning: not implemented: relative plugin path, but continuing anyway" << std::endl;
 #endif
 				}
+                std::cout << "plugin_path: " << plugin_path << std::endl;
 
 				std::string plugin_name = stimulus_plugin_config->getString(namekey);
 				stimulus_plugin_paths.push_back( plugin_path.string() );
