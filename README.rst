@@ -17,6 +17,7 @@ Ubuntu Lucid (10.04).
  1. Get the rosinstall tool::
 
       sudo apt-get install python-stdeb
+      pypi-install vcstools
       pypi-install rosinstall
 
  2. `Install ROS Electric Desktop-Full from source
