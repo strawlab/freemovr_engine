@@ -27,6 +27,9 @@ glut:
     oneiric:
       apt:
         packages: [ freeglut3-dev ]
+    precise:
+      apt:
+        packages: [ freeglut3-dev ]
   debian: libglut3-dev
   fedora: freeglut-devel
   arch: freeglut
