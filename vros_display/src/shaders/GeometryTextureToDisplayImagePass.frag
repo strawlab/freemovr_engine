@@ -1,22 +1,21 @@
 /* -*- Mode: C -*- */
-#version 140
+#version 120
 uniform sampler2D inputGeometryTexture;
 uniform sampler2DRect p2g;
 uniform bool show_geom_coords;
-in vec2 ProjectorCoord;
-out vec4 MyFragColor;
+varying vec2 ProjectorCoord;
 
 void main(void)
 {
   float eps=1e-10;
-  vec2 GeomCoord = texture(p2g, ProjectorCoord).xy;
+  vec2 GeomCoord = texture2DRect(p2g, ProjectorCoord).xy;
   if ((GeomCoord.x <= eps) && (GeomCoord.y <= eps)) {
     discard;
   } else {
     if (show_geom_coords) {
-      MyFragColor = vec4(GeomCoord,0.0,1.0);
+      gl_FragData[0] = vec4(GeomCoord,0.0,1.0);
     } else {
-      MyFragColor = texture(inputGeometryTexture,GeomCoord);
+      gl_FragData[0] = texture2D(inputGeometryTexture,GeomCoord);
     }
   }
 }
