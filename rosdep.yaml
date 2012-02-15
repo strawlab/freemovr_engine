@@ -13,6 +13,11 @@ osg:
   ubuntu: libopenscenegraph-dev openscenegraph
 openexr:
   ubuntu: libopenexr-dev
+opencv2.3:
+  ubuntu:
+    precise:
+      apt:
+        packages: [ libopencv-dev ]
 glut:
   ubuntu:
     lucid:
