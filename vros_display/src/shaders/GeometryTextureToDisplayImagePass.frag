@@ -1,5 +1,5 @@
 /* -*- Mode: C -*- */
-#version 120
+// #version 120 /* Works OK on VMWare v 1.2, but not nVidia 1.2 (but OK on nVidia 1.4 with minor changes) */
 uniform sampler2D inputGeometryTexture;
 uniform sampler2DRect p2g;
 uniform bool show_geom_coords;
