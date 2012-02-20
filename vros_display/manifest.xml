@@ -26,4 +26,6 @@
   <rosdep name="libxi"/>
   <rosdep name="poco"/>
   <rosdep name="jansson"/>
+  <rosdep name="python-yaml"/>
+  <rosdep name="cython"/>
 </package>
