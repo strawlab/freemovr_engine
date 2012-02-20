@@ -16,7 +16,7 @@ Ubuntu Lucid (10.04).
 
  1. Get the rosinstall tool::
 
-      sudo apt-get install python-stdeb
+      sudo apt-get install python-stdeb python-yaml
       pypi-install vcstools
       pypi-install rosinstall
 
