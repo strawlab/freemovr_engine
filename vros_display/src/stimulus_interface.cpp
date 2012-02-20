@@ -61,6 +61,10 @@ void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
   add_skybox(top, basepath, extension);
 }
 
+osg::Vec4 StimulusInterface::get_clear_color() const {
+  return osg::Vec4(0.0, 0.0, 0.0, 0.0); // default to transparent black
+}
+
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
   namespace fs = boost::filesystem;
 

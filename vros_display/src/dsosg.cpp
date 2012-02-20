@@ -226,14 +226,13 @@ public:
     _texture->setFilter(osg::TextureCubeMap::MAG_FILTER,osg::TextureCubeMap::LINEAR);
 
     // set up the render to texture cameras.
-    CameraList Cameras;
     for(unsigned int i=0; i<6; ++i)
     {
         // create the camera
         osg::Camera* camera = new osg::Camera;
 
         camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        camera->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 0.0f)); // clear
+        camera->setClearColor(osg::Vec4(0.5f, 0.0f, 0.0f, 1.0f)); // clear
 
         // set viewport
         camera->setViewport(0,0,tex_width,tex_height);
@@ -257,6 +256,14 @@ public:
     // set an update callback to keep moving the camera and tex gen in the right direction.
     _top->setUpdateCallback(new UpdateCameraCallback(observer_node, Cameras));
   }
+  void set_clear_color( const osg::Vec4& color) {
+    for(unsigned int i=0; i<6; ++i)
+    {
+        osg::Camera* camera = Cameras.at(i);
+        camera->setClearColor(color);
+    }
+      
+  }
   osg::Node* get_node() {
     return _top.get();
   }
@@ -266,6 +273,7 @@ public:
 private:
   osg::ref_ptr<osg::TextureCubeMap> _texture;
   osg::ref_ptr<osg::Group> _top;
+  CameraList Cameras;
 };
 
 
@@ -424,7 +432,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
 	{
 		// load the shared library for each plugin path
-		for (int i=0; i<stimulus_plugin_paths.size(); i++) {
+		for (unsigned int i=0; i<stimulus_plugin_paths.size(); i++) {
 			fs::path path_parent = stimulus_plugin_paths.at(i);
 			fs::path path_leaf = "lib" + stimulus_plugin_names.at(i) + Poco::SharedLibrary::suffix(); // append .dll or .so
 
@@ -508,7 +516,6 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
     }
 
-	CameraCube* _cubemap_maker(NULL);
 	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, config_data_dir, _shader_dir );
 
 	if ( !(_mode==std::string("virtual_world"))) {
@@ -654,6 +661,9 @@ void DSOSG::set_stimulus_plugin(const std::string& name) {
 	_current_stimulus = _stimulus_plugins[ name ];
 	_active_3d_world->addChild( _current_stimulus->get_3d_world() );
 	_active_2d_hud->addChild( _current_stimulus->get_2d_hud() );
+
+    // set the background color
+    _cubemap_maker->set_clear_color( _current_stimulus->get_clear_color() );
 
     // It we have an interactive camera manipulator, it means we can reset the view.
     if (_cameraManipulator.valid())

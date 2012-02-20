@@ -29,6 +29,8 @@ namespace dsosg{
 		osg::Vec3 _p;
 	};
 
+	class CameraCube; // forward declaration
+
 	class DSOSG {
 	public:
 		DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false, bool show_geom_coords=false);
@@ -62,6 +64,8 @@ namespace dsosg{
 		osg::ref_ptr<osg::PositionAttitudeTransform> _observer_geometry_pat;
 		ObserverPositionCallback* _observer_cb;
 		bool _tethered_mode;
+
+		CameraCube* _cubemap_maker;
 
 		osg::ref_ptr<osg::Camera> _hud_cam;
 		osg::ref_ptr<osg::Group> _active_3d_world;

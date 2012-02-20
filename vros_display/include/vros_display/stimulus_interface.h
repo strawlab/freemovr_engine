@@ -20,6 +20,7 @@ class StimulusInterface
   virtual osg::ref_ptr<osg::Group> get_3d_world() {return 0;}
   virtual osg::ref_ptr<osg::Group> get_2d_hud() {return 0;}
   virtual std::string name() const = 0;
+  virtual osg::Vec4 get_clear_color() const;
 
   virtual void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
 
