@@ -13,6 +13,7 @@ Contents:
 
    define-viewports-on-virtual-displays
    manual-display-calibration
+   gotchas
 
 
 Indices and tables
