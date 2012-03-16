@@ -754,12 +754,17 @@ void DSOSG::setup_viewer(const std::string& json_config) {
 		traits->windowDecoration = false;
 		tmp_json = json_object_get(root, "windowDecoration");
 		if (json_is_true(tmp_json)) {
-            // hmm, this doesn't seem to work?
+            // inorder to add window redirections the redered scene must go through the window
+            // manager / X11, it cannot just blit to the display. This has two implications
+            // 1) things might be slower
+            // 2) absolute positioning of opengl windows might not work because the window
+            //    manager can move them around.
 			traits->windowDecoration = true;
+			traits->overrideRedirect = false;
 		} else if (json_is_false(tmp_json)) {
 			traits->windowDecoration = false;
+			traits->overrideRedirect = true;
 		}
-		traits->overrideRedirect = true;
 		traits->doubleBuffer = true;
 		traits->sharedContext = 0;
 		traits->pbuffer = false;
