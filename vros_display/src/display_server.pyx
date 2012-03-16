@@ -1,12 +1,10 @@
-# emacs, this is -*-Python-*- mode.
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
 
 # ROS stuff
 ROS_PACKAGE_NAME='vros_display'
 import roslib; roslib.load_manifest(ROS_PACKAGE_NAME)
 
 import vros_display.srv
-import dynamic_reconfigure_server2
-import vros_display.cfg.VirtualDisplayConfig as VirtualDisplayConfig
 import rosmsg2json
 
 import rospy
@@ -17,6 +15,9 @@ import roslib
 import sys, time, os, warnings, threading, Queue, tempfile
 import json
 import argparse
+
+import pprint
+
 import numpy as np
 cimport numpy as np
 
@@ -101,6 +102,9 @@ cdef extern from "dsosg.h" namespace "dsosg":
 
 # ================================================================
 
+def _log(var, msg=""):
+    print "--->%s: \n%s" % (msg, pprint.pformat(var,indent=4))
+
 def _import_message_name( message_type_name ):
     message_type_name = message_type_name.replace('/','.') # split on '.' or '/'
     modules = message_type_name.split('.')
@@ -122,22 +126,8 @@ def _import_message_name( message_type_name ):
     message_type = getattr(real_module,name)
     return message_type
 
-def get_physical_display_dict(display_num=0):
-    # This will have to be updated to support multiple physical
-    # displays.
-    display_ids = rospy.get_param('/physical_displays',{}).keys()
-    display_ids.sort()
-    for i, display_id in enumerate(display_ids):
-        rospy.loginfo( 'available display %d: %s'%(i,display_id) )
-    if len(display_ids):
-        display_id = display_ids[display_num]
-        rospy.loginfo( 'choosing display %d: %s'%(display_num,display_id))
-        name = '/physical_displays/'+display_id
-        physical_display_dict = rospy.get_param(name)
-    else:
-        rospy.logwarn( 'no display parameters found' )
-        physical_display_dict = {}
-    return physical_display_dict
+def get_physical_display_dict(physical_display_id=None):
+    return rospy.get_param('/physical_displays',{}).get(physical_display_id,{})
 
 def _get_verts_from_viewport(viewport):
     # allow (deprecated) backward compatibility for old specification of quadrilateral viewport
@@ -169,8 +159,6 @@ cdef class MyNode:
     cdef object _current_subscribers
     cdef object physical_display_dict
     cdef object physical_display_id
-    cdef object virtual_display_ids
-    cdef object virtual_display_configs
     cdef object _pose_lock
     cdef Vec3* pose_position
     cdef Quat* pose_orientation
@@ -178,8 +166,6 @@ cdef class MyNode:
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
-        self.virtual_display_ids = []
-        self.virtual_display_configs = {}
         self._commands = Queue.Queue()
         self._pose_lock = threading.Lock()
         with self._pose_lock:
@@ -202,19 +188,16 @@ cdef class MyNode:
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
         parser.add_argument('--config', default=default_config, type=str, help='config file describing the setup')
-
-        rospy.init_node('display_server')
+        parser.add_argument('--physical_display_id', type=str, default=None)
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
-        if args.mode=='vr_display':
-            if rospy.get_name()=='/display_server':
-                rospy.logwarn('Node name is not remapped. (Hint: '\
-                                  '"use command-line args: __name:=my_new_name")')
+        self.physical_display_id = args.physical_display_id or "display_server"
+        rospy.init_node(self.physical_display_id)
 
-        self.physical_display_dict = get_physical_display_dict()
+        self.physical_display_dict = get_physical_display_dict(self.physical_display_id)
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         config_file = args.config
@@ -229,35 +212,12 @@ cdef class MyNode:
                                )
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
 
-        if 1:
-            all_virtual_displays = {}
-            if 1:
-                self.physical_display_id = self.physical_display_dict.get('id','unknown_physical_display')
-                virtual_displays_root_name = '/virtual_displays/'+self.physical_display_id
-                virtual_displays = rospy.get_param(virtual_displays_root_name,{})
-                if len(virtual_displays)==0:
-                    raise ValueError('no virtual displays in ROS parameter %s'%(
-                        virtual_displays_root_name,))
-                tmp_ids = virtual_displays.keys()
-
-            for virtual_display_id in tmp_ids:
-                json_dict = virtual_displays[virtual_display_id]['virtual_display_config_json_string']
-                all_virtual_displays[ virtual_display_id ] = json.loads(json_dict)
-
-        self._add_displays( all_virtual_displays )
         json_config = json.dumps(self.physical_display_dict)
-        if 1:
-            fd = open('/tmp/display_server.json',mode='w')
-            fd.write( json_config )
-            fd.close()
+        fd = open('/tmp/%s.json' % self.physical_display_id,mode='w')
+        fd.write( json_config )
+        fd.close()
+
         self.dsosg.setup_viewer(std_string(json_config))
-        if 1:
-            for vdi_enum,virtual_display_id in enumerate(tmp_ids):
-                subname = '/virtual_displays/' + self.physical_display_id + '/' + virtual_display_id
-                dynamic_reconfigure_server2.Server(VirtualDisplayConfig,
-                                                   self.reconfigure_virtual_display_callback,
-                                                   subname=subname )
-                self.update_display( all_virtual_displays[virtual_display_id] )
 
         rospy.Service('~get_display_info',
                       vros_display.srv.GetDisplayInfo,
@@ -284,52 +244,6 @@ cdef class MyNode:
 
         self._switch_to_stimulus_plugin('Stimulus3DDemo') # default stimulus
 
-    def _add_displays(self, configs ):
-        for i,(my_id, virtual_display_config) in enumerate(configs.iteritems()):
-            assert my_id not in self.virtual_display_ids # make sure we have not added this screen before
-            self.virtual_display_ids.append(my_id)
-            self.virtual_display_configs[my_id] = None
-
-            if 0:
-                (polys,verts) = self._generate_screen_geom(config=virtual_display_config['display_surface_geometry'] )
-                #name='screen_geom_'+my_id
-
-                self.osgvr.set_display(my_id, polys, verts ) # viewport created with potentially wrong location
-
-            viewport = virtual_display_config['viewport']
-            #self.dsosg.update_viewport(my_id, _get_verts_from_viewport(viewport))
-            print 'NOT DONE: update viewport display_server, line 266', viewport
-
-            # Note, at this point, the display is created, but not set
-            # to correct values. Make self.update_display() gets
-            # called to set these values.
-
-    def reconfigure_virtual_display_callback(self, config, level, subname=None):
-        _,_=level,subname # prevent c compiler warning
-        json_dict = config['virtual_display_config_json_string']
-        unpacked_config = json.loads(json_dict)
-        self.update_display( unpacked_config )
-        return config
-
-    def update_display( self, new_config ):
-        def is_same_geom(odict,ndict):
-            os = json.dumps(odict)
-            ns = json.dumps(ndict)
-            return os == ns
-        my_id =  new_config['id']
-        if my_id not in self.virtual_display_configs:
-            raise KeyError('config request for unknown virtual display "%s"'%(my_id,))
-        orig_config = self.virtual_display_configs.get( my_id, {} )
-
-        if is_same_geom(orig_config, new_config):
-            # nothing to do, skip
-            return
-        del orig_config
-        cfg = new_config.copy() # don't modify original config
-        cfg.pop('id')
-        assert cfg.pop('type') == 'virtual display'
-        print 'NOT DONE: update_display() display_server, line 295'
-
     def handle_get_display_server_mode(self,request):
         # this is called in some callback thread by ROS
         plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
@@ -339,7 +253,7 @@ cdef class MyNode:
 
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS
-        result = {'id':self.physical_display_dict['id'],
+        result = {'id':self.physical_display_id,
                   'width':self.dsosg.getXSize(),
                   'height':self.dsosg.getYSize(),
                   }
