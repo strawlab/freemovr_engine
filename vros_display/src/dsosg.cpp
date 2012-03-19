@@ -691,10 +691,10 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
     }
 }
 
-void DSOSG::stimulus_send_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
+void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
     assert(stimulus!=NULL);
-	stimulus->send_json_message( topic_name, json_message );
+	stimulus->receive_json_message( topic_name, json_message );
 }
 
 void DSOSG::setup_viewer(const std::string& json_config) {

@@ -30,8 +30,8 @@ class StimulusInterface
   // what is their type? (e.g. topic "my_stamp" might result in "std_msgs/Header")
   virtual std::string get_message_type(const std::string& topic_name) const = 0;
 
-  // and here is the message data, as a JSON message
-  virtual void send_json_message(const std::string& topic_name, const std::string& json_message) = 0;
+  // and here is the message data, as a JSON message.
+  virtual void receive_json_message(const std::string& topic_name, const std::string& json_message) = 0;
 
  protected:
   // your derived class can call this if you want to add a skybox

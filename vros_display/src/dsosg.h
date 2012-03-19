@@ -41,7 +41,7 @@ namespace dsosg{
 
 		std::vector<std::string> stimulus_get_topic_names(const std::string& plugin_name);
 		std::string stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name);
-		void stimulus_send_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message);
+		void stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message);
 
 		void setup_viewer(const std::string& json_config);
 		void resized(const int& width, const int& height);

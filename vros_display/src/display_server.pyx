@@ -93,7 +93,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         vector[std_string] get_stimulus_plugin_names() nogil except +
         std_string get_current_stimulus_plugin_name() nogil except +
         void set_stimulus_plugin(std_string) nogil except +
-        void stimulus_send_json_message(std_string,std_string, std_string) nogil except +
+        void stimulus_receive_json_message(std_string,std_string, std_string) nogil except +
         vector[std_string] stimulus_get_topic_names(std_string) nogil except +
         std_string stimulus_get_message_type(std_string, std_string) nogil except +
 
@@ -400,7 +400,7 @@ cdef class MyNode:
                                 raise ValueError('did not understand command "%s"'%cmd_dict['command'])
                     else:
                         if cmd_dict['command'] == 'send plugin message':
-                            self.dsosg.stimulus_send_json_message(std_string(cmd_dict['plugin']),
+                            self.dsosg.stimulus_receive_json_message(std_string(cmd_dict['plugin']),
                                                                   std_string(cmd_dict['topic_name']),
                                                                   std_string(cmd_dict['msg_json']))
                         else:

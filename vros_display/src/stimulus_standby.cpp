@@ -58,7 +58,7 @@ std::string get_message_type(const std::string& topic_name) const {
 	throw std::runtime_error("no message types to get");
 }
 
-void send_json_message(const std::string& topic_name, const std::string& json_message) {
+void receive_json_message(const std::string& topic_name, const std::string& json_message) {
 }
 
 private:

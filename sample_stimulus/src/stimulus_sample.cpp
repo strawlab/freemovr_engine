@@ -46,7 +46,7 @@ std::vector<std::string> get_topic_names() const {
 	return result;
 }
 
-void send_json_message(const std::string& topic_name, const std::string& json_message) {
+void receive_json_message(const std::string& topic_name, const std::string& json_message) {
 }
 
 std::string get_message_type(const std::string& topic_name) const {
