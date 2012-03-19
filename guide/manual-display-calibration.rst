@@ -31,7 +31,7 @@ for several poses of a checkerboard.
 
 ::
 
-    rosrun vros_display caldc4_manual_projector_calibration --cfg /tmp/caldc4.json
+    rosrun vros_display caldc4_manual_projector_calibration --cfg /tmp/display_server.json
 
 This will print a bunch coordinates each time you click the
 mouse. Save the coordinates from left-to-right, top-to-bottom order
@@ -81,10 +81,10 @@ Now, in other window, launch the program that projects the geometry
 model.::
 
     # for the (entire) physical display
-    rosrun vros_display caldc4_manual_camera_calibration --image /tmp/caldc4.json --geometry ../homelab/geom.json --camera picop
+    rosrun vros_display caldc4_manual_camera_calibration --image /tmp/display_server.json --geometry ../homelab/geom.json --camera picop
 
     # for a virtual display
-    rosrun vros_display caldc4_manual_camera_calibration --image /tmp/caldc4.json --geometry ../homelab/geom.json --camera picop/vdisp
+    rosrun vros_display caldc4_manual_camera_calibration --image /tmp/display_server.json --geometry ../homelab/geom.json --camera picop/vdisp
 
 If you're not getting good alignment, make sure your geometry model is
 accurate that that the geometry projection program has loaded the
@@ -102,6 +102,10 @@ This save a file called ``picop-camcal.bag`` which contains both the
 intrinsic and extrinsic parameters. The extrinsic parameters are in
 the topic ``/picop/tf`` with message type ``geometry_msgs/Transform``.
 
+Finding the extrinsic parameters
+================================
+hack.py emits intrinsic and extrinsic bag
+
 Mapping display pixels to geometry coordinates
 ==============================================
 
@@ -109,8 +113,8 @@ Now we have all the data we need. Create the texture coordinates::
 
     rosrun vros_display caldc6_create_display2tcs.py geom.json picop-camcal.bag
 
-This will emit the file ``display2tcs-picop-tcs-lowres.png``. You can
-verify the results by viewing the file. Quit
+This will emit the file ``display2tcs-picop-tcs-lowres.png`` as well as a similarly named ``.exr``.
+You can verify the results by viewing the file. Quit
 ``caldc4_manual_camera_calibration`` if it still running and launch the display server.::
 
     rosrun vros_display display_server
@@ -118,3 +122,7 @@ verify the results by viewing the file. Quit
 Now, show our new image.::
 
     rosrun vros_display show_image.py display2tcs-picop-tcs-lowres.png
+
+Or, you can view the ``.exr`` image using the ``exrdisplay`` utility::
+
+    exrdisplay sample_data/p2g.exr
