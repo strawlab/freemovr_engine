@@ -1,3 +1,4 @@
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
