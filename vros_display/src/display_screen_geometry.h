@@ -5,6 +5,8 @@
 
 #include <osg/Geometry>
 
+#include <jansson.h>
+
 typedef std::map<std::string, osg::Vec3> KeyPointMap;
 
 class GeomModel {
@@ -15,10 +17,12 @@ public:
 
 class DisplaySurfaceGeometry {
 public:
-	DisplaySurfaceGeometry(std::string json_filename);
+	DisplaySurfaceGeometry(json_t *json);
+	DisplaySurfaceGeometry(const char *json);
 	osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors=false);
 	KeyPointMap get_key_points();
 private:
+	void parse_json(json_t *json);
 	GeomModel* _geom;
 };
 #endif

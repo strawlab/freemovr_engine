@@ -11,6 +11,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <jansson.h>
+
 #include "Poco/ClassLoader.h"
 #include "Poco/Manifest.h"
 #include "vros_display/stimulus_interface.h"

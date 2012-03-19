@@ -261,7 +261,7 @@ MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
 	desc.add_options()
 		("help", "produce help message")
 		("image", po::value<std::string>(), "filename of image to show (e.g. PNG or JPEG) or JSON filename describing physical_display")
-		("geometry", po::value<std::string>(), "filename describing geometry in JSON format")
+		("config", po::value<std::string>(), "filename describing display server configuration in JSON format")
 		("camera", po::value<std::string>(), "name of camera (defines intrinsic parameters at /<camera>/camera_info")
 		("texture", po::value<std::string>(), "texture to show on geometry")
 		;
@@ -280,9 +280,9 @@ MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
 		filename = vm["image"].as<std::string>();
 	}
 
-	std::string geom_filename("geom.json");
-	if (vm.count("geometry")) {
-		geom_filename = vm["geometry"].as<std::string>();
+	std::string config_filename("config.json");
+	if (vm.count("config")) {
+		config_filename = vm["config"].as<std::string>();
 	}
 
 
@@ -351,7 +351,16 @@ MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
 
 	}
 
-	DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry( geom_filename );
+    json_error_t json_error;
+    json_t *json_config, *json_geom;
+
+    json_config = json_load_file(config_filename.c_str(), 0, &json_error);
+	if(!json_config) {
+        std::cerr << "Error loading geometry from config.json: " << json_error.text << " (" << json_error.line << ")\n";
+        exit(1);
+	}
+	DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry( json_object_get(json_config, "geom") );
+	json_decref(json_config);
 
 	{
         osg::ref_ptr<osg::Geometry> geom;

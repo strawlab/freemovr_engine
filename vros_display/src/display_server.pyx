@@ -174,7 +174,7 @@ cdef class MyNode:
 
         self.subscription_mode = 'always'
 
-        default_config = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.xml')
+        default_config = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.json')
 
         parser = argparse.ArgumentParser(
             description="VR display generator",
