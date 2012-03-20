@@ -44,7 +44,6 @@
 
 #include "util.h"
 #include "display_screen_geometry.h"
-#include "camera_model.h"
 #include "ProjectCubemapToGeometryPass.h"
 #include "TexturedGeometryToCameraImagePass.h"
 #include "CameraImageToDisplayImagePass.h"

@@ -98,15 +98,6 @@ rosbuild_link_boost(display_server system filesystem)
 
 # build other calibration programs  ----------
 
-rosbuild_add_executable(caldc4_manual_camera_calibration src/caldc4_manual_camera_calibration.cpp
-  src/display_screen_geometry.cpp
-  src/util.cpp
-  src/camera_model.cpp
-  )
-target_link_libraries(caldc4_manual_camera_calibration ${OSG_LIBS} ${JANSSON_LIBRARIES})
-rosbuild_link_boost(caldc4_manual_camera_calibration program_options)
-
-
 rosbuild_add_executable(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp
   )
 target_link_libraries(caldc4_manual_projector_calibration ${OSG_LIBS} ${JANSSON_LIBRARIES})
