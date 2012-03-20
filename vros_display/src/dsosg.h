@@ -54,6 +54,8 @@ namespace dsosg{
 
 		int getXSize() {return _width;}
 		int getYSize() {return _height;}
+
+		float getFrameRate();
 	private:
 		StimulusLoader _stimulus_loader;
 

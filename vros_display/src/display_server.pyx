@@ -100,6 +100,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
         int getXSize() nogil except +
         int getYSize() nogil except +
 
+        float getFrameRate() nogil except +
+
 # ================================================================
 
 def _log(var, msg=""):
@@ -256,6 +258,7 @@ cdef class MyNode:
         result = {'id':self.physical_display_id,
                   'width':self.dsosg.getXSize(),
                   'height':self.dsosg.getYSize(),
+                  'framerate':self.dsosg.getFrameRate()
                   }
 
         response = vros_display.srv.GetDisplayInfoResponse()

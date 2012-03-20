@@ -627,6 +627,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
     _viewer->setLightingMode(osg::View::NO_LIGHT);
+    _viewer->getViewerStats()->collectStats("frame_rate",true);
+
 }
 
 std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
@@ -863,6 +865,12 @@ void DSOSG::frame() {
 
 bool DSOSG::done() {
 	return _viewer->done();
+};
+
+float DSOSG::getFrameRate() {
+    double framerate;
+    _viewer->getViewerStats()->getAveragedAttribute("Frame rate", framerate, true);
+    return framerate;
 };
 
 }
