@@ -9,12 +9,12 @@
 #include <osgViewer/Viewer>
 #include <osgGA/TrackballManipulator>
 
-#include <boost/filesystem.hpp>
-
 #include <jansson.h>
 
 #include "Poco/ClassLoader.h"
 #include "Poco/Manifest.h"
+#include "Poco/Path.h"
+
 #include "vros_display/stimulus_interface.h"
 
 namespace dsosg{
@@ -62,7 +62,10 @@ namespace dsosg{
 		std::map<std::string, StimulusInterface*> _stimulus_plugins;
 		StimulusInterface* _current_stimulus;
 		std::string _mode;
-		boost::filesystem::path _vros_display_basepath;
+
+		Poco::Path _vros_display_basepath;
+		Poco::Path _config_file_path;
+
 		osgViewer::Viewer* _viewer;
 		osg::ref_ptr<osg::PositionAttitudeTransform> _observer_pat;
 		osg::ref_ptr<osg::PositionAttitudeTransform> _observer_geometry_pat;

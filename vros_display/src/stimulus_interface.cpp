@@ -15,23 +15,22 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
+#include "Poco/Path.h"
+#include "Poco/File.h"
+
 #include <stdexcept>
 
-#include <boost/filesystem.hpp>
-
 std::string mkfname(std::string basepath, std::string middle, std::string extension) {
-  namespace fs = boost::filesystem;
-  fs::path base = fs::path(basepath)/middle;
-  if (extension.at(0)!='.') {
-    extension = "." + extension;
+  Poco::Path path(basepath);
+  path.makeDirectory();
+  path.append(Poco::Path(middle));
+
+  if (extension.at(0) == '.') {
+    extension = extension.substr(1,extension.length());
   }
-#if BOOST_FILESYSTEM_VERSION >= 3
-  fs::path new_extension = extension;
-  base.replace_extension(new_extension);
-#else
-  base.replace_extension(extension);
-#endif
-  return base.string();
+  path.setExtension(extension);
+
+  return path.toString();
 }
 
 StimulusInterface::StimulusInterface() :  _skybox_pat(NULL)
@@ -54,9 +53,14 @@ void StimulusInterface::update( const double& time, const osg::Vec3& observer_po
 }
 
 void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
-  namespace fs = boost::filesystem;
-  std::string basepath = (fs::path(_vros_display_base_path)/"sample_data"/"Pond").string();
-  std::string extension="jpg";
+  Poco::Path base_path(_vros_display_base_path);
+
+  base_path.makeDirectory();
+  base_path.pushDirectory("sample_data");
+  base_path.pushDirectory("Pond");
+
+  std::string basepath = base_path.toString();
+  std::string extension = "jpg";
 
   add_skybox(top, basepath, extension);
 }
@@ -66,14 +70,13 @@ osg::Vec4 StimulusInterface::get_clear_color() const {
 }
 
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
-  namespace fs = boost::filesystem;
-
   if (1) {
 	  // add skybox
-          std::string example = mkfname(basepath,"posx",extension);
-          if (!fs::exists(example)) {
-	    std::cerr << "skymap file like " << example << "do not exist" << std::endl;
-	  }
+    std::string example = mkfname(basepath,"posx",extension);
+    if (!Poco::File(Poco::Path(example)).exists()) {
+      std::cerr << "skymap file like " << example << "do not exist" << std::endl;
+    }
+
 	  osg::Image* posx = osgDB::readImageFile(mkfname(basepath,"posx",extension));
 	  osg::Image* posy = osgDB::readImageFile(mkfname(basepath,"posy",extension));
 	  osg::Image* posz = osgDB::readImageFile(mkfname(basepath,"posz",extension));

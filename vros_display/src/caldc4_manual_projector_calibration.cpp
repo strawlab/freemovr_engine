@@ -1,6 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #include <OpenThreads/ScopedLock>
 
+#include <osg/ArgumentParser>
 #include <osg/PolygonMode>
 #include <osg/MatrixTransform>
 #include <osg/Projection>
@@ -37,15 +38,16 @@
 
 #include <osgViewer/ViewerEventHandlers>
 
+#include "Poco/Path.h"
+#include "Poco/File.h"
+
+#include <jansson.h>
+
+#include <assert.h>
 #include <stdio.h>
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
-
-#include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-
-#include <jansson.h>
 
 // forward
 class MyNode {
@@ -145,32 +147,15 @@ osg::Camera* createBG(int width, int height)
 
 MyNode::MyNode(int argc, char**argv)
 {
-    namespace fs = boost::filesystem;
+    Poco::Path exe_path(argv[0]); exe_path.makeFile();
+    Poco::Path image_path(exe_path.makeParent());
 
-    fs::path exe_path = fs::path(argv[0]);
-    fs::path image_path = exe_path.remove_leaf() / "../data/cursor.png";
+    osg::ArgumentParser arguments(&argc, argv);
+    arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
+    arguments.getApplicationUsage()->addCommandLineOption("--cfg <filename>","Display config JSON file");
 
-	namespace po = boost::program_options;
-	// Declare the supported options.
-	po::options_description desc("Allowed options");
-	desc.add_options()
-		("help", "produce help message")
-		("cfg", po::value<std::string>(), "filename of the json display config")
-		;
-
-	po::variables_map vm;
-	po::store(po::parse_command_line(argc, argv, desc), vm);
-	po::notify(vm);
-
-	if (vm.count("help")) {
-		std::cout << desc << std::endl;
-		exit(1);
-	}
-
-	std::string json_filename("display-config.json");
-	if (vm.count("cfg")) {
-		json_filename = vm["cfg"].as<std::string>();
-	}
+	std::string json_filename = "display-config.json";
+    while(arguments.read("--cfg", json_filename));
 
     std::string json_message;
     {
@@ -202,12 +187,12 @@ MyNode::MyNode(int argc, char**argv)
     _viewer->addEventHandler(new KeyboardEventHandler(this));
 
     // set up the texture state.
-    if (!fs::exists(image_path)) {
-        std::cerr << "Could not read my image file: " << image_path << std::endl;
+    if (Poco::File(image_path).isFile()) {
+        std::cerr << "Could not read my image file: " << image_path.toString() << std::endl;
         exit(1);
     }
 
-	osg::Image* image = osgDB::readImageFile( image_path.string() );
+	osg::Image* image = osgDB::readImageFile( image_path.toString() );
 	if (!image) {
 		throw std::runtime_error("Could not open image file");
 	}

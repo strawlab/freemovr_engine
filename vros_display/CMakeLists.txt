@@ -47,8 +47,6 @@ FIND_PACKAGE(jansson)
 SET(OSG_LIBS ${OPENTHREADS_LIBRARIES} ${OSG_LIBRARIES} ${OSGVIEWER_LIBRARIES} ${OSGGA_LIBRARIES} ${OSGDB_LIBRARIES} ${OSGWIDGET_LIBRARIES} ${OSGUTIL_LIBRARIES} ${OSGTEXT_LIBRARIES})
 SET(EXR_LIBS ${OPENEXR_LIBRARIES})
 
-rosbuild_add_boost_directories()
-
 set(CYTHON_EXECUTABLE cython) # hack. Should use CMAKE_FIND_PROGRAM, but that ignores $PATH.
 
 # Add display_server
@@ -73,13 +71,11 @@ SET(DS_SOURCES
 
 rosbuild_add_library(vros_display src/stimulus_interface.cpp)
 target_link_libraries(vros_display)
-rosbuild_link_boost(vros_display filesystem)
 
 # default stimulus plugins --------------------
 
 rosbuild_add_library(stimulus_3d_demo src/stimulus_3d_demo.cpp src/util.cpp)
 target_link_libraries(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
-rosbuild_link_boost(stimulus_3d_demo system filesystem)
 
 rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
 target_link_libraries(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
@@ -94,14 +90,11 @@ find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-rosbuild_link_boost(display_server system filesystem)
 
 # build other calibration programs  ----------
 
-rosbuild_add_executable(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp
-  )
-target_link_libraries(caldc4_manual_projector_calibration ${OSG_LIBS} ${JANSSON_LIBRARIES})
-rosbuild_link_boost(caldc4_manual_projector_calibration program_options system filesystem)
+rosbuild_add_executable(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp)
+target_link_libraries(caldc4_manual_projector_calibration ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
 
 rosbuild_add_executable(create_p2g src/create_p2g.cpp

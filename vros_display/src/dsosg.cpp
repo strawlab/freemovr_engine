@@ -37,8 +37,8 @@
 
 #include "Poco/Manifest.h"
 #include "Poco/Exception.h"
-
-#include <boost/filesystem.hpp>
+#include "Poco/Path.h"
+#include "Poco/File.h"
 
 #include <jansson.h>
 
@@ -333,12 +333,25 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 }
 
 // constructor
-DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass, bool show_geom_coords) : _current_stimulus(NULL), _mode(mode), _vros_display_basepath(vros_display_basepath), _tethered_mode(true)
+DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius,
+             std::string config_fname, bool two_pass, bool show_geom_coords) : 
+    _current_stimulus(NULL), _mode(mode),
+    _vros_display_basepath(vros_display_basepath),
+    _config_file_path(config_fname),
+    _tethered_mode(true)
 {
     json_error_t json_error;
     json_t *json_config, *json_stimulus, *json_geom, *json_display;
 
-	std::string _shader_dir = (_vros_display_basepath/"src"/"shaders").string();
+    // ensure we interpret this as a directory (ensure trailing slash)
+    _vros_display_basepath.makeAbsolute(); _vros_display_basepath.makeDirectory();
+    // ensure we interpret this as a file
+    _config_file_path.makeAbsolute(); _config_file_path.makeFile(); 
+
+    Poco::Path shader_path = _vros_display_basepath;
+    shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
+
+	std::string shader_dir = shader_path.toString();
 
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
@@ -357,78 +370,71 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	_hud_cam = create_HUD_cam(512,512);
 	root->addChild( _hud_cam );
 
-	namespace fs = boost::filesystem;
-
 	std::string geom_filename;
 	std::vector<std::string> stimulus_plugin_paths;
 	std::vector<std::string> stimulus_plugin_names;
-	std::string config_data_dir;
 
+	std::string config_data_dir = _config_file_path.parent().toString();
 
-	{
-		// Add the vros_display defaut stimulus plugins
-		std::string default_path = (_vros_display_basepath/"lib").string();
-		stimulus_plugin_paths.push_back(default_path); stimulus_plugin_names.push_back("stimulus_3d_demo");
-		stimulus_plugin_paths.push_back(default_path); stimulus_plugin_names.push_back("stimulus_2d_blit");
-		stimulus_plugin_paths.push_back(default_path); stimulus_plugin_names.push_back("stimulus_standby");
+	// Add the vros_display defaut stimulus plugins
+    Poco::Path default_plugin_path = _vros_display_basepath;
+    default_plugin_path.pushDirectory("lib");
+	std::string default_lib_dir = default_plugin_path.toString();
+
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_3d_demo");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_2d_blit");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_standby");
+
+	if (!Poco::File(_config_file_path).exists()) {
+		std::cerr << "configuration file " << _config_file_path.toString() << " does not exist." << std::endl;
+		exit(1);
 	}
 
-		// get all the plugin paths
-		fs::path config_full_path(config_fname);
-#if BOOST_FILESYSTEM_VERSION >= 3
-		fs::path config_dir = boost::filesystem3::complete(config_full_path.parent_path()).normalize();
-#else
-		fs::path config_dir = config_full_path.parent_path();
-#endif
-		config_data_dir = config_dir.string();
+    json_config = json_load_file(_config_file_path.toString().c_str(), 0, &json_error);
 
-		if (!fs::exists(config_full_path)) {
-			std::cerr << "configuration file " << config_full_path.string() << " does not exist." << std::endl;
-			exit(1);
-		}
+	json_stimulus = json_object_get(json_config, "stimulus_plugins");
+	json_geom = json_object_get(json_config, "geom");
+	json_display = json_object_get(json_config, "display");
 
-        json_config = json_load_file(config_full_path.c_str(), 0, &json_error);
+    if (!json_is_array(json_stimulus)) {
+		std::cerr << "config file must contain a valid list of stimulus plugins\n";
+		exit(1);
+	} else {
+        for (unsigned int i=0; i<json_array_size(json_stimulus); i++) {
+            Poco::Path plugin_path = _config_file_path.parent().resolve(
+                                        Poco::Path(json_string_value (
+                                                    json_object_get (
+                                                    json_array_get (json_stimulus, i), "path"))));
+            std::string plugin_name = json_string_value (json_object_get (json_array_get (json_stimulus, i), "name"));
 
-		json_stimulus = json_object_get(json_config, "stimulus_plugins");
-		json_geom = json_object_get(json_config, "geom");
-		json_display = json_object_get(json_config, "display");
-
-        if (!json_is_array(json_stimulus)) {
-			std::cerr << "config file must contain a valid list of stimulus plugins\n";
-			exit(1);
-		} else {
-            for (unsigned int i=0; i<json_array_size(json_stimulus); i++) {
-                fs::path plugin_path = json_string_value (json_object_get (json_array_get (json_stimulus, i), "path"));
-                std::string plugin_name = json_string_value (json_object_get (json_array_get (json_stimulus, i), "name"));
-
-#if BOOST_FILESYSTEM_VERSION >= 3
-				plugin_path = fs::absolute(plugin_path,config_dir).normalize();
-#else
-                std::cerr << "warning: not implemented: relative plugin path, but continuing anyway" << std::endl;
-#endif
-                std::cout << "plugin_path: " << plugin_path << std::endl;
-
-				stimulus_plugin_paths.push_back( plugin_path.string() );
-				stimulus_plugin_names.push_back( plugin_name );
-            }
+			stimulus_plugin_paths.push_back( plugin_path.toString() );
+			stimulus_plugin_names.push_back( plugin_name );
         }
+    }
 
 	{
 		// load the shared library for each plugin path
 		for (unsigned int i=0; i<stimulus_plugin_paths.size(); i++) {
-			fs::path path_parent = stimulus_plugin_paths.at(i);
-			fs::path path_leaf = "lib" + stimulus_plugin_names.at(i) + Poco::SharedLibrary::suffix(); // append .dll or .so
+            Poco::Path path_parent(stimulus_plugin_paths.at(i));
+            Poco::Path path_leaf(
+                        "lib" + stimulus_plugin_names.at(i) + Poco::SharedLibrary::suffix()); // append .dll or .so
 
-			std::string libName = (path_parent/path_leaf).normalize().string();
+            Poco::Path path_lib = path_parent;
+            path_lib.append(path_leaf);
+            path_lib.makeAbsolute();
+            std::string lib_name = path_lib.toString();
 
-			try {
-				_stimulus_loader.loadLibrary(libName);
-			}
-			catch (Poco::Exception& exc) {
-				std::cerr << exc.displayText() << std::endl;
-				exc.rethrow();
-			}
-
+            if (Poco::File(path_lib).exists()) {
+			    try {
+				    _stimulus_loader.loadLibrary(lib_name);
+			    }
+			    catch (Poco::Exception& exc) {
+				    std::cerr << exc.displayText() << std::endl;
+				    exc.rethrow();
+			    }
+            } else {
+                std::cerr << "missing stimulus: " << lib_name << std::endl;
+            }
 		}
 	}
 
@@ -446,7 +452,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 			for (; itMan != endMan; ++itMan) {
 				assert( _stimulus_plugins.count( itMan->name() ) == 0);
 				_stimulus_plugins[ itMan->name() ] = itMan->create();
-				_stimulus_plugins[ itMan->name() ]->set_vros_display_base_path(_vros_display_basepath.string());
+				_stimulus_plugins[ itMan->name() ]->set_vros_display_base_path(_vros_display_basepath.toString());
                 try {
                     _stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
                 } catch (...) {
@@ -499,7 +505,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
     }
 
-	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, config_data_dir, _shader_dir );
+	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, config_data_dir, shader_dir );
 
 	if ( !(_mode==std::string("virtual_world"))) {
 		root->addChild(_cubemap_maker->get_node());
@@ -507,7 +513,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
     if (_mode==std::string("cubemap")) {
 		// create On Screen Display for debugging
-		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),_shader_dir);
+		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_dir);
 		root->addChild(debug_osd.get());
     }
 
@@ -522,7 +528,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     root->addChild( _observer_geometry_pat );
 
 	// render cubemap onto geometry
-	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_shader_dir,
+	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(shader_dir,
 																		  _cubemap_maker->get_cubemap(),
 																		  _observer_cb,
 																		  geometry_parameters);
@@ -537,7 +543,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		osg::ref_ptr<osg::Group> g;
 		if (show_geom_coords) {
 			throw std::runtime_error("have not implemented this again");
-			//g = geometry_parameters->make_texcoord_group(_shader_dir);
+			//g = geometry_parameters->make_texcoord_group(shader_dir);
 		} else {
 			g = pctcp->get_textured_geometry();
 		}
@@ -570,7 +576,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
 
 		std::string p2c_filename = join_path(config_data_dir,"p2c.exr" );
-		CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(_shader_dir,
+		CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_dir,
 																				 mytex,
 																				 p2c_filename);
 		root->addChild(ci2di->get_top().get());
@@ -596,7 +602,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	} else {
 		std::string p2g_filename = join_path(config_data_dir,"p2g.exr" );
         std::cout << "loading p2g.exr from " << p2g_filename << std::endl;
-		GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(_shader_dir,
+		GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(shader_dir,
 																						pctcp->get_output_texture(),
 																						p2g_filename,
 																						show_geom_coords);

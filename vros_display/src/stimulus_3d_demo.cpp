@@ -18,8 +18,6 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
-#include <boost/filesystem.hpp>
-
 #include "util.h"
 
 class Stimulus3DDemo: public StimulusInterface
@@ -59,7 +57,6 @@ std::string get_message_type(const std::string& topic_name) const {
 osg::ref_ptr<osg::Group> create_virtual_world()
 {
 
-  namespace fs = boost::filesystem;
   osg::ref_ptr<osg::MatrixTransform> top = new osg::MatrixTransform; top->addDescription("virtual world top node");
 
   add_default_skybox(top);
