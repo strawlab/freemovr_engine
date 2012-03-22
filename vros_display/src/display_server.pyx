@@ -219,6 +219,8 @@ cdef class MyNode:
         fd.write( json_config )
         fd.close()
 
+        print json_config
+
         self.dsosg.setup_viewer(std_string(json_config))
 
         rospy.Service('~get_display_info',

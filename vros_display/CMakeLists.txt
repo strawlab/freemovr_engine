@@ -1,26 +1,7 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4.6)
+SET(BUILD_VROS ON CACHE BOOL "Build Using VROS")
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
-rosbuild_init()
-
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-rosbuild_gensrv()
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 FIND_PACKAGE(OpenThreads)
 FIND_PACKAGE(osg)
@@ -47,14 +28,8 @@ FIND_PACKAGE(jansson)
 SET(OSG_LIBS ${OPENTHREADS_LIBRARIES} ${OSG_LIBRARIES} ${OSGVIEWER_LIBRARIES} ${OSGGA_LIBRARIES} ${OSGDB_LIBRARIES} ${OSGWIDGET_LIBRARIES} ${OSGUTIL_LIBRARIES} ${OSGTEXT_LIBRARIES})
 SET(EXR_LIBS ${OPENEXR_LIBRARIES})
 
-set(CYTHON_EXECUTABLE cython) # hack. Should use CMAKE_FIND_PROGRAM, but that ignores $PATH.
-
-# Add display_server
-add_custom_command(OUTPUT display_server.cpp
-  COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
-
 SET(DS_SOURCES
+  src/dsosg.cpp
   src/ProjectCubemapToGeometryPass.cpp
   src/display_screen_geometry.cpp
   src/util.cpp
@@ -62,63 +37,131 @@ SET(DS_SOURCES
   src/camera_model.cpp
   src/TexturedGeometryToCameraImagePass.cpp
   src/CameraImageToDisplayImagePass.cpp
-  src/GeometryTextureToDisplayImagePass.cpp
-  )
+  src/GeometryTextureToDisplayImagePass.cpp)
 
-# ${OPENEXR_INCLUDE_PATHS}
-
-# the vros_display library (for building stimulus plugins) --------------------
-
-rosbuild_add_library(vros_display src/stimulus_interface.cpp)
-target_link_libraries(vros_display)
-
-# default stimulus plugins --------------------
-
-rosbuild_add_library(stimulus_3d_demo src/stimulus_3d_demo.cpp src/util.cpp)
-target_link_libraries(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
-
-rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
-target_link_libraries(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
-
-rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp)
-target_link_libraries(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
-
-# build the main display server node ----------
-
-rosbuild_add_executable(display_server display_server.cpp src/dsosg.cpp ${DS_SOURCES})
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_PATH})
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-
-# build other calibration programs  ----------
-
-rosbuild_add_executable(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp)
-target_link_libraries(caldc4_manual_projector_calibration ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-
-
-rosbuild_add_executable(create_p2g src/create_p2g.cpp
+SET(P2G_SOURCES
+  src/create_p2g.cpp
   src/display_screen_geometry.cpp
   src/util.cpp
   src/exrutil.cpp
   src/camera_model.cpp
   src/TexturedGeometryToCameraImagePass.cpp
-  src/CameraImageToDisplayImagePass.cpp
-  )
-include_directories(${OPENEXR_INCLUDE_PATHS})
-target_link_libraries(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
+  src/CameraImageToDisplayImagePass.cpp)
 
-rosbuild_add_executable(calib_test_osg opengl_and_hartleyzisserman/calib_test_osg.cpp
+SET(CALIB_TEST_SOURCES
+  opengl_and_hartleyzisserman/calib_test_osg.cpp
   src/display_screen_geometry.cpp
   src/util.cpp
-  src/camera_model.cpp
-  )
-target_link_libraries(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
+  src/camera_model.cpp)
 
-rosbuild_add_executable(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
-target_link_libraries(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
+IF(BUILD_VROS)
+  MESSAGE("Building With ROS")
 
-# add dynamic reconfigure api
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
-gencfg()
+  INCLUDE($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+
+  # Set the build type.  Options are:
+  #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
+  #  Debug          : w/ debug symbols, w/o optimization
+  #  Release        : w/o debug symbols, w/ optimization
+  #  RelWithDebInfo : w/ debug symbols, w/ optimization
+  #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
+  #set(ROS_BUILD_TYPE RelWithDebInfo)
+
+  rosbuild_init()
+
+  #set the default path for built executables to the "bin" directory
+  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+  #set the default path for built libraries to the "lib" directory
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+
+  rosbuild_genmsg()
+  rosbuild_gensrv()
+
+  SET(CYTHON_EXECUTABLE cython) # hack. Should use CMAKE_FIND_PROGRAM, but that ignores $PATH.
+
+  # Add display_server
+  ADD_CUSTOM_COMMAND(OUTPUT display_server.cpp
+    COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
+
+  # the vros_display library (for building stimulus plugins) --------------------
+  rosbuild_add_library(vros_display src/stimulus_interface.cpp)
+  TARGET_LINK_LIBRARIES(vros_display)
+
+  # default stimulus plugins --------------------
+  rosbuild_add_library(stimulus_3d_demo src/stimulus_3d_demo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
+  rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
+  TARGET_LINK_LIBRARIES(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+
+  rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp)
+  TARGET_LINK_LIBRARIES(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
+  # build the main display server node ----------
+  rosbuild_add_executable(display_server display_server.cpp ${DS_SOURCES})
+
+  FIND_PACKAGE(PythonLibs REQUIRED)
+  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+  INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
+  TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
+
+  # build other calibration programs  ----------
+  rosbuild_add_executable(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp)
+  TARGET_LINK_LIBRARIES(caldc4_manual_projector_calibration ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
+
+  rosbuild_add_executable(create_p2g ${P2G_SOURCES})
+  INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
+  TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
+
+  rosbuild_add_executable(calib_test_osg ${CALIB_TEST_SOURCES})
+  TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
+
+  rosbuild_add_executable(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
+  TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
+
+  # add dynamic reconfigure api
+  rosbuild_find_ros_package(dynamic_reconfigure)
+  include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+  gencfg()
+ELSE(BUILD_VROS)
+  MESSAGE("Building Without ROS")
+
+  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+
+  # the vros_display library (for building stimulus plugins) --------------------
+  ADD_LIBRARY(vros_display src/stimulus_interface.cpp)
+  TARGET_LINK_LIBRARIES(vros_display)
+
+  # default stimulus plugins --------------------
+  ADD_LIBRARY(stimulus_3d_demo src/stimulus_3d_demo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
+  ADD_LIBRARY(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
+  TARGET_LINK_LIBRARIES(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+
+  ADD_LIBRARY(stimulus_standby src/stimulus_standby.cpp)
+  TARGET_LINK_LIBRARIES(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
+  # build the main display server node ----------
+  ADD_EXECUTABLE(display_server src/main.cpp ${DS_SOURCES})
+  INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
+  INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
+  TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
+
+  # build other calibration programs  ----------
+  ADD_EXECUTABLE(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp)
+  TARGET_LINK_LIBRARIES(caldc4_manual_projector_calibration ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
+
+  ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
+  INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
+  TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
+
+  ADD_EXECUTABLE(calib_test_osg ${CALIB_TEST_SOURCES})
+  TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
+
+  ADD_EXECUTABLE(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
+  TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
+ENDIF(BUILD_VROS)
+
