@@ -5,9 +5,8 @@
 
   </description>
   <author>Andrew Straw</author>
-  <license>BSD</license>
-  <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/browser_joystick</url>
+
+  <depend package="sensor_msgs"/>
 
 </package>
 
