@@ -11,18 +11,30 @@ import tornado.template
 import os
 import json
 
+# ROS imports
+import roslib; roslib.load_manifest('browser_joystick')
+import rospy
+from  sensor_msgs.msg import Joy
+
+global joy_pub
+
 class EchoWebSocket(tornado.websocket.WebSocketHandler):
     def open(self):
         print "WebSocket opened"
 
     def on_message(self, message_raw):
         message = json.loads(message_raw)
-        print "got message:",message
         if message['msg']=='lag':
-            print 'got lag message'
             self.write_message( json.dumps({
                 'start':message['start'],
                 }))
+
+        if message['msg']=='joy':
+            msg = Joy()
+            msg.header.stamp = rospy.Time.now()
+            msg.axes = message['axes']
+            msg.buttons = message['buttons']
+            joy_pub.publish(msg)
 
     def on_close(self):
         print "WebSocket closed"
@@ -64,9 +76,11 @@ application = tornado.web.Application([
     ],
                                       **settings)
 
-if __name__ == "__main__":
+def main():
+    global joy_pub
+
     url = "http://%s"%base_url
-    print "Server started at", url
+    print "starting web server at", url
     try:
         import qrencode
     except ImportError:
@@ -78,7 +92,15 @@ if __name__ == "__main__":
         print 'URL in',fname
     else:
         print 'QR encoded link not done'
+
+    node_name = os.path.splitext(os.path.basename(__file__))[0]
+    rospy.init_node( node_name, disable_signals=True )
+
+    joy_pub = rospy.Publisher("browser_joystick", Joy)
+
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(port)
     tornado.ioloop.IOLoop.instance().start()
 
+if __name__ == "__main__":
+    main()

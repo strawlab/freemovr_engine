@@ -31,6 +31,8 @@ window.addEventListener("load", init, false);
 
 window.onload = function() {
     var stage = new Kinetic.Stage("container", 200, 200);
+    big_radius = Math.min(stage.width, stage.height)/2 - 4;
+
     var joyLayer = new Kinetic.Layer();
     var bgLayer = new Kinetic.Layer();
     rectX = stage.width / 2;
@@ -62,13 +64,17 @@ window.onload = function() {
     });
 
     function emit_joy_pos() {
-        var ms = "mouse: " + joytip.x + ", " + joytip.y;
+        // slightly funky scaling to match ROS joystick node
+        axes = [-(joytip.x-rectX)/big_radius,
+                -(joytip.y-rectY)/big_radius]
+
+        var ms = "joystick axes: " + axes;
         $("#output").empty();
         $("#output").append(ms);
         ws.send(JSON.stringify({
-            msg: "mouse",
-            x: (joytip.x-rectX),
-            y: (joytip.y-rectY)
+            msg: "joy",
+            axes: axes,
+            buttons: []
         }));
     }
 
@@ -78,11 +84,10 @@ window.onload = function() {
 
     joyLayer.add(joytip);
 
-    var radius = Math.min(stage.width, stage.height)/2 - 4;
     var bg = new Kinetic.Circle({
         x: rectX,
         y: rectY,
-        radius: radius,
+        radius: big_radius,
         stroke: "black",
         strokeWidth: 2,
     });
