@@ -86,17 +86,21 @@ def main():
     except ImportError:
         qrencode = None
     if qrencode is not None:
-        _,_,im = qrencode.encode_scaled(url,256)
-        fname = 'link.png'
-        im.save(fname)
-        print 'URL in',fname
+        _,_,im = qrencode.encode_scaled(url)
+        if 1:
+            fname = 'link.png'
+            im.save(fname)
+            print 'URL encoded as a QR code in',fname
+        else:
+            c = unichr(2588)
+            # TODO: print im to console using this unicode block
     else:
         print 'QR encoded link not done'
 
     node_name = os.path.splitext(os.path.basename(__file__))[0]
     rospy.init_node( node_name, disable_signals=True )
 
-    joy_pub = rospy.Publisher("browser_joystick", Joy)
+    joy_pub = rospy.Publisher("joy", Joy)
 
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(port)
