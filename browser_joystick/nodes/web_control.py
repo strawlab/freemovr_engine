@@ -76,6 +76,25 @@ application = tornado.web.Application([
     ],
                                       **settings)
 
+def im2ascii(im):
+    c = unichr(0x2588)
+
+    width,height = im.size
+    pixels = list(im.getdata())
+    pixels = [pixels[i * width:(i + 1) * width] for i in range(height)]
+
+    result = ''
+    for row in pixels:
+        for char in row:
+            if char == 0:
+                result += ' '
+            elif char == 255:
+                result += c
+            else:
+                raise ValueError('expected 0 or 255')
+        result += '\n'
+    return result
+
 def main():
     global joy_pub
 
@@ -86,14 +105,13 @@ def main():
     except ImportError:
         qrencode = None
     if qrencode is not None:
-        _,_,im = qrencode.encode_scaled(url)
+        _,_,im = qrencode.encode(url)
         if 1:
             fname = 'link.png'
             im.save(fname)
             print 'URL encoded as a QR code in',fname
         else:
-            c = unichr(2588)
-            # TODO: print im to console using this unicode block
+            print im2ascii(im)
     else:
         print 'QR encoded link not done'
 
