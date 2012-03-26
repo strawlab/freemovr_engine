@@ -1,0 +1,16 @@
+<package>
+  <description brief="flydra_utils">
+
+     flydra_utils
+
+  </description>
+  <author>John Stowers</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/flydra_utils</url>
+  <depend package="std_msgs"/>
+  <depend package="rospy"/>
+
+</package>
+
+
