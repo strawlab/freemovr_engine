@@ -85,7 +85,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int two_pass,
               int show_geom_coords,
               ) nogil except +
-        void setup_viewer(std_string json_config) nogil except +
+        void setup_viewer(std_string viewer_window_name, std_string json_config) nogil except +
         void update( double, Vec3, Quat )
         void frame() nogil except +
         int done() nogil except +
@@ -128,9 +128,6 @@ def _import_message_name( message_type_name ):
     message_type = getattr(real_module,name)
     return message_type
 
-def get_physical_display_dict(physical_display_id=None):
-    return rospy.get_param('/physical_displays',{}).get(physical_display_id,{})
-
 def _get_verts_from_viewport(viewport):
     # allow (deprecated) backward compatibility for old specification of quadrilateral viewport
     if len(viewport)<3:
@@ -159,8 +156,6 @@ cdef class MyNode:
     cdef DSOSG* dsosg
     cdef object _commands
     cdef object _current_subscribers
-    cdef object physical_display_dict
-    cdef object physical_display_id
     cdef object _pose_lock
     cdef Vec3* pose_position
     cdef Quat* pose_orientation
@@ -176,8 +171,6 @@ cdef class MyNode:
 
         self.subscription_mode = 'always'
 
-        default_config = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.json')
-
         parser = argparse.ArgumentParser(
             description="VR display generator",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -185,26 +178,43 @@ cdef class MyNode:
         parser.add_argument('--mode',
                             choices=['virtual_world','cubemap','overview','geometry_texture','vr_display'],
                             default='vr_display')
-
         parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
-        parser.add_argument('--config', default=default_config, type=str, help='config file describing the setup')
-        parser.add_argument('--physical_display_id', type=str, default=None)
+        parser.add_argument('--config', type=str,
+            help='JSON configuration file describing the setup. '\
+                 'If specified configuration is taken from here, otherwise config is taken from'\
+                 'ROS parameters under this node')
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
-        self.physical_display_id = args.physical_display_id or "display_server"
-        rospy.init_node(self.physical_display_id)
+        rospy.init_node("display_server")
 
-        self.physical_display_dict = get_physical_display_dict(self.physical_display_id)
+        config_dict = rospy.get_param('~',{})
+        if args.config and os.path.exists(args.config):
+            config_file = args.config
+            with open(config_file,'r') as f:
+                try:
+                    print "using config file"
+                    config_dict = json.load(f)
+                except ValueError:
+                    pass
+        elif config_dict:
+            print "using ros config"
+            config_file = '/tmp/%s.json' % rospy.get_name()
+            with open(config_file,mode='w') as f:
+                f.write(json.dumps(config_dict))
+        else:
+            print "using default config"
+            config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.json')
+            config_dict = json.load(open(config_file,'r'))
+
+        print 'config file',config_file
+        print 'config dict',config_dict
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
-        config_file = args.config
-        print 'using config file',config_file
-
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
                                std_string(args.mode),
                                args.observer_radius,
@@ -214,14 +224,9 @@ cdef class MyNode:
                                )
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
 
-        json_config = json.dumps(self.physical_display_dict)
-        fd = open('/tmp/%s.json' % self.physical_display_id,mode='w')
-        fd.write( json_config )
-        fd.close()
-
-        print json_config
-
-        self.dsosg.setup_viewer(std_string(json_config))
+        display_window_name = rospy.get_name();
+        display_json_str = json.dumps(config_dict['display'])
+        self.dsosg.setup_viewer(std_string(display_window_name),std_string(display_json_str))
 
         rospy.Service('~get_display_info',
                       vros_display.srv.GetDisplayInfo,
@@ -257,7 +262,7 @@ cdef class MyNode:
 
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS
-        result = {'id':self.physical_display_id,
+        result = {'id':rospy.get_name(),
                   'width':self.dsosg.getXSize(),
                   'height':self.dsosg.getYSize(),
                   'framerate':self.dsosg.getFrameRate()

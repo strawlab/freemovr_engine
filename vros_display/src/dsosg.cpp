@@ -209,7 +209,7 @@ private:
 
 class CameraCube {
 public:
-	CameraCube(osg::Node* input_node, osg::Node* observer_node, std::string config_data_dir, std::string shader_dir, unsigned int tex_width=512, unsigned int tex_height=512) {
+	CameraCube(osg::Node* input_node, osg::Node* observer_node, std::string shader_dir, unsigned int tex_width=512, unsigned int tex_height=512) {
     _texture = new osg::TextureCubeMap;
     _top = new osg::Group; _top->addDescription("CameraCube top node");
 
@@ -341,7 +341,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     _tethered_mode(true)
 {
     json_error_t json_error;
-    json_t *json_config, *json_stimulus, *json_geom, *json_display;
+    json_t *json_config, *json_stimulus, *json_geom;
 
     // ensure we interpret this as a directory (ensure trailing slash)
     _vros_display_basepath.makeAbsolute(); _vros_display_basepath.makeDirectory();
@@ -394,7 +394,6 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
 	json_stimulus = json_object_get(json_config, "stimulus_plugins");
 	json_geom = json_object_get(json_config, "geom");
-	json_display = json_object_get(json_config, "display");
 
     if (!json_is_array(json_stimulus)) {
 		std::cerr << "config file must contain a valid list of stimulus plugins\n";
@@ -505,7 +504,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
     }
 
-	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, config_data_dir, shader_dir );
+	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_dir );
 
 	if ( !(_mode==std::string("virtual_world"))) {
 		root->addChild(_cubemap_maker->get_node());
@@ -575,7 +574,12 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 			debug_hud_cam->addChild(g);
 		}
 
-		std::string p2c_filename = join_path(config_data_dir,"p2c.exr" );
+
+        Poco::Path p2c_path = _config_file_path.parent().resolve(
+                                        Poco::Path(json_string_value (
+                                                    json_object_get(json_config, "p2c"))));
+		std::string p2c_filename = p2c_path.toString();
+        std::cerr << "p2c file: " << p2c_filename << "\n";
 		CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_dir,
 																				 mytex,
 																				 p2c_filename);
@@ -600,8 +604,11 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 			}
 		}
 	} else {
-		std::string p2g_filename = join_path(config_data_dir,"p2g.exr" );
-        std::cout << "loading p2g.exr from " << p2g_filename << std::endl;
+        Poco::Path p2g_path = _config_file_path.parent().resolve(
+                                        Poco::Path(json_string_value (
+                                                    json_object_get(json_config, "p2g"))));
+		std::string p2g_filename = p2g_path.toString();
+        std::cerr << "p2g file: " << p2g_filename << "\n";
 		GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(shader_dir,
 																						pctcp->get_output_texture(),
 																						p2g_filename,
@@ -692,9 +699,9 @@ void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const 
 	stimulus->receive_json_message( topic_name, json_message );
 }
 
-void DSOSG::setup_viewer(const std::string& json_config) {
+void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::string& json_config) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-    traits->windowName = "display server";
+    traits->windowName = viewer_window_name;
 
     // make sure these have decent defaults
 	int width = 512;

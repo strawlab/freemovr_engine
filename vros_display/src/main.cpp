@@ -30,7 +30,7 @@ int main(int argc, char**argv) {
                         two_pass,
                         show_geom_coords);
 
-  dsosg->setup_viewer("{}");
+  dsosg->setup_viewer("display_server","{}");
   dsosg->set_stimulus_plugin("Stimulus3DDemo");
 
   done = false;

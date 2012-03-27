@@ -1,0 +1,10 @@
+display: {displayNum: 0, height: 768, screenNum: 0, width: 1024, windowDecoration: true,
+  x: 0, y: 0}
+geom:
+  axis: {x: 0.0, y: 0.0, z: 0.144}
+  base: {x: 0.0, y: 0.0, z: 0.0}
+  model: cylinder
+  radius: 0.046
+p2c: /home/strawlab/vros-devel/vros/vros_display/sample_data/p2c.exr
+p2g: /home/strawlab/vros-devel/vros/vros_display/sample_data/p2g.exr
+stimulus_plugins: []

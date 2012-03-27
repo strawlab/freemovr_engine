@@ -13,5 +13,7 @@
       "displayNum": 0,
       "screenNum": 0,
       "windowDecoration": true
-  }
+  },
+  "p2c":"p2c.exr",
+  "p2g":"p2g.exr"
 }

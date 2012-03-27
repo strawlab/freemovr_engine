@@ -147,24 +147,25 @@ osg::Camera* createBG(int width, int height)
 
 MyNode::MyNode(int argc, char**argv)
 {
-    Poco::Path exe_path(argv[0]); exe_path.makeFile();
-    Poco::Path image_path(exe_path.makeParent());
+    json_error_t json_error;
+    json_t *json_config, *json_display;
+
+    Poco::Path exe_path(argv[0]); exe_path.absolute().makeFile();
+
+    Poco::Path image_path(exe_path.makeParent().makeParent());
+    image_path.pushDirectory("data"); image_path.setFileName("cursor.png");
 
     osg::ArgumentParser arguments(&argc, argv);
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
-    arguments.getApplicationUsage()->addCommandLineOption("--cfg <filename>","Display config JSON file");
+    arguments.getApplicationUsage()->addCommandLineOption("--cfg <filename>","Display server config JSON file");
 
-	std::string json_filename = "display-config.json";
+	std::string json_filename = "config.json";
     while(arguments.read("--cfg", json_filename));
 
-    std::string json_message;
-    {
-        std::ifstream f;
-        f.open( json_filename.c_str() );
+    json_config = json_load_file(json_filename.c_str(), 0, &json_error);
+	json_display = json_object_get(json_config, "display");
 
-        std::getline( f, json_message ); // XXX This will fail when a newline is in the file!
-        f.close();
-    }
+    std::string json_message = json_dumps(json_display, 0);
 
 	osg::ref_ptr<osg::Group> root = new osg::Group; root->addDescription("root node");
 
@@ -187,7 +188,7 @@ MyNode::MyNode(int argc, char**argv)
     _viewer->addEventHandler(new KeyboardEventHandler(this));
 
     // set up the texture state.
-    if (Poco::File(image_path).isFile()) {
+    if (!Poco::File(image_path).isFile()) {
         std::cerr << "Could not read my image file: " << image_path.toString() << std::endl;
         exit(1);
     }
@@ -249,7 +250,7 @@ int MyNode::run() {
 
 void MyNode::setup_viewer(std::string json_config, int& width, int& height) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-    traits->windowName = "display server";
+    traits->windowName = "configure projector";
 
 	{
 		json_t *root;
