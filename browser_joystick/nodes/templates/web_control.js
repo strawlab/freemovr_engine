@@ -9,14 +9,36 @@ function lag()
     }));
 }
 
-function init()
-{
+function ws_event() {
+    $("#websocket_state").empty();
+    if (ws.readyState == WebSocket.CONNECTING) {
+        $("#websocket_state").append("WebSocket state: connecting");
+        $("#websocket_state").click(void(0));
+    }
+    if (ws.readyState == WebSocket.OPEN) {
+        $("#websocket_state").append("WebSocket state: opened");
+        $("#websocket_state").click(void(0));
+    }
+    if (ws.readyState == WebSocket.CLOSING) {
+        $("#websocket_state").append("WebSocket state: closing");
+        $("#websocket_state").click(void(0));
+    }
+    if (ws.readyState == WebSocket.CLOSED) {
+        $("#websocket_state").append('WebSocket state: closed <a href="#">attempt to reconnect</a>');
+        $("#websocket_state").click(reconnect());
+    }
+}
+
+function reconnect() {
     // global var
     ws = new WebSocket(ws_uri);
+    ws_event();
+    ws.onopen = function() { ws_event(); }
+    ws.onclose = function() { ws_event(); }
+    ws.onerror = function()  { ws_event(); }
 
-    ws.onopen = function() {
-    };
     ws.onmessage = function (evt) {
+        // the only message we expect is the result of our lag test
         var msg = jQuery.parseJSON(evt.data);
 
         var start = msg.start;
@@ -25,6 +47,11 @@ function init()
         $("#output").empty();
         $("#output").append("lag: "+ diff + " msec" );
     };
+};
+
+function init()
+{
+    reconnect();
 }
 
 window.addEventListener("load", init, false);
@@ -177,4 +204,6 @@ window.onload = function() {
 $(document).ready(function(){
     $("#output").empty();
     $("#output").append("Thanks for visiting!");
+
+    $("#lag_test").click(lag);
 });

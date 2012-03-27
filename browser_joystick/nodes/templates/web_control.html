@@ -1,4 +1,5 @@
 <html>
+<title>browser joystick</title>
 <head>
   <script src="{{static_url("kinetic-v3.8.4.js") }}"></script>
   <script src="{{static_url("jquery-1.7.2.min.js") }}"></script>
@@ -6,12 +7,16 @@
 </head>
 <body>
 
-<div onclick="lag();">
-  <p>lag</p>
-</div>
+
+<div id="container"></div>
 
 <div id="output"></div>
-<div id="container"></div>
+
+<div id="lag_test">
+  <INPUT TYPE=BUTTON VALUE="test lag">
+</div>
+
+<div id="websocket_state"></div>
 
 </body>
 </html>
