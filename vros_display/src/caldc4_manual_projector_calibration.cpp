@@ -163,21 +163,11 @@ MyNode::MyNode(int argc, char**argv)
     std::vector<std::string> non_ros_args;
     ros::removeROSArgs (argc, argv, non_ros_args);
 
-    ros::init(argc, argv, "manual_display_calibration");
-
-    _node = new ros::NodeHandle();
-    _sub = _node->subscribe("/joy", 10, &MyNode::joy_callback, this);
-
-    Poco::Path exe_path(argv[0]); exe_path.absolute().makeFile();
-
-    Poco::Path image_path(exe_path.makeParent().makeParent());
-    image_path.pushDirectory("data"); image_path.setFileName("cursor.png");
-
     osg::ArgumentParser arguments(&argc, argv);
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
     arguments.getApplicationUsage()->setDescription("Manual display/camera calibration utility");
-    arguments.getApplicationUsage()->addCommandLineOption("--display_server_json <filename>","Display server config JSON file");
-    arguments.getApplicationUsage()->addCommandLineOption("--display_server <path>","Parameter server path to display_server");
+    arguments.getApplicationUsage()->addCommandLineOption("--config-file <filename>","Display server config JSON file");
+    arguments.getApplicationUsage()->addCommandLineOption("--display-server <path>","Parameter server path to display_server");
 
     osg::ApplicationUsage::Type help = arguments.readHelpType();
     if (help != osg::ApplicationUsage::NO_HELP) {
@@ -186,10 +176,21 @@ MyNode::MyNode(int argc, char**argv)
     }
 
 	std::string json_filename = "";
-    while(arguments.read("--display_server_json", json_filename));
+    while(arguments.read("--config-file", json_filename));
 
 	std::string display_server_path = "";
-    while(arguments.read("--display_server", display_server_path));
+    while(arguments.read("--display-server", display_server_path));
+
+    if (json_filename.empty() && display_server_path.empty()) {
+        ROS_FATAL("must specify one of --config-file or --display-server");
+        arguments.getApplicationUsage()->write(std::cout);
+        exit(1);
+    }
+
+    // start ros
+    ros::init(argc, argv, "manual_display_calibration");
+    _node = new ros::NodeHandle();
+    _sub = _node->subscribe("/joy", 10, &MyNode::joy_callback, this);
 
 	// setup the viewer.
 	osg::ref_ptr<osg::Group> root = new osg::Group; root->addDescription("root node");
@@ -198,40 +199,42 @@ MyNode::MyNode(int argc, char**argv)
 
     if (!json_filename.empty()) {
         if (!Poco::File(Poco::Path(json_filename)).isFile()) {
-            std::cerr << "Could not find json file\n\n";
+            ROS_FATAL("could not find json file");
             arguments.getApplicationUsage()->write(std::cout);
             exit(1);
         } else {
+            ROS_INFO("configuring from JSON file %s", json_filename.c_str());
             json_config = json_load_file(json_filename.c_str(), 0, &json_error);
 	        json_display = json_object_get(json_config, "display");
             std::string json_message = json_dumps(json_display, 0);
             setup_viewer_json(json_message, width, height);
         }
-    } else if (!display_server_path.empty()) {
+    } else {
+        ROS_INFO("configuring from ROS file %s", json_filename.c_str());
         setup_viewer_ros(display_server_path, width, height);
-    } else { 
-        std::cerr << "Must specify one of --display_server_json or --display_server\n\n";
-        arguments.getApplicationUsage()->write(std::cout);
-        exit(1);
-    }
+    } 
 
     osgViewer::Viewer::Windows windows;
     _viewer->getWindows(windows);
     for(osgViewer::Viewer::Windows::iterator itr = windows.begin(); itr != windows.end();++itr) {
-        //(*itr)->useCursor(false);
         (*itr)->setCursor(osgViewer::GraphicsWindow::NoCursor);
     }
     _viewer->addEventHandler(new KeyboardEventHandler(this));
 
     // set up the texture state.
+    Poco::Path exe_path(argv[0]); exe_path.absolute().makeFile();
+    Poco::Path image_path(exe_path.makeParent().makeParent());
+    image_path.pushDirectory("data"); image_path.setFileName("cursor.png");
+
     if (!Poco::File(image_path).isFile()) {
-        std::cerr << "Could not read my image file: " << image_path.toString() << std::endl;
+        ROS_FATAL("could not read image file %s", image_path.toString().c_str());
         exit(1);
     }
 
 	osg::Image* image = osgDB::readImageFile( image_path.toString() );
 	if (!image) {
-		throw std::runtime_error("Could not open image file");
+        ROS_FATAL("could not open image file %s", image_path.toString().c_str());
+        exit(1);
 	}
 
 	osg::Camera* bgcam = createBG( width, height );
@@ -335,7 +338,7 @@ void MyNode::setup_viewer_json(std::string json_config, int& width, int& height)
 
 	root = json_loads(json_config.c_str(), 0, &error);
 	if(!root) {
-		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
+        ROS_FATAL("error in json line %d: %s", error.line, error.text);
         throw std::runtime_error("Could not read JSON");
 	}
 
@@ -391,7 +394,5 @@ void MyNode::setup_viewer_ros(std::string &root, int& width, int& height) {
 
 int main(int argc, char**argv) {
 	MyNode* n=new MyNode(argc,argv);
-//    ros::start();
 	return n->run();
-//    ros::shutdown();
 }
