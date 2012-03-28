@@ -203,10 +203,10 @@ class ViewportDefiner(HasTraits):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--display_server', type=str, required=True, help=\
+        '--display-server', type=str, required=True, help=\
         'the path of the display server to configure')
     parser.add_argument(
-        '--virtual_display_id', type=str, required=True, help=\
+        '--virtual-display-id', type=str, required=True, help=\
         'the id of the virtual display on the display server')
     # use argparse, but only after ROS did its thing
     argv = rospy.myargv()

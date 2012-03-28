@@ -168,7 +168,7 @@ MyNode::MyNode(int argc, char**argv) :
     osg::ArgumentParser arguments(&argc, argv);
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
     arguments.getApplicationUsage()->setDescription("Manual display/camera calibration utility");
-    arguments.getApplicationUsage()->addCommandLineOption("--config-file <filename>","Display server config JSON file");
+    arguments.getApplicationUsage()->addCommandLineOption("--config <filename>","Display server config JSON file");
     arguments.getApplicationUsage()->addCommandLineOption("--display-server <path>","Parameter server path to display_server");
     arguments.getApplicationUsage()->addCommandLineOption("--joystick-factor <number>","When using joystick for calibration, scales movement by this many pixels");
 
@@ -179,7 +179,7 @@ MyNode::MyNode(int argc, char**argv) :
     }
 
 	std::string json_filename = "";
-    while(arguments.read("--config-file", json_filename));
+    while(arguments.read("--config", json_filename));
 
 	std::string display_server_path = "";
     while(arguments.read("--display-server", display_server_path));
@@ -187,7 +187,7 @@ MyNode::MyNode(int argc, char**argv) :
     while(arguments.read("--joystick-factor", _joystick_factor));
 
     if (json_filename.empty() && display_server_path.empty()) {
-        ROS_FATAL("must specify one of --config-file or --display-server");
+        ROS_FATAL("must specify one of --config or --display-server");
         arguments.getApplicationUsage()->write(std::cout);
         exit(1);
     }
