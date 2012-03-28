@@ -2,6 +2,7 @@
 #include <OpenThreads/ScopedLock>
 
 #include <osg/ArgumentParser>
+#include <osg/ApplicationUsage>
 #include <osg/PolygonMode>
 #include <osg/MatrixTransform>
 #include <osg/Projection>
@@ -61,7 +62,9 @@ public:
     void joy_callback(const sensor_msgs::JoyConstPtr& message);
     int run();
 private:
-    void setup_viewer(std::string json_config, int &width, int &height);
+    void setup_viewer_json(std::string json_config, int &width_out, int &height_out);
+    void setup_viewer_ros(std::string &root, int &width_out, int &height_out);
+    void setup_viewer(int &x, int &y, int &width, int &height, int &displayNum, int &screenNum);
     osgViewer::Viewer* _viewer;
     osg::PositionAttitudeTransform * pat;
     int _height;
@@ -155,6 +158,7 @@ MyNode::MyNode(int argc, char**argv)
 {
     json_error_t json_error;
     json_t *json_config, *json_display;
+    int width,height;
 
     std::vector<std::string> non_ros_args;
     ros::removeROSArgs (argc, argv, non_ros_args);
@@ -171,33 +175,51 @@ MyNode::MyNode(int argc, char**argv)
 
     osg::ArgumentParser arguments(&argc, argv);
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
-    arguments.getApplicationUsage()->addCommandLineOption("--cfg <filename>","Display server config JSON file");
+    arguments.getApplicationUsage()->setDescription("Manual display/camera calibration utility");
+    arguments.getApplicationUsage()->addCommandLineOption("--display_server_json <filename>","Display server config JSON file");
+    arguments.getApplicationUsage()->addCommandLineOption("--display_server <path>","Parameter server path to display_server");
 
-	std::string json_filename = "/tmp/display_server.json";
-    while(arguments.read("--cfg", json_filename));
+    osg::ApplicationUsage::Type help = arguments.readHelpType();
+    if (help != osg::ApplicationUsage::NO_HELP) {
+        arguments.getApplicationUsage()->write(std::cout);
+        exit(0);
+    }
 
-    json_config = json_load_file(json_filename.c_str(), 0, &json_error);
-	json_display = json_object_get(json_config, "display");
+	std::string json_filename = "";
+    while(arguments.read("--display_server_json", json_filename));
 
-    std::string json_message = json_dumps(json_display, 0);
+	std::string display_server_path = "";
+    while(arguments.read("--display_server", display_server_path));
 
+	// setup the viewer.
 	osg::ref_ptr<osg::Group> root = new osg::Group; root->addDescription("root node");
-
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
 
-	// construct the viewer.
-    int width,height;
-    setup_viewer(json_message, width,height);
-    {
-        osgViewer::Viewer::Windows windows;
-        _viewer->getWindows(windows);
-        for(osgViewer::Viewer::Windows::iterator itr = windows.begin(); itr != windows.end();++itr)
-            {
-                //(*itr)->useCursor(false);
-                (*itr)->setCursor(osgViewer::GraphicsWindow::NoCursor);
-            }
+    if (!json_filename.empty()) {
+        if (!Poco::File(Poco::Path(json_filename)).isFile()) {
+            std::cerr << "Could not find json file\n\n";
+            arguments.getApplicationUsage()->write(std::cout);
+            exit(1);
+        } else {
+            json_config = json_load_file(json_filename.c_str(), 0, &json_error);
+	        json_display = json_object_get(json_config, "display");
+            std::string json_message = json_dumps(json_display, 0);
+            setup_viewer_json(json_message, width, height);
+        }
+    } else if (!display_server_path.empty()) {
+        setup_viewer_ros(display_server_path, width, height);
+    } else { 
+        std::cerr << "Must specify one of --display_server_json or --display_server\n\n";
+        arguments.getApplicationUsage()->write(std::cout);
+        exit(1);
+    }
 
+    osgViewer::Viewer::Windows windows;
+    _viewer->getWindows(windows);
+    for(osgViewer::Viewer::Windows::iterator itr = windows.begin(); itr != windows.end();++itr) {
+        //(*itr)->useCursor(false);
+        (*itr)->setCursor(osgViewer::GraphicsWindow::NoCursor);
     }
     _viewer->addEventHandler(new KeyboardEventHandler(this));
 
@@ -242,6 +264,7 @@ MyNode::MyNode(int argc, char**argv)
 
     _viewer->getCamera()->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
 	_viewer->getCamera()->setClearMask( GL_DEPTH_BUFFER_BIT);
+
 }
 
 void MyNode::joy_callback(const sensor_msgs::JoyConstPtr& msg)
@@ -276,82 +299,93 @@ int MyNode::run() {
     return 0;
 }
 
-void MyNode::setup_viewer(std::string json_config, int& width, int& height) {
+void MyNode::setup_viewer(int &x, int &y, int &width, int &height, int &displayNum, int &screenNum) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
     traits->windowName = "configure projector";
+    traits->width = width;
+    traits->height = height;
+	traits->x = x;
+	traits->y = y;
+	traits->hostName = '\0';
+	traits->displayNum = displayNum;
+	traits->screenNum = screenNum;
 
-	{
-		json_t *root;
-		json_error_t error;
+	traits->windowDecoration = false;
+	traits->overrideRedirect = true;
+	traits->doubleBuffer = true;
+	traits->sharedContext = 0;
+	traits->pbuffer = false;
 
-		root = json_loads(json_config.c_str(), 0, &error);
-		if(!root) {
-			fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
-            throw std::runtime_error("Could not read JSON");
-		}
+	osg::ref_ptr<osg::GraphicsContext> gc;
+	gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+	assert(gc.valid());
 
-		json_t *width_json = json_object_get(root, "width");
-		if(json_is_integer(width_json)){
-			width = json_integer_value( width_json );
-		}
+	//_viewer->setUpViewInWindow( win_origin_x, win_origin_y, width, height );
+	_viewer->getCamera()->setGraphicsContext(gc.get());
+	_viewer->getCamera()->setViewport(new osg::Viewport(0,0, width, traits->height));
+    _height= traits->height;
+	GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
+	_viewer->getCamera()->setDrawBuffer(buffer);
+	_viewer->getCamera()->setReadBuffer(buffer);
+}
 
-		json_t *height_json = json_object_get(root, "height");
-		if(json_is_integer(height_json)){
-			height = json_integer_value( height_json );
-		}
+void MyNode::setup_viewer_json(std::string json_config, int& width, int& height) {
+	json_t *root;
+	json_error_t error;
 
-		json_t *win_origin_x_json = json_object_get(root, "x");
-		if(json_is_integer(win_origin_x_json)){
-			traits->x = json_integer_value( win_origin_x_json );
-		}
-
-		json_t *win_origin_y_json = json_object_get(root, "y");
-		if(json_is_integer(win_origin_y_json)){
-			traits->y = json_integer_value( win_origin_y_json );
-		}
-
-		json_t *tmp_json;
-		tmp_json = json_object_get(root, "hostName");
-		if (json_is_string(tmp_json)) {
-			traits->hostName = json_string_value( tmp_json );
-		}
-
-		tmp_json = json_object_get(root, "displayNum");
-		if (json_is_integer(tmp_json)) {
-			traits->displayNum = json_integer_value( tmp_json );
-		}
-
-		tmp_json = json_object_get(root, "screenNum");
-		if (json_is_integer(tmp_json)) {
-			traits->screenNum = json_integer_value( tmp_json );
-		}
-
-		traits->windowDecoration = false;
-		traits->overrideRedirect = true;
-		traits->doubleBuffer = true;
-		traits->sharedContext = 0;
-		traits->pbuffer = false;
-
-		json_decref(root);
+	root = json_loads(json_config.c_str(), 0, &error);
+	if(!root) {
+		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
+        throw std::runtime_error("Could not read JSON");
 	}
-	traits->width = width;
-	traits->height = height;
 
-    {
-		osg::ref_ptr<osg::GraphicsContext> gc;
-		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		assert(gc.valid());
+    int x, y, displayNum, screenNum;
 
-		//_viewer->setUpViewInWindow( win_origin_x, win_origin_y, width, height );
-		_viewer->getCamera()->setGraphicsContext(gc.get());
-		_viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
-        _height= traits->height;
-		GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
-		_viewer->getCamera()->setDrawBuffer(buffer);
-		_viewer->getCamera()->setReadBuffer(buffer);
-
+	json_t *width_json = json_object_get(root, "width");
+	if(json_is_integer(width_json)){
+		width = json_integer_value( width_json );
 	}
-    //	resized(width, height); // notify listeners that we have a new size
+
+	json_t *height_json = json_object_get(root, "height");
+	if(json_is_integer(height_json)){
+		height = json_integer_value( height_json );
+	}
+
+	json_t *win_origin_x_json = json_object_get(root, "x");
+	if(json_is_integer(win_origin_x_json)){
+		x = json_integer_value( win_origin_x_json );
+	}
+
+	json_t *win_origin_y_json = json_object_get(root, "y");
+	if(json_is_integer(win_origin_y_json)){
+		y = json_integer_value( win_origin_y_json );
+	}
+
+	json_t *tmp_json;
+	tmp_json = json_object_get(root, "displayNum");
+	if (json_is_integer(tmp_json)) {
+		displayNum = json_integer_value( tmp_json );
+	}
+
+	tmp_json = json_object_get(root, "screenNum");
+	if (json_is_integer(tmp_json)) {
+		screenNum = json_integer_value( tmp_json );
+	}
+
+    setup_viewer(x, y, width, height, displayNum, screenNum);
+}
+
+void MyNode::setup_viewer_ros(std::string &root, int& width, int& height) {
+    int x, y, displayNum, screenNum;
+
+    ros::param::get (root + "/display/x", x);
+    ros::param::get (root + "/display/y", y);
+    ros::param::get (root + "/display/width", width);
+    ros::param::get (root + "/display/height", height);
+    ros::param::get (root + "/display/screenNum", screenNum);
+    ros::param::get (root + "/display/displayNum", displayNum);
+
+    setup_viewer(x, y, width, height, displayNum, screenNum);
 }
 
 
