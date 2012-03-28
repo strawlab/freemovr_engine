@@ -1,0 +1,20 @@
+{
+  "stimulus_plugins":[],
+   "geom":{
+   "model": "sphere",
+   "center": {"y": 0.0, "x": 0.0, "z": 0.0},
+   "radius": 0.02
+   },
+  "display":{
+      "width": 1024,
+      "height": 768,
+      "x": 0,
+      "y": 0,
+      "displayNum": 0,
+      "screenNum": 1,
+      "windowDecoration": false,
+      "virtualDisplays":[{"id":"vdisp","viewport":[[0, 0], [1024, 0], [1024, 0], [0, 768]]}]
+  },
+  "p2c":"p2c.exr",
+  "p2g":"p2g.exr"
+}
