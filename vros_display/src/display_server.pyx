@@ -16,8 +16,6 @@ import sys, time, os, warnings, threading, Queue, tempfile
 import json
 import argparse
 
-import pprint
-
 import numpy as np
 cimport numpy as np
 
@@ -103,9 +101,6 @@ cdef extern from "dsosg.h" namespace "dsosg":
         float getFrameRate() nogil except +
 
 # ================================================================
-
-def _log(var, msg=""):
-    print "--->%s: \n%s" % (msg, pprint.pformat(var,indent=4))
 
 def _import_message_name( message_type_name ):
     message_type_name = message_type_name.replace('/','.') # split on '.' or '/'
@@ -197,22 +192,21 @@ cdef class MyNode:
             config_file = args.config
             with open(config_file,'r') as f:
                 try:
-                    print "using config file"
+                    rospy.loginfo("using config file")
                     config_dict = json.load(f)
                 except ValueError:
                     pass
         elif config_dict:
-            print "using ros config"
+            rospy.loginfo("using ros config")
             config_file = '/tmp/%s.json' % rospy.get_name()
             with open(config_file,mode='w') as f:
                 f.write(json.dumps(config_dict))
         else:
-            print "using default config"
+            rospy.loginfo("using default config")
             config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.json')
             config_dict = json.load(open(config_file,'r'))
 
-        print 'config file',config_file
-        print 'config dict',config_dict
+        rospy.loginfo("wrote config_file to %s" % config_file)
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
@@ -247,7 +241,7 @@ cdef class MyNode:
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
             name = plugin_names.at(i).c_str()
-            print 'plugin:',name
+            rospy.loginfo('loaded plugin: %s' % name)
             if self.subscription_mode == 'always':
                 self.register_subscribers(name)
 
@@ -265,7 +259,8 @@ cdef class MyNode:
         result = {'id':rospy.get_name(),
                   'width':self.dsosg.getXSize(),
                   'height':self.dsosg.getYSize(),
-                  'framerate':self.dsosg.getFrameRate()
+                  'framerate':self.dsosg.getFrameRate(),
+                  'virtualDisplays':rospy.get_param('~display/virtualDisplays')
                   }
 
         response = vros_display.srv.GetDisplayInfoResponse()

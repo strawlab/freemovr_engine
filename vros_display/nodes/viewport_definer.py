@@ -2,7 +2,6 @@
 # ROS imports
 import roslib; roslib.load_manifest('vros_display')
 import rospy
-import dynamic_reconfigure.client
 
 import vros_display.srv
 import vros_display.msg
@@ -58,19 +57,21 @@ def posint(x,maxval=np.inf):
 class ViewportDefiner(HasTraits):
     width = traits.Int
     height = traits.Int
-    display_id = traits.String
+    display_name = traits.String
     plot = Instance(Component)
     linedraw = Instance(LineSegmentTool)
-    viewport_id = traits.String('viewport_0')
+    viewport_id = traits.String
     display_mode = traits.Trait('white on black', 'black on white')
     client = traits.Any
     blit_compressed_image_proxy = traits.Any
+    display_info = traits.Any
 
     set_display_server_mode_proxy = traits.Any
 
     traits_view = View(
                     Group(
         Item('display_mode'),
+        Item('display_name'),
         Item('viewport_id'),
                         Item('plot', editor=ComponentEditor(),
                              show_label=False),
@@ -78,33 +79,35 @@ class ViewportDefiner(HasTraits):
                     resizable=True,
                     )
 
-    def __init__(self,*args,**kwargs):
-        super( ViewportDefiner, self ).__init__(*args,**kwargs)
-        self.param_name = 'virtual_display_config_json_string'
-        self.fqdn = '/virtual_displays/'+self.display_id + '/' + self.viewport_id
-        self.fqpn = self.fqdn + '/' + self.param_name
-        self.client = dynamic_reconfigure.client.Client(self.fqdn)
+    def __init__(self, *args, **kwargs):
+        super(ViewportDefiner, self).__init__(*args, **kwargs)
+
+        #find our index in the viewport list
+        self.viewport_idx = -1
+        for i,obj in enumerate(self.display_info['virtualDisplays']):
+            if obj['id'] == self.viewport_id:
+                self.viewport_idx = i
+
+        if self.viewport_idx == -1:
+            raise Exception("Could not find viewport")
 
         self._update_image()
-        if 1:
-            virtual_display_json_str = rospy.get_param(self.fqpn)
-            this_virtual_display = json.loads( virtual_display_json_str )
 
-        if 1:
-            virtual_display_json_str = rospy.get_param(self.fqpn)
-            this_virtual_display = json.loads( virtual_display_json_str )
+        self.fqdn = self.display_name + '/display/virtualDisplays'
+        self.this_virtual_display = self.display_info['virtualDisplays'][self.viewport_idx]
 
-            all_points_ok = True
-            # error check
-            for (x,y) in this_virtual_display['viewport']:
-                if (x >= self.width) or (y >= self.height):
-                    all_points_ok = False
-                    break
-            if all_points_ok:
-                self.linedraw.points = this_virtual_display['viewport']
-            # else:
-            #     self.linedraw.points = []
-            self._update_image()
+        all_points_ok = True
+        # error check
+        for (x,y) in self.this_virtual_display['viewport']:
+            if (x >= self.width) or (y >= self.height):
+                all_points_ok = False
+                break
+        if all_points_ok:
+            self.linedraw.points = self.this_virtual_display['viewport']
+        else:
+            self.linedraw.points = []
+            rospy.logwarn('invalid points')
+        self._update_image()
 
     def _update_image(self):
         self._image = np.zeros( (self.height, self.width, 3), dtype=np.uint8)
@@ -193,51 +196,38 @@ class ViewportDefiner(HasTraits):
 
     def update_ROS_params(self):
         viewport_verts = self.get_viewport_verts()
-        virtual_display_json_str = rospy.get_param(self.fqpn)
-        this_virtual_display = json.loads( virtual_display_json_str )
-
-        new_info =  { 'type':'virtual display',
-                      'id':self.viewport_id,
-                      'physical_display_id':self.display_id,
-                      'viewport':viewport_verts,
-                      }
-
-        invalid_keys = ['calibration_matrix','display_surface_geometry'] # now these are invalid?
-
-        this_virtual_display.update(new_info)
-        virtual_display_json_str = json.dumps(this_virtual_display)
-        config = self.client.update_configuration( {self.param_name:virtual_display_json_str} )
-        print 'updated ROS parameters to %s'%(viewport_verts,)
+        self.this_virtual_display['viewport'] = viewport_verts
+        self.display_info['virtualDisplays'][self.viewport_idx] = self.this_virtual_display
+        rospy.set_param(self.fqdn, self.display_info['virtualDisplays'])
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--virtual_display_id', type=str, required=True)
+        '--display_server', type=str, required=True, help=\
+        'the path of the display server to configure')
+    parser.add_argument(
+        '--virtual_display_id', type=str, required=True, help=\
+        'the id of the virtual display on the display server')
     # use argparse, but only after ROS did its thing
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-
     rospy.init_node('viewport_definer')
 
-    display_server = display_client.DisplayServerProxy()
+    display_server = display_client.DisplayServerProxy(args.display_server)
     display_server.enter_standby_mode()
     display_server.set_mode('display2d')
+
     display_info = display_server.get_display_info()
-
-    display_id, virtual_display_id = args.virtual_display_id.split('/')
-
-    if display_id != display_info['id']:
-        raise ValueError('display id ("%s") does not match that of server ("%s")'%(
-                display_id,display_info['id']))
 
     blit_compressed_image_proxy = rospy.ServiceProxy(display_server.get_fullname('blit_compressed_image'),
                                                      vros_display.srv.BlitCompressedImage)
 
-    demo = ViewportDefiner(width=display_info['width'],
+    demo = ViewportDefiner(display_info=display_info,
+                           width=display_info['width'],
                            height=display_info['height'],
-                           display_id=display_id,
-                           viewport_id = virtual_display_id,
+                           display_name=args.display_server,
+                           viewport_id = args.virtual_display_id,
                            blit_compressed_image_proxy = blit_compressed_image_proxy,
                            )
 

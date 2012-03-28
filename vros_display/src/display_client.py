@@ -5,12 +5,14 @@ import json
 import warnings
 
 class DisplayServerProxy(object):
-    def __init__(self):
-        self._server_node_name=rospy.resolve_name('display_server')
-        if self._server_node_name=='/display_server':
-            rospy.logwarn('seeking display server with default name "/display_server". '\
-                              'If display server has been started with a non default name, this will fail. '\
-                              '(Hint remap name with display_server:=new_name )')
+    def __init__(self, display_server_node_name=None):
+        if not display_server_node_name:
+            self._server_node_name = rospy.resolve_name('display_server')
+        else:
+            self._server_node_name = rospy.resolve_name(display_server_node_name)
+
+        rospy.loginfo('trying display server: %s' % self._server_node_name)
+
         self.get_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('get_display_server_mode'),
                                                                 vros_display.srv.GetDisplayServerMode)
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
