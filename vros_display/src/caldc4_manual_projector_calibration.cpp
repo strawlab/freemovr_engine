@@ -70,6 +70,7 @@ private:
     int _height;
     ros::NodeHandle* _node;
     ros::Subscriber _sub;
+    float _joystick_factor;
 };
 
 class KeyboardEventHandler : public osgGA::GUIEventHandler
@@ -154,7 +155,8 @@ osg::Camera* createBG(int width, int height)
 	return camera;
 }
 
-MyNode::MyNode(int argc, char**argv)
+MyNode::MyNode(int argc, char**argv) : 
+    _joystick_factor(1.0)
 {
     json_error_t json_error;
     json_t *json_config, *json_display;
@@ -168,6 +170,7 @@ MyNode::MyNode(int argc, char**argv)
     arguments.getApplicationUsage()->setDescription("Manual display/camera calibration utility");
     arguments.getApplicationUsage()->addCommandLineOption("--config-file <filename>","Display server config JSON file");
     arguments.getApplicationUsage()->addCommandLineOption("--display-server <path>","Parameter server path to display_server");
+    arguments.getApplicationUsage()->addCommandLineOption("--joystick-factor <number>","When using joystick for calibration, scales movement by this many pixels");
 
     osg::ApplicationUsage::Type help = arguments.readHelpType();
     if (help != osg::ApplicationUsage::NO_HELP) {
@@ -180,6 +183,8 @@ MyNode::MyNode(int argc, char**argv)
 
 	std::string display_server_path = "";
     while(arguments.read("--display-server", display_server_path));
+
+    while(arguments.read("--joystick-factor", _joystick_factor));
 
     if (json_filename.empty() && display_server_path.empty()) {
         ROS_FATAL("must specify one of --config-file or --display-server");
@@ -281,7 +286,7 @@ void MyNode::joy_callback(const sensor_msgs::JoyConstPtr& msg)
         return;
     }
 
-    osg::Vec3 newpos = pat->getPosition() + osg::Vec3(-1.0*x,1.0*y,0.0);
+    osg::Vec3 newpos = pat->getPosition() + osg::Vec3(-1.0*_joystick_factor*x,_joystick_factor*y,0.0);
     pat->setPosition(newpos);
 }
 
