@@ -41,6 +41,9 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
+#include "ros/ros.h"
+#include "sensor_msgs/Joy.h"
+
 #include <jansson.h>
 
 #include <assert.h>
@@ -55,12 +58,15 @@ public:
     MyNode(int argc, char**argv);
     void mouse_move( int _mx, int _my );
     void mouse_click( int _mx, int _my );
+    void joy_callback(const sensor_msgs::JoyConstPtr& message);
     int run();
 private:
     void setup_viewer(std::string json_config, int &width, int &height);
     osgViewer::Viewer* _viewer;
     osg::PositionAttitudeTransform * pat;
     int _height;
+    ros::NodeHandle* _node;
+    ros::Subscriber _sub;
 };
 
 class KeyboardEventHandler : public osgGA::GUIEventHandler
@@ -150,6 +156,14 @@ MyNode::MyNode(int argc, char**argv)
     json_error_t json_error;
     json_t *json_config, *json_display;
 
+    std::vector<std::string> non_ros_args;
+    ros::removeROSArgs (argc, argv, non_ros_args);
+
+    ros::init(argc, argv, "manual_display_calibration");
+
+    _node = new ros::NodeHandle();
+    _sub = _node->subscribe("/joy", 10, &MyNode::joy_callback, this);
+
     Poco::Path exe_path(argv[0]); exe_path.absolute().makeFile();
 
     Poco::Path image_path(exe_path.makeParent().makeParent());
@@ -159,7 +173,7 @@ MyNode::MyNode(int argc, char**argv)
     arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
     arguments.getApplicationUsage()->addCommandLineOption("--cfg <filename>","Display server config JSON file");
 
-	std::string json_filename = "config.json";
+	std::string json_filename = "/tmp/display_server.json";
     while(arguments.read("--cfg", json_filename));
 
     json_config = json_load_file(json_filename.c_str(), 0, &json_error);
@@ -230,6 +244,21 @@ MyNode::MyNode(int argc, char**argv)
 	_viewer->getCamera()->setClearMask( GL_DEPTH_BUFFER_BIT);
 }
 
+void MyNode::joy_callback(const sensor_msgs::JoyConstPtr& msg)
+{
+    float x = msg->axes[0];
+    float y = msg->axes[1];
+
+    if (msg->buttons[0]) {
+        osg::Vec3 curr = pat->getPosition();
+        std::cout << curr.x() << " " << _height-curr.y() << std::endl;
+        return;
+    }
+
+    osg::Vec3 newpos = pat->getPosition() + osg::Vec3(-1.0*x,1.0*y,0.0);
+    pat->setPosition(newpos);
+}
+
 void MyNode::mouse_move( int _mx, int _my ) {
     pat->setPosition(osg::Vec3(_mx,_my,0.0f));
 }
@@ -240,10 +269,9 @@ void MyNode::mouse_click( int _mx, int _my ) {
 }
 
 int MyNode::run() {
-    while (!_viewer->done()) {
+    while (!_viewer->done() && ros::ok()) {
         _viewer->frame();
-
-
+        ros::spinOnce();
     }
     return 0;
 }
@@ -329,5 +357,7 @@ void MyNode::setup_viewer(std::string json_config, int& width, int& height) {
 
 int main(int argc, char**argv) {
 	MyNode* n=new MyNode(argc,argv);
+//    ros::start();
 	return n->run();
+//    ros::shutdown();
 }
