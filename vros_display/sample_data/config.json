@@ -12,7 +12,8 @@
       "y": 0,
       "displayNum": 0,
       "screenNum": 0,
-      "windowDecoration": true
+      "windowDecoration": true,
+      "virtualDisplays":[{"id":"vdisp","viewport":[[0, 0], [1024, 0], [1024, 0], [0, 768]]}]
   },
   "p2c":"p2c.exr",
   "p2g":"p2g.exr"
