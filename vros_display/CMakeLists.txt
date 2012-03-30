@@ -98,6 +98,9 @@ IF(BUILD_VROS)
   rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp)
   TARGET_LINK_LIBRARIES(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
+  rosbuild_add_library(Stimulus2DSprite src/Stimulus2DSprite.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
   rosbuild_add_library(StimulusTemplate src/StimulusTemplate.cpp)
   TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 

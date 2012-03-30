@@ -51,7 +51,6 @@ class StimulusInterface
 
   osg::ref_ptr<osg::PositionAttitudeTransform> _skybox_pat;
 
- private:
   std::string _vros_display_base_path;
 };
 

@@ -384,6 +384,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_3d_demo");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_2d_blit");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_standby");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DSprite");
 
 	if (!Poco::File(_config_file_path).exists()) {
 		std::cerr << "configuration file " << _config_file_path.toString() << " does not exist." << std::endl;
