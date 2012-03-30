@@ -15,11 +15,22 @@ class StimulusInterface
   // This is called when initializing the plugin to tell it where to find vros_display's data.
   virtual void set_vros_display_base_path(std::string vros_display_base_path);
 
+  // Initialization that requires access to configuration data directory goes here.
   virtual void post_init(std::string config_data_dir) {};
-  virtual void resized(int width,int height) {};
+
+  // An event fired when the display window is resized.
+  virtual void resized(int width,int height) {}; 
+
+  // The plugin returns 3D part of scenegraph from this call.
   virtual osg::ref_ptr<osg::Group> get_3d_world() {return 0;}
+
+  // The plugin returns the 2D overlay HUD (heads up display) from this call.
   virtual osg::ref_ptr<osg::Group> get_2d_hud() {return 0;}
+
+  // The plugin returns its name in this call. Should match the class name.
   virtual std::string name() const = 0;
+
+  // The plugin returns the color with which to clear the screen here.
   virtual osg::Vec4 get_clear_color() const;
 
   virtual void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
