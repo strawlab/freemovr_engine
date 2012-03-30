@@ -98,6 +98,9 @@ IF(BUILD_VROS)
   rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp)
   TARGET_LINK_LIBRARIES(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
+  rosbuild_add_library(StimulusTemplate src/StimulusTemplate.cpp)
+  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
   # build the main display server node ----------
   rosbuild_add_executable(display_server display_server.cpp ${DS_SOURCES})
 
