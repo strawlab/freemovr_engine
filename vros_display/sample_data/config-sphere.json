@@ -13,8 +13,8 @@
       "displayNum": 0,
       "screenNum": 1,
       "windowDecoration": false,
-      "virtualDisplays":[{"id":"vdisp","viewport":[[0, 0], [1024, 0], [1024, 0], [0, 768]]}]
+      "virtualDisplays":[{"id":"vdisp","viewport":[[0, 0], [1023, 0], [1023, 0], [0, 767]]}]
   },
   "p2c":"p2c.exr",
-  "p2g":"p2g.exr"
+  "p2g":"/home/strawlab/stim-config/p2g.exr"
 }

@@ -19,11 +19,10 @@ import mahotas.polygon
 import matplotlib.pyplot as plt
 
 def load_params(physical_display_id, virtual_display_id):
-    param_name = 'virtual_display_config_json_string'
-    fqdn = '/virtual_displays/'+physical_display_id + '/' +  virtual_display_id
-    fqpn = fqdn + '/' + param_name
-    virtual_display_json_str = rospy.get_param(fqpn)
-    return json.loads( virtual_display_json_str )
+    for virtual_display in rospy.get_param('/display_server/display/virtualDisplays'):
+        if virtual_display['id']==virtual_display_id:
+            result = virtual_display
+    return result # raise error if not found
 
 def get_verts( camera, geom):
     allw = []
@@ -68,7 +67,7 @@ def create_display2tcs(geometry_filename,
     if not len(physical_display_ids)==1:
         raise ValueError('need one, and only one, physical display. (You have %s)'%physical_display_ids)
 
-    display_params = rospy.get_param('/physical_displays/'+physical_display_ids[0])
+    display_params = rospy.get_param('/display_server/display/')
     tcs = np.zeros( (display_params['height'],display_params['width'],2))-1
     allmask = np.zeros( (display_params['height'],display_params['width']))
     EM = np.zeros( (display_params['height'],display_params['width']), dtype=np.uint8)
@@ -84,8 +83,11 @@ def create_display2tcs(geometry_filename,
         else:
             vdisp_params = load_params(physical_display_id, virtual_display_id)
 
+        print 'vdisp_params',vdisp_params
+
         maskarr = np.zeros( allmask.shape, dtype=np.uint8 )
-        mahotas.polygon.fill_polygon([(y,x) for (x,y) in vdisp_params.get('viewport',[])], maskarr)
+        polygon_verts = [(y,x) for (x,y) in vdisp_params.get('viewport',[])]
+        mahotas.polygon.fill_polygon(polygon_verts, maskarr)
         if np.max(maskarr)==0: # no mask
             maskarr += 1
 
