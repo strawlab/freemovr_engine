@@ -10,6 +10,7 @@ import tornado.template
 
 import os
 import json
+import socket
 
 # ROS imports
 import roslib; roslib.load_manifest('browser_joystick')
@@ -59,7 +60,7 @@ settings = dict(
     )
 
 echo_ws_path = 'echo'
-host = '10.0.0.222'
+host = socket.gethostbyname(socket.gethostname())
 port = 1024
 base_url = '%s:%d'%(host,port)
 
