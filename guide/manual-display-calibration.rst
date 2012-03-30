@@ -31,7 +31,8 @@ for several poses of a checkerboard.
 
 ::
 
-    rosrun vros_display caldc4_manual_projector_calibration --cfg /tmp/display_server.json
+    rosrun vros_display display_server
+    rosrun vros_display joystick_cursor
 
 This will print a bunch coordinates each time you click the
 mouse. Save the coordinates from left-to-right, top-to-bottom order

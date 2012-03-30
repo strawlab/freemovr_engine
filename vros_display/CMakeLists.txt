@@ -113,9 +113,6 @@ IF(BUILD_VROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
   # build other calibration programs  ----------
-  rosbuild_add_executable(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp)
-  TARGET_LINK_LIBRARIES(caldc4_manual_projector_calibration ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-
   rosbuild_add_executable(create_p2g ${P2G_SOURCES})
   INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
   TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
@@ -155,9 +152,6 @@ ELSE(BUILD_VROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
   # build other calibration programs  ----------
-  ADD_EXECUTABLE(caldc4_manual_projector_calibration src/caldc4_manual_projector_calibration.cpp)
-  TARGET_LINK_LIBRARIES(caldc4_manual_projector_calibration ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-
   ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
   INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
   TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
