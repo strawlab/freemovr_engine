@@ -2,8 +2,11 @@
 
 #include <osg/Vec3>
 #include <osg/Quat>
+#include <osg/ArgumentParser>
+#include <osg/ApplicationUsage>
 
 #include "Poco/Timestamp.h"
+#include "Poco/Path.h"
 
 #include "dsosg.h"
 
@@ -12,9 +15,25 @@ int main(int argc, char**argv) {
   Poco::Timestamp time;
   bool done;
 
-  std::string vros_display_basepath = "/home/stowers/vros-devel/vros/vros_display";
-  std::string config_file = "/home/stowers/vros-devel/vros/vros_display/sample_data/config.json";
-  std::string mode = "vr_display";
+  osg::ArgumentParser arguments(&argc, argv);
+  arguments.getApplicationUsage()->setApplicationName(arguments.getApplicationName());
+  arguments.getApplicationUsage()->setDescription("Manual display/camera calibration utility");
+  arguments.getApplicationUsage()->addCommandLineOption("--config <filename>","Display server config JSON file");
+  arguments.getApplicationUsage()->addCommandLineOption("--display-mode <name>","Display mode");
+
+  osg::ApplicationUsage::Type help = arguments.readHelpType();
+  if (help != osg::ApplicationUsage::NO_HELP) {
+      arguments.getApplicationUsage()->write(std::cout);
+      exit(0);
+  }
+
+  std::string config_filename = "~/vros-devel/vros/vros_display/sample_data/config.json";
+  while(arguments.read("--config", config_filename));
+
+  std::string display_mode = "vr_display";
+  while(arguments.read("--display-mode", display_mode));
+
+  std::string vros_display_basepath = "/home/john/Programming/vros.git/vros_display/";
   float observer_radius = 0.01;
   bool two_pass = false;
   bool show_geom_coords = false;
@@ -24,9 +43,9 @@ int main(int argc, char**argv) {
 
   dsosg = new dsosg::DSOSG(
                         vros_display_basepath,
-                        mode,
+                        display_mode,
                         observer_radius,
-                        config_file,
+                        config_filename,
                         two_pass,
                         show_geom_coords);
 
