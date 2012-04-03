@@ -401,12 +401,13 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		exit(1);
 	} else {
         for (unsigned int i=0; i<json_array_size(json_stimulus); i++) {
+            // TODO FIXME: make sure that JSON is valid ("path" and
+            // "name" keys exist) and fail nicely if not.
             Poco::Path plugin_path = _config_file_path.parent().resolve(
                                         Poco::Path(json_string_value (
                                                     json_object_get (
                                                     json_array_get (json_stimulus, i), "path"))));
             std::string plugin_name = json_string_value (json_object_get (json_array_get (json_stimulus, i), "name"));
-
 			stimulus_plugin_paths.push_back( plugin_path.toString() );
 			stimulus_plugin_names.push_back( plugin_name );
         }
