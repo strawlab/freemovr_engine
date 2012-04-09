@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # ROS imports
 import roslib; roslib.load_manifest('vros_display')
+import rospy
 import rosbag
 
 import camera_model
@@ -8,7 +9,7 @@ import camera_model
 import numpy as np
 import argparse
 import json
-import glob
+import sys, glob
 import matplotlib.pyplot as plt
 
 from camera_calibration.calibrator import MonoCalibrator, ChessboardInfo
@@ -47,13 +48,18 @@ def find_intrinsics(visualize=False):
 
         xy = np.loadtxt(f)
         xys.append(xy)
+        if len(xy) != board.n_cols * board.n_rows:
+            rospy.logfatal('Error: %d points in %s. Expected %d.'%(
+                len(xy), f, board.n_cols * board.n_rows))
+            sys.exit(1)
         if visualize:
             if 0:
                 plt.figure()
-            plt.plot( xy[:,0], xy[:,1], 'o-', mfc='none' )
+            plt.plot( xy[:,0], xy[:,1], 'o-', mfc='none', label=f )
         corners = [ (x,y) for (x,y) in xy ]
         good.append( (corners, board) )
     if visualize:
+        plt.legend()
         plt.show()
 
     mc = MonoCalibrator([ board ])#, cv2.CALIB_FIX_K1 | cv2.CALIB_FIX_K2 | cv2.CALIB_FIX_K3 | cv2.CALIB_ZERO_TANGENT_DIST )
