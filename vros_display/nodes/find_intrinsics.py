@@ -18,6 +18,7 @@ import cv2
 import fit_extrinsics
 
 def find_intrinsics(visualize=False):
+    fatal = False
     good = []
     xys = []
 
@@ -31,6 +32,7 @@ def find_intrinsics(visualize=False):
     print 'all data files matching "%s"'%(globber,)
     print files
     for f in files:
+        this_fatal = False
         parts = f.split('-')
         board = None
         for p in parts:
@@ -51,16 +53,29 @@ def find_intrinsics(visualize=False):
         if len(xy) != board.n_cols * board.n_rows:
             rospy.logfatal('Error: %d points in %s. Expected %d.'%(
                 len(xy), f, board.n_cols * board.n_rows))
-            sys.exit(1)
+            this_fatal = True
+            fatal = True
         if visualize:
             if 0:
                 plt.figure()
-            plt.plot( xy[:,0], xy[:,1], 'o-', mfc='none', label=f )
+            fmt = 'o-'
+            label = f
+            if this_fatal:
+                fmt = 'kx:'
+                label = 'BAD: '+ f
+            plt.plot( xy[:,0], xy[:,1], fmt, mfc='none', label=label )
+            if this_fatal:
+                for i in range(len(xy)):
+                    plt.text( xy[i,0],
+                              xy[i,1],
+                              str(i) )
         corners = [ (x,y) for (x,y) in xy ]
         good.append( (corners, board) )
     if visualize:
         plt.legend()
         plt.show()
+    if fatal:
+        sys.exit(1)
 
     mc = MonoCalibrator([ board ])#, cv2.CALIB_FIX_K1 | cv2.CALIB_FIX_K2 | cv2.CALIB_FIX_K3 | cv2.CALIB_ZERO_TANGENT_DIST )
     mc.size = tuple(setup['size'])
