@@ -42,7 +42,7 @@ class ROSLightingController:
                     if j == 5:
                         self.p.current(req.current)
                     if j == 7:
-                        self.p.enable_output()
+                        self.p.set_output(req.enable)
                     time.sleep(0.2)
                 v,i,mode = self.p.reading()
         return flydra_utils.srv.SetPSUPowerResponse(voltage=v,current=i,mode=mode)

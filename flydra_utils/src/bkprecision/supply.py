@@ -134,6 +134,12 @@ class Supply1696_1698(object):
         """Enable output."""
         self.command('SOUT', '1')
 
+    def set_output(self, enable):
+        if enable:
+            self.enable_output()
+        else:
+            self.disable_output()
+
     def open(self):
         if self.ser and not self.ser.isOpen():
             self.ser.open()
