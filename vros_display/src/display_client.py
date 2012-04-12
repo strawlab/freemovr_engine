@@ -58,6 +58,9 @@ class DisplayServerProxy(object):
         # get to the receiver.
         self._spin_wait(mode)
 
+    def get_mode(self):
+        return self.get_display_server_mode_proxy().mode
+
     def get_display_info(self):
         get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
                                                     vros_display.srv.GetDisplayInfo)
