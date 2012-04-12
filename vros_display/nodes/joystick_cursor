@@ -5,14 +5,11 @@ import roslib; roslib.load_manifest('vros_display')
 import rospy
 
 from geometry_msgs.msg import Pose2D
-from  sensor_msgs.msg import Joy
-import vros_display.srv
+from sensor_msgs.msg import Joy
 
 import display_client
 
 import os
-import numpy as np
-import argparse
 
 class App:
     def __init__(self):
@@ -63,11 +60,6 @@ class App:
         self.display_server.set_mode(self.old_mode)
 
 def main():
-    parser = argparse.ArgumentParser()
-    # use argparse, but only after ROS did its thing
-    argv = rospy.myargv()
-    args = parser.parse_args(argv[1:])
-
     app = App()
 	app.run()
 
