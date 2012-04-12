@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
+
 import roslib; roslib.load_manifest('flydra_utils')
 import rospy
 
