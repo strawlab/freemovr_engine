@@ -19,7 +19,7 @@ from sensor_msgs.msg import Image
 import vros_display.srv
 import display_client
 from graycode import graycode_str, graycode_arange
-import mahotas.polygon
+import fill_polygon
 
 import math
 
@@ -115,11 +115,9 @@ def set_pixels( display_server, arr ):
     blit_compressed_image_proxy(image)
 
 def get_mask(verts, width, height ):
-    pts = [ (int(y),int(x)) for (x,y) in verts]
+    assert len(verts)>=3
     arr = np.zeros( (height, width, NCHAN), dtype=np.uint8)
-    mahotas.polygon.fill_polygon(pts, arr[:,:,0])
-    arr[:,:,1] = arr[:,:,0]
-    arr[:,:,2] = arr[:,:,0]
+    fill_polygon.fill_polygon( verts, arr, fill_value=1 )
     arr[:,:,3] = 1
     return arr
 

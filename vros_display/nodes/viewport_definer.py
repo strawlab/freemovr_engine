@@ -14,7 +14,7 @@ import tempfile, os, sys
 # Major library imports
 import numpy as np
 import scipy.misc
-import mahotas.polygon
+import fill_polygon
 
 traits_version = None
 
@@ -45,14 +45,6 @@ elif traits_version==4:
     from chaco.tools.api import LineSegmentTool, PanTool, ZoomTool
 else:
     raise RuntimeError('could not identify traits')
-
-def posint(x,maxval=np.inf):
-    x = int(x)
-    if x < 0:
-        x = 0
-    if x>maxval:
-        return maxval
-    return x
 
 class ViewportDefiner(HasTraits):
     width = traits.Int
@@ -111,13 +103,7 @@ class ViewportDefiner(HasTraits):
 
     def _update_image(self):
         self._image = np.zeros( (self.height, self.width, 3), dtype=np.uint8)
-        # draw polygon
-        if len(self.linedraw.points)>=3:
-            pts = [ (posint(y,self.height-1),posint(x,self.width-1)) for (x,y) in self.linedraw.points]
-            mahotas.polygon.fill_polygon(pts, self._image[:,:,0])
-            self._image[:,:,0] *= 255
-            self._image[:,:,1] = self._image[:,:,0]
-            self._image[:,:,2] = self._image[:,:,0]
+        fill_polygon.fill_polygon( self.linedraw.points, self._image )
 
         # draw red horizontal stripes
         for i in range(0,self.height,100):
@@ -190,7 +176,8 @@ class ViewportDefiner(HasTraits):
 
     def get_viewport_verts(self):
         # convert to integers
-        pts = [ (posint(x,self.width-1),posint(y,self.height-1)) for (x,y) in self.linedraw.points]
+        pts = [ (fill_polygon.posint(x,self.width-1), fill_polygon.posint(y,self.height-1))
+                for (x,y) in self.linedraw.points]
         # convert to list of lists for maximal json compatibility
         return [ list(x) for x in pts ]
 
