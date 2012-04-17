@@ -121,53 +121,52 @@ def get_mask(verts, width, height ):
     arr[:,:,3] = 1
     return arr
 
-def localize_display( topic_prefixes=None, physical_display_id=None, virtual_display_id=None, save_pngs=False ):
+def localize_display( topic_prefixes=None, display_server=None, virtual_display_id=None, save_pngs=False ):
     assert len(topic_prefixes)>=1
     print 'topic_prefixes',topic_prefixes
 
-    if 1:
-        if physical_display_id is None:
-            physical_displays = rospy.get_param('/physical_displays',{})
-            if len(physical_displays) != 1:
-                raise ValueError('when no physical display ID is specified, only one physical display may be present')
-            physical_display_id = physical_displays.keys()[0]
-        physical_display = physical_displays[physical_display_id]
-        print 'physical_display',physical_display
+    display_info = display_server.get_display_info()
 
-        # get virtual_display and physical_display parameters
-        virtual_displays = rospy.get_param('/virtual_displays/'+physical_display_id,{})
-        print 'available virtual_displays',virtual_displays.keys()
+    if 1:
+        viewport_idx = -1
+
+        if virtual_display_id is None:
+            assert len(display_info['virtualDisplays'])==1
+            viewport_idx = 0
+
+        else:
+            for i,obj in enumerate(display_info['virtualDisplays']):
+                if obj['id'] == virtual_display_id:
+                    viewport_idx = i
+
+        if viewport_idx == -1:
+            raise Exception("Could not find viewport")
+
+        this_virtual_display = display_info['virtualDisplays'][viewport_idx]
+        virtual_display_id = this_virtual_display['id']
 
     if virtual_display_id is not None:
-        if virtual_display_id not in virtual_displays:
-            raise ValueError('could not find virtual display with id "%s"'%(virtual_display_id,))
 
-        virtual_display = json.loads(virtual_displays[virtual_display_id]['virtual_display_config_json_string'])
+        virtual_display = this_virtual_display
         print 'virtual_display',virtual_display
 
         viewport_verts=virtual_display['viewport']
-        viewport_mask = get_mask( viewport_verts, physical_display['width'], physical_display['height'] )
+        viewport_mask = get_mask( viewport_verts, display_info['width'], display_info['height'] )
     else:
         # no virtual display specified -- use entire display
-        viewport_mask = np.ones( ( physical_display['height'], physical_display['width'], NCHAN), dtype=np.uint8 )
+        viewport_mask = np.ones( ( display_info['height'], display_info['width'], NCHAN), dtype=np.uint8 )
         print 'no virtual display specified -- using entire display'
 
-    print 'physical_display_id',physical_display_id
     print 'virtual_display_id',virtual_display_id
 
     rospy.init_node('localize_display', anonymous=True)
     cam_handlers = [CameraHandler(prefix) for prefix in topic_prefixes]
 
-    display_server = display_client.DisplayServerProxy()
     display_server.enter_standby_mode()
-    display_server.set_mode('display2d')
-    display_info = display_server.get_display_info()
+    display_server.set_mode('Stimulus2DBlit')
 
     width = display_info['width']
     height = display_info['height']
-
-    assert width==physical_display['width']
-    assert height==physical_display['height']
 
     runner = Runner(cam_handlers)
     runner.clear_queue()
@@ -284,7 +283,7 @@ def localize_display( topic_prefixes=None, physical_display_id=None, virtual_dis
                         save_images('localize_axis%s_bits%02d_%d'%(axis,bitno,flip),imdict)
         output_data = {'images':result_images,
                        'display_width_height': (display_info['width'],display_info['height']) ,
-                       'physical_display_id':physical_display_id,
+                       'physical_display_id': display_server.get_fullname('')[:-1], # eliminate trailing slash
                        'virtual_display_id':virtual_display_id,
                        }
         fd = open('images-%s-%s.pkl'%(physical_display_id,virtual_display_id),mode='w')
@@ -310,7 +309,8 @@ if __name__ == '__main__':
         nargs='*')
 
     parser.add_argument(
-        '--physical_display_id', type=str)
+        '--display-server', type=str, required=True, help=\
+        'the path of the display server to configure')
 
     parser.add_argument(
         '--virtual_display_id', type=str)
@@ -324,8 +324,11 @@ if __name__ == '__main__':
     # if len(args.topic_prefixes)==0:
     #     args.topic_prefixes.append('')
 
+    display_server = display_client.DisplayServerProxy(args.display_server)
+    display_server.enter_standby_mode()
+
     localize_display( topic_prefixes=args.topic_prefixes,
-                      physical_display_id = args.physical_display_id,
+                      display_server = display_server,
                       virtual_display_id = args.virtual_display_id,
                       save_pngs = args.save_pngs,
                       )
