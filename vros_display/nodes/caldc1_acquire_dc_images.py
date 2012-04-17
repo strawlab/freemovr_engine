@@ -168,6 +168,9 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
     width = display_info['width']
     height = display_info['height']
 
+    physical_display_id = display_server.get_fullname('')
+    physical_display_id = physical_display_id.strip('/') # eliminate trailing slash
+
     runner = Runner(cam_handlers)
     runner.clear_queue()
     runner.cycle_duration(1.0) # give panda a chance to startup...
@@ -283,7 +286,7 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
                         save_images('localize_axis%s_bits%02d_%d'%(axis,bitno,flip),imdict)
         output_data = {'images':result_images,
                        'display_width_height': (display_info['width'],display_info['height']) ,
-                       'physical_display_id': display_server.get_fullname('')[:-1], # eliminate trailing slash
+                       'physical_display_id': physical_display_id,
                        'virtual_display_id':virtual_display_id,
                        }
         fd = open('images-%s-%s.pkl'%(physical_display_id,virtual_display_id),mode='w')
