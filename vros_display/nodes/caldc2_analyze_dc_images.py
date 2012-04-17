@@ -480,6 +480,7 @@ def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min
     results = {'data':data,
                'display_width_height':input_data['display_width_height'],
                'p2c_by_cam':p2c_by_cam,
+               'cam_sizes':sizes,
                }
     return results
 
@@ -562,9 +563,11 @@ if __name__ == '__main__':
                 fname = os.path.join( camdir, 'p2c.exr' )
                 x=results['p2c_by_cam'][camname]['x']
                 y=results['p2c_by_cam'][camname]['y']
-                warnings.warn('EXR saving disabled due to bad normalization of camera coordinates')
-                if 0:
-                    save_exr( fname, r=x, g=y, b=np.zeros_like(y) )
+                if 1:
+                    cam_height,cam_width = results['cam_sizes'][camname]
+                    normx = x/cam_width
+                    normy = y/cam_height
+                    save_exr( fname, r=normx, g=normy, b=np.zeros_like(normy) )
 
 
                 fname = os.path.join( camdir, 'c2p_graycode_only.exr' )
@@ -572,6 +575,5 @@ if __name__ == '__main__':
                 graycode_y = camdict[1]['address']/float(results['display_width_height'][1])
                 graycode_x[~camdict[0]['nmask']]=-1.0
                 graycode_y[~camdict[1]['nmask']]=-1.0
-                warnings.warn('EXR saving disabled due to possibly bad normalization of display coordinates')
-                if 0:
+                if 1:
                     save_exr( fname, r=graycode_x, g=graycode_y, b=np.zeros_like(graycode_y) )
