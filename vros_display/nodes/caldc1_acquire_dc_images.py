@@ -70,8 +70,9 @@ class Runner(object):
         while not self._is_done(result,n_per_camera):
             topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
             t_image = msg.header.stamp.to_sec()
-            if abs(t_image-t_earliest) > 10.0:
-                raise ValueError('image timestamps more than 10 seconds different')
+            t_diff = abs(t_image-t_earliest)
+            if t_diff > 10.0:
+                raise ValueError('image timestamps more than 10 seconds different (was %f)' % t_diff)
             if t_image < t_earliest:
                 # image too old
                 continue
@@ -308,8 +309,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'topic_prefixes', type=str,
-        help='a topic prefix of the images used to view the projector',
-        nargs='*')
+        help='topic prefix of the images used to view the projector (e.g. /camnode)',
+        nargs='+')
 
     parser.add_argument(
         '--display-server', type=str, required=True, help=\

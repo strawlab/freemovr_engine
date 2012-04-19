@@ -99,6 +99,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         int getYSize() nogil except +
 
         float getFrameRate() nogil except +
+        setCursorVisible(int visible) nogil except +
 
 # ================================================================
 

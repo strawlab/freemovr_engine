@@ -836,6 +836,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		throw std::invalid_argument("unknown mode");
 	}
 
+    setCursorVisible(false);
+
 	resized(width, height); // notify listeners that we have a new size
 };
 
@@ -886,5 +888,17 @@ float DSOSG::getFrameRate() {
     _viewer->getViewerStats()->getAveragedAttribute("Frame rate", framerate, true);
     return framerate;
 };
+
+void DSOSG::setCursorVisible(bool visible) {
+    osgViewer::Viewer::Windows windows;
+    _viewer->getWindows(windows);
+    for(osgViewer::Viewer::Windows::iterator itr = windows.begin(); itr != windows.end();++itr) {
+        if (visible)
+            (*itr)->setCursor(osgViewer::GraphicsWindow::InheritCursor);
+        else
+            (*itr)->setCursor(osgViewer::GraphicsWindow::NoCursor);
+    }
+};
+
 
 }

@@ -56,6 +56,7 @@ namespace dsosg{
 		int getYSize() {return _height;}
 
 		float getFrameRate();
+		void setCursorVisible(bool visible);
 	private:
 		StimulusLoader _stimulus_loader;
 
