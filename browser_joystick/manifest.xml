@@ -1,0 +1,21 @@
+<package>
+  <description brief="browser_joystick">
+
+     browser_joystick
+
+  </description>
+  <author>Andrew Straw</author>
+
+  <depend package="sensor_msgs"/>
+
+  <!-- You might also be interested in the 
+       joystick_drivers stack, but it's not a strict dependency. 
+
+       roslocate info joystick_drivers > /tmp/joystick_drivers.rosinstall
+       rosinstall ~/ros /tmp/joystick_drivers.rosinstall
+
+  -->
+
+</package>
+
+
