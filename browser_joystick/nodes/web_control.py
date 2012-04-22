@@ -11,6 +11,7 @@ import tornado.template
 import os
 import json
 import socket
+import argparse
 
 # ROS imports
 import roslib; roslib.load_manifest('browser_joystick')
@@ -52,31 +53,6 @@ class JSHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("web_control.js",**self.cfg)
 
-settings = dict(
-    static_path= os.path.join(os.path.dirname(__file__), "static"),
-    cookie_secret=os.urandom(1024),
-    template_path=os.path.join(os.path.dirname(__file__), "templates"),
-    xsrf_cookies= True,
-    )
-
-echo_ws_path = 'echo'
-host = socket.gethostbyname(socket.gethostname())
-port = 1024
-base_url = '%s:%d'%(host,port)
-
-js_path='web_control.js'
-dd = {'base_url':base_url,
-      'echo_ws_path':echo_ws_path,
-      'js_path':js_path,
-      }
-
-application = tornado.web.Application([
-    (r'/', MainHandler, dict(cfg=dd)),
-    (r'/'+js_path, JSHandler, dict(cfg=dd)),
-    (r'/'+echo_ws_path, EchoWebSocket),
-    ],
-                                      **settings)
-
 def im2ascii(im):
     c = unichr(0x2588)
 
@@ -98,6 +74,43 @@ def im2ascii(im):
 
 def main():
     global joy_pub
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--host', type=str, default=None,
+        help='host name or IP address',)
+    # use argparse, but only after ROS did its thing
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    settings = dict(
+        static_path= os.path.join(os.path.dirname(__file__), "static"),
+        cookie_secret=os.urandom(1024),
+        template_path=os.path.join(os.path.dirname(__file__), "templates"),
+        xsrf_cookies= True,
+        )
+
+    echo_ws_path = 'echo'
+    if args.host is None:
+        host = socket.gethostbyname(socket.gethostname())
+    else:
+        host = args.host
+    port = 1024
+    base_url = '%s:%d'%(host,port)
+
+    js_path='web_control.js'
+    dd = {'base_url':base_url,
+          'echo_ws_path':echo_ws_path,
+          'js_path':js_path,
+          }
+
+    application = tornado.web.Application([
+        (r'/', MainHandler, dict(cfg=dd)),
+        (r'/'+js_path, JSHandler, dict(cfg=dd)),
+        (r'/'+echo_ws_path, EchoWebSocket),
+        ],
+                                          **settings)
+
 
     url = "http://%s"%base_url
     print "starting web server at", url
