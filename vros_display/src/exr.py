@@ -1,15 +1,17 @@
 import OpenEXR, Imath # openexr package (from pypi-install OpenEXR )
 import numpy as np
 
+PIXEL_TYPE = Imath.PixelType(OpenEXR.FLOAT)
+
 def save_exr( fname, r=None, g=None, b=None ):
     r = np.array(r); assert r.ndim==2
     g = np.array(g); assert g.ndim==2; assert g.shape==r.shape
     b = np.array(b); assert b.ndim==2; assert b.shape==r.shape
 
     header = OpenEXR.Header(r.shape[1], r.shape[0])
-    header['channels'] = {'R': Imath.Channel(Imath.PixelType(OpenEXR.FLOAT)),
-                          'G': Imath.Channel(Imath.PixelType(OpenEXR.FLOAT)),
-                          'B': Imath.Channel(Imath.PixelType(OpenEXR.FLOAT)),
+    header['channels'] = {'R': Imath.Channel(PIXEL_TYPE),
+                          'G': Imath.Channel(PIXEL_TYPE),
+                          'B': Imath.Channel(PIXEL_TYPE),
                           }
     out = OpenEXR.OutputFile(fname, header)
     data = {'R': r.astype(np.float32).tostring(),
@@ -36,3 +38,4 @@ def read_exr(file):
     f.close()
 
     return r,g,b
+
