@@ -75,13 +75,15 @@ class ViewportDefiner(HasTraits):
         super(ViewportDefiner, self).__init__(*args, **kwargs)
 
         #find our index in the viewport list
+        viewport_ids = []
         self.viewport_idx = -1
         for i,obj in enumerate(self.display_info['virtualDisplays']):
+            viewport_ids.append(obj['id'])
             if obj['id'] == self.viewport_id:
                 self.viewport_idx = i
 
         if self.viewport_idx == -1:
-            raise Exception("Could not find viewport")
+            raise Exception("Could not find viewport (available ids: %s)" % ",".join(viewport_ids))
 
         self._update_image()
 
@@ -190,18 +192,21 @@ class ViewportDefiner(HasTraits):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--display-server', type=str, required=True, help=\
+        '--display-server', type=str, metavar='/display_server', required=True, help=\
         'the path of the display server to configure')
     parser.add_argument(
-        '--virtual-display-id', type=str, required=True, help=\
+        '--virtual-display-id', type=str, metavar='vdisp', required=True, help=\
         'the id of the virtual display on the display server')
+    parser.add_argument(
+        '--wait', action='store_true', default=False, help=\
+        'wait for display server to start (useful when roslaunched)')
     # use argparse, but only after ROS did its thing
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
     rospy.init_node('viewport_definer')
 
-    display_server = display_client.DisplayServerProxy(args.display_server)
+    display_server = display_client.DisplayServerProxy(args.display_server, args.wait)
     display_server.enter_standby_mode()
     display_server.set_mode('display2d')
 
@@ -215,7 +220,7 @@ def main():
                            height=display_info['height'],
                            display_name=args.display_server,
                            viewport_id = args.virtual_display_id,
-                           blit_compressed_image_proxy = blit_compressed_image_proxy,
+                           blit_compressed_image_proxy = blit_compressed_image_proxy
                            )
 
     tmp = demo.linedraw # trigger default value to be initialized. (XXX how else to do this?)

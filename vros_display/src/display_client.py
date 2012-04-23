@@ -5,13 +5,17 @@ import json
 import warnings
 
 class DisplayServerProxy(object):
-    def __init__(self, display_server_node_name=None):
+    def __init__(self, display_server_node_name=None, wait=False):
         if not display_server_node_name:
             self._server_node_name = rospy.resolve_name('display_server')
         else:
             self._server_node_name = rospy.resolve_name(display_server_node_name)
 
         rospy.loginfo('trying display server: %s' % self._server_node_name)
+
+        if wait:
+            rospy.loginfo('waiting for display server: %s' % self._server_node_name)
+            rospy.wait_for_service(self.get_fullname('set_display_server_mode'))
 
         self.get_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('get_display_server_mode'),
                                                                 vros_display.srv.GetDisplayServerMode)
