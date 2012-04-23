@@ -341,14 +341,13 @@ def visualize_dc_results(fname, camera_bagfile=None, display_bagfile=None, geome
     fd.close()
 
     make_camera_views(data,camera=camera,geom=geom)
-    #if camera is None:
-    if 1:
-        make_display_views(data,display=display,geom=geom)
+    make_display_views(data,display=display,geom=geom)
+
     plt.show()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', type=str)
+    parser.add_argument('filename', type=str, help='display_coords pkl file', metavar='FILE.pkl')
     parser.add_argument('--camera_bagfile', type=str, help="filename of camera-camcal.bag for calibration data")
     parser.add_argument('--display_bagfile', type=str, help="filename of display-model.bag for calibration data")
     parser.add_argument('--geometry_filename', type=str, help="JSON file with geometry description")
