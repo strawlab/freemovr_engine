@@ -4,7 +4,10 @@
 import argparse
 import Image as PIL
 import numpy as np
-import time, tempfile, os, pickle
+import time
+import tempfile
+import os.path
+import pickle
 import Queue
 import scipy
 import tempfile
@@ -290,9 +293,11 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
                        'physical_display_id': physical_display_id,
                        'virtual_display_id':virtual_display_id,
                        }
-        fd = open('images-%s-%s.pkl'%(physical_display_id,virtual_display_id),mode='w')
+        fname = os.path.abspath('images-%s-%s.pkl'%(physical_display_id,virtual_display_id))
+        fd = open(fname,mode='w')
         pickle.dump(output_data,fd)
         fd.close()
+        print 'saved grey code images to %s' % fname
 
 def save_images(imname,imdict):
     for topic_prefix in imdict.keys():
