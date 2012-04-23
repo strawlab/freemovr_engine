@@ -5,10 +5,13 @@ import numpy as np
 import numpy.ma as ma
 import collections
 import argparse
-import time, os
+import time
+import os.path
 import scipy.ndimage
 import scipy.stats
+import scipy.misc.pilutil
 import warnings
+import Image as PIL
 
 # ROS imports
 import roslib; roslib.load_manifest('vros_display')
@@ -16,6 +19,20 @@ import roslib; roslib.load_manifest('vros_display')
 # local ROS package imports
 from graycode import graycode_str, graycode_arange
 from exr import save_exr
+
+def load_mask_image(mask_image_fname):
+    """
+    load the RGBA png image and return a numpy array of bools. Alpha
+    transparent pixels map to False in the returned array
+    """
+    im = scipy.misc.pilutil.imread( mask_image_fname )
+    if len(im.shape) != 3:
+        raise ValueError('mask image must have color channels')
+    if im.shape[2] != 4:
+        raise ValueError('mask image must have an alpha (4th) channel')
+    alpha = im[:,:,3]
+    mask = alpha.astype(np.bool)
+    return mask
 
 def savearr( fname, arr, is_int=True ):
     assert arr.ndim==2
@@ -48,12 +65,10 @@ def noise_free_sign(arr,n_sigma=1.0):
     n[ abs(n) < s*n_sigma ] = 0
     return np.sign(n)
 
-def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min_lum_sig=100, no_subpixel=False, valid_images=None ):
+def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min_lum_sig=100, no_subpixel=False,  mask_image_dir=None):
     """
     Parameters
     ----------
-    images : list of tuples
-      The images acquired by localize_display.py
     visualize : bool
       Whether to plot results
     min_lum_sig : int
@@ -61,13 +76,15 @@ def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min
       be more discriminating.
     MSB_min_lum_sig : int
       (same as above, but for MSBs)
+    mask_image_dir : directory containing mask images for each camnode to restrict
+      analysis
     """
-    if valid_images is None:
-        valid_images = []
 
     images = input_data['images']
     projector_width = input_data['display_width_height'][0]
     projector_height = input_data['display_width_height'][1]
+    physical_display_id = input_data['physical_display_id']
+    virtual_display_id = input_data['virtual_display_id']
 
     topic_prefix_rows = collections.defaultdict(list)
     sizes = {}
@@ -110,26 +127,20 @@ def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min
                     data[i][colname] = images[ this_rows[i] ][tupidx]
         data_by_cam[do_topic_prefix] = data
 
-    if 1:
-        topic_prefixes = topic_prefix_rows.keys()
-        baseline_valid = {}
-        for do_topic_prefix in topic_prefix_rows.keys():
-            height,width = sizes[do_topic_prefix]
-            viname = 'valid_%s.png'%do_topic_prefix
-            print 'valid_images',valid_images
-
-            if viname in valid_images:
-                print 'loading',viname
-                arr = scipy.misc.imread(viname)
-                assert arr.ndim==2
-                assert arr.dtype == np.uint8
-                assert np.max(np.max(arr))==255
-                arr = arr/255
-                assert np.max(np.max(arr))==1
-            else:
-                print 'all valid by default for',do_topic_prefix
-                arr = np.ones( (height,width), dtype=np.uint8 )
-            baseline_valid[do_topic_prefix] = arr
+    #load mask images if specified
+    topic_prefixes = topic_prefix_rows.keys()
+    baseline_valid = {}
+    for do_topic_prefix in topic_prefix_rows.keys():
+        height,width = sizes[do_topic_prefix]
+        if mask_image_dir:
+            mask_fname = '%s_%s_%s_mask.png' % (physical_display_id, virtual_display_id, do_topic_prefix[1:])
+            print 'loading valid pixel mask from', mask_fname
+            assert os.path.exists(mask_fname)
+            arr = ~load_mask_image(mask_fname)
+        else:
+            print 'all valid by default for',do_topic_prefix
+            arr = np.ones( (height,width), dtype=np.bool )
+        baseline_valid[do_topic_prefix] = arr
 
     p2c_by_cam = {}
 
@@ -434,24 +445,20 @@ def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min
                 p2c_y[p2c_count==0] = -1.0
 
             if visualize:
-                fig = plt.figure()
-                ax = fig.add_subplot(1,1,1)
-                ax.imshow( p2c_count, interpolation='nearest' )
-                ax.set_title('p2c_count')
-                #plt.colorbar()
+                plt.figure()
+                plt.imshow( p2c_count, interpolation='nearest' )
+                plt.gca().set_title('p2c_count')
+                plt.colorbar()
 
-                fig = plt.figure()
-                ax = fig.add_subplot(1,1,1)
-                ax.imshow( p2c_x_v, interpolation='nearest' )
-                #plt.imshow( p2c_x_v, interpolation='nearest' )
-                ax.set_title('p2c_x_v')
-                #plt.colorbar()
+                plt.figure()
+                plt.imshow( p2c_x_v, interpolation='nearest' )
+                plt.gca().set_title('p2c_x_v')
+                plt.colorbar()
 
-                fig = plt.figure()
-                ax = fig.add_subplot(1,1,1)
-                ax.imshow( p2c_y_v, interpolation='nearest' )
-                ax.set_title('p2c_y_v')
-                #plt.colorbar()
+                plt.figure()
+                plt.imshow( p2c_y_v, interpolation='nearest' )
+                plt.gca().set_title('p2c_y_v')
+                plt.colorbar()
 
                 if 0:
                     ax = fig.add_subplot(2,3,5)
@@ -489,22 +496,29 @@ if __name__ == '__main__':
     parser.add_argument('filename', type=str,nargs='+')
 
     parser.add_argument('--visualize',  action='store_true')
-    parser.add_argument('--no_subpixel',  action='store_true')
-    parser.add_argument('--valid',  type=str, nargs='*' )
+    parser.add_argument('--no-subpixel',  action='store_true')
+    parser.add_argument('--mask-image-dir', type=str, help=\
+        'path to directory containing mask images. The images are'\
+        'named display_server_vdisp_id_image_topic_mask.png')
 
     args = parser.parse_args()
     all_results = {}
     for filename in args.filename:
-        fd = open(filename,mode='r')
-        images = pickle.load(fd)
-        physical_display_id = images['physical_display_id']
-        virtual_display_id = images['virtual_display_id']
-        if virtual_display_id is not None:
-            print physical_display_id+'/'+virtual_display_id
-        else:
-            print physical_display_id
-        fd.close()
-        results = find_display_in_images( images, visualize=args.visualize, no_subpixel=args.no_subpixel, valid_images=args.valid )
+        with open(filename,mode='r') as fd:
+            images = pickle.load(fd)
+            physical_display_id = images['physical_display_id']
+            virtual_display_id = images['virtual_display_id']
+            if virtual_display_id is not None:
+                display_id = physical_display_id+'/'+virtual_display_id
+            else:
+                display_id = physical_display_id
+            print 'finding display ', display_id
+
+        results = find_display_in_images(
+                    images,
+                    visualize=args.visualize,
+                    no_subpixel=args.no_subpixel,
+                    mask_image_dir=args.mask_image_dir)
 
         pd = all_results.setdefault(physical_display_id,{})
         assert virtual_display_id not in pd
@@ -521,6 +535,7 @@ if __name__ == '__main__':
                 coord_dirname = os.path.join(base_coord_dirname,physical_display_id)
             else:
                 coord_dirname = os.path.join(base_coord_dirname,physical_display_id,virtual_display_id)
+            print 'saving data to ', coord_dirname
             os.makedirs(coord_dirname)
 
             results = all_results[physical_display_id][virtual_display_id]
@@ -547,33 +562,30 @@ if __name__ == '__main__':
                 fname = os.path.join( camdir, 'fm' )
                 arr = camdict[axis]['FM']
                 savearr( fname, arr, is_int=False )
-                if 1:
-                    import Image as PIL
-                    pil_im = PIL.fromarray( arr.astype(np.uint8) )
-                    pil_im.save(fname+'.png')
+                pil_im = PIL.fromarray( arr.astype(np.uint8) )
+                pil_im.save(fname+'.png')
 
                 fname = os.path.join( camdir, 'em' )
                 arr = camdict[axis]['EM']
                 savearr( fname, arr, is_int=False )
-                if 1:
-                    import Image as PIL
-                    pil_im = PIL.fromarray( arr.astype(np.uint8) )
-                    pil_im.save(fname+'.png')
+                pil_im = PIL.fromarray( arr.astype(np.uint8) )
+                pil_im.save(fname+'.png')
 
                 fname = os.path.join( camdir, 'p2c.exr' )
                 x=results['p2c_by_cam'][camname]['x']
                 y=results['p2c_by_cam'][camname]['y']
-                if 1:
-                    cam_height,cam_width = results['cam_sizes'][camname]
-                    normx = x/cam_width
-                    normy = y/cam_height
-                    save_exr( fname, r=normx, g=normy, b=np.zeros_like(normy) )
+                cam_height,cam_width = results['cam_sizes'][camname]
+                normx = x/cam_width
+                normy = y/cam_height
+                save_exr( fname, r=normx, g=normy, b=np.zeros_like(normy) )
 
+                fname = os.path.join( camdir, 'p2c-unnormalised.exr' )
+                save_exr( fname, r=x, g=y, b=np.zeros_like(y) )
 
                 fname = os.path.join( camdir, 'c2p_graycode_only.exr' )
                 graycode_x = camdict[0]['address']/float(results['display_width_height'][0])
                 graycode_y = camdict[1]['address']/float(results['display_width_height'][1])
                 graycode_x[~camdict[0]['nmask']]=-1.0
                 graycode_y[~camdict[1]['nmask']]=-1.0
-                if 1:
-                    save_exr( fname, r=graycode_x, g=graycode_y, b=np.zeros_like(graycode_y) )
+                save_exr( fname, r=graycode_x, g=graycode_y, b=np.zeros_like(graycode_y) )
+
