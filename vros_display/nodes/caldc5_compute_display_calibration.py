@@ -19,18 +19,22 @@ import pickle
 import numpy as np
 import sys
 
+print "WARNING SETTING RANDOM SEED" * 10
+np.random.seed(6)
+
 # in this ROS package
 import simple_geom
 import dlt
 
-def compute_display_calibration(display_coords_filename, camera_bagfile, geometry_filename):
-    camera = camera_model.load_camera_from_bagfile( camera_bagfile )
+def compute_display_calibration(display_coords_filename, camera_calib_file, geometry_filename, display_server_config):
+    camera = camera_model.load_camera_from_file( camera_calib_file )
     camera_name = camera.get_name()
 
     print 'got camera name as "%s"'%(camera_name,)
     print 'cam center:',camera.get_camcenter()
 
-    geom = simple_geom.Geometry(geometry_filename)
+    geom_dict = display_server_config['geom']
+    geom = simple_geom.Geometry(geometry_filename, geom_dict)
 
     fd = open(display_coords_filename,mode='r')
     data = pickle.load(fd)
@@ -43,6 +47,7 @@ def compute_display_calibration(display_coords_filename, camera_bagfile, geometr
             results = loaded['data']
             display_width_height = loaded['display_width_height']
             p2c_by_cam = loaded['p2c_by_cam']
+            print p2c_by_cam
             display_h, display_w = p2c_by_cam[camera_name]['x'].shape
 
             display_x_coords = results[camera_name][0]['address']
@@ -118,11 +123,17 @@ def compute_display_calibration(display_coords_filename, camera_bagfile, geometr
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('display_coords_filename', type=str, help="pickle file with display/camera correspondence data")
-    parser.add_argument('camera_bagfile', type=str, help="filename of camera-cambal.bag for calibration data")
-    parser.add_argument('geometry_filename', type=str, help="JSON file with geometry description")
+    parser.add_argument('filename', type=str, help="display/camera correspondence data", metavar="display_coords.pkl")
+    parser.add_argument('--camera-calibration-filename', required=True, type=str, help=\
+        "filename of camera calibration data. Supports calibration data "\
+        "in %s format" % ','.join(camera_model.SUPPORTED_FILE_TYPES))
+    parser.add_argument('--geometry-filename', type=str, help="JSON file with geometry description")
+    parser.add_argument(
+        '--display-server', type=str, required=True, help=\
+        'the path of the display server')
     args = parser.parse_args()
 
-    compute_display_calibration(args.display_coords_filename,
-                                args.camera_bagfile,
-                                args.geometry_filename )
+    compute_display_calibration(args.filename,
+                                args.camera_calibration_filename,
+                                args.geometry_filename,
+                                rospy.get_param(args.display_server))

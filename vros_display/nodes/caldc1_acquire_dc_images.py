@@ -316,16 +316,13 @@ if __name__ == '__main__':
         'topic_prefixes', type=str,
         help='topic prefix of the images used to view the projector (e.g. /camnode)',
         nargs='+')
-
     parser.add_argument(
         '--display-server', type=str, required=True, help=\
         'the path of the display server to configure')
-
     parser.add_argument(
-        '--virtual_display_id', type=str)
-
+        '--virtual-display-id', type=str)
     parser.add_argument(
-        '--save_pngs', action='store_true', default=False)
+        '--save-pngs', action='store_true', default=False)
 
     # use argparse, but only after ROS did its thing
     argv = rospy.myargv()

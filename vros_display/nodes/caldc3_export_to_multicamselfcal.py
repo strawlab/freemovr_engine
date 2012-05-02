@@ -184,8 +184,8 @@ def emit_multicamselfcal_dir(fname,out_dirname,use_nth_frame=1,visualize=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', type=str)
-    parser.add_argument('--use_nth_frame', default=1, type=int)
-    parser.add_argument('--output_dir', type=str, default='mcam')
+    parser.add_argument('--use-nth-frame', default=1, type=int)
+    parser.add_argument('--output-dir', type=str, default='mcam')
     parser.add_argument('--visualize', default=False, action='store_true')
     args = parser.parse_args()
 

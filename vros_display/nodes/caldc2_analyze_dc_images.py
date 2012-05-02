@@ -493,13 +493,14 @@ def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', type=str,nargs='+')
-
+    parser.add_argument('filename', type=str,nargs='+', metavar='images-FILE.pkl')
     parser.add_argument('--visualize',  action='store_true')
     parser.add_argument('--no-subpixel',  action='store_true')
     parser.add_argument('--mask-image-dir', type=str, help=\
         'path to directory containing mask images. The images are'\
         'named display_server_vdisp_id_image_topic_mask.png')
+    parser.add_argument('--output-dir', type=str, help=\
+        'path to save calibration result')
 
     args = parser.parse_args()
     all_results = {}

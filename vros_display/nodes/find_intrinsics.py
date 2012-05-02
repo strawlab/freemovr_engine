@@ -15,8 +15,6 @@ import matplotlib.pyplot as plt
 from camera_calibration.calibrator import MonoCalibrator, ChessboardInfo
 import cv2
 
-import fit_extrinsics
-
 def find_intrinsics(visualize=False):
     fatal = False
     good = []

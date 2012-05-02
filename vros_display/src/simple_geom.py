@@ -335,8 +335,14 @@ def get_distance_between_point_and_ray( c, a, b ):
     return dist
 
 class Geometry:
-    def __init__(self, filename):
-        geom_dict = json.loads( open(filename).read() )
+    def __init__(self, filename=None, geom_dict=None):
+        if filename and not geom_dict:
+            geom_dict = json.loads( open(filename).read() )
+        elif geom_dict and not filename:
+            pass
+        else:
+            raise Exception("must supply filename OR geometry dict")
+        
         if geom_dict['model']=='cylinder':
             self.model = Cylinder(base=geom_dict['base'],
                                   axis=geom_dict['axis'],

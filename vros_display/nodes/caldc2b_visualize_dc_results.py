@@ -325,16 +325,19 @@ def make_display_views(data,display=None,geom=None):
                               )
 
 
-def visualize_dc_results(fname, camera_bagfile=None, display_bagfile=None, geometry_filename=None):
-    camera=None
-    display=None
-    geom=None
+def visualize_dc_results(fname, camera_bagfile=None, display_bagfile=None, geometry_filename=None, display_server_config=None):
+    camera = None
+    display = None
+    geom = None
+    geom_dict = {}
+    if display_server_config is not None:
+        geom_dict = display_server_config['geom']
     if camera_bagfile is not None:
         camera = camera_model.load_camera_from_bagfile( camera_bagfile )
     if display_bagfile is not None:
         display = camera_model.load_camera_from_bagfile( display_bagfile )
-    if geometry_filename is not None:
-        geom = simple_geom.Geometry(geometry_filename)
+    if geometry_filename or geom_dict:
+        geom = simple_geom.Geometry(geometry_filename, geom_dict)
 
     fd = open(fname,mode='r')
     data = pickle.load(fd)
@@ -348,12 +351,16 @@ def visualize_dc_results(fname, camera_bagfile=None, display_bagfile=None, geome
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', type=str, help='display_coords pkl file', metavar='FILE.pkl')
-    parser.add_argument('--camera_bagfile', type=str, help="filename of camera-camcal.bag for calibration data")
-    parser.add_argument('--display_bagfile', type=str, help="filename of display-model.bag for calibration data")
-    parser.add_argument('--geometry_filename', type=str, help="JSON file with geometry description")
+    parser.add_argument('--camera-bagfile', type=str, help="filename of camera-camcal.bag for calibration data")
+    parser.add_argument('--display-bagfile', type=str, help="filename of display-model.bag for calibration data")
+    parser.add_argument('--geometry-filename', type=str, help="JSON file with geometry description")
+    parser.add_argument(
+        '--display-server', type=str, required=True, help=\
+        'the path of the display server')
     args = parser.parse_args()
 
     visualize_dc_results(args.filename,
                          camera_bagfile=args.camera_bagfile,
                          display_bagfile=args.display_bagfile,
-                         geometry_filename=args.geometry_filename )
+                         geometry_filename=args.geometry_filename,
+                         display_server_config=rospy.get_param(args.display_server))

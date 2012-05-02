@@ -8,6 +8,9 @@ import sensor_msgs
 import geometry_msgs
 
 import numpy as np
+
+import yaml
+
 import warnings
 
 # helper functions ---------------
@@ -373,9 +376,13 @@ class CameraModel(object):
     def save_to_bagfile(self,fname):
         bagout = rosbag.Bag(fname, 'w')
         topic = self.name + '/tf'
-        bagout.write(topic, self.get_extrinsics_as_msg())
+        extrinsics = self.get_extrinsics_as_msg()
+        print extrinsics
+        bagout.write(topic, extrinsics)
         topic = self.name + '/camera_info'
-        bagout.write(topic, self.get_intrinsics_as_msg())
+        intrinsics = sensor_msgs.msg.CameraInfo(width=3)#self.get_intrinsics_as_msg()
+        print intrinsics,topic
+        bagout.write(topic, extrinsics)
         bagout.close()
 
     def get_mirror_camera(self):
@@ -710,7 +717,33 @@ class CameraModel(object):
         assert nparr.shape[1]==3
         return np.zeros( nparr.shape ) + self.t_inv.T
 
-# factory function
+# factory functions
+def load_camera_from_dict(d, extrinsics_required=True ):
+    #only needs w,h,P,K,D,R
+    c = sensor_msgs.msg.CameraInfo(
+            height=d['image_height'],
+            width=d['image_width'],
+            P=d['projection_matrix']['data'],
+            K=d['camera_matrix']['data'],
+            D=d['distortion_coefficients']['data'],
+            R=d['rectification_matrix']['data'])
+    
+    result = CameraModel(translation=None,  #or nan???
+                         rotation=None,
+                         intrinsics=c,
+                         name=d['camera_name'])
+
+    return result
+
+SUPPORTED_FILE_TYPES = ('.bag','.yaml')
+def load_camera_from_file( fname, extrinsics_required=True ):
+    if fname.endswith('.bag'):
+        return load_camera_from_bagfile(fname, extrinsics_required)
+    elif fname.endswith('.yaml'):
+        with open(fname,'r') as f:
+            return load_camera_from_dict(yaml.load(f), extrinsics_required)
+    else:
+        raise Exception("Only supports .bag and .yaml file loading")
 
 def load_camera_from_bagfile( bag_fname, extrinsics_required=True ):
     """factory function for class CameraModel"""
