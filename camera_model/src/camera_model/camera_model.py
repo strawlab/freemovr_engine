@@ -4,8 +4,8 @@
 import roslib; roslib.load_manifest('camera_model')
 import rosbag
 import tf.transformations
-import sensor_msgs
-import geometry_msgs
+import sensor_msgs.msg
+import geometry_msgs.msg
 
 import numpy as np
 
@@ -377,12 +377,10 @@ class CameraModel(object):
         bagout = rosbag.Bag(fname, 'w')
         topic = self.name + '/tf'
         extrinsics = self.get_extrinsics_as_msg()
-        print extrinsics
         bagout.write(topic, extrinsics)
         topic = self.name + '/camera_info'
-        intrinsics = sensor_msgs.msg.CameraInfo(width=3)#self.get_intrinsics_as_msg()
-        print intrinsics,topic
-        bagout.write(topic, extrinsics)
+        intrinsics = self.get_intrinsics_as_msg()
+        bagout.write(topic, intrinsics)
         bagout.close()
 
     def get_mirror_camera(self):
