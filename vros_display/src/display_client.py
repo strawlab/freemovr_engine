@@ -22,6 +22,10 @@ class DisplayServerProxy(object):
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
                                                                 vros_display.srv.SetDisplayServerMode)
 
+    @property
+    def name(self):
+        return self._server_node_name
+
     def get_fullname(self,name):
         return self._server_node_name+'/'+name
 
