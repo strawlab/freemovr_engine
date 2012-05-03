@@ -18,12 +18,6 @@ import numpy as np
 import mahotas.polygon
 import matplotlib.pyplot as plt
 
-def load_params(physical_display_id, virtual_display_id):
-    for virtual_display in rospy.get_param('/display_server/display/virtualDisplays'):
-        if virtual_display['id']==virtual_display_id:
-            result = virtual_display
-    return result # raise error if not found
-
 def get_verts( camera, geom):
     allw = []
     res_u = 32
@@ -54,11 +48,14 @@ def plot_poly( ax, verts ):
 def create_display2tcs(geometry_filename,
                        display_bagfiles,
                        output_filebase,
-                       visualize=False):
-    geom = simple_geom.Geometry(geometry_filename)
+                       visualize,
+                       display_server_config):
+
+    geom_dict = display_server_config['geom']
+    geom = simple_geom.Geometry(geometry_filename, geom_dict)
+
     displays = [camera_model.load_camera_from_bagfile(dbf) for dbf in display_bagfiles]
 
-    print geometry_filename
     print display_bagfiles
     print [d.get_name() for d in displays]
 
@@ -67,7 +64,7 @@ def create_display2tcs(geometry_filename,
     if not len(physical_display_ids)==1:
         raise ValueError('need one, and only one, physical display. (You have %s)'%physical_display_ids)
 
-    display_params = rospy.get_param('/display_server/display/')
+    display_params = display_server_config['display']
     tcs = np.zeros( (display_params['height'],display_params['width'],2))-1
     allmask = np.zeros( (display_params['height'],display_params['width']))
     EM = np.zeros( (display_params['height'],display_params['width']), dtype=np.uint8)
@@ -81,7 +78,13 @@ def create_display2tcs(geometry_filename,
             physical_display_id = display.get_name()
             vdisp_params = {}
         else:
-            vdisp_params = load_params(physical_display_id, virtual_display_id)
+            result = None
+            for virtual_display in display_params['virtualDisplays']:
+                if virtual_display['id']==virtual_display_id:
+                    result = virtual_display
+            if not result:
+                raise Exception("Virtual Display Not Found")
+            vdisp_params = result
 
         print 'vdisp_params',vdisp_params
 
@@ -177,13 +180,17 @@ def create_display2tcs(geometry_filename,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('geometry_filename', type=str, help="JSON file with geometry description")
-    parser.add_argument('display_bagfiles', type=str, help="filename of display-model.bag for calibration data", nargs='+')
-    parser.add_argument('--output_filebase', type=str, help="basename of output files")
+    parser.add_argument('--geometry-filename', type=str, help="JSON file with geometry description")
+    parser.add_argument(
+        '--display-server', type=str, required=True, help=\
+        'the path of the display server')
+    parser.add_argument('--output-filebase', type=str, help="basename of output files")
     parser.add_argument('--visualize', action='store_true', default=False, help="show plot")
+    parser.add_argument('bagfiles', type=str, help="filename of display-model.bag for calibration data", nargs='+')
     args = parser.parse_args()
 
     create_display2tcs(args.geometry_filename,
-                       args.display_bagfiles,
+                       args.bagfiles,
                        args.output_filebase,
-                       visualize=args.visualize)
+                       args.visualize,
+                       rospy.get_param(args.display_server))

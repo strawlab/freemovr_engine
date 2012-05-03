@@ -47,7 +47,6 @@ def compute_display_calibration(display_coords_filename, camera_calib_file, geom
             results = loaded['data']
             display_width_height = loaded['display_width_height']
             p2c_by_cam = loaded['p2c_by_cam']
-            print p2c_by_cam
             display_h, display_w = p2c_by_cam[camera_name]['x'].shape
 
             display_x_coords = results[camera_name][0]['address']

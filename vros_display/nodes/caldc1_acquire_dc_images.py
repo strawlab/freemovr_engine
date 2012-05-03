@@ -125,7 +125,7 @@ def get_mask(verts, width, height ):
     arr[:,:,3] = 1
     return arr
 
-def localize_display( topic_prefixes=None, display_server=None, virtual_display_id=None, save_pngs=False ):
+def localize_display( topic_prefixes=None, display_server=None, virtual_display_id=None, save_pngs=False, save_sample_masks=False ):
     assert len(topic_prefixes)>=1
     print 'topic_prefixes',topic_prefixes
 
@@ -264,6 +264,15 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
                     print 'getting images for bitno %d'%bitno
                     imdict = runner.get_images(n_per_camera=n_per_camera)
 
+                    if save_sample_masks and bitno == -2:
+                        for cam in imdict:
+                            fname = "%s_%s_%s_mask.sample.png" % (
+                                display_server.name[1:],
+                                virtual_display_id,
+                                cam[1:])
+                            save_image(fname, imdict[cam][1])
+                            print "saved sample mask images: %s" % fname
+
                     if 0:
                         # don't average images at this stage, just save all images
                         for topic_prefix,msgs in imdict.iteritems():
@@ -299,22 +308,26 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
         fd.close()
         print 'saved grey code images to %s' % fname
 
+def save_image(fname, msg):
+    arr = np.fromstring(msg.data,dtype=np.uint8)
+    arr.shape = (msg.height, msg.width)
+
+    pil_im = PIL.fromarray( arr[::-1] )
+    pil_im.save(fname)
+
+
 def save_images(imname,imdict):
     for topic_prefix in imdict.keys():
         for i, msg in enumerate(imdict[topic_prefix]):
             fname = '%s_%s_%03d.png'%(imname,topic_prefix,i)
-            arr = np.fromstring(msg.data,dtype=np.uint8)
-            arr.shape = (msg.height, msg.width)
-
-            pil_im = PIL.fromarray( arr[::-1] )
-            pil_im.save(fname)
+            save_image(fname, msg)
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'topic_prefixes', type=str,
-        help='topic prefix of the images used to view the projector (e.g. /camnode)',
+        help='camera topic prefix of the images used to view the projector (e.g. /camnode)',
         nargs='+')
     parser.add_argument(
         '--display-server', type=str, required=True, help=\
@@ -323,6 +336,8 @@ if __name__ == '__main__':
         '--virtual-display-id', type=str)
     parser.add_argument(
         '--save-pngs', action='store_true', default=False)
+    parser.add_argument(
+        '--generate-sample-mask-images', action='store_true', default=False)
 
     # use argparse, but only after ROS did its thing
     argv = rospy.myargv()
@@ -337,4 +352,4 @@ if __name__ == '__main__':
                       display_server = display_server,
                       virtual_display_id = args.virtual_display_id,
                       save_pngs = args.save_pngs,
-                      )
+                      save_sample_masks = args.generate_sample_mask_images)
