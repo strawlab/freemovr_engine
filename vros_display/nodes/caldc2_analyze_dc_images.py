@@ -500,9 +500,13 @@ if __name__ == '__main__':
         'path to directory containing mask images. The images are'\
         'named display_server_vdisp_id_image_topic_mask.png')
     parser.add_argument('--output-dir', type=str, help=\
-        'path to save calibration result')
+        'path to save calibration result', default='./')
 
     args = parser.parse_args()
+
+    if not os.path.isdir(args.output_dir):
+        os.mkdir(args.output_dir)
+
     all_results = {}
     for filename in args.filename:
         with open(filename,mode='r') as fd:
@@ -524,11 +528,11 @@ if __name__ == '__main__':
         pd = all_results.setdefault(physical_display_id,{})
         assert virtual_display_id not in pd
         pd[virtual_display_id] = results
-    fd = open('display_coords.pkl',mode='w')
+    fd = open(os.path.join(args.output_dir,'display_coords.pkl'),mode='w')
     pickle.dump(all_results,fd)
     fd.close()
 
-    base_coord_dirname = 'display_coords_' + time.strftime( '%Y%m%d_%H%M%S' )
+    base_coord_dirname = os.path.join(args.output_dir,'display_coords_' + time.strftime( '%Y%m%d_%H%M%S' ))
     os.mkdir(base_coord_dirname)
     for physical_display_id in all_results:
         for virtual_display_id in all_results[physical_display_id]:

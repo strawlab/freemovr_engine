@@ -43,7 +43,8 @@ def save_arr( fname, arr ):
     fd.close()
 
 def emit_multicamselfcal_dir(fname,out_dirname,use_nth_frame=1,visualize=False):
-    os.mkdir(out_dirname)
+    if not os.path.isdir(out_dirname):
+        os.mkdir(out_dirname)
 
     fd = open(fname,mode='r')
     data = pickle.load(fd)

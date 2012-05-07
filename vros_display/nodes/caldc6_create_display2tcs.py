@@ -12,7 +12,6 @@ import simple_geom
 from exr import save_exr
 
 import argparse
-import json
 import scipy.misc
 import numpy as np
 import mahotas.polygon

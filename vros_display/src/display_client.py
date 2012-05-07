@@ -1,8 +1,14 @@
 import rospy
-import time
 import vros_display.srv
-import json
+import vros_display.msg
+
 import warnings
+import tempfile
+import time
+import os.path
+
+import json
+import scipy.misc
 
 class DisplayServerProxy(object):
     def __init__(self, display_server_node_name=None, wait=False):
@@ -21,6 +27,8 @@ class DisplayServerProxy(object):
                                                                 vros_display.srv.GetDisplayServerMode)
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
                                                                 vros_display.srv.SetDisplayServerMode)
+        self.blit_compressed_image_proxy = rospy.ServiceProxy(self.get_fullname('blit_compressed_image'),
+                                                                vros_display.srv.BlitCompressedImage)
 
     @property
     def name(self):
@@ -75,3 +83,19 @@ class DisplayServerProxy(object):
         result = get_display_info_proxy()
         result_dict = json.loads(result.info_json)
         return result_dict
+
+    def show_image(self, fname, unlink=False):
+        try:
+            image = vros_display.msg.VROSCompressedImage()
+            image.format = os.path.splitext(fname)[-1]
+            image.data = open(fname).read()
+        finally:
+            if unlink:
+                os.unlink(fname)
+        self.blit_compressed_image_proxy(image)
+
+    def show_pixels(self, arr):
+        fname = tempfile.mktemp('.png')
+        scipy.misc.imsave(fname,arr)
+        self.show_image(fname, unlink=True)
+

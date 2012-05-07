@@ -2,11 +2,11 @@
 
 # standard Python imports
 import argparse
-import Image as PIL
 import numpy as np
 import time
 import os.path
 import pickle
+import scipy
 import math
 
 # ROS imports
@@ -169,7 +169,7 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
                                     arr[:,oval,chan] = bits
 
                     arr = arr*viewport_mask
-                    display_server.show_pixels(arr)
+                    set_pixels(display_server,arr)
                     n_per_camera=10
                     print 'getting images for bitno %d'%bitno
                     imdict = runner.get_images(n_per_camera=n_per_camera)
@@ -236,20 +236,14 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'topic_prefixes', type=str,
+        '--camera-topic-prefixes', type=str,
         help='camera topic prefix of the images used to view the projector (e.g. /camnode)',
         nargs='+')
     parser.add_argument(
-        '--display-server', type=str, required=True, help=\
-        'the path of the display server to configure')
-    parser.add_argument(
-        '--virtual-display-id', type=str)
-    parser.add_argument(
-        '--save-pngs', action='store_true', default=False)
-    parser.add_argument(
-        '--generate-sample-mask-images', action='store_true', default=False)
+        '--display-server-topic-prefixes', type=str,
+        help='display server topic prefixs',
+        nargs='+')
 
-    # use argparse, but only after ROS did its thing
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
     # if len(args.topic_prefixes)==0:
