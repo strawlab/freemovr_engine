@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+
+import roslib; roslib.load_manifest('vros_display')
+
 import pickle
 import os
 import numpy
@@ -7,44 +10,11 @@ import collections
 import numpy as np
 import warnings
 
-cfg_file = """[Files]
-Basename: cam
-Image-Extension: jpg
-
-[Images]
-Subpix: 0.5
-
-[Calibration]
-Num-Cameras: {num_cameras}
-Num-Projectors: 0
-Nonlinear-Parameters: 50    0    1    0    0    0
-Nonlinear-Update: 1   0   1   0   0   0
-Initial-Tolerance: 10
-Do-Global-Iterations: 0
-Global-Iteration-Threshold: 0.5
-Global-Iteration-Max: 5
-Num-Cameras-Fill: 2
-Do-Bundle-Adjustment: 1
-Undo-Radial: 0
-Min-Points-Value: 30
-N-Tuples: 3
-Square-Pixels: 1
-Use-Nth-Frame: {use_nth_frame}
-"""
-
-def save_arr( fname, arr ):
-    assert arr.ndim==2
-    if arr.dtype==np.bool:
-        arr = arr.astype( np.uint8 )
-    fd = open(fname,mode='w')
-    for row in arr:
-        row_buf = ' '.join( map(repr,row) ) + '\n'
-        fd.write(row_buf)
-    fd.close()
+from calib.io import MultiCalSelfCam
 
 def emit_multicamselfcal_dir(fname,out_dirname,use_nth_frame=1,visualize=False):
-    if not os.path.isdir(out_dirname):
-        os.mkdir(out_dirname)
+
+    mcal = MultiCalSelfCam(out_dirname, use_nth_frame=use_nth_frame)
 
     fd = open(fname,mode='r')
     data = pickle.load(fd)
@@ -162,23 +132,10 @@ def emit_multicamselfcal_dir(fname,out_dirname,use_nth_frame=1,visualize=False):
     points = np.array(points).T
     IdMat_all = np.array(IdMat_all).T
 
-    print 'points.shape',points.shape
-    print 'IdMat_all.shape',IdMat_all.shape
-    print 'Res',Res
-
-    camera_order_fd = open( os.path.join(out_dirname,'camera_order.txt'), mode='w' )
-    for c in camera_order:
-        camera_order_fd.write( c + '\n' )
-    camera_order_fd.close()
-
-    save_arr( os.path.join(out_dirname,'Res.dat'), Res )
-    save_arr( os.path.join(out_dirname,'IdMat.dat'), IdMat_all )
-    save_arr( os.path.join(out_dirname,'points.dat'), points )
-
-    cfg_fd = open( os.path.join(out_dirname, 'multicamselfcal.cfg'), mode='w' )
-    cfg_fd.write( cfg_file.format( num_cameras=len(Res),
-                                   use_nth_frame=use_nth_frame ) )
-    cfg_fd.close()
+    mcal.create_calibration_directory(
+            IdMat_all, points, Res, camera_order,
+            radial_distortion=0, square_pixels=1, cam_calibrations=None)
+    print mcal.cmd_string()
 
     return IdMat_all.shape[1]
 

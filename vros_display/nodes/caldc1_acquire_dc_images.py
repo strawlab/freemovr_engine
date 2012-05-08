@@ -17,7 +17,7 @@ import rospy
 import display_client
 import fill_polygon
 from graycode import graycode_str, graycode_arange
-from calib.acquire import CameraHandler, Runner
+from calib.acquire import CameraHandler, SequentialCameraRunner
 
 # constants
 D2R = math.pi/180.0
@@ -85,7 +85,7 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
     physical_display_id = display_server.get_fullname('')
     physical_display_id = physical_display_id.strip('/') # eliminate trailing slash
 
-    runner = Runner(cam_handlers)
+    runner = SequentialCameraRunner(cam_handlers)
     runner.clear_queue()
     runner.cycle_duration(1.0) # give panda a chance to startup...
     runner.clear_queue()
