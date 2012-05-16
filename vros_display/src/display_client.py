@@ -8,14 +8,22 @@ import time
 import os.path
 
 import json
+import numpy as np
 import scipy.misc
 
 class DisplayServerProxy(object):
+
+    IMAGE_COLOR_BLACK = 0
+    IMAGE_COLOR_WHITE = 255
+    IMAGE_NCHAN = 4
+
     def __init__(self, display_server_node_name=None, wait=False):
         if not display_server_node_name:
             self._server_node_name = rospy.resolve_name('display_server')
         else:
             self._server_node_name = rospy.resolve_name(display_server_node_name)
+
+        self._info_cached = {}
 
         rospy.loginfo('trying display server: %s' % self._server_node_name)
 
@@ -33,6 +41,18 @@ class DisplayServerProxy(object):
     @property
     def name(self):
         return self._server_node_name
+
+    @property
+    def width(self):
+        if not self._info_cached:
+            self.get_display_info()
+        return self._info_cached['width']
+
+    @property
+    def height(self):
+        if not self._info_cached:
+            self.get_display_info()
+        return self._info_cached['height']
 
     def get_fullname(self,name):
         return self._server_node_name+'/'+name
@@ -60,6 +80,9 @@ class DisplayServerProxy(object):
             return_to_standby_proxy()
             self._spin_wait('StimulusStandby') # wait until in standby mode
 
+    def enter_2dblit_mode(self):
+        self.set_mode('Stimulus2DBlit')
+
     def set_mode(self,mode):
         # put server in mode
         if mode == 'display2d':
@@ -81,8 +104,8 @@ class DisplayServerProxy(object):
         get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
                                                     vros_display.srv.GetDisplayInfo)
         result = get_display_info_proxy()
-        result_dict = json.loads(result.info_json)
-        return result_dict
+        self._info_cached = json.loads(result.info_json)
+        return self._info_cached
 
     def show_image(self, fname, unlink=False):
         try:
@@ -98,4 +121,10 @@ class DisplayServerProxy(object):
         fname = tempfile.mktemp('.png')
         scipy.misc.imsave(fname,arr)
         self.show_image(fname, unlink=True)
+
+    def new_image(self, color):
+        arr = np.zeros((self.height,self.width,self.IMAGE_NCHAN),dtype=np.uint8)
+        arr[:,:,3]=255
+        arr[:,:,:3]=color
+        return arr
 
