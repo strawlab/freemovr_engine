@@ -54,15 +54,10 @@ def _fill_polygon(polygon, canvas, color=1):
             canvas[y,n:nn] = color
 
 def test_fill():
-    poly = [ [1,5],
-             [1, 100],
-             [50, 100],
-             [45, 6]]
     poly = [ [1,1],
              [1, 3],
              [3, 2],
              ]
-    shape = (150,150,3)
     shape = (5,5,3)
     results = []
     for dtype in [np.float, np.int, np.uint8]:
