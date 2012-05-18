@@ -19,21 +19,46 @@ class CameraHandler(object):
     def set_im_queue(self,q):
         self.im_queue = q
     def get_image_callback(self,msg):
-        if self.debug:
-            print "%s got image" % self.topic_prefix
         if self.im_queue is None:
             return
-        self.im_queue.put((self.topic_prefix,msg))
+        try:
+            if self.debug:
+                print "%s got image: %f" % (self.topic_prefix, msg.header.stamp.to_sec())
+            self.im_queue.put_nowait((self.topic_prefix,msg))
+        except Queue.Full:
+            if self.debug:
+                print self.topic_prefix,"full"
 
 class _Runner(object):
     def __init__(self,cam_handlers,ros_latency=0.2):
         self.cam_handlers = cam_handlers
-        self.im_queue = Queue.Queue()
+        self.im_queue = Queue.Queue(len(cam_handlers)*20)
         for ch in self.cam_handlers:
             ch.set_im_queue(self.im_queue)
         self.ros_latency = ros_latency
         self.max_cam_latency = max( [ch.pipeline_max_latency for ch in self.cam_handlers ])
-        self.wait_duration = self.max_cam_latency + self.ros_latency
+        self._result = {}
+
+    @property
+    def result(self):
+        return self._result
+
+    @property
+    def result_as_nparray(self):
+        res = {}
+        for cam in self._result:
+            nimgs = len(self._result[cam])
+            tmpres = [0]*nimgs
+            for i in range(nimgs):
+                msg = self._result[cam][i]
+                shape = (msg.height, msg.width)
+                imarr = np.fromstring(msg.data,dtype=np.uint8)
+                imarr.shape = (msg.height, msg.width)
+                tmpres[i] = imarr
+            #sad to use dstack here, IMO res[cam][:,:,i] = imarr
+            #should have worked. 
+            res[cam] = np.dstack(tmpres)
+        return res
 
     def cycle_duration( self, dur ):
         tstart = time.time()
@@ -60,38 +85,42 @@ class SimultainousCameraRunner(_Runner):
     def __init__(self,cam_handlers,**kwargs):
         _Runner.__init__(self, cam_handlers,**kwargs)
 
-    def get_images(self,tstart,n_per_camera=1):
-        t_latest = tstart + self.ros_latency
-        result = {}
+    def get_images(self,n_per_camera, pre_func=None, pre_func_args=[], post_func=None, post_func_args=[]):
+        self._result.clear()
         for ch in self.cam_handlers:
-            result[ch.topic_prefix] = []
+            self._result[ch.topic_prefix] = []
 
-        while not self._is_done(result,n_per_camera):
+        #clear the queue
+        self.clear_queue()
+
+        if pre_func: pre_func(*pre_func_args)
+        t_latest = time.time() + (self.ros_latency + self.max_cam_latency)*n_per_camera
+
+        #wait for the images to arrive
+        while not self._is_done(self._result,n_per_camera):
             topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
             t_image = msg.header.stamp.to_sec()
-            t_diff = t_image-tstart
-            if t_diff < 0:
-                print "WARNING: WE WENT BACK IN TIME"
-            elif t_diff > self.self.wait_duration:
-                print "WARNING: TOO SLOW"
-            result[topic_prefix].append( msg )
+            if t_image > t_latest:
+                rospy.logwarn("image from %s at t=%f was too slow (by %f)" % (topic_prefix, t_image, t_image - t_latest))
+            self._result[topic_prefix].append( msg )
 
-        return result
+        if post_func: post_func(*post_func_args)
 
 class SequentialCameraRunner(object):
     def __init__(self,cam_handlers):
         _Runner.__init__(self, cam_handlers,**kwargs)
 
-    def get_images(self,n_per_camera=1):
+    def get_images(self,n_per_camera):
         self.clear_queue()
         tstart = time.time()
         self.cycle_duration( self.wait_duration )
         t_earliest = tstart + self.wait_duration
         self.clear_queue()
-        result = {}
+        self._result.clear()
         for ch in self.cam_handlers:
-            result[ch.topic_prefix] = []
-        while not self._is_done(result,n_per_camera):
+            self._result[ch.topic_prefix] = []
+        self.clear_queue()
+        while not self._is_done(self._result,n_per_camera):
             topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
             t_image = msg.header.stamp.to_sec()
             t_diff = abs(t_image-t_earliest)
@@ -100,6 +129,5 @@ class SequentialCameraRunner(object):
             if t_image < t_earliest:
                 # image too old
                 continue
-            result[topic_prefix].append( msg )
-        return result
+            self._result[topic_prefix].append( msg )
 
