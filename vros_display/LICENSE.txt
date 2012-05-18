@@ -61,3 +61,12 @@ http://www.humus.name/Textures/Pond.zip
    original author is expected.
    Any commercial distribution of this software requires the written
 	approval of Emil Persson.
+
+_fill_polygon() in src/fill_polygon.py
+--------------------------------------
+
+Downloaded on 17 May, 2012 from
+https://raw.github.com/luispedro/mahotas/master/mahotas/polygon.py
+
+  Author: Luis Pedro Coelho
+  License: GPL 2
