@@ -133,8 +133,9 @@ def emit_multicamselfcal_dir(fname,out_dirname,use_nth_frame=1,visualize=False):
     IdMat_all = np.array(IdMat_all).T
 
     mcal.create_calibration_directory(
-            IdMat_all, points, Res, camera_order,
-            radial_distortion=0, square_pixels=1, cam_calibrations=None)
+            camera_order,
+            IdMat_all, points, Res,
+            cam_calibrations=[], radial_distortion=0, square_pixels=1)
     print mcal.cmd_string()
 
     return IdMat_all.shape[1]

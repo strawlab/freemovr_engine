@@ -85,7 +85,7 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
     physical_display_id = display_server.get_fullname('')
     physical_display_id = physical_display_id.strip('/') # eliminate trailing slash
 
-    runner = SequentialCameraRunner(cam_handlers)
+    runner = SequentialCameraRunner(cam_handlers,n_per_camera=10)
     runner.clear_queue()
     runner.cycle_duration(1.0) # give panda a chance to startup...
     runner.clear_queue()
@@ -170,9 +170,9 @@ def localize_display( topic_prefixes=None, display_server=None, virtual_display_
 
                     arr = arr*viewport_mask
                     display_server.show_pixels(arr)
-                    n_per_camera=10
                     print 'getting images for bitno %d'%bitno
-                    imdict = runner.get_images(n_per_camera=n_per_camera)
+                    runner.get_images()
+                    imdict = runner.result
 
                     if save_sample_masks and bitno == -2:
                         for cam in imdict:
