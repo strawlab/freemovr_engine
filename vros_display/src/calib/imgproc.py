@@ -105,7 +105,7 @@ class DotBGFeatureDetector:
         self._show_img(diff, "D")
 
         if self._debug:
-            print "diff max: ", diff.max()
+            print "diff max: %d (thresh: %d) %s" % (diff.max(), thresh, self._name)
 
         if diff.max() < thresh:
             features = []
