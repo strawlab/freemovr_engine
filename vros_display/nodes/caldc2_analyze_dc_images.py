@@ -19,20 +19,7 @@ import roslib; roslib.load_manifest('vros_display')
 # local ROS package imports
 from graycode import graycode_str, graycode_arange
 from exr import save_exr
-
-def load_mask_image(mask_image_fname):
-    """
-    load the RGBA png image and return a numpy array of bools. Alpha
-    transparent pixels map to False in the returned array
-    """
-    im = scipy.misc.pilutil.imread( mask_image_fname )
-    if len(im.shape) != 3:
-        raise ValueError('mask image must have color channels')
-    if im.shape[2] != 4:
-        raise ValueError('mask image must have an alpha (4th) channel')
-    alpha = im[:,:,3]
-    mask = alpha.astype(np.bool)
-    return mask
+from calib.imgproc import load_mask_image
 
 def savearr( fname, arr, is_int=True ):
     assert arr.ndim==2
@@ -136,7 +123,7 @@ def find_display_in_images( input_data, visualize=False, min_lum_sig=20, MSB_min
             mask_fname = '%s_%s_%s_mask.png' % (physical_display_id, virtual_display_id, do_topic_prefix[1:])
             print 'loading valid pixel mask from', mask_fname
             assert os.path.exists(mask_fname)
-            arr = ~load_mask_image(mask_fname)
+            arr = load_mask_image(mask_fname)
         else:
             print 'all valid by default for',do_topic_prefix
             arr = np.ones( (height,width), dtype=np.bool )

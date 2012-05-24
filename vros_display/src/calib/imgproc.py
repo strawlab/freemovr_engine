@@ -120,3 +120,20 @@ class DotBGFeatureDetector:
 
         return features
 
+def load_mask_image(mask_image_fname):
+    """
+    load the RGBA png image and return a numpy array of bools. Alpha
+    transparent pixels map to True
+
+    MAKE THE PARTS OF THE IMAGE YOU WISH TO ANALYSE TRANSPARENT
+    """
+    im = scipy.misc.imread( mask_image_fname )
+    if len(im.shape) != 3:
+        raise ValueError('mask image must have color channels (shape was %s)' % repr(im.shape))
+    if im.shape[2] != 4:
+        raise ValueError('mask image must have an alpha (4th) channel (shape was %s)' % repr(im.shape))
+    alpha = im[:,:,3]
+    mask = ~alpha.astype(np.bool)
+    return mask
+
+
