@@ -52,7 +52,7 @@ class DotBGFeatureDetector:
                 img = arr
             cv2.imshow(self._handles[win_type], img)
 
-    def _show_features_and_diff(self, diff, features, sz=1):
+    def _show_features_and_diff(self, diff, features, sz=-1):
         if "F" in self._handles:
             ri,ci = diff.shape
             b = np.zeros(diff.shape,dtype=np.uint8)
@@ -60,7 +60,10 @@ class DotBGFeatureDetector:
 
             for f in features:
                 rf,cf = int(f[0]),int(f[1])
-                if sz == 0:
+                if sz < 0:
+                    g[rf,0:ci] = 255
+                    g[0:ri,cf] = 255
+                elif sz == 0:
                     g[rf,cf] = 255
                 else:
                     g[max(0,rf-sz):min(rf+sz,ri),max(0,cf-sz):min(cf+sz,ci)] = 255
