@@ -32,6 +32,7 @@ class DotBGFeatureDetector:
         self._bg = None
         self._imgsize = None
         self._shape = (-1,-1)
+        self._mask = None
 
     @property
     def img_shape(self):
@@ -45,7 +46,11 @@ class DotBGFeatureDetector:
 
     def _show_img(self, arr, win_type):
         if win_type in self._handles:
-            cv2.imshow(self._handles[win_type], arr)
+            if self._mask != None:
+                img = arr * self._mask
+            else:
+                img = arr
+            cv2.imshow(self._handles[win_type], img)
 
     def _show_features_and_diff(self, diff, features, sz=1):
         if "F" in self._handles:
@@ -65,6 +70,9 @@ class DotBGFeatureDetector:
 
     def _argmax(self, arr):
         return np.unravel_index(arr.argmax(), arr.shape)
+
+    def set_mask(self, arr):
+        self._mask = arr.astype(np.bool).copy()
 
     def compute_bg(self, bgarr):
         shape = bgarr.shape
@@ -87,6 +95,10 @@ class DotBGFeatureDetector:
         #prevent wrap-around unsiged subtraction (is there a better way to do this??)
         diff = imarr.astype(np.int16) - self._bg
         diff = diff.clip(0,255).astype(np.uint8)
+
+        if self._mask != None:
+            diff *= self._mask
+
         self._show_img(diff, "D")
 
         if self._debug:
