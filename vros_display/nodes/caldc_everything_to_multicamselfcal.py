@@ -51,6 +51,7 @@ class Calib:
     MODE_POINTS_AUTO_LIGHT = 8
     MODE_POINTS_AUTO_DETECT = 9
     MODE_SAVE = 10
+    MODE_RESTORE = 11
 
     def __init__(self, config, show_cameras, show_type):
         tracking_cameras = config["tracking_cameras"]
@@ -58,6 +59,13 @@ class Calib:
         trigger = config["trigger"]
         mask_dir = decode_url(config["mask_dir"])
         laser = '/laserpantilt'
+
+        self.ptsize = int(config["projector_point_size_px"])
+        self.num_ds_pts = int(config["projector_num_points"])
+        self.laser_step = int(config["laser_step_degrees"])
+        self.visible_thresh = int(config["bg_thresh_visible"])
+        self.laser_thresh = int(config["bg_thresh_laser"])
+        self.outdir = './mcamall'
 
         rospy.wait_for_service(trigger+'/set_framerate')
         rospy.wait_for_service(laser+'/set_power')
@@ -76,6 +84,7 @@ class Calib:
         s = rospy.Service('~calib_mode_projector_visible', std_srvs.srv.Empty, self._change_mode_srv_projvis)
         s = rospy.Service('~calib_finish', std_srvs.srv.Empty, self._change_mode_srv_fin)
         s = rospy.Service('~calib_save', std_srvs.srv.Empty, self._change_mode_srv_save)
+        s = rospy.Service('~calib_restore', std_srvs.srv.Empty, self._change_mode_srv_restore)
 
         self.pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self.pub_pts = rospy.Publisher('~points', String)
@@ -86,13 +95,7 @@ class Calib:
 
         self.results = {}   #camera : [(u,v),(u,v),...]
         self.num_results = 0
-        self.mcsc = MultiCalSelfCam('./mcamall')
-
-        self.ptsize = 3
-        self.num_ds_pts = 550
-        self.laser_step = 8
-        self.visible_thresh = 25
-        self.laser_thresh = 120
+        self.mcsc = MultiCalSelfCam(self.outdir)
 
         self.display_servers = {}   #name : (display_client,[cams])
         projector_cameras = []
@@ -147,6 +150,9 @@ class Calib:
     def _change_mode_srv_save(self, req):
         self.change_mode(self.MODE_SAVE)
         return std_srvs.srv.EmptyResponse()
+    def _change_mode_srv_restore(self, req):
+        self.change_mode(self.MODE_RESTORE)
+        return std_srvs.srv.EmptyResponse()
 
     def _detect_points(self, runner, thresh, restrict={}):
         runner.get_images(1, self.trigger_proxy_once)
@@ -184,9 +190,9 @@ class Calib:
         for d,(ds,cams) in self.display_servers.items():
             resolutions[d] = (ds.width, ds.height)
 
-        with open('allcalibresults.pkl','w') as f:
+        with open(self.outdir+'/results.pkl','w') as f:
             pickle.dump(self.results,f)
-        with open('allcalibresolution.pkl','w') as f:
+        with open(self.outdir+'/resolution.pkl','w') as f:
             pickle.dump(resolutions,f)
 
         cam_calibrations = {}
@@ -196,7 +202,7 @@ class Calib:
             if os.path.isfile(calib):
                 cam_calibrations[cam] = calib
 
-        with open('allcalibcamcalib.pkl','w') as f:
+        with open(self.outdir+'/cam_calibrations.pkl','w') as f:
             pickle.dump(cam_calibrations,f)
 
         self.mcsc.create_from_cams(
@@ -220,6 +226,14 @@ class Calib:
         while not rospy.is_shutdown() and self.mode != self.MODE_FINISHED:
             if self.mode == self.MODE_SLEEP:
                 pass
+
+            elif self.mode == self.MODE_RESTORE:
+                try:
+                    with open(self.outdir+'/results.pkl','r') as f:
+                        self.results = pickle.load(f)
+                except Exception, e:
+                    rospy.logwarn("error loading: %s" % e)
+                self.change_mode(self.MODE_SLEEP)
 
             elif self.mode == self.MODE_POINTS_MANUAL:
                 self._detect_and_save_all_points(self.runner, self.laser_thresh)
@@ -254,11 +268,9 @@ class Calib:
                 if self._nds_pts > 0:
                     for d,(dsc,cams) in self.display_servers.items():
                         detected,nvisible = self._detect_points(self.runner, self.visible_thresh, restrict=cams)
-                        print "n",nvisible
                         if nvisible == 2:
                             self.num_results += 1
                             for cam in self.cam_ids:
-                                print cam,d,cam==d
                                 if cam in detected:
                                     #detected in both cameras
                                     self.results[cam].append(detected[cam])
@@ -306,7 +318,7 @@ class Calib:
                 try:
                     self._save_results()
                 except Exception, e:
-                    print e
+                    rospy.warn("could not save results: %s" % e)
                 self.change_mode(self.MODE_SLEEP)
 
             #publish state
@@ -351,7 +363,6 @@ if __name__ == '__main__':
     conffile = decode_url(args.calib_config)
     with open(conffile, 'r') as f:
         config = yaml.load(f)
-        print config
         for k in ("tracking_cameras", "display_servers", "trigger", "mask_dir"):
             if not config.has_key(k):
                 parser.error("malformed calibration config, missing %s" % k)
