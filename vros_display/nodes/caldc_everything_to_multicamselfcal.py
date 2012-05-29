@@ -52,17 +52,20 @@ class Calib:
     MODE_POINTS_AUTO_DETECT = 9
     MODE_SAVE = 10
     MODE_RESTORE = 11
+    MODE_SET_BACKGROUND = 12
+    MODE_CLEAR_BACKGROUND = 13
 
     def __init__(self, config, show_cameras, show_type, show_collected_points):
         tracking_cameras = config["tracking_cameras"]
         display_servers = config["display_servers"]
         trigger = config["trigger"]
-        mask_dir = decode_url(config["mask_dir"])
         laser = '/laserpantilt'
 
+        self.mask_dir = decode_url(config["mask_dir"])
         self.ptsize = int(config["projector_point_size_px"])
         self.num_ds_pts = int(config["projector_num_points"])
-        self.laser_step = int(config["laser_step_degrees"])
+        self.laser_range_pan = config.get("laser_range_pan",[0,180,8])
+        self.laser_range_tilt = config.get("laser_range_tilt",[64,136,8])
         self.visible_thresh = int(config["bg_thresh_visible"])
         self.laser_thresh = int(config["bg_thresh_laser"])
         self.outdir = './mcamall'
@@ -85,6 +88,10 @@ class Calib:
         s = rospy.Service('~calib_finish', std_srvs.srv.Empty, self._change_mode_srv_fin)
         s = rospy.Service('~calib_save', std_srvs.srv.Empty, self._change_mode_srv_save)
         s = rospy.Service('~calib_restore', std_srvs.srv.Empty, self._change_mode_srv_restore)
+        s = rospy.Service('~calib_set_mask', std_srvs.srv.Empty, self._change_mode_set_mask)
+        s = rospy.Service('~calib_clear_mask', std_srvs.srv.Empty, self._change_mode_clear_mask)
+        s = rospy.Service('~calib_calculate_background', std_srvs.srv.Empty, self._change_mode_calculate_background)
+
 
         self.pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self.pub_pts = rospy.Publisher('~points', String)
@@ -174,6 +181,15 @@ class Calib:
     def _change_mode_srv_restore(self, req):
         self.change_mode(self.MODE_RESTORE)
         return std_srvs.srv.EmptyResponse()
+    def _change_mode_set_mask(self, req):
+        self._set_bg_masks()
+        return std_srvs.srv.EmptyResponse()
+    def _change_mode_clear_mask(self, req):
+        self._set_bg_masks(clear_masks=True)
+        return std_srvs.srv.EmptyResponse()
+    def _change_mode_calculate_background(self, req):
+        self._calculate_background()
+        return std_srvs.srv.EmptyResponse()
 
     def _get_points_coverage(self, cam):
         w,h = self.resolutions[cam]
@@ -200,6 +216,16 @@ class Calib:
             rospy.loginfo("Calculate background for %s" % cam)
         rospy.loginfo("Collecting backgrounds finished")
 
+    def _set_bg_masks(self, clear_masks=False):
+        for cam in self.detectors:
+            if clear_masks:
+                self.detectors[cam].clear_mask()
+            else:
+                mask_name = os.path.join(self.mask_dir,cam.split("/")[-1]) + ".png"
+                if os.path.exists(mask_name):
+                    arr = load_mask_image(mask_name)
+                    self.detectors[cam].set_mask(arr)
+                    rospy.loginfo("Setting mask = %s" % mask_name)
 
     def _detect_points(self, runner, thresh, restrict={}):
         runner.get_images(1, self.trigger_proxy_once)
@@ -322,8 +348,8 @@ class Calib:
 
             elif self.mode == self.MODE_POINTS_AUTO_SETUP:
                 self.laser_proxy_power(True)
-                self._laser_pts = [(p,t) for p in range(0,180,self.laser_step)\
-                                         for t in range(64,136,self.laser_step)]
+                self._laser_pts = [(p,t) for p in range(*self.laser_range_pan)\
+                                         for t in range(*self.laser_range_tilt)]
                 self._nlaser_pts = len(self._laser_pts) - 1 #we count down to zero
                 self.laser_proxy_power(True)
                 self.change_mode(self.MODE_POINTS_AUTO_LIGHT)
