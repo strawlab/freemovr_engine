@@ -77,6 +77,9 @@ class DotBGFeatureDetector:
     def set_mask(self, arr):
         self._mask = arr.astype(np.bool).copy()
 
+    def clear_mask(self):
+        self._mask = None
+
     def compute_bg(self, bgarr):
         shape = bgarr.shape
         assert len(shape) == 3

@@ -53,7 +53,7 @@ class Calib:
     MODE_SAVE = 10
     MODE_RESTORE = 11
 
-    def __init__(self, config, show_cameras, show_type):
+    def __init__(self, config, show_cameras, show_type, show_collected_points):
         tracking_cameras = config["tracking_cameras"]
         display_servers = config["display_servers"]
         trigger = config["trigger"]
@@ -89,8 +89,10 @@ class Calib:
         self.pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self.pub_pts = rospy.Publisher('~points', String)
 
+        self.collected_points_windows = {}
+
         self.show_cameras = show_cameras
-        if show_cameras:
+        if show_cameras or show_collected_points:
             cv2.startWindowThread()
 
         self.results = {}   #camera : [(u,v),(u,v),...]
@@ -107,6 +109,12 @@ class Calib:
             dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_BLACK))
             self.display_servers[d] = (dsc,cams)
 
+            if show_collected_points:
+                handle = "%s-allpoints" % d
+                cv2.namedWindow(handle)
+                self.collected_points_windows[d] = handle
+                
+
         self.detectors = {}
         cam_handlers = []
         for cam in tracking_cameras+projector_cameras:
@@ -114,15 +122,17 @@ class Calib:
                                 cam,
                                 method="med",
                                 show=show_type if (show_cameras[0] == "all" or cam in show_cameras) else "")
-            mask_name = os.path.join(mask_dir,cam.split("/")[-1]) + ".png"
-            if os.path.exists(mask_name):
-                arr = load_mask_image(mask_name)
-                fd.set_mask(arr)
-                rospy.loginfo("Setting mask = %s" % mask_name)
-
             self.detectors[cam] = fd
             cam_handlers.append(CameraHandler(cam,debug=False))
             self.results[cam] = []
+
+            if show_collected_points:
+                handle = "%s-allpoints" % cam
+                cv2.namedWindow(handle)
+                self.collected_points_windows[cam] = handle
+
+        #set bg masks by default
+        self._set_bg_masks()
 
         #cam_ids contains everything we calibrate
         self.cam_ids = self.detectors.keys() + self.display_servers.keys()
@@ -130,6 +140,17 @@ class Calib:
             rospy.loginfo("Calibrating %s" % c)
 
         self.runner = SimultainousCameraRunner(cam_handlers)
+
+        #need to recieve images (i.e. by calculating the background) before
+        #being able to read the resoluions
+        self._calculate_background()
+
+        self.resolutions = {}
+        for cam,det in self.detectors.items():
+            self.resolutions[cam] = (det.img_width_px,det.img_height_px)
+        for d,(ds,cams) in self.display_servers.items():
+            self.resolutions[d] = (ds.width, ds.height)
+
         self.change_mode(self.MODE_SLEEP)
 
     def change_mode(self, mode):
@@ -153,6 +174,32 @@ class Calib:
     def _change_mode_srv_restore(self, req):
         self.change_mode(self.MODE_RESTORE)
         return std_srvs.srv.EmptyResponse()
+
+    def _get_points_coverage(self, cam):
+        w,h = self.resolutions[cam]
+        #swap h,w as resolution saves in image coord convention and scipy.misc.imsave saves
+        #from matrix convention
+        arr = np.zeros((h,w,4),dtype=np.uint8)
+        arr[:,:,3]=255 #opaque
+        for pt in self.results[cam]:
+            #again swap image coords -> matrix notation
+            col,row = pt
+            if np.any(np.isnan(pt)):
+                continue
+            arr[row,col,1] = 255
+        return arr
+
+    def _calculate_background(self):
+        rospy.loginfo("Collecting backgrounds")
+        #collect bg images
+        self.runner.get_images(20, self.trigger_proxy_rate, [5], self.trigger_proxy_rate, [0])
+        imgs = self.runner.result_as_nparray
+        for cam in imgs:
+            #collect the background model
+            self.detectors[cam].compute_bg(imgs[cam])
+            rospy.loginfo("Calculate background for %s" % cam)
+        rospy.loginfo("Collecting backgrounds finished")
+
 
     def _detect_points(self, runner, thresh, restrict={}):
         runner.get_images(1, self.trigger_proxy_once)
@@ -184,16 +231,10 @@ class Calib:
                     self.results[cam].append((np.nan, np.nan))
 
     def _save_results(self):
-        resolutions = {}
-        for cam,det in self.detectors.items():
-            resolutions[cam] = (det.img_width_px,det.img_height_px)
-        for d,(ds,cams) in self.display_servers.items():
-            resolutions[d] = (ds.width, ds.height)
-
         with open(self.outdir+'/results.pkl','w') as f:
             pickle.dump(self.results,f)
         with open(self.outdir+'/resolution.pkl','w') as f:
-            pickle.dump(resolutions,f)
+            pickle.dump(self.resolutions,f)
 
         cam_calibrations = {}
         for cam in self.cam_ids:
@@ -207,22 +248,13 @@ class Calib:
 
         self.mcsc.create_from_cams(
                 cam_ids=self.cam_ids[:],
-                cam_resolutions=resolutions,
+                cam_resolutions=self.resolutions,
                 cam_points=self.results.copy(),
                 cam_calibrations=cam_calibrations)
 
         rospy.loginfo(self.mcsc.cmd_string)
 
     def run(self):
-        rospy.loginfo("Collecting backgrounds")
-        #collect bg images
-        self.runner.get_images(20, self.trigger_proxy_rate, [5], self.trigger_proxy_rate, [0])
-        imgs = self.runner.result_as_nparray
-        for cam in imgs:
-            #collect the background model
-            self.detectors[cam].compute_bg(imgs[cam])
-            rospy.loginfo("Calculate background for %s" % cam)
-
         while not rospy.is_shutdown() and self.mode != self.MODE_FINISHED:
             if self.mode == self.MODE_SLEEP:
                 pass
@@ -328,6 +360,11 @@ class Calib:
                 #divied by 2 because this counts x and y separately
                 points_per_cam[cam] = np.count_nonzero(np.nan_to_num(np.array(self.results[cam]))) / 2
             self.pub_pts.publish(json.dumps(points_per_cam))
+
+            if self.collected_points_windows:
+                for cam,handle in self.collected_points_windows.items():
+                    cv2.imshow(handle, self._get_points_coverage(cam))
+
             rospy.sleep(0.1)
 
         #clean up all state
@@ -352,7 +389,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--calib-config', type=str, default='package://flycave/conf/calib-all.yaml',
         help='path to calibration configuration yaml file')
-
+    parser.add_argument(
+        '--show-collected-points', action='store_true',
+        help='show all collected points')
 
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
@@ -369,6 +408,7 @@ if __name__ == '__main__':
 
     c = Calib(config,
               show_cameras=args.show_cameras,
-              show_type=set(args.show_type))
+              show_type=set(args.show_type),
+              show_collected_points=args.show_collected_points)
     c.run()
 
