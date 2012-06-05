@@ -1,6 +1,8 @@
 import shutil
 import os.path
 import logging
+import tempfile
+import shutil
 
 import numpy as np
 
@@ -10,6 +12,8 @@ from rosutils.formats import camera_calibration_yaml_to_radfile
 
 from calib.visualization import create_point_cloud_message_publisher, \
                                 create_camera_pose_message_publisher
+
+from . commandwrapper import WrapCommand as ThreadedCommand
 
 _cfg_file = """[Files]
 Basename: {basename}
@@ -27,7 +31,7 @@ Initial-Tolerance: 10
 Do-Global-Iterations: 0
 Global-Iteration-Threshold: 0.5
 Global-Iteration-Max: 5
-Num-Cameras-Fill: 2
+Num-Cameras-Fill: {num_cameras}
 Do-Bundle-Adjustment: 1
 Undo-Radial: {undo_radial}
 Min-Points-Value: 30
@@ -75,6 +79,10 @@ class MultiCalSelfCam:
         if not os.path.isdir(out_dirname):
             os.mkdir(out_dirname)
 
+        self.octave = '/usr/bin/octave'
+        self.matlab = '/opt/matlab/R2011a/bin/matlab'
+        self.mcscdir = '/home/stowers/Straw/MultiCamSelfCal/MultiCamSelfCal/'
+
         self.out_dirname = out_dirname
         self.basename = basename
         self.use_nth_frame = use_nth_frame
@@ -102,6 +110,37 @@ class MultiCalSelfCam:
     def cmd_string(self):
         return "octave gocal.m --config=%s" % os.path.join(self.out_dirname, "multicamselfcal.cfg")
 
+    def execute(self, blocking=True, cb=None, use_matlab=False):
+        """
+        @returns: dir_with_result, pcd_file
+        """
+        dest = tempfile.mkdtemp(prefix='mcsc')
+        stdout = open(os.path.join(dest,'STDOUT'),'w')
+        dest = os.path.join(dest,'data')
+        shutil.copytree(self.out_dirname, dest)
+
+        cfg = os.path.join(dest, "multicamselfcal.cfg")
+
+        if use_matlab:
+            cmds = '%s -nodesktop -nosplash -r "cd(\'%s\'); gocal_func(\'%s\'); exit"' % (
+                        self.matlab, self.mcscdir, cfg)
+            cwd = None
+        else:
+            cmds = '%s gocal.m --config=%s' % (
+                        self.octave, cfg)
+            cwd = self.mcscdir
+
+        print cmds
+
+        cmd = ThreadedCommand(cmds,cwd=cwd,stdout=None,stderr=None)
+        cmd.set_finished_cb(cb,dest)
+
+        cmd.start()
+
+        if blocking:
+            cmd.join()
+            return dest
+            
     def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
 
         #remove cameras with no points
@@ -162,12 +201,14 @@ class MultiCalSelfCam:
         foundfd.close()
         pointsfd.close()
 
+        undo_radial = all([cam in cam_calibrations for cam in cam_ids])
         self._write_cfg(cam_ids,
-                #TODO: is this required??? Only undo radial distortion if all cameras are
-                #calibrated
-                radial_distortion=all([cam in cam_calibrations for cam in cam_ids]),
+                radial_distortion=undo_radial,
                 square_pixels=True)
 
+        print "calibrate cams: %s" % ','.join(cam_ids)
+        print "dropped cams: %s" % ','.join(cams_to_remove)
+        print "undo radial: ", undo_radial
         print "wrote camera calibration directory: %s" % self.out_dirname
 
     def create_calibration_directory(self, cam_ids, IdMat, points, Res, cam_calibrations={}, radial_distortion=0, square_pixels=1):
@@ -190,27 +231,33 @@ class MultiCalSelfCam:
 
         self._write_cfg(cam_ids, radial_distortion, square_pixels)
 
+    #FIXME: MAKE STATIC
     def reshape_calibrated_points(self, xe):
         return xe[0:3,:].T.tolist()
 
-    def _read_calibration_result(self):
-        Xe = load_ascii_matrix(os.path.join(self.out_dirname,'Xe.dat'))
-        Ce = load_ascii_matrix(os.path.join(self.out_dirname,'Ce.dat'))
-        Re = load_ascii_matrix(os.path.join(self.out_dirname,'Re.dat'))
+    #FIXME: MAKE STATIC
+    def _read_calibration_result(self, out_dirname):
+        Xe = load_ascii_matrix(os.path.join(out_dirname,'Xe.dat'))
+        Ce = load_ascii_matrix(os.path.join(out_dirname,'Ce.dat'))
+        Re = load_ascii_matrix(os.path.join(out_dirname,'Re.dat'))
 
         return Xe,Ce,Re
 
-    def _read_calibration_names(self):
-        f = os.path.join(self.out_dirname,'camera_order.txt')
+    #FIXME: MAKE STATIC
+    def _read_calibration_names(self, out_dirname):
+        f = os.path.join(out_dirname,'camera_order.txt')
         if os.path.isfile(f):
             return [l.strip() for l in open(f,'r').readlines()]
         else:
             print "WARNING: could not find camera_order.txt"
             return []
 
-    def publish_calibration_points(self, topic_base=''):
-        xe,ce,re = self._read_calibration_result()
-        names = self._read_calibration_names()
+    #FIXME: MAKE STATIC
+    def publish_calibration_points(self, topic_base='', result_dir=None):
+        path = result_dir if result_dir else self.out_dirname
+
+        xe,ce,re = self._read_calibration_result(path)
+        names = self._read_calibration_names(path)
 
         create_point_cloud_message_publisher(
             self.reshape_calibrated_points(xe),
@@ -224,7 +271,8 @@ class MultiCalSelfCam:
             publish_now=True,
             latch=True)
 
-    def save_to_pcd(self, fname):
+    #FIXME: MAKE STATIC
+    def save_to_pcd(self, fname, result_dir=None):
         HEADER = \
         "# .PCD v.7 - Point Cloud Data file format\n"\
         "VERSION .7\n"\
@@ -238,8 +286,10 @@ class MultiCalSelfCam:
         "POINTS %(npoints)d\n"\
         "DATA ascii"
 
+        path = result_dir if result_dir else self.out_dirname
+
         with open(fname, 'w') as fd:
-            xe,ce,re = self._read_calibration_result()
+            xe,ce,re = self._read_calibration_result(path)
             fd.write(HEADER % {"npoints":xe.shape[1]-1})
             for row in self.reshape_calibrated_points(xe):
                 fd.write("%f %f %f\n" % tuple(row))
