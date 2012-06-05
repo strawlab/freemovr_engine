@@ -6,6 +6,7 @@ import time
 import os.path
 import pickle
 import math
+import fnmatch
 
 import json
 import yaml
@@ -13,8 +14,6 @@ import numpy as np
 import scipy.ndimage
 import scipy.misc
 import cv,cv2
-
-import skimage.feature
 
 # ROS imports
 import roslib;
@@ -31,6 +30,7 @@ import display_client
 import camera_trigger.srv
 import std_srvs.srv
 import flycave.srv
+import vros_display.srv
 
 from calib.acquire import CameraHandler, SimultainousCameraRunner
 from calib.io import MultiCalSelfCam
@@ -54,8 +54,9 @@ class Calib:
     MODE_RESTORE = 11
     MODE_SET_BACKGROUND = 12
     MODE_CLEAR_BACKGROUND = 13
+    MODE_CALIBRATE = 14
 
-    def __init__(self, config, show_cameras, show_type, show_collected_points):
+    def __init__(self, config, show_cameras, show_type, outdir):
         tracking_cameras = config["tracking_cameras"]
         display_servers = config["display_servers"]
         trigger = config["trigger"]
@@ -68,7 +69,11 @@ class Calib:
         self.laser_range_tilt = config.get("laser_range_tilt",[64,136,8])
         self.visible_thresh = int(config["bg_thresh_visible"])
         self.laser_thresh = int(config["bg_thresh_laser"])
-        self.outdir = './mcamall'
+        self.outdir = outdir
+
+        if not os.path.isdir(self.outdir):
+            raise Exception("Dir %s does not exist" % self.outdir)
+        rospy.loginfo("Saving to %s" % self.outdir)
 
         rospy.wait_for_service(trigger+'/set_framerate')
         rospy.wait_for_service(laser+'/set_power')
@@ -86,20 +91,21 @@ class Calib:
         s = rospy.Service('~calib_mode_points_auto', std_srvs.srv.Empty, self._change_mode_srv_points_auto)
         s = rospy.Service('~calib_mode_projector_visible', std_srvs.srv.Empty, self._change_mode_srv_projvis)
         s = rospy.Service('~calib_finish', std_srvs.srv.Empty, self._change_mode_srv_fin)
-        s = rospy.Service('~calib_save', std_srvs.srv.Empty, self._change_mode_srv_save)
+        s = rospy.Service('~calib_save', vros_display.srv.CalibSave, self._change_mode_srv_save)
         s = rospy.Service('~calib_restore', std_srvs.srv.Empty, self._change_mode_srv_restore)
         s = rospy.Service('~calib_set_mask', std_srvs.srv.Empty, self._change_mode_set_mask)
         s = rospy.Service('~calib_clear_mask', std_srvs.srv.Empty, self._change_mode_clear_mask)
         s = rospy.Service('~calib_calculate_background', std_srvs.srv.Empty, self._change_mode_calculate_background)
+        s = rospy.Service('~calib_calibrate', std_srvs.srv.Empty, self._change_mode_calibrate)
 
 
         self.pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self.pub_pts = rospy.Publisher('~points', String)
-
-        self.collected_points_windows = {}
+        self.pub_resolution = rospy.Publisher('~resolution', String)
+        self.pub_pcd = rospy.Publisher('~pcd_file', String)
 
         self.show_cameras = show_cameras
-        if show_cameras or show_collected_points:
+        if show_cameras:
             cv2.startWindowThread()
 
         self.results = {}   #camera : [(u,v),(u,v),...]
@@ -116,12 +122,6 @@ class Calib:
             dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_BLACK))
             self.display_servers[d] = (dsc,cams)
 
-            if show_collected_points:
-                handle = "%s-allpoints" % d
-                cv2.namedWindow(handle)
-                self.collected_points_windows[d] = handle
-                
-
         self.detectors = {}
         cam_handlers = []
         for cam in tracking_cameras+projector_cameras:
@@ -132,11 +132,6 @@ class Calib:
             self.detectors[cam] = fd
             cam_handlers.append(CameraHandler(cam,debug=False))
             self.results[cam] = []
-
-            if show_collected_points:
-                handle = "%s-allpoints" % cam
-                cv2.namedWindow(handle)
-                self.collected_points_windows[cam] = handle
 
         #set bg masks by default
         self._set_bg_masks()
@@ -158,10 +153,12 @@ class Calib:
         for d,(ds,cams) in self.display_servers.items():
             self.resolutions[d] = (ds.width, ds.height)
 
+        self.service_args = tuple()
         self.change_mode(self.MODE_SLEEP)
 
-    def change_mode(self, mode):
-        rospy.loginfo("Changing to mode %d" % mode)
+    def change_mode(self, mode, *service_args):
+        self.service_args = service_args
+        rospy.loginfo("Changing to mode -> %d (args %s)" % (mode,repr(self.service_args)))
         self.mode = mode
     def _change_mode_srv_points_manual(self, req):
         self.change_mode(self.MODE_POINTS_MANUAL)
@@ -176,8 +173,14 @@ class Calib:
         self.change_mode(self.MODE_FINISHED)
         return std_srvs.srv.EmptyResponse()
     def _change_mode_srv_save(self, req):
-        self.change_mode(self.MODE_SAVE)
-        return std_srvs.srv.EmptyResponse()
+        if req.cams:
+            cam_ids = [c for c in req.cams if c in self.cam_ids]
+        elif req.cam_filter:
+            cam_ids = fnmatch.filter(self.cam_ids,req.cam_filter)
+        else:
+            cam_ids = self.cam_ids[:]
+        self.change_mode(self.MODE_SAVE,cam_ids,req.undo_distortion)
+        return vros_display.srv.CalibSaveResponse()
     def _change_mode_srv_restore(self, req):
         self.change_mode(self.MODE_RESTORE)
         return std_srvs.srv.EmptyResponse()
@@ -189,6 +192,9 @@ class Calib:
         return std_srvs.srv.EmptyResponse()
     def _change_mode_calculate_background(self, req):
         self._calculate_background()
+        return std_srvs.srv.EmptyResponse()
+    def _change_mode_calibrate(self, req):
+        self._run_mcsc_and_calibrate()
         return std_srvs.srv.EmptyResponse()
 
     def _get_points_coverage(self, cam):
@@ -219,13 +225,14 @@ class Calib:
     def _set_bg_masks(self, clear_masks=False):
         for cam in self.detectors:
             if clear_masks:
+                rospy.loginfo("Clearing %s mask" % cam)
                 self.detectors[cam].clear_mask()
             else:
                 mask_name = os.path.join(self.mask_dir,cam.split("/")[-1]) + ".png"
                 if os.path.exists(mask_name):
                     arr = load_mask_image(mask_name)
                     self.detectors[cam].set_mask(arr)
-                    rospy.loginfo("Setting mask = %s" % mask_name)
+                    rospy.loginfo("Setting %s mask = %s" % (cam,mask_name))
 
     def _detect_points(self, runner, thresh, restrict={}):
         runner.get_images(1, self.trigger_proxy_once)
@@ -238,15 +245,20 @@ class Calib:
             features = self.detectors[cam].detect(imgs[cam][:,:,0], thresh)
             if features:
                 rospy.logdebug("detect: %s: %s" % (cam,repr(features)))
-                #take the first point, but convert to pixel coords
+                #take the first point
                 row,col = features[0]
-                detected[cam] = (col,row)
+                #numpy returns int64 here, which is not serializable, and also not needed. Just
+                #convert to simple int
+                #
+                #convert to pixel coords (swap row/col)
+                detected[cam] = (int(col),int(row))
                 visible += 1
 
         return detected,visible
 
-    def _detect_and_save_all_points(self, runner, thresh):
-        detected,nvisible = self._detect_points(runner, thresh)
+    def _detect_and_save_all_points(self, runner, thresh, restrict={}):
+        #FIXME: do detect_points once for vis, once for laser
+        detected,nvisible = self._detect_points(runner, thresh, restrict)
         if nvisible >= 3:
             self.num_results += 1
             rospy.loginfo("#%d: (%d visible: %s)" % (self.num_results, nvisible, ','.join(detected.keys())))
@@ -256,29 +268,40 @@ class Calib:
                 else:
                     self.results[cam].append((np.nan, np.nan))
 
-    def _save_results(self):
+    def _save_results(self, cam_ids=None, use_calibrations=True):
+        if not cam_ids:
+            cam_ids = self.cam_ids[:]
+
         with open(self.outdir+'/results.pkl','w') as f:
             pickle.dump(self.results,f)
         with open(self.outdir+'/resolution.pkl','w') as f:
             pickle.dump(self.resolutions,f)
 
         cam_calibrations = {}
-        for cam in self.cam_ids:
-            #strip the leading '/' for the filename
-            calib = decode_url('package://flycave/calibration/cameras/%s.yaml' % cam.split('/')[-1])
-            if os.path.isfile(calib):
-                cam_calibrations[cam] = calib
+        if use_calibrations:
+            for cam in cam_ids:
+                #strip the leading '/' for the filename
+                calib = decode_url('package://flycave/calibration/cameras/%s.yaml' % cam.split('/')[-1])
+                if os.path.isfile(calib):
+                    cam_calibrations[cam] = calib
 
         with open(self.outdir+'/cam_calibrations.pkl','w') as f:
             pickle.dump(cam_calibrations,f)
 
         self.mcsc.create_from_cams(
-                cam_ids=self.cam_ids[:],
+                cam_ids=cam_ids,
                 cam_resolutions=self.resolutions,
                 cam_points=self.results.copy(),
                 cam_calibrations=cam_calibrations)
 
         rospy.loginfo(self.mcsc.cmd_string)
+
+    def _run_mcsc_and_calibrate(self):
+        def calib_finished(_cmd,_desdir):
+            pcd = _desdir+'/points.pcd'
+            self.mcsc.publish_calibration_points(result_dir=_desdir)
+
+        self.mcsc.execute(False, calib_finished)
 
     def run(self):
         while not rospy.is_shutdown() and self.mode != self.MODE_FINISHED:
@@ -294,7 +317,8 @@ class Calib:
                 self.change_mode(self.MODE_SLEEP)
 
             elif self.mode == self.MODE_POINTS_MANUAL:
-                self._detect_and_save_all_points(self.runner, self.laser_thresh)
+                cams = ['/Basler_21020228', '/Basler_21020229', '/Basler_21020232', '/Basler_21020233','/Basler_21029382', '/Basler_21029383']
+                self._detect_and_save_all_points(self.runner, self.laser_thresh, restrict=cams)
 
             elif self.mode == self.MODE_PROJECTOR_VIS_SETUP:
                 self._ds_pts = {}
@@ -335,7 +359,8 @@ class Calib:
                                 elif cam == d:
                                     #'detected' in projector
                                     row,col = self._ds_pts[d][self._nds_pts]
-                                    self.results[d].append((row, col))
+                                    # convert to pixel coords - see self._detect_points
+                                    self.results[d].append((int(col), int(row)))
                                 else:
                                     self.results[cam].append((np.nan, np.nan))
                             rospy.loginfo("#%d: (projector:%s cam: %s)" % (self.num_results, d, ','.join(detected.keys())))
@@ -374,22 +399,15 @@ class Calib:
 
             elif self.mode == self.MODE_SAVE:
                 try:
-                    self._save_results()
+                    self._save_results(*self.service_args)
                 except Exception, e:
                     rospy.warn("could not save results: %s" % e)
                 self.change_mode(self.MODE_SLEEP)
 
             #publish state
             self.pub_num_pts.publish(self.num_results)
-            points_per_cam = {}
-            for cam in self.results:
-                #divied by 2 because this counts x and y separately
-                points_per_cam[cam] = np.count_nonzero(np.nan_to_num(np.array(self.results[cam]))) / 2
-            self.pub_pts.publish(json.dumps(points_per_cam))
-
-            if self.collected_points_windows:
-                for cam,handle in self.collected_points_windows.items():
-                    cv2.imshow(handle, self._get_points_coverage(cam))
+            self.pub_pts.publish(json.dumps(self.results))
+            self.pub_resolution.publish(json.dumps(self.resolutions))
 
             rospy.sleep(0.1)
 
@@ -399,7 +417,7 @@ class Calib:
         if self.show_cameras:
             cv2.destroyAllWindows()
 
-        self._save_results()
+        #self._save_results()
 
 
 if __name__ == '__main__':
@@ -410,17 +428,22 @@ if __name__ == '__main__':
         help='show images with the given topics. see --show-type for a description of the available images types',
         nargs='*')
     parser.add_argument(
-        '--show-type', type=str, default='IF',
-        help='which images types to show. %s' % ', '.join(["%s=%s" % i for i in DotBGFeatureDetector.WIN_TYPES.items()]))
+        '--show-type', type=str, default='F',
+        help='which images types to show. %s' % (
+                ', '.join(["%s=%s" % i for i in DotBGFeatureDetector.WIN_TYPES.items()])))
     parser.add_argument(
         '--calib-config', type=str, default='package://flycave/conf/calib-all.yaml',
         help='path to calibration configuration yaml file')
     parser.add_argument(
-        '--show-collected-points', action='store_true',
-        help='show all collected points')
+        '--save-dir', type=str, default='./mcamall',
+        help='path to save calibration data')
 
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
+
+    outdir = os.path.expanduser(os.path.abspath(args.save_dir))
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
     
     rospy.init_node('multicamselfcal_everything')
 
@@ -435,6 +458,6 @@ if __name__ == '__main__':
     c = Calib(config,
               show_cameras=args.show_cameras,
               show_type=set(args.show_type),
-              show_collected_points=args.show_collected_points)
+              outdir=outdir)
     c.run()
 
