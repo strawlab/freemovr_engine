@@ -26,9 +26,10 @@ class DotBGFeatureDetector:
         self._benchmark = False
         self._handles = {}
         for s in show:
-            handle = self._name+"-"+self.WIN_TYPES[s]
-            cv2.namedWindow(handle)
-            self._handles[s] = handle
+            if s in self.WIN_TYPES:
+                handle = self._name+"-"+self.WIN_TYPES[s]
+                cv2.namedWindow(handle)
+                self._handles[s] = handle
         self._bg = None
         self._imgsize = None
         self._shape = (-1,-1)
