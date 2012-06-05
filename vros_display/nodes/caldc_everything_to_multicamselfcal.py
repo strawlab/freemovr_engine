@@ -333,7 +333,7 @@ class Calib:
                 for d,(dsc,cams) in self.display_servers.items():
                     row,col = self._ds_pts[d][self._nds_pts]
             
-                    rospy.loginfo("Lighting projector %s pixel %d,%d (%d remain)" % (d,row,col,self._nds_pts))
+                    rospy.loginfo("Lighting projector %s pixel %d,%d (%d remain)" % (dsc.name,row,col,self._nds_pts))
 
                     arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK)
                     arr[row-self.ptsize:row+self.ptsize,col-self.ptsize:col+self.ptsize,:3] = dsc.IMAGE_COLOR_WHITE
