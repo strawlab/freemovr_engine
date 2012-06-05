@@ -285,9 +285,6 @@ class Calib:
                 if os.path.isfile(calib):
                     cam_calibrations[cam] = calib
 
-        with open(self.outdir+'/cam_calibrations.pkl','w') as f:
-            pickle.dump(cam_calibrations,f)
-
         self.mcsc.create_from_cams(
                 cam_ids=cam_ids,
                 cam_resolutions=self.resolutions,
