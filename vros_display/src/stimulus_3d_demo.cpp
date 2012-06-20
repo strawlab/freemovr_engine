@@ -57,18 +57,23 @@ std::string get_message_type(const std::string& topic_name) const {
 osg::ref_ptr<osg::Group> create_virtual_world()
 {
 
-  osg::ref_ptr<osg::MatrixTransform> top = new osg::MatrixTransform; top->addDescription("virtual world top node");
+  osg::ref_ptr<osg::MatrixTransform> myroot = new osg::MatrixTransform; myroot->addDescription("virtual world root node");
+  add_default_skybox(myroot);
 
-  add_default_skybox(top);
-  top->setMatrix(osg::Matrix::rotate(osg::DegreesToRadians(90.0),1.0,0.0,0.0));
+  // Create a geometry transform node enabling use cut-and-pasted
+  // geometry from OSG example and have it on the XY plane with Z
+  // pointing up.
+  osg::ref_ptr<osg::MatrixTransform> geom_transform_node = new osg::MatrixTransform;
+  geom_transform_node->setMatrix(osg::Matrix::rotate(osg::DegreesToRadians(90.0),1.0,0.0,0.0));
 
+  // Now populate this node with geometry.
   osg::ref_ptr<osg::Geode> geode_1 = new osg::Geode;
-  top->addChild(geode_1.get());
+  geom_transform_node->addChild(geode_1.get());
 
   osg::ref_ptr<osg::Geode> geode_2 = new osg::Geode;
   osg::ref_ptr<osg::MatrixTransform> transform_2 = new osg::MatrixTransform;
   transform_2->addChild(geode_2.get());
-  top->addChild(transform_2.get());
+  geom_transform_node->addChild(transform_2.get());
 
   const float radius = 0.8f;
   const float height = 1.0f;
@@ -102,7 +107,7 @@ osg::ref_ptr<osg::Group> create_virtual_world()
   material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4(0, 0, 0, 1));
   material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(1, 1, 1, 1));
   material->setShininess(osg::Material::FRONT_AND_BACK, 64.0f);
-  top->getOrCreateStateSet()->setAttributeAndModes(material.get(), osg::StateAttribute::ON);
+  geom_transform_node->getOrCreateStateSet()->setAttributeAndModes(material.get(), osg::StateAttribute::ON);
 
   {
 	  osg::ref_ptr<osg::Light> _light = new osg::Light;
@@ -112,17 +117,18 @@ osg::ref_ptr<osg::Group> create_virtual_world()
 	  _light->setSpecular(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
 	  _light->setPosition(osg::Vec4(2.0, 2.0, 5.0, 1.0));
 
-	  top->getOrCreateStateSet()->setAssociatedModes(_light.get(),osg::StateAttribute::ON);
+	  geom_transform_node->getOrCreateStateSet()->setAssociatedModes(_light.get(),osg::StateAttribute::ON);
 
 	  osg::LightModel* lightmodel = new osg::LightModel;
 	  lightmodel->setAmbientIntensity(osg::Vec4(0.1f,0.1f,0.1f,1.0f));
-	  top->getOrCreateStateSet()->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
+	  geom_transform_node->getOrCreateStateSet()->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
 
 	  // enable lighting by default.
-	  top->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+	  geom_transform_node->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::ON);
 
   }
-  return top;
+  myroot->addChild(geom_transform_node);
+  return myroot;
 }
 
 private:
