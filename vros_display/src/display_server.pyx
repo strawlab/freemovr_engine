@@ -1,18 +1,24 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
 
-# ROS stuff
-ROS_PACKAGE_NAME='vros_display'
-import roslib; roslib.load_manifest(ROS_PACKAGE_NAME)
+ROS_PACKAGE_NAME = 'vros_display'
+import roslib
+roslib.load_manifest(ROS_PACKAGE_NAME)
+roslib.load_manifest('std_msgs')
+import rospy
 
 import vros_display.srv
+import geometry_msgs.msg
+import std_msgs.msg
+
 import rosmsg2json
 
-import rospy
-import geometry_msgs.msg
-import roslib
-
-# standard Python modules
-import sys, time, os, warnings, threading, Queue, tempfile
+import sys
+import time
+import os
+import warnings
+import threading
+import Queue
+import tempfile
 import json
 import argparse
 
