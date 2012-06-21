@@ -159,6 +159,7 @@ cdef class MyNode:
     cdef object _commands
     cdef object _current_subscribers
     cdef object _pose_lock
+    cdef object _pub_fps
     cdef Vec3* pose_position
     cdef Quat* pose_orientation
     cdef object subscription_mode
@@ -244,6 +245,7 @@ cdef class MyNode:
         rospy.Service('~blit_compressed_image',
                       vros_display.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
+        self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
 
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
@@ -395,8 +397,10 @@ cdef class MyNode:
         cdef Vec3 position
         cdef Quat orientation
         cdef double now
+        cdef double last
 
         do_shutdown = 0
+        last = rospy.get_time()
         while not rospy.is_shutdown():
             try:
                 while 1:
@@ -430,6 +434,11 @@ cdef class MyNode:
                     do_shutdown = 1
             if do_shutdown:
                 rospy.signal_shutdown('dsosg was done')
+
+            if (now - last) > 1.0:
+                self._pub_fps.publish(self.dsosg.getFrameRate())
+                last = now
+
             #time.sleep(0.001) # spin ROS listeners
 
 def main(ros_package_name):
