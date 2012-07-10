@@ -5,6 +5,7 @@ import tempfile
 import shutil
 
 import numpy as np
+import scipy.io
 
 import roslib
 roslib.load_manifest('motmot_ros_utils')
@@ -70,20 +71,59 @@ def save_ascii_matrix(arr,fd,isint=False):
     if close_file:
         fd.close()
 
-class MultiCalSelfCam:
+class _Calibrator:
+    def __init__(self, out_dirname, **kwargs):
+        if out_dirname:
+            out_dirname = os.path.abspath(os.path.expanduser(out_dirname))
+            if not os.path.isdir(out_dirname):
+                os.mkdir(out_dirname)
+        else:
+            out_dirname = tempfile.mkdtemp(prefix=self.__class__.__name__)
+
+        self.octave = '/usr/bin/octave'
+        self.matlab = '/opt/matlab/R2011a/bin/matlab'
+        self.out_dirname = out_dirname
+
+    def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
+        raise NotImplementedError
+
+class VincentSFM(_Calibrator):
+
+    LOG = logging.getLogger('vsfm')
+
+    def __init__(self, out_dirname):
+        _Calibrator.__init__(self, out_dirname)
+
+    def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
+        #remove cameras with no points
+        cams_to_remove = []
+        for cam in cam_ids:
+            nvalid = np.count_nonzero(np.nan_to_num(np.array(cam_points[cam])))
+            if nvalid == 0:
+                cams_to_remove.append(cam)
+                self.LOG.warn("removing cam %s - no points detected" % cam)
+        map(cam_ids.remove, cams_to_remove)
+
+
+
+        for i,cam in enumerate(cam_ids):
+            points = np.array(cam_points[cam])
+            assert points.shape[1] == 2
+            npts = points.shape[0]
+
+        W = np.dstack([np.array(cam_points[c]).T for c in cam_ids])
+
+        dest = self.out_dirname+'/points.mat'
+        scipy.io.savemat(dest,{'W':W})
+        print dest
+
+class MultiCalSelfCam(_Calibrator):
 
     LOG = logging.getLogger('mcsc')
 
     def __init__(self, out_dirname, basename='cam', use_nth_frame=1):
-        out_dirname = os.path.abspath(os.path.expanduser(out_dirname))
-        if not os.path.isdir(out_dirname):
-            os.mkdir(out_dirname)
-
-        self.octave = '/usr/bin/octave'
-        self.matlab = '/opt/matlab/R2011a/bin/matlab'
+        _Calibrator.__init__(self, out_dirname)
         self.mcscdir = '/home/stowers/Straw/MultiCamSelfCal/MultiCamSelfCal/'
-
-        self.out_dirname = out_dirname
         self.basename = basename
         self.use_nth_frame = use_nth_frame
 
@@ -112,7 +152,7 @@ class MultiCalSelfCam:
 
     def execute(self, blocking=True, cb=None, use_matlab=False):
         """
-        @returns: dir_with_result, pcd_file
+        @returns: dir_with_result
         """
         dest = tempfile.mkdtemp(prefix='mcsc')
         stdout = open(os.path.join(dest,'STDOUT'),'w')
@@ -142,7 +182,6 @@ class MultiCalSelfCam:
             return dest
             
     def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
-
         #remove cameras with no points
         cams_to_remove = []
         for cam in cam_ids:
@@ -150,7 +189,6 @@ class MultiCalSelfCam:
             if nvalid == 0:
                 cams_to_remove.append(cam)
                 self.LOG.warn("removing cam %s - no points detected" % cam)
-        
         map(cam_ids.remove, cams_to_remove)
 
         self._write_cam_ids(cam_ids)

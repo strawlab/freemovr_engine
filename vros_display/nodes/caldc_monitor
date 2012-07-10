@@ -18,10 +18,19 @@ import numpy as np
 import scipy.misc
 import cv,cv2
 
+import calib
+
+#colors to draw on the image for each point type, and their value.
+COLORS = {
+    calib.POINT_TYPE_MANUAL:[(0,255)],
+    calib.POINT_TYPE_LASER:[(1,255)],
+    calib.POINT_TYPE_PROJECTOR:[(2,255)],
+}
+
 class Foo:
     def __init__(self, cameras_glob):
-        self.dat = {}
-        self.res = {}
+        self.results = {}
+        self.resolution = {}
         self.windows = {}
         self.cameras_glob = cameras_glob
         self.lock = threading.Lock()
@@ -29,29 +38,28 @@ class Foo:
 
     def load_from_pickle(self, base='mcamall'):
         with open('%s/results.pkl' % base) as f:
-            self.dat = pickle.load(f)
-
+            self.results = pickle.load(f)
+        with open('%s/results_mode.pkl' % base) as f:
+            self.results_mode = pickle.load(f)
         with open('%s/resolution.pkl' % base) as f:
-            self.res = pickle.load(f)
+            self.resolution = pickle.load(f)
 
         self._update_windows()
 
     def from_ros(self):
         rospy.Subscriber("/multicamselfcal_everything/points", String, self._on_points)
-        rospy.Subscriber("/multicamselfcal_everything/resolution", String, self._on_resolution)
 
     def _on_points(self, data):
         with self.lock:
-            self.dat = json.loads(data.data)
+            dat = json.loads(data.data)
+            self.results = dat['results']
+            self.results_mode = dat['results_mode']
+            self.resolution = dat['resolution']
         self._update_windows()
 
-    def _on_resolution(self, data):
-        with self.lock:
-            self.res = json.loads(data.data)
-
     def _update_windows(self):
-        if self.dat and self.res and (len(self.dat) == len(self.res)):
-            allcams = self.res.keys()
+        if self.results and self.resolution and (len(self.results) == len(self.resolution)):
+            allcams = self.resolution.keys()
             for handle in fnmatch.filter(allcams, self.cameras_glob):
                 if handle not in self.windows:
                     cv2.namedWindow(handle, cv.CV_WINDOW_NORMAL)
@@ -61,23 +69,25 @@ class Foo:
                 cv2.imshow(handle, arr)
 
     def _make_array(self, cam):
-        w,h = self.res[cam]
+        w,h = self.resolution[cam]
         #swap h,w as resolution saves in image coord convention and scipy.misc.imsave saves
         #from matrix convention
         npts = 0
+        #in opencv convention, bgra
         arr = np.zeros((h,w,4),dtype=np.uint8)
         arr[:,:,3]=255 #opaque
-        for pt in self.dat[cam]:
+        for i,pt in enumerate(self.results[cam]):
             #again swap image coords -> matrix notation
             col,row = pt
             if np.any(np.isnan(pt)):
                 continue
-            arr[row,col,1] = 255
+            for (colorchan,colorval) in COLORS[self.results_mode[cam][i]]:
+                arr[row,col,colorchan] = colorval
             npts += 1
         return arr, npts
 
     def write_pngs(self):
-        for cam in self.dat:
+        for cam in self.results:
             arr,npts = self._make_array(cam)
             scipy.misc.imsave('coverage-%s.png' % cam.replace('/',''),arr)
 

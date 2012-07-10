@@ -98,7 +98,10 @@ class SimultainousCameraRunner(_Runner):
 
         #wait for the images to arrive
         while not self._is_done(self._result,n_per_camera):
-            topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
+            try:
+                topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
+            except Queue.Empty:
+                continue
             t_image = msg.header.stamp.to_sec()
             if t_image > t_latest:
                 rospy.logwarn("image from %s at t=%f was too slow (by %f)" % (topic_prefix, t_image, t_image - t_latest))
