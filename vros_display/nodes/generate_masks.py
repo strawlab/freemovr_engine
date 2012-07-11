@@ -46,7 +46,7 @@ class GenMasks:
             cam_handlers.append(CameraHandler(cam,debug=False))
 
         self.trigger_proxy_rate = rospy.ServiceProxy(trigger+'/set_framerate', camera_trigger.srv.SetFramerate)
-        self.trigger_proxy_rate(10.0)
+        self.trigger_proxy_rate(1.0)
 
         self.runner = SimultainousCameraRunner(cam_handlers)
 
@@ -72,9 +72,9 @@ class GenMasks:
                 imgs = self.runner.result_as_nparray
                 for cam in imgs:
                     fname = self.mask_dir + "/%s-new.png" % cam.split("/")[-1]
-                    print imgs[cam].shape,imgs[cam].dtype
+                    print fname, imgs[cam].shape,imgs[cam].dtype
                     scipy.misc.imsave(fname,imgs[cam].squeeze())
-                    print "wrote ",fname
+                    rospy.loginfo("wrote %s " % fname)
                 self.mode = self.MODE_WAIT
 
             rospy.sleep(0.1)
@@ -96,7 +96,6 @@ if __name__ == '__main__':
     conffile = decode_url(args.calib_config)
     with open(conffile, 'r') as f:
         config = yaml.load(f)
-        print config
         for k in ("display_servers", "mask_dir", "tracking_cameras", "trigger"):
             if not config.has_key(k):
                 parser.error("malformed calibration config, missing %s" % k)
