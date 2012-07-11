@@ -1,4 +1,5 @@
 string[] cams
 string cam_filter
 bool undo_distortion
+int32 num_cameras_fill
 ---

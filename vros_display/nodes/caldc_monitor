@@ -5,11 +5,12 @@ roslib.load_manifest('vros_display')
 roslib.load_manifest('std_msgs')
 import rospy
 
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt32
 
 import json
 import pickle
 import threading
+import subprocess
 import fnmatch
 import argparse
 import os.path
@@ -34,6 +35,7 @@ class Foo:
         self.windows = {}
         self.cameras_glob = cameras_glob
         self.lock = threading.Lock()
+        self.process = None
         cv2.startWindowThread()
 
     def load_from_pickle(self, base='mcamall'):
@@ -48,6 +50,15 @@ class Foo:
 
     def from_ros(self):
         rospy.Subscriber("/multicamselfcal_everything/points", String, self._on_points)
+        rospy.Subscriber("/multicamselfcal_everything/num_points", UInt32, self._on_num_points)
+        
+    def _on_num_points(self, data):
+        if self.process != None:
+            self.process.poll()
+            if self.process.returncode == None:
+                return
+
+        self.process = subprocess.Popen('espeak "%d" --stdout | aplay' % data.data, shell=True)
 
     def _on_points(self, data):
         with self.lock:

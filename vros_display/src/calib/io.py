@@ -32,7 +32,7 @@ Initial-Tolerance: 10
 Do-Global-Iterations: 0
 Global-Iteration-Threshold: 0.5
 Global-Iteration-Max: 5
-Num-Cameras-Fill: {num_cameras}
+Num-Cameras-Fill: {num_cameras_fill}
 Do-Bundle-Adjustment: 1
 Undo-Radial: {undo_radial}
 Min-Points-Value: 30
@@ -121,11 +121,14 @@ class MultiCalSelfCam(_Calibrator):
 
     LOG = logging.getLogger('mcsc')
 
-    def __init__(self, out_dirname, basename='cam', use_nth_frame=1):
+    def __init__(self, out_dirname, basename='cam', use_nth_frame=1, mcscdir='/opt/MultiCamSelfCal/MultiCamSelfCal/'):
         _Calibrator.__init__(self, out_dirname)
-        self.mcscdir = '/home/stowers/Straw/MultiCamSelfCal/MultiCamSelfCal/'
+        self.mcscdir = mcscdir
         self.basename = basename
         self.use_nth_frame = use_nth_frame
+        
+        if not os.path.exists(os.path.join(self.mcscdir,'gocal.m')):
+            self.LOG.warn("could not find MultiCamSelfCal gocal.m in %s" % self.mcscdir)
 
     def _write_cam_ids(self, cam_ids):
         with open(os.path.join(self.out_dirname,'camera_order.txt'),'w') as f:
@@ -134,10 +137,14 @@ class MultiCalSelfCam(_Calibrator):
                     camid=camid[1:]
                 f.write("%s\n"%camid)
 
-    def _write_cfg(self, cam_ids, radial_distortion, square_pixels):
+    def _write_cfg(self, cam_ids, radial_distortion, square_pixels, num_cameras_fill):
+        if num_cameras_fill < 0 or num_cameras_fill > len(cam_ids):
+            num_cameras_fill = len(cam_ids)
+
         var = dict(
             basename = self.basename,
             num_cameras = len(cam_ids),
+            num_cameras_fill = int(num_cameras_fill),
             undo_radial = int(radial_distortion),
             square_pixels = int(square_pixels),
             use_nth_frame = self.use_nth_frame
@@ -145,6 +152,12 @@ class MultiCalSelfCam(_Calibrator):
 
         with open(os.path.join(self.out_dirname, 'multicamselfcal.cfg'), mode='w') as f:
             f.write(_cfg_file.format(**var))
+            
+        print "calibrate cams: %s" % ','.join(cam_ids)
+        print "undo radial: ", radial_distortion
+        print "num_cameras_fill: ", num_cameras_fill
+        print "wrote camera calibration directory: %s" % self.out_dirname
+
 
     @property
     def cmd_string(self):
@@ -170,8 +183,6 @@ class MultiCalSelfCam(_Calibrator):
                         self.octave, cfg)
             cwd = self.mcscdir
 
-        print cmds
-
         cmd = ThreadedCommand(cmds,cwd=cwd,stdout=None,stderr=None)
         cmd.set_finished_cb(cb,dest)
 
@@ -181,7 +192,8 @@ class MultiCalSelfCam(_Calibrator):
             cmd.join()
             return dest
             
-    def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
+    def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, num_cameras_fill=-1, **kwargs):
+        #num_cameras_fill = -1 means use all cameras (= len(cam_ids))
         #remove cameras with no points
         cams_to_remove = []
         for cam in cam_ids:
@@ -241,15 +253,12 @@ class MultiCalSelfCam(_Calibrator):
 
         undo_radial = all([cam in cam_calibrations for cam in cam_ids])
         self._write_cfg(cam_ids,
-                radial_distortion=undo_radial,
-                square_pixels=True)
-
-        print "calibrate cams: %s" % ','.join(cam_ids)
+                        undo_radial,
+                        True,
+                        num_cameras_fill)
         print "dropped cams: %s" % ','.join(cams_to_remove)
-        print "undo radial: ", undo_radial
-        print "wrote camera calibration directory: %s" % self.out_dirname
 
-    def create_calibration_directory(self, cam_ids, IdMat, points, Res, cam_calibrations={}, radial_distortion=0, square_pixels=1):
+    def create_calibration_directory(self, cam_ids, IdMat, points, Res, cam_calibrations={}, radial_distortion=0, square_pixels=1, num_cameras_fill=-1):
         assert len(Res) == len(cam_ids)
         if cam_calibrations != None:
             assert len(cam_ids) == len(cam_calibrations)
@@ -267,7 +276,7 @@ class MultiCalSelfCam(_Calibrator):
         save_ascii_matrix(IdMat, os.path.join(self.out_dirname,'IdMat.dat'), isint=True)
         save_ascii_matrix(points, os.path.join(self.out_dirname,'points.dat'))
 
-        self._write_cfg(cam_ids, radial_distortion, square_pixels)
+        self._write_cfg(cam_ids, radial_distortion, square_pixels, num_cameras_fill)
 
     #FIXME: MAKE STATIC
     def reshape_calibrated_points(self, xe):

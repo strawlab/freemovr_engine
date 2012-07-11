@@ -7,6 +7,7 @@ import os.path
 import pickle
 import math
 import fnmatch
+import threading
 
 import json
 import yaml
@@ -108,12 +109,12 @@ class Calib:
         s = rospy.Service('~calib_mode_points_auto', std_srvs.srv.Empty, self._change_mode_srv_points_auto)
         s = rospy.Service('~calib_mode_projector_visible', std_srvs.srv.Empty, self._change_mode_srv_projvis)
         s = rospy.Service('~calib_finish', std_srvs.srv.Empty, self._change_mode_srv_fin)
-        s = rospy.Service('~calib_save', vros_display.srv.CalibSave, self._change_mode_srv_save)
+        s = rospy.Service('~calib_save', vros_display.srv.CalibConfig, self._change_mode_srv_save)
         s = rospy.Service('~calib_restore', std_srvs.srv.Empty, self._change_mode_srv_restore)
         s = rospy.Service('~calib_set_mask', std_srvs.srv.Empty, self._change_mode_set_mask)
         s = rospy.Service('~calib_clear_mask', std_srvs.srv.Empty, self._change_mode_clear_mask)
         s = rospy.Service('~calib_calculate_background', std_srvs.srv.Empty, self._change_mode_calculate_background)
-        s = rospy.Service('~calib_calibrate', std_srvs.srv.Empty, self._change_mode_calibrate)
+        s = rospy.Service('~calib_calibrate', vros_display.srv.CalibConfig, self._change_mode_calibrate)
 
 
         self.pub_num_pts = rospy.Publisher('~num_points', UInt32)
@@ -177,13 +178,15 @@ class Calib:
             path = os.path.abspath(os.path.expanduser(continue_calibration))
             self._load_previous_calibration(path)
 
+        self.mode_lock = threading.Lock()
         self.service_args = tuple()
         self.change_mode(self.MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
-        self.service_args = service_args
-        rospy.loginfo("Changing to mode -> %d (args %s)" % (mode,repr(self.service_args)))
-        self.mode = mode
+        with self.mode_lock:
+            self.mode = mode
+            self.service_args = service_args
+            rospy.loginfo("Changing to mode -> %d (args %s)" % (mode,repr(self.service_args)))
     def _change_mode_srv_points_manual(self, req):
         self.change_mode(self.MODE_POINTS_MANUAL)
         return std_srvs.srv.EmptyResponse()
@@ -203,8 +206,17 @@ class Calib:
             cam_ids = fnmatch.filter(self.cam_ids,req.cam_filter)
         else:
             cam_ids = self.cam_ids[:]
-        self.change_mode(self.MODE_SAVE,cam_ids,req.undo_distortion)
-        return vros_display.srv.CalibSaveResponse()
+        self.change_mode(self.MODE_SAVE,cam_ids,req.undo_distortion,req.num_cameras_fill)
+        return vros_display.srv.CalibConfigResponse()
+    def _change_mode_calibrate(self, req):
+        if req.cams:
+            cam_ids = [c for c in req.cams if c in self.cam_ids]
+        elif req.cam_filter:
+            cam_ids = fnmatch.filter(self.cam_ids,req.cam_filter)
+        else:
+            cam_ids = self.cam_ids[:]
+        self.change_mode(self.MODE_CALIBRATE,cam_ids,req.undo_distortion,req.num_cameras_fill)
+        return vros_display.srv.CalibConfigResponse()
     def _change_mode_srv_restore(self, req):
         self.change_mode(self.MODE_RESTORE)
         return std_srvs.srv.EmptyResponse()
@@ -216,9 +228,6 @@ class Calib:
         return std_srvs.srv.EmptyResponse()
     def _change_mode_calculate_background(self, req):
         self._calculate_background()
-        return std_srvs.srv.EmptyResponse()
-    def _change_mode_calibrate(self, req):
-        self._run_mcsc_and_calibrate()
         return std_srvs.srv.EmptyResponse()
 
     def _get_points_coverage(self, cam):
@@ -280,7 +289,7 @@ class Calib:
 
         return detected,visible
 
-    def _detect_and_save_all_points(self, runner, thresh, restrict={}):
+    def _detect_and_save_all_points(self, runner, thresh, mode, restrict={}):
         #FIXME: do detect_points once for vis, once for laser
         detected,nvisible = self._detect_points(runner, thresh, restrict)
         if nvisible >= 3:
@@ -291,9 +300,12 @@ class Calib:
                     self.results[cam].append(detected[cam])
                 else:
                     self.results[cam].append((np.nan, np.nan))
-                self.results_mode[cam].append(self.MODE_POINT_TYPES[self.mode])
+                try:
+                    self.results_mode[cam].append(self.MODE_POINT_TYPES[mode])
+                except KeyError:
+                    pass
 
-    def _save_results(self, cam_ids=None, use_calibrations=True):
+    def _save_results(self, cam_ids=None, use_calibrations=True, num_cameras_fill=-1):
         if not cam_ids:
             cam_ids = self.cam_ids[:]
 
@@ -316,7 +328,8 @@ class Calib:
                 cam_ids=cam_ids,
                 cam_resolutions=self.resolutions,
                 cam_points=self.results.copy(),
-                cam_calibrations=cam_calibrations)
+                cam_calibrations=cam_calibrations,
+                num_cameras_fill=num_cameras_fill)
 
         rospy.loginfo("saved results to %s" % self.outdir)
 
@@ -345,20 +358,25 @@ class Calib:
         self.resolutions = self._load_previous_calibration_pickle(os.path.join(path,'resolution.pkl'))
 
     def run(self):
-        while not rospy.is_shutdown() and self.mode != self.MODE_FINISHED:
-            if self.mode == self.MODE_SLEEP:
+        while not rospy.is_shutdown():
+            with self.mode_lock:
+                mode = self.mode
+            if mode == self.MODE_FINISHED:
+                break
+
+            elif mode == self.MODE_SLEEP:
                 pass
 
-            elif self.mode == self.MODE_RESTORE:
+            elif mode == self.MODE_RESTORE:
                 self._load_previous_calibration(self.outdir)
                 self.change_mode(self.MODE_SLEEP)
 
-            elif self.mode == self.MODE_POINTS_MANUAL:
+            elif mode == self.MODE_POINTS_MANUAL:
                 #all cameras
                 cams = self.detectors.keys()
-                self._detect_and_save_all_points(self.runner, self.laser_thresh, restrict=cams)
+                self._detect_and_save_all_points(self.runner, self.laser_thresh, mode, restrict=cams)
 
-            elif self.mode == self.MODE_PROJECTOR_VIS_SETUP:
+            elif mode == self.MODE_PROJECTOR_VIS_SETUP:
                 self._ds_pts = {}
                 self._nds_pts = self.num_ds_pts
                 for d,(dsc,cams) in self.display_servers.items():
@@ -370,7 +388,7 @@ class Calib:
                                                 self.ptsize,dsc.width-self.ptsize,(self._nds_pts,1))))
                 self._nds_pts -= 1 #we count down and use this as the index of tested points
                 self.change_mode(self.MODE_PROJECTOR_VIS_LIGHT)
-            elif self.mode == self.MODE_PROJECTOR_VIS_LIGHT:
+            elif mode == self.MODE_PROJECTOR_VIS_LIGHT:
                 for d,(dsc,cams) in self.display_servers.items():
                     row,col = self._ds_pts[d][self._nds_pts]
             
@@ -384,7 +402,7 @@ class Calib:
                 self.change_mode(self.MODE_PROJECTOR_VIS_DETECT)
                 rospy.sleep(self.projector_sleep)
 
-            elif self.mode == self.MODE_PROJECTOR_VIS_DETECT:
+            elif mode == self.MODE_PROJECTOR_VIS_DETECT:
                 if self._nds_pts > 0:
                     for d,(dsc,cams) in self.display_servers.items():
                         detected,nvisible = self._detect_points(self.runner, self.visible_thresh, restrict=cams)
@@ -394,16 +412,16 @@ class Calib:
                                 if cam in detected:
                                     #detected in both cameras
                                     self.results[cam].append(detected[cam])
-                                    self.results_mode[cam].append(self.MODE_POINT_TYPES[self.mode])
+                                    self.results_mode[cam].append(self.MODE_POINT_TYPES[mode])
                                 elif cam == d:
                                     #'detected' in projector
                                     row,col = self._ds_pts[d][self._nds_pts]
                                     # convert to pixel coords - see self._detect_points
                                     self.results[d].append((int(col), int(row)))
-                                    self.results_mode[d].append(self.MODE_POINT_TYPES[self.mode])
+                                    self.results_mode[d].append(self.MODE_POINT_TYPES[mode])
                                 else:
                                     self.results[cam].append((np.nan, np.nan))
-                                    self.results_mode[cam].append(self.MODE_POINT_TYPES[self.mode])
+                                    self.results_mode[cam].append(self.MODE_POINT_TYPES[mode])
                             rospy.loginfo("#%d: (projector:%s cam: %s)" % (self.num_results, d, ','.join(detected.keys())))
                     self._nds_pts -= 1
                     self.change_mode(self.MODE_PROJECTOR_VIS_LIGHT)
@@ -412,7 +430,7 @@ class Calib:
                         dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_BLACK))
                     self.change_mode(self.MODE_SLEEP)
 
-            elif self.mode == self.MODE_POINTS_AUTO_SETUP:
+            elif mode == self.MODE_POINTS_AUTO_SETUP:
                 self.laser_proxy_power(True)
                 self._laser_pts = [(p,t) for p in range(*self.laser_range_pan)\
                                          for t in range(*self.laser_range_tilt)]
@@ -420,7 +438,7 @@ class Calib:
                 self.laser_proxy_power(True)
                 self.change_mode(self.MODE_POINTS_AUTO_LIGHT)
 
-            elif self.mode == self.MODE_POINTS_AUTO_LIGHT:
+            elif mode == self.MODE_POINTS_AUTO_LIGHT:
                 pan,tilt = self._laser_pts[self._nlaser_pts]
                 rospy.loginfo("Laser pan,tilt %d,%d (%d remain)" % (pan,tilt,self._nlaser_pts))
                 self.laser_proxy_pan(pan)
@@ -429,20 +447,27 @@ class Calib:
                 self.change_mode(self.MODE_POINTS_AUTO_DETECT)
                 rospy.sleep(self.laser_sleep)
 
-            elif self.mode == self.MODE_POINTS_AUTO_DETECT:
+            elif mode == self.MODE_POINTS_AUTO_DETECT:
                 if self._nlaser_pts > 0:
-                    self._detect_and_save_all_points(self.runner, self.laser_thresh)
+                    self._detect_and_save_all_points(self.runner, self.laser_thresh, mode)
                     self._nlaser_pts -= 1
                     self.change_mode(self.MODE_POINTS_AUTO_LIGHT)
                 else:
                     self.laser_proxy_power(False)
                     self.change_mode(self.MODE_SLEEP)
 
-            elif self.mode == self.MODE_SAVE:
+            elif mode == self.MODE_SAVE:
                 try:
                     self._save_results(*self.service_args)
                 except Exception, e:
-                    rospy.warn("could not save results: %s" % e)
+                    rospy.loginfo("could not save results: %s" % e)
+                self.change_mode(self.MODE_SLEEP)
+            elif mode == self.MODE_CALIBRATE:
+                try:
+                    self._save_results(*self.service_args)
+                    self._run_mcsc_and_calibrate()
+                except Exception, e:
+                    rospy.loginfo("could not save results: %s" % e)
                 self.change_mode(self.MODE_SLEEP)
 
             #publish state

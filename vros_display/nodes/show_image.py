@@ -11,23 +11,18 @@ import display_client
 ##########################################
 import os
 
-def show_image(fname=None):
+def show_image(fname,white,black):
     rospy.init_node('show_image')
 
-    display_server = display_client.DisplayServerProxy()
-    display_server.enter_standby_mode()
-    display_server.set_mode('Stimulus2DBlit')
+    dsc = display_client.DisplayServerProxy()
+    dsc.enter_2dblit_mode()
 
-    # load image file
-    image = vros_display.msg.VROSCompressedImage()
-    image.format = os.path.splitext(fname)[-1]
-    image.data = open(fname).read()
-
-
-    # send image to server
-    blit_compressed_image_proxy = rospy.ServiceProxy(display_server.get_fullname('blit_compressed_image'),
-                                                     vros_display.srv.BlitCompressedImage)
-    blit_compressed_image_proxy(image)
+    if black:
+        dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_BLACK))
+    elif white:
+        dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_WHITE))
+    else:
+        dsc.show_image(fname)
 
 def main():
     wd = roslib.packages.get_pkg_dir('vros_display')
@@ -35,11 +30,13 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('fname',nargs='?',default=default_fname)
-    # use argparse, but only after ROS did its thing
+    parser.add_argument('--white', action='store_true', help='show a white screen')
+    parser.add_argument('--black', action='store_true', help='show a white screen')
+    
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    show_image(fname = args.fname)
+    show_image(args.fname, args.white, args.black)
 
 if __name__=='__main__':
     main()
