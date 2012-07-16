@@ -44,15 +44,11 @@ class DisplayServerProxy(object):
 
     @property
     def width(self):
-        if not self._info_cached:
-            self.get_display_info()
-        return self._info_cached['width']
+        return self.get_display_info()['width']
 
     @property
     def height(self):
-        if not self._info_cached:
-            self.get_display_info()
-        return self._info_cached['height']
+        return self.get_display_info()['height']
 
     def get_fullname(self,name):
         return self._server_node_name+'/'+name
@@ -100,11 +96,15 @@ class DisplayServerProxy(object):
     def get_mode(self):
         return self.get_display_server_mode_proxy().mode
 
-    def get_display_info(self):
-        get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
-                                                    vros_display.srv.GetDisplayInfo)
-        result = get_display_info_proxy()
-        self._info_cached = json.loads(result.info_json)
+    def get_display_info(self, nocache=False):
+        if nocache or not self._info_cached:
+            try:
+                get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
+                                                            vros_display.srv.GetDisplayInfo)
+                result = get_display_info_proxy()
+                self._info_cached = json.loads(result.info_json)
+            except:
+                pass
         return self._info_cached
 
     def show_image(self, fname, unlink=False):
