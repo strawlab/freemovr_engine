@@ -370,6 +370,7 @@ class Calib:
         while not rospy.is_shutdown():
             with self.mode_lock:
                 mode = self.mode
+                service_args = self.service_args
             if mode == self.MODE_FINISHED:
                 break
 
@@ -467,13 +468,13 @@ class Calib:
 
             elif mode == self.MODE_SAVE:
                 try:
-                    self._save_results(*self.service_args)
+                    self._save_results(*service_args)
                 except Exception, e:
                     rospy.loginfo("could not save results: %s" % e)
                 self.change_mode(self.MODE_SLEEP)
             elif mode == self.MODE_CALIBRATE:
                 try:
-                    self._save_results(*self.service_args)
+                    self._save_results(*service_args)
                     self._run_mcsc_and_calibrate()
                 except Exception, e:
                     rospy.loginfo("could not save results: %s" % e)
