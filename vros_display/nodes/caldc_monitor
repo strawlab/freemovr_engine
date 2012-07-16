@@ -7,6 +7,7 @@ import rospy
 
 from std_msgs.msg import String, UInt32
 
+import random
 import json
 import pickle
 import threading
@@ -52,13 +53,19 @@ class Foo:
         rospy.Subscriber("/multicamselfcal_everything/points", String, self._on_points)
         rospy.Subscriber("/multicamselfcal_everything/num_points", UInt32, self._on_num_points)
         
-    def _on_num_points(self, data):
+    def _speak(self, msg):
+        EASTER_EGG = ["Lisa", "John", "Andrew", " Breaanne", "Marieka", "Karin"]
+        if random.random() > 0.95:
+            msg = "Hello " + random.choice(EASTER_EGG)
         if self.process != None:
             self.process.poll()
             if self.process.returncode == None:
                 return
+        self.process = subprocess.Popen('espeak "%s" --stdout | aplay' % msg, shell=True)
 
-        self.process = subprocess.Popen('espeak "%d" --stdout | aplay' % data.data, shell=True)
+        
+    def _on_num_points(self, data):
+        self._speak(data.data)
 
     def _on_points(self, data):
         with self.lock:
