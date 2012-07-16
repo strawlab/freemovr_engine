@@ -356,6 +356,15 @@ class Calib:
         self.results = self._load_previous_calibration_pickle(os.path.join(path,'results.pkl'))
         self.results_mode = self._load_previous_calibration_pickle(os.path.join(path,'results_mode.pkl'))
         self.resolutions = self._load_previous_calibration_pickle(os.path.join(path,'resolution.pkl'))
+        
+        #check the results arrays are all the same size
+        num_results = 0
+        if self.results:
+            num_results = len(self.results[self.results.keys()[0]])
+            for r in self.results:
+                if num_results != len(self.results[r]):
+                    raise Exception("Not all calibratable elements have the same number of points")
+        self.num_results = num_results
 
     def run(self):
         while not rospy.is_shutdown():
