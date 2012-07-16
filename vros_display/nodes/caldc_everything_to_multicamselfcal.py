@@ -107,7 +107,7 @@ class Calib:
 
         s = rospy.Service('~calib_mode_points_manual', std_srvs.srv.Empty, self._change_mode_srv_points_manual)
         s = rospy.Service('~calib_mode_points_auto', std_srvs.srv.Empty, self._change_mode_srv_points_auto)
-        s = rospy.Service('~calib_mode_projector_visible', std_srvs.srv.Empty, self._change_mode_srv_projvis)
+        s = rospy.Service('~calib_mode_projector_visible', vros_display.srv.CalibProjector, self._change_mode_srv_projvis)
         s = rospy.Service('~calib_finish', std_srvs.srv.Empty, self._change_mode_srv_fin)
         s = rospy.Service('~calib_save', vros_display.srv.CalibConfig, self._change_mode_srv_save)
         s = rospy.Service('~calib_restore', std_srvs.srv.Empty, self._change_mode_srv_restore)
@@ -194,8 +194,12 @@ class Calib:
         self.change_mode(self.MODE_POINTS_AUTO_SETUP)
         return std_srvs.srv.EmptyResponse()
     def _change_mode_srv_projvis(self, req):
-        self.change_mode(self.MODE_PROJECTOR_VIS_SETUP)
-        return std_srvs.srv.EmptyResponse()
+        if req.node and req.node in self.display_servers:
+            selected = [req.node]
+        else:
+            selected = self.display_servers.keys()
+        self.change_mode(self.MODE_PROJECTOR_VIS_SETUP,tuple(selected))
+        return vros_display.srv.CalibProjectorResponse(selected)
     def _change_mode_srv_fin(self, req):
         self.change_mode(self.MODE_FINISHED)
         return std_srvs.srv.EmptyResponse()
@@ -389,24 +393,40 @@ class Calib:
             elif mode == self.MODE_PROJECTOR_VIS_SETUP:
                 self._ds_pts = {}
                 self._nds_pts = self.num_ds_pts
-                for d,(dsc,cams) in self.display_servers.items():
-                    #generate random points
-                    self._ds_pts[d] = np.hstack((
-                                            np.random.random_integers(
-                                                self.ptsize,dsc.height-self.ptsize,(self._nds_pts,1)),
-                                            np.random.random_integers(
-                                                self.ptsize,dsc.width-self.ptsize,(self._nds_pts,1))))
+                #only one argument, a list of selected display servers
+                selected, = service_args
+                for d in selected:
+                    vdisp = 'vdisp' #FIXME
+                    dsc,cams = self.display_servers[d]
+                    #generate npts random points
+                    pts = []
+                    npts = self.num_ds_pts
+                    mask = dsc.get_virtual_display_mask(vdisp)
+                    arr = dsc.new_image(color=0,nchan=1,dtype=mask.dtype)
+                    rospy.loginfo("Randomly choosing projector pixels for %s in vdisp %s" % (d,vdisp))
+                    while npts > 0:
+                        arr.fill(0)
+                        row = np.random.random_integers(self.ptsize,dsc.height-self.ptsize)
+                        col = np.random.random_integers(self.ptsize,dsc.width-self.ptsize)
+                        #check if the point is inside the vdisp mask
+                        arr[row,col] = 1
+                        if (arr * mask).any():
+                            pts.append((row,col))
+                            npts -= 1
+                    rospy.loginfo("Chose %d points" % self.num_ds_pts)
+                    self._ds_pts[d] = pts
                 self._nds_pts -= 1 #we count down and use this as the index of tested points
                 self.change_mode(self.MODE_PROJECTOR_VIS_LIGHT)
             elif mode == self.MODE_PROJECTOR_VIS_LIGHT:
-                for d,(dsc,cams) in self.display_servers.items():
+                for d in self._ds_pts:
+                    dsc,cams = self.display_servers[d]
                     row,col = self._ds_pts[d][self._nds_pts]
             
-                    rospy.loginfo("Lighting projector %s pixel %d,%d (%d remain)" % (dsc.name,row,col,self._nds_pts))
-
                     arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK)
                     arr[row-self.ptsize:row+self.ptsize,col-self.ptsize:col+self.ptsize,:3] = dsc.IMAGE_COLOR_WHITE
                     dsc.show_pixels(arr)
+                    
+                    rospy.loginfo("Lighting projector %s pixel %d,%d (%d remain)" % (dsc.name,row,col,self._nds_pts))
 
                 #extra sleep for the projector to settle
                 self.change_mode(self.MODE_PROJECTOR_VIS_DETECT)
@@ -414,7 +434,8 @@ class Calib:
 
             elif mode == self.MODE_PROJECTOR_VIS_DETECT:
                 if self._nds_pts > 0:
-                    for d,(dsc,cams) in self.display_servers.items():
+                    for d in self._ds_pts:
+                        dsc,cams = self.display_servers[d]
                         detected,nvisible = self._detect_points(self.runner, self.visible_thresh, restrict=cams)
                         if nvisible == 2:
                             self.num_results += 1
@@ -436,6 +457,7 @@ class Calib:
                     self._nds_pts -= 1
                     self.change_mode(self.MODE_PROJECTOR_VIS_LIGHT)
                 else:
+                    #turn off all projectors
                     for d,(dsc,cams) in self.display_servers.items():
                         dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_BLACK))
                     self.change_mode(self.MODE_SLEEP)
