@@ -54,11 +54,8 @@ class ViewportDefiner(HasTraits):
     linedraw = Instance(LineSegmentTool)
     viewport_id = traits.String
     display_mode = traits.Trait('white on black', 'black on white')
-    client = traits.Any
-    blit_compressed_image_proxy = traits.Any
+    display_server = traits.Any
     display_info = traits.Any
-
-    set_display_server_mode_proxy = traits.Any
 
     traits_view = View(
                     Group(
@@ -165,16 +162,8 @@ class ViewportDefiner(HasTraits):
             color = (0,0,0,1)
         elif self.display_mode.startswith('white '):
             color = (1,1,1,1)
-
-        fname = tempfile.mktemp('.png')
-        try:
-            scipy.misc.imsave(fname, self._image )
-            image = vros_display.msg.VROSCompressedImage()
-            image.format = 'png'
-            image.data = open(fname).read()
-            self.blit_compressed_image_proxy(image)
-        finally:
-            os.unlink(fname)
+            
+        self.display_server.show_pixels(self._image)
 
     def get_viewport_verts(self):
         # convert to integers
@@ -212,16 +201,12 @@ def main():
 
     display_info = display_server.get_display_info()
 
-    blit_compressed_image_proxy = rospy.ServiceProxy(display_server.get_fullname('blit_compressed_image'),
-                                                     vros_display.srv.BlitCompressedImage)
-
-    demo = ViewportDefiner(display_info=display_info,
+    demo = ViewportDefiner(display_server=display_server,
+                           display_info=display_info,
                            width=display_info['width'],
                            height=display_info['height'],
                            display_name=args.display_server,
-                           viewport_id = args.virtual_display_id,
-                           blit_compressed_image_proxy = blit_compressed_image_proxy
-                           )
+                           viewport_id = args.virtual_display_id)
 
     tmp = demo.linedraw # trigger default value to be initialized. (XXX how else to do this?)
     demo.configure_traits()
