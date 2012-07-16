@@ -11,11 +11,13 @@ import json
 import numpy as np
 import scipy.misc
 
+import fill_polygon
+
 class DisplayServerProxy(object):
 
     IMAGE_COLOR_BLACK = 0
     IMAGE_COLOR_WHITE = 255
-    IMAGE_NCHAN = 4
+    IMAGE_NCHAN = 3
 
     def __init__(self, display_server_node_name=None, wait=False):
         if not display_server_node_name:
@@ -107,6 +109,38 @@ class DisplayServerProxy(object):
                 pass
         return self._info_cached
 
+    def _get_viewport_index(self, name):
+        viewport_ids = []
+        viewport_idx = -1
+        for i,obj in enumerate(self.get_display_info()['virtualDisplays']):
+            viewport_ids.append(obj['id'])
+            if obj['id'] == name:
+                viewport_idx = i
+                break
+        return viewport_idx
+
+    def get_virtual_display_points(self, vdisp_name):
+        viewport_idx = self._get_viewport_index(vdisp_name)
+        virtual_display = self.get_display_info()['virtualDisplays'][viewport_idx]
+
+        all_points_ok = True
+        # error check
+        for (x,y) in virtual_display['viewport']:
+            if (x >= self.width) or (y >= self.height):
+                all_points_ok = False
+                break
+        if all_points_ok:
+            points = virtual_display['viewport']
+        else:
+            points = []
+        return points
+
+    def get_virtual_display_mask(self, vdisp_name):
+        points = self.get_virtual_display_points(vdisp_name)
+        image = np.zeros((self.height, self.width, 1), dtype=np.bool)
+        fill_polygon.fill_polygon(points, image, 1)
+        return image
+
     def show_image(self, fname, unlink=False):
         try:
             image = vros_display.msg.VROSCompressedImage()
@@ -122,9 +156,13 @@ class DisplayServerProxy(object):
         scipy.misc.imsave(fname,arr)
         self.show_image(fname, unlink=True)
 
-    def new_image(self, color):
-        arr = np.zeros((self.height,self.width,self.IMAGE_NCHAN),dtype=np.uint8)
-        arr[:,:,3]=255
-        arr[:,:,:3]=color
+    def new_image(self, color, mask=None, nchan=None, dtype=np.uint8):
+        if nchan == None:
+            nchan = self.IMAGE_NCHAN
+        arr = np.zeros((self.height,self.width,nchan),dtype=dtype)
+        arr.fill(color)
+        if mask != None:
+            arr *= mask
+        #arr[:,:,3]=255
         return arr
 
