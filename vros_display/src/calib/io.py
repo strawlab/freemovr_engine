@@ -3,6 +3,7 @@ import os.path
 import logging
 import tempfile
 import shutil
+import pickle
 
 import numpy as np
 import scipy.io
@@ -117,9 +118,135 @@ class VincentSFM(_Calibrator):
         scipy.io.savemat(dest,{'W':W})
         print dest
 
+class AllPointPickle:
+
+    LOG = logging.getLogger('allpoints')
+
+    def __init__(self, directory=None):
+        self._directory = directory
+        self.results = {}
+        self.results_mode = {}
+        self.resolutions = {}
+        self.num_results = 0
+
+    def _load_previous_calibration_pickle(self, path):
+        try:
+            with open(path,'r') as f:
+                results = pickle.load(f)
+                self.LOG.info("loaded previous calibration data: %s" % path)
+        except Exception, e:
+            self.LOG.warn("error loading: %s" % e)
+        return results
+
+    def load_previous_calibration(self, path):
+        results = self._load_previous_calibration_pickle(os.path.join(path,'results.pkl'))
+        results_mode = self._load_previous_calibration_pickle(os.path.join(path,'results_mode.pkl'))
+        resolutions = self._load_previous_calibration_pickle(os.path.join(path,'resolution.pkl'))
+        
+        #check the results arrays are all the same size
+        num_results = 0
+        if results:
+            num_results = len(results[results.keys()[0]])
+            for r in results:
+                if num_results != len(results[r]):
+                    raise Exception("Not all calibratable elements have the same number of points")
+        num_results = num_results
+
+        return results,results_mode,resolutions,num_results
+
+    def initilize_from_directory(self, directory=None):
+        if not directory:
+            directory = self._directory
+        if not directory:
+            raise ValueError("Directory must be specified")
+
+        self.results,self.results_mode,self.resolutions,self.num_results = \
+                self.load_previous_calibration(directory)
+
+        if all([c[0] == '/' for c in self.results.keys()]):
+            self._cameras_strip_slash = True
+
+    def save_calibration(self, directory=None, **kwargs):
+        if not directory:
+            directory = self._directory
+        if not directory:
+            raise ValueError("Directory must be specified")
+
+        results = kwargs.get("results",self.results)
+        results_mode = kwargs.get("results_mode", self.results_mode)
+        resolutions = kwargs.get("resolutions",self.resolutions)
+
+        with open(directory+'/results.pkl','w') as f:
+            pickle.dump(results,f)
+        with open(directory+'/results_mode.pkl','w') as f:
+            pickle.dump(results_mode,f)
+        with open(directory+'/resolution.pkl','w') as f:
+            pickle.dump(resolutions,f)
+
+    def get_points_in_cameras(self, *camera_ids, **kwargs):
+        """
+        Return all points visible in all cameras supplied in camera_ids.
+
+        If camera_ids is not supplied, only points visible in all will be returned.
+
+        The result can be returned in two ways.
+        1. result_format=dict
+            A dict where the key is the camera_id and the value is a list of points
+        2. result_format=list
+            A list of 2-tuples, the first element is the camera id, the second is the point
+            (this format is designed to be consumed by flydra.reconstructor)
+
+        A point is always a 2-tuple (x,y)
+        """
+        result_format = kwargs.get("result_format",dict)
+        if result_format not in (list,dict):
+            raise ValueError("Result format must be a list or a dict")
+        if not camera_ids:
+            camera_ids = a.cameras
+
+        #enforce the API
+        if any([c[0] == '/' for c in camera_ids]):
+            raise ValueError("Camera IDs can not start with /")
+
+        #internally work around my lazyness
+        if self._cameras_strip_slash:
+            camera_ids = ['/%s'%c for c in camera_ids]
+
+        result = result_format()
+        for i in range(self.num_results):
+            #check points are in ALL requested cameras
+            for c in camera_ids:
+                pt = self.results[c][i]
+                if np.isnan(pt).any():
+                    #not visible in 1 camera, reject point
+                    break
+
+            #point was visible in all cameras.
+            for c in camera_ids:
+                pt = self.results[c][i]
+                if self._cameras_strip_slash:
+                    c = c[1:]
+                if result_format == dict:
+                    try:
+                        result[c].append(pt)
+                    except KeyError:
+                        result[c] = [pt]
+                else:
+                    result.append( (c,pt) )
+
+        return result
+
+    @property
+    def cameras(self):
+        if self._cameras_strip_slash:
+            return [c[1:] for c in self.results.keys()]
+        else:
+            return self.results.keys()
+
 class MultiCalSelfCam(_Calibrator):
 
     LOG = logging.getLogger('mcsc')
+    INPUT = ("camera_order.txt","IdMat.dat","points.dat","Res.dat","multicamselfcal.cfg")
 
     def __init__(self, out_dirname, basename='cam', use_nth_frame=1, mcscdir='/opt/MultiCamSelfCal/MultiCamSelfCal/'):
         _Calibrator.__init__(self, out_dirname)
@@ -163,16 +290,34 @@ class MultiCalSelfCam(_Calibrator):
     def cmd_string(self):
         return "octave gocal.m --config=%s" % os.path.join(self.out_dirname, "multicamselfcal.cfg")
 
-    def execute(self, blocking=True, cb=None, use_matlab=False):
+    def execute(self, blocking=True, cb=None, use_matlab=False, dest=None, silent=True, copy_files=True):
         """
-        @returns: dir_with_result
-        """
-        dest = tempfile.mkdtemp(prefix='mcsc')
-        stdout = open(os.path.join(dest,'STDOUT'),'w')
-        dest = os.path.join(dest,'data')
-        shutil.copytree(self.out_dirname, dest)
+        if dest is specified then all files are copied there unless copy is false. If dest is not
+        specified then it is in a subdir of out_dirname called result        
 
-        cfg = os.path.join(dest, "multicamselfcal.cfg")
+        @returns: dest (or nothing if blocking is false). In that case cb is called when complete
+        and is passed the dest argument
+        """
+        if not dest:
+            dest = os.path.join(self.out_dirname,'result')
+            if not os.path.isdir(dest):
+                os.makedirs(dest)
+
+        if silent:
+            stdout = open(os.path.join(dest,'STDOUT'),'w')
+            stderr = open(os.path.join(dest,'STDERR'),'w')
+        else:
+            stdout = stderr = None
+
+        for f in self.INPUT:
+            src = os.path.join(self.out_dirname,f)
+            if copy_files:
+                shutil.copy(src, dest)
+            else:
+                if not os.path.isfile(src):
+                    raise ValueError("Could not find %s" % src)
+
+        cfg = os.path.abspath(os.path.join(dest, "multicamselfcal.cfg"))
 
         if use_matlab:
             cmds = '%s -nodesktop -nosplash -r "cd(\'%s\'); gocal_func(\'%s\'); exit"' % (
@@ -183,9 +328,8 @@ class MultiCalSelfCam(_Calibrator):
                         self.octave, cfg)
             cwd = self.mcscdir
 
-        cmd = ThreadedCommand(cmds,cwd=cwd,stdout=None,stderr=None)
+        cmd = ThreadedCommand(cmds,cwd=cwd,stdout=stdout,stderr=stderr)
         cmd.set_finished_cb(cb,dest)
-
         cmd.start()
 
         if blocking:
@@ -278,20 +422,20 @@ class MultiCalSelfCam(_Calibrator):
 
         self._write_cfg(cam_ids, radial_distortion, square_pixels, num_cameras_fill)
 
-    #FIXME: MAKE STATIC
-    def reshape_calibrated_points(self, xe):
+    @staticmethod
+    def reshape_calibrated_points(xe):
         return xe[0:3,:].T.tolist()
 
-    #FIXME: MAKE STATIC
-    def _read_calibration_result(self, out_dirname):
+    @staticmethod
+    def read_calibration_result(out_dirname):
         Xe = load_ascii_matrix(os.path.join(out_dirname,'Xe.dat'))
         Ce = load_ascii_matrix(os.path.join(out_dirname,'Ce.dat'))
         Re = load_ascii_matrix(os.path.join(out_dirname,'Re.dat'))
 
         return Xe,Ce,Re
 
-    #FIXME: MAKE STATIC
-    def _read_calibration_names(self, out_dirname):
+    @staticmethod
+    def read_calibration_names(out_dirname):
         f = os.path.join(out_dirname,'camera_order.txt')
         if os.path.isfile(f):
             return [l.strip() for l in open(f,'r').readlines()]
@@ -299,15 +443,13 @@ class MultiCalSelfCam(_Calibrator):
             print "WARNING: could not find camera_order.txt"
             return []
 
-    #FIXME: MAKE STATIC
-    def publish_calibration_points(self, topic_base='', result_dir=None):
-        path = result_dir if result_dir else self.out_dirname
-
-        xe,ce,re = self._read_calibration_result(path)
-        names = self._read_calibration_names(path)
+    @staticmethod
+    def publish_calibration_points(dirname, topic_base=''):
+        xe,ce,re = MultiCalSelfCam.read_calibration_result(dirname)
+        names = MultiCalSelfCam.read_calibration_names(dirname)
 
         create_point_cloud_message_publisher(
-            self.reshape_calibrated_points(xe),
+            MultiCalSelfCam.reshape_calibrated_points(xe),
             topic_base+'/points',
             publish_now=True,
             latch=True)
@@ -318,8 +460,8 @@ class MultiCalSelfCam(_Calibrator):
             publish_now=True,
             latch=True)
 
-    #FIXME: MAKE STATIC
-    def save_to_pcd(self, fname, result_dir=None):
+    @staticmethod
+    def save_to_pcd(dirname, fname):
         HEADER = \
         "# .PCD v.7 - Point Cloud Data file format\n"\
         "VERSION .7\n"\
@@ -333,11 +475,9 @@ class MultiCalSelfCam(_Calibrator):
         "POINTS %(npoints)d\n"\
         "DATA ascii"
 
-        path = result_dir if result_dir else self.out_dirname
-
         with open(fname, 'w') as fd:
-            xe,ce,re = self._read_calibration_result(path)
+            xe,ce,re = MultiCalSelfCam.read_calibration_result(dirname)
             fd.write(HEADER % {"npoints":xe.shape[1]-1})
-            for row in self.reshape_calibrated_points(xe):
+            for row in MultiCalSelfCam.reshape_calibrated_points(xe):
                 fd.write("%f %f %f\n" % tuple(row))
 

@@ -4,10 +4,10 @@
 import argparse
 import time
 import os.path
-import pickle
 import math
 import fnmatch
 import threading
+import tempfile
 
 import json
 import yaml
@@ -35,7 +35,7 @@ import vros_display.srv
 
 import calib
 from calib.acquire import CameraHandler, SimultainousCameraRunner
-from calib.io import MultiCalSelfCam
+from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.imgproc import DotBGFeatureDetector, load_mask_image
 from rosutils.io import decode_url
 
@@ -313,12 +313,12 @@ class Calib:
         if not cam_ids:
             cam_ids = self.cam_ids[:]
 
-        with open(self.outdir+'/results.pkl','w') as f:
-            pickle.dump(self.results,f)
-        with open(self.outdir+'/results_mode.pkl','w') as f:
-            pickle.dump(self.results_mode,f)
-        with open(self.outdir+'/resolution.pkl','w') as f:
-            pickle.dump(self.resolutions,f)
+        a = AllPointPickle()
+        a.save_calibration(
+            self.outdir,
+            results=self.results,
+            results_mode=self.results_mode,
+            resolutions=self.resolutions)
 
         cam_calibrations = {}
         if use_calibrations:
@@ -345,30 +345,16 @@ class Calib:
             self.pub_pcd.publish(pcd)
             rospy.loginfo("published points and saved pcd file: %s" % pcd)
 
-        self.mcsc.execute(False, calib_finished)
-
-    def _load_previous_calibration_pickle(self, path):
-        try:
-            with open(path,'r') as f:
-                results = pickle.load(f)
-                rospy.loginfo("loaded previous calibration data: %s" % path)
-        except Exception, e:
-            rospy.logwarn("error loading: %s" % e)
-        return results
+        #store the calibration result in a temp directory
+        self.mcsc.execute(
+                blocking=False,
+                cb=calib_finished,
+                dest=tempfile.mkdtemp(prefix='mcsc'))
 
     def _load_previous_calibration(self, path):
-        self.results = self._load_previous_calibration_pickle(os.path.join(path,'results.pkl'))
-        self.results_mode = self._load_previous_calibration_pickle(os.path.join(path,'results_mode.pkl'))
-        self.resolutions = self._load_previous_calibration_pickle(os.path.join(path,'resolution.pkl'))
-        
-        #check the results arrays are all the same size
-        num_results = 0
-        if self.results:
-            num_results = len(self.results[self.results.keys()[0]])
-            for r in self.results:
-                if num_results != len(self.results[r]):
-                    raise Exception("Not all calibratable elements have the same number of points")
-        self.num_results = num_results
+        a = AllPointPickle()
+        self.results,self.results_mode,self.resolutions,self.num_results = \
+            a.load_previous_calibration(path)
 
     def run(self):
         while not rospy.is_shutdown():
