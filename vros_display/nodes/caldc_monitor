@@ -30,13 +30,14 @@ COLORS = {
 }
 
 class Foo:
-    def __init__(self, cameras_glob):
+    def __init__(self, cameras_glob, only_detected):
         self.results = {}
         self.resolution = {}
         self.windows = {}
         self.cameras_glob = cameras_glob
         self.lock = threading.Lock()
         self.process = None
+        self.only_detected = only_detected
         cv2.startWindowThread()
 
     def load_from_pickle(self, base='mcamall'):
@@ -54,9 +55,6 @@ class Foo:
         rospy.Subscriber("/multicamselfcal_everything/num_points", UInt32, self._on_num_points)
         
     def _speak(self, msg):
-        EASTER_EGG = ["Lisa", "John", "Andrew", " Breaanne", "Marieka", "Karin"]
-        if random.random() > 0.95:
-            msg = "Hello " + random.choice(EASTER_EGG)
         if self.process != None:
             self.process.poll()
             if self.process.returncode == None:
@@ -79,12 +77,13 @@ class Foo:
         if self.results and self.resolution and (len(self.results) == len(self.resolution)):
             allcams = self.resolution.keys()
             for handle in fnmatch.filter(allcams, self.cameras_glob):
-                if handle not in self.windows:
+                arr,npts = self._make_array(handle)
+                if handle not in self.windows and (npts > 0 or self.only_detected == False):
                     cv2.namedWindow(handle, cv.CV_WINDOW_NORMAL)
                     self.windows[handle] = True
-                arr,npts = self._make_array(handle)
-                cv2.putText(arr, "%s (%d)" % (handle,npts), (100,100), cv2.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255))
-                cv2.imshow(handle, arr)
+                if handle in self.windows:
+                    cv2.putText(arr, "%s (%d)" % (handle,npts), (100,100), cv2.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255))
+                    cv2.imshow(handle, arr)
 
     def _make_array(self, cam):
         w,h = self.resolution[cam]
@@ -117,11 +116,14 @@ if __name__ == "__main__":
     parser.add_argument(
         '--from-dir', type=str,
         help='load from dir of pkl files')
+    parser.add_argument(
+        '--only-detected', action='store_true', default=False, help=\
+        'only show cameras with detected points')
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
     rospy.init_node('viewcalibpoints', anonymous=True)
-    r = Foo(args.cameras)
+    r = Foo(args.cameras, args.only_detected)
     if args.from_dir:
         r.load_from_pickle(os.path.abspath(args.from_dir))
     else:
