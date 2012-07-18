@@ -28,37 +28,34 @@ import flydra.align
 
 rospy.init_node('caliball', anonymous=True)
 
-ALL_DATA        = decode_url('package://flycave/data/calib-all/1208_3PROJ/')
-FLYDRA_CALIB    = decode_url('package://flycave/calibration/flycave')
+DS_PKL          = decode_url('package://flycave/calibration/triplets/')
 RERUN_MCSC      = False
 
 config = yaml.load(open(decode_url('package://flycave/conf/calib-all.yaml')))
 
-a = AllPointPickle()
-a.initilize_from_directory(ALL_DATA)
-
-MultiCalSelfCam.publish_calibration_points(
-    FLYDRA_CALIB,
-    topic_base='/flydracalib')
-
-for n in (0,1,3,):
+for n in (1,3,):
+    src = DS_PKL + "/ds%d" % n
     ds = '/display_server%d' % n
     ids = [ds] + config['display_servers'][ds]
-    dest = decode_url('package://flycave/calibration/ds%d' % n)
+
+    a = AllPointPickle()
+    a.initilize_from_directory(src)
 
     print "*"*20
-    print dest
+    print src
     print "*"*20
 
     if RERUN_MCSC:
-        mcsc =  MultiCalSelfCam(dest)
+        mcsc =  MultiCalSelfCam(src)
         mcsc.create_from_cams(
                         cam_ids=ids,
                         cam_resolutions=a.resolutions.copy(),
                         cam_points=a.results.copy(),
                         cam_calibrations={},
                         num_cameras_fill=0)
-        mcsc.execute(blocking=True, dest=dest, copy_files=False, silent=False)
+        dest = mcsc.execute(blocking=True, copy_files=True, silent=False)
+    else:
+        dest = src + "/result"
     MultiCalSelfCam.publish_calibration_points(
         dest,
         topic_base='/ds%d' % n)
