@@ -13,7 +13,8 @@ roslib.load_manifest('motmot_ros_utils')
 from rosutils.formats import camera_calibration_yaml_to_radfile
 
 from calib.visualization import create_point_cloud_message_publisher, \
-                                create_camera_pose_message_publisher
+                                create_camera_pose_message_publisher, \
+                                create_pcd_file_from_points
 
 from . commandwrapper import WrapCommand as ThreadedCommand
 
@@ -462,22 +463,7 @@ class MultiCalSelfCam(_Calibrator):
 
     @staticmethod
     def save_to_pcd(dirname, fname):
-        HEADER = \
-        "# .PCD v.7 - Point Cloud Data file format\n"\
-        "VERSION .7\n"\
-        "FIELDS x y z\n"\
-        "SIZE 4 4 4\n"\
-        "TYPE F F F\n"\
-        "COUNT 1 1 1\n"\
-        "WIDTH %(npoints)d\n"\
-        "HEIGHT 1\n"\
-        "VIEWPOINT 0 0 0 1 0 0 0\n"\
-        "POINTS %(npoints)d\n"\
-        "DATA ascii"
-
-        with open(fname, 'w') as fd:
-            xe,ce,re = MultiCalSelfCam.read_calibration_result(dirname)
-            fd.write(HEADER % {"npoints":xe.shape[1]-1})
-            for row in MultiCalSelfCam.reshape_calibrated_points(xe):
-                fd.write("%f %f %f\n" % tuple(row))
+        xe,ce,re = MultiCalSelfCam.read_calibration_result(dirname)
+        points = MultiCalSelfCam.reshape_calibrated_points(xe)
+        create_pcd_file_from_points(fname,points)
 
