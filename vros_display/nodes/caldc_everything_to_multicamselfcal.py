@@ -340,16 +340,18 @@ class Calib:
     def _run_mcsc_and_calibrate(self):
         def calib_finished(_cmd,_desdir):
             pcd = _desdir+'/points.pcd'
-            self.mcsc.publish_calibration_points(result_dir=_desdir)
-            self.mcsc.save_to_pcd(pcd,result_dir=_desdir)
+            MultiCalSelfCam.publish_calibration_points(_desdir)
+            MultiCalSelfCam.save_to_pcd(_desdir,pcd)
             self.pub_pcd.publish(pcd)
             rospy.loginfo("published points and saved pcd file: %s" % pcd)
+            rospy.loginfo("calibration result in: %s" % _desdir)
 
         #store the calibration result in a temp directory
         self.mcsc.execute(
                 blocking=False,
                 cb=calib_finished,
-                dest=tempfile.mkdtemp(prefix='mcsc'))
+                dest=tempfile.mkdtemp(prefix='mcsc'),
+                silent=False)
 
     def _load_previous_calibration(self, path):
         a = AllPointPickle()
