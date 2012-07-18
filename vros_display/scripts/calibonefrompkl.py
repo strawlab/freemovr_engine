@@ -79,6 +79,7 @@ for dsnum in (1,3):
 
             #check bounds are realistic
             #FIXME: have I swapped u/v here????
+            #FIXME: can I make this check better???
             u,v = ds_2d
             if u > dsc.width or v > dsc.height or u < 0 or v < 0:
                 continue
@@ -89,8 +90,6 @@ for dsnum in (1,3):
                 x,y,z = flydra_3d
 
                 #this is just a debug image for asessing coverage
-                #if the 2D point is outside the image bounds then it must be invalid. 
-                #FIXME: we really could improve this check...
                 arr[v-2:v+2,u-2:u+2,Y_INDEX] = y
                 arr[v-2:v+2,u-2:u+2,X_INDEX] = x
 
