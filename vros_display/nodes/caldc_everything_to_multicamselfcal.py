@@ -179,6 +179,7 @@ class Calib:
             self._load_previous_calibration(path)
 
         self.mode_lock = threading.Lock()
+        self.mode = self.MODE_SLEEP
         self.service_args = tuple()
         self.change_mode(self.MODE_SLEEP)
 
@@ -518,7 +519,7 @@ class Calib:
         if self.show_cameras:
             cv2.destroyAllWindows()
 
-        #self._save_results()
+        self._save_results()
 
 
 if __name__ == '__main__':
