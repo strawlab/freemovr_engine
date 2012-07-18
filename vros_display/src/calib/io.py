@@ -4,6 +4,7 @@ import logging
 import tempfile
 import shutil
 import pickle
+import itertools
 
 import numpy as np
 import scipy.io
@@ -106,8 +107,6 @@ class VincentSFM(_Calibrator):
                 self.LOG.warn("removing cam %s - no points detected" % cam)
         map(cam_ids.remove, cams_to_remove)
 
-
-
         for i,cam in enumerate(cam_ids):
             points = np.array(cam_points[cam])
             assert points.shape[1] == 2
@@ -117,7 +116,6 @@ class VincentSFM(_Calibrator):
 
         dest = self.out_dirname+'/points.mat'
         scipy.io.savemat(dest,{'W':W})
-        print dest
 
 class AllPointPickle:
 
@@ -131,6 +129,7 @@ class AllPointPickle:
         self.num_results = 0
 
     def _load_previous_calibration_pickle(self, path):
+        results = None
         try:
             with open(path,'r') as f:
                 results = pickle.load(f)
@@ -161,6 +160,8 @@ class AllPointPickle:
         if not directory:
             raise ValueError("Directory must be specified")
 
+        self.LOG.info("loading from %s" % directory)
+
         self.results,self.results_mode,self.resolutions,self.num_results = \
                 self.load_previous_calibration(directory)
 
@@ -184,26 +185,22 @@ class AllPointPickle:
         with open(directory+'/resolution.pkl','w') as f:
             pickle.dump(resolutions,f)
 
-    def get_points_in_cameras(self, *camera_ids, **kwargs):
+    def get_points_in_cameras(self, camera_ids=None, min_num_visible=2):
         """
-        Return all points visible in all cameras supplied in camera_ids.
+        Return points visible in the cameras specified by camera_ids if the point is visible
+        in at least min_num_visible cameras. If camera_ids is not specified, all cameras are
+        considered
 
-        If camera_ids is not supplied, only points visible in all will be returned.
+        camera_ids: a tuple
 
-        The result can be returned in two ways.
-        1. result_format=dict
-            A dict where the key is the camera_id and the value is a list of points
-        2. result_format=list
-            A list of 2-tuples, the first element is the camera id, the second is the point
-            (this format is designed to be consumed by flydra.reconstructor)
+        min_num_visible:
+                A point must be visible in this many cameras (default: 2)
+                passing -1 means it must be visible in all camreas
 
-        A point is always a 2-tuple (x,y)
+        returns: list of [(cam,(x,y)), ...] tuples
         """
-        result_format = kwargs.get("result_format",dict)
-        if result_format not in (list,dict):
-            raise ValueError("Result format must be a list or a dict")
         if not camera_ids:
-            camera_ids = a.cameras
+            camera_ids = self.cameras
 
         #enforce the API
         if any([c[0] == '/' for c in camera_ids]):
@@ -213,27 +210,31 @@ class AllPointPickle:
         if self._cameras_strip_slash:
             camera_ids = ['/%s'%c for c in camera_ids]
 
-        result = result_format()
+        if min_num_visible < 0 or min_num_visible > len(camera_ids):
+            min_num_visible = len(camera_ids)
+
+        result = []
         for i in range(self.num_results):
+            num_visible = 0
+            visible_cams = []
             #check points are in ALL requested cameras
             for c in camera_ids:
                 pt = self.results[c][i]
-                if np.isnan(pt).any():
-                    #not visible in 1 camera, reject point
-                    break
+                if not np.isnan(pt).any():
+                    #visible in camera, reject point
+                    num_visible += 1
+                    visible_cams.append(c)
 
-            #point was visible in all cameras.
-            for c in camera_ids:
-                pt = self.results[c][i]
-                if self._cameras_strip_slash:
-                    c = c[1:]
-                if result_format == dict:
-                    try:
-                        result[c].append(pt)
-                    except KeyError:
-                        result[c] = [pt]
-                else:
-                    result.append( (c,pt) )
+            #point was visible in enough cameras.
+            if num_visible >= min_num_visible:
+                visible = []
+                for c in visible_cams:
+                    pt = self.results[c][i]
+                    if self._cameras_strip_slash:
+                        c = c[1:]
+                    visible.append( (c,pt) )
+
+                result.append(visible)
 
         return result
 
@@ -243,6 +244,10 @@ class AllPointPickle:
             return [c[1:] for c in self.results.keys()]
         else:
             return self.results.keys()
+
+    @property
+    def num_points(self):
+        return self.num_results
 
 class MultiCalSelfCam(_Calibrator):
 
@@ -339,6 +344,10 @@ class MultiCalSelfCam(_Calibrator):
             
     def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, num_cameras_fill=-1, **kwargs):
         #num_cameras_fill = -1 means use all cameras (= len(cam_ids))
+
+        if not cam_ids:
+            cam_ids = cam_points.keys()
+
         #remove cameras with no points
         cams_to_remove = []
         for cam in cam_ids:
