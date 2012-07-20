@@ -476,3 +476,17 @@ class MultiCalSelfCam(_Calibrator):
         points = MultiCalSelfCam.reshape_calibrated_points(xe)
         create_pcd_file_from_points(fname,points)
 
+    @staticmethod
+    def get_camera_names_map(dirname, filetype="rad"):
+        if filetype == "rad":
+            tmpl = "basename%d.rad"
+        else:
+            raise ValueError("Only rad files supported")
+
+        result = {}
+        for i,name in enumerate(MultiCalSelfCam.read_calibration_names(dirname)):
+            result[name] = tmpl % (i+1)
+
+        return result
+
+
