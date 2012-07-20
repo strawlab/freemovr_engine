@@ -21,7 +21,7 @@ LASER_PKL       = decode_url('package://flycave/calibration/laser')
 FLYDRA_CALIB    = decode_url('package://flycave/calibration/flydra')
 
 #test mcsc wrapper
-if 1:
+if 0:
     a = AllPointPickle()
     a.initilize_from_directory(DS1_PKL)
 
@@ -37,7 +37,7 @@ if 1:
     MultiCalSelfCam.save_to_pcd(dest, "/tmp/ds1.pcd")
 
 #test roundtrip 2d -> 3d -> 2d
-if 1:
+if 0:
     r = flydra.reconstruct.Reconstructor(cal_source=DS1_CALIB)
 
     cams = r.get_cam_ids()
@@ -57,19 +57,19 @@ if 1:
     print "2d points",[r.find2d(c,X) for c in cams]
 
 #for all laser points, find their 3D coords, check it makes a cylinder
-if 1:
+if 0:
     #use the flydra calibration to get the 3d coords
     r = flydra.reconstruct.Reconstructor(cal_source=FLYDRA_CALIB)
 
     laser = AllPointPickle()
     laser.initilize_from_directory(LASER_PKL)
 
+    print "number of laser points",laser.num_points
+
     #all points visible in 2 or more cameras
     pts = laser.get_points_in_cameras(r.get_cam_ids())
 
     create_pcd_file_from_points(
             '/tmp/cyl.pcd',
-            r.find3d_generator(pts,return_line_coords=False),
-            npts=len(pts))
-
+            [r.find3d(pt,return_line_coords=False) for pt in pts])
 
