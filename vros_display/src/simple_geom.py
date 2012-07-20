@@ -390,3 +390,11 @@ class Geometry:
             output = np.concatenate((tc0,tc1),axis=2)
             assert output.shape == (camera.height, camera.width, 2)
         return output
+
+def angle_between_vectors(v1, v2):
+    dot = np.dot(v1, v2)
+    len_a = np.sqrt(np.dot(v1, v1))
+    len_b = np.sqrt(np.dot(v2, v2))
+    if len_a == 0 or len_b == 0:
+        return 0
+    return np.arccos(dot / (len_a * len_b))
