@@ -33,7 +33,7 @@ RERUN_MCSC      = False
 
 config = yaml.load(open(decode_url('package://flycave/conf/calib-all.yaml')))
 
-for n in (1,3,):
+for n in (0,1,3):
     src = DS_PKL + "/ds%d" % n
     ds = '/display_server%d' % n
     ids = [ds] + config['display_servers'][ds]
