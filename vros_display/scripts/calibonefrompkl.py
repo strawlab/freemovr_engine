@@ -1,17 +1,21 @@
+import os.path
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage
 import scipy.misc
 import scipy.interpolate
+import pcl
 
 import roslib;
 roslib.load_manifest('vros_display')
 roslib.load_manifest('motmot_ros_utils')
 import rospy
 
-from calib.io import AllPointPickle
-from calib.visualization import create_pcd_file_from_points
+from calib.io import MultiCalSelfCam, AllPointPickle
+from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher
 from rosutils.io import decode_url
+from rosutils.formats import camera_calibration_yaml_to_radfile
 
 import flydra
 import flydra.reconstruct
@@ -29,11 +33,13 @@ X_INDEX = 0
 Y_INDEX = 1
 FILT_METHOD = 'cubic'
 
-#so, we can successfully recover a cylinder. Find the pixel coords of those points in the
-#projector cameras, and then, via the projector calibration, find the corresponding pixel
-#in the projector
+#make sure the flydra cameras are intrinsically calibrated
+name_map = MultiCalSelfCam.get_camera_names_map(FLYDRA_CALIB)
+for c in MultiCalSelfCam.read_calibration_names(FLYDRA_CALIB):
+    camera_calibration_yaml_to_radfile(
+            decode_url('package://flycave/calibration/cameras/%s.yaml' % c),
+            os.path.join(FLYDRA_CALIB,name_map[c]))
 
-#use the flydra calibration to get the 3d coords
 fly = flydra.reconstruct.Reconstructor(cal_source=FLYDRA_CALIB)
 
 laser = AllPointPickle()
@@ -41,7 +47,64 @@ laser.initilize_from_directory(LASER_PKL)
 
 print "number of laser points",laser.num_points
 
-for dsnum in (1,3):
+#get all points visible in 2 or more cameras
+#and use the flydra calibration to get the 3d coords
+pts = laser.get_points_in_cameras(fly.get_cam_ids())
+xyz = np.array([fly.find3d(pt,return_line_coords=False) for pt in pts])
+create_point_cloud_message_publisher(
+        xyz,
+        topic_name='/flydracalib/points',
+        publish_now=True,
+        latch=True)
+
+create_pcd_file_from_points(
+        decode_url('package://flycave/calibration/pcd/flydracyl.pcd'),
+        xyz)
+
+fig = plt.figure()
+show_pointcloud_3d_plot(xyz)
+
+#fit a cylinder to this cloud
+p = pcl.PointCloud()
+p.from_list(xyz)
+
+#smooth = p.filter_mls(0.5)
+#create_point_cloud_message_publisher(
+#        xyz,
+#        topic_name='/flydracalib/pointssmooth',
+#        publish_now=True,
+#        latch=True)
+
+seg = p.make_segmenter_normals(searchRadius=0.2)
+seg.set_optimize_coefficients (True);
+seg.set_model_type (pcl.SACMODEL_CYLINDER)
+seg.set_method_type (pcl.SAC_RANSAC)
+seg.set_normal_distance_weight (0.01)
+seg.set_max_iterations (10000)
+seg.set_distance_threshold (0.5)
+seg.set_radius_limits (1, 3)
+seg.set_axis(0.41,1.894,2.733)
+seg.set_eps_angle(0.1)
+
+indices, model = seg.segment()
+
+print model
+print len(indices)
+
+cx,cy,cz,ax,ay,az,radius = model 
+
+create_cylinder_publisher(
+    cx,cy,cz,ax,ay,az,radius,
+    topic_name='/flydracalib/cyl',
+    publish_now=True,
+    latch=True,
+    length=1,
+    color=(0,1,0,0.3))
+
+#so, we can successfully recover a cylinder. Find the pixel coords of those points in the
+#projector cameras, and then, via the projector calibration, find the corresponding pixel
+#in the projector
+for dsnum in (0,1,3):
     dsname = "ds%d" % dsnum
 
     #use the display server calibration to get the projector pixel coordinate
@@ -58,7 +121,7 @@ for dsnum in (1,3):
     arr = np.zeros((768,1024,2))
     arr.fill(np.nan)
 
-    dsc = display_client.DisplayServerProxy("/display_server1", wait=False)
+    dsc = display_client.DisplayServerProxy("/display_server%d" % dsnum, wait=False)
 
     #all points visible in 2 or more cameras
     for pts in laser.get_points_in_cameras():
@@ -101,8 +164,12 @@ for dsnum in (1,3):
                 print "SHIT?"*10
                 pass
 
-    create_pcd_file_from_points('/tmp/%sflydra3d.pcd' % dsname,flydra_points_3d)
-    create_pcd_file_from_points('/tmp/%s3d.pcd' % dsname,ds_points_3d)
+    create_pcd_file_from_points(
+        decode_url('package://flycave/calibration/pcd/%sflydra3d.pcd' % dsname),
+        flydra_points_3d)
+    create_pcd_file_from_points(
+        decode_url('package://flycave/calibration/pcd/%s3d.pcd' % dsname),
+        ds_points_3d)
 
     flydra_points_3d_arr = np.array(flydra_points_3d)
     ds_points_2d_arr = np.array(ds_points_2d)
