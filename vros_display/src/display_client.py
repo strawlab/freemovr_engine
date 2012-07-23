@@ -6,6 +6,7 @@ import warnings
 import tempfile
 import time
 import os.path
+import xmlrpclib
 
 import json
 import numpy as np
@@ -165,4 +166,12 @@ class DisplayServerProxy(object):
             arr *= mask
         #arr[:,:,3]=255
         return arr
+
+
+    def set_binary_exr(self, path):
+        print path,self._server_node_name+"/p2g"
+        with open(path,'rb') as f:
+            b = xmlrpclib.Binary(f.read())
+            rospy.set_param(self._server_node_name+"/p2g", b)
+            
 
