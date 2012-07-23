@@ -11,6 +11,7 @@ import rosutils.io
 
 import numpy as np
 
+import calib.reconstruct
 import calib.visualization
 import simple_geom
 
@@ -18,7 +19,7 @@ import pcl
 
 rospy.init_node("rotatecloud", anonymous=True, disable_signals=True )
 
-pcd_file = rosutils.io.decode_url('package://flycave/calibration/pcd/flydracyl.smooth.pcd')
+pcd_file = rosutils.io.decode_url('package://flycave/calibration/pcd/flydracyl.pcd')
 
 p = pcl.PointCloud()
 p.from_file(pcd_file)
@@ -39,32 +40,9 @@ calib.visualization.create_cylinder_publisher(
                         length=5,
                         color=(0,1,0,0.2))
 
-#we need to create a rotation matrix to apply to the 3d points to align them on z axis
-axis = (ax, ay, az)
-rotation_axis = np.cross(axis, (0, 0, 1))
-rotation_angle = simple_geom.angle_between_vectors((0, 0, 1), axis)
-
-print rotation_angle
-print rotation_axis
-
-rotation_quaternion = tf.transformations.quaternion_about_axis(rotation_angle, axis)
-
-Rt = tf.transformations.rotation_matrix(rotation_angle, rotation_axis)
-print Rt
-R = Rt[0:3,0:3]
-print R
-
 arr = np.array(p.to_list())
-
-print arr.shape
-
-new = np.dot(R,arr.T).T
-
-#move this to the origin
-cx,cy,_ = np.mean(new,axis=0)
-_,_,zmin = np.min(new,axis=0)
-_,_,zmax = np.min(new,axis=0)
-new -= np.array([cx,cy,zmin])
+r = calib.reconstruct.CylinderPointCloudTransformer(cx,cy,cz,ax,ay,az,radius,arr)
+new = r.move_cloud(arr)
 
 p2 = pcl.PointCloud()
 p2.from_array(new.astype(np.float32))
@@ -74,6 +52,8 @@ calib.visualization.create_point_cloud_message_publisher(
                             topic_name='/flydracalib/points2',
                             publish_now=True,
                             latch=True)
+
+
 
 rospy.spin()
 
