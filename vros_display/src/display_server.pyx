@@ -21,6 +21,7 @@ import Queue
 import tempfile
 import json
 import argparse
+import xmlrpclib
 
 import numpy as np
 cimport numpy as np
@@ -206,6 +207,15 @@ cdef class MyNode:
                     pass
         elif config_dict:
             rospy.loginfo("using ros config")
+            #the exr file can be specified as a base64 string. In that case we decode it and write it
+            #to a tmp file
+            p2g = config_dict['p2g']
+            if isinstance(p2g, xmlrpclib.Binary):
+                exrfile = '/tmp/%s.exr' % rospy.get_name()
+                with open(exrfile, 'wb') as exr:
+                    exr.write(p2g.data)
+                config_dict['p2g'] = exrfile
+                rospy.loginfo("decoded exr file and saved to %s" % exrfile)
             config_file = '/tmp/%s.json' % rospy.get_name()
             with open(config_file,mode='w') as f:
                 f.write(json.dumps(config_dict))
