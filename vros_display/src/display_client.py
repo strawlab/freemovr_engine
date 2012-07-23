@@ -20,7 +20,7 @@ class DisplayServerProxy(object):
     IMAGE_COLOR_WHITE = 255
     IMAGE_NCHAN = 3
 
-    def __init__(self, display_server_node_name=None, wait=False):
+    def __init__(self, display_server_node_name=None, wait=False, prefer_parameter_server_properties=False):
         if not display_server_node_name:
             self._server_node_name = rospy.resolve_name('display_server')
         else:
@@ -28,8 +28,11 @@ class DisplayServerProxy(object):
 
         self._info_cached = {}
 
-        rospy.loginfo('trying display server: %s' % self._server_node_name)
+        self._use_param_server = prefer_parameter_server_properties
+        if self._use_param_server:
+            rospy.logwarn('parameters will be feteched from the parameter server not the remote instance')
 
+        rospy.loginfo('trying display server: %s' % self._server_node_name)
         if wait:
             rospy.loginfo('waiting for display server: %s' % self._server_node_name)
             rospy.wait_for_service(self.get_fullname('set_display_server_mode'))
@@ -40,6 +43,7 @@ class DisplayServerProxy(object):
                                                                 vros_display.srv.SetDisplayServerMode)
         self.blit_compressed_image_proxy = rospy.ServiceProxy(self.get_fullname('blit_compressed_image'),
                                                                 vros_display.srv.BlitCompressedImage)
+
 
     @property
     def name(self):
@@ -101,6 +105,8 @@ class DisplayServerProxy(object):
 
     def get_display_info(self, nocache=False):
         if nocache or not self._info_cached:
+            if self._use_param_server:
+                self._info_cached = rospy.get_param(self._server_node_name+'/display')
             try:
                 get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
                                                             vros_display.srv.GetDisplayInfo)
@@ -167,6 +173,14 @@ class DisplayServerProxy(object):
         #arr[:,:,3]=255
         return arr
 
+    @property
+    def geometry(self):
+        return rospy.get_param(self._server_node_name+"/geom")
+
+    def set_geometry(self, var):
+        #FIXME: what else is compulsory?
+        assert "model" in var
+        rospy.set_param(self._server_node_name+"/geom", var)
 
     def set_binary_exr(self, path):
         print path,self._server_node_name+"/p2g"
