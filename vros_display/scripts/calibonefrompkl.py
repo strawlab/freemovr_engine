@@ -7,6 +7,7 @@ import scipy.misc
 import scipy.interpolate
 import pcl
 import yaml
+import argparse
 
 import roslib;
 roslib.load_manifest('vros_display')
@@ -34,7 +35,7 @@ FLYDRA_CALIB    = decode_url('package://flycave/calibration/flydra')
 
 X_INDEX = 0
 Y_INDEX = 1
-FILT_METHOD = 'cubic'
+FILT_METHOD = 'linear'
 FILL_VALUE = np.nan
 
 #make sure the flydra cameras are intrinsically calibrated
@@ -117,7 +118,7 @@ create_point_cloud_message_publisher(
 #so, we can successfully recover a cylinder. Find the pixel coords of those points in the
 #projector cameras, and then, via the projector calibration, find the corresponding pixel
 #in the projector
-for dsnum in (0,):
+for dsnum in (0,1,3):
     dsname = "ds%d" % dsnum
 
     #use the display server calibration to get the projector pixel coordinate
@@ -186,12 +187,8 @@ for dsnum in (0,):
 
     flydra_points_3d_arr = np.array(flydra_points_3d)
 
-    print "f3d shape", flydra_points_3d_arr
-
     ds_points_2d_arr = np.array(ds_points_2d)
     ds_points_3d_arr = np.array(ds_points_3d)
-
-    print "ds2d shape", ds_points_2d_arr.shape
 
     print "%s constructed from %d 2D coords mapping to %d 3D points" % (dsname, len(ds_points_2d), len(flydra_points_3d_arr))
 
@@ -219,16 +216,20 @@ for dsnum in (0,):
                 img_height=dsc.height,
                 method=FILT_METHOD)
 
-        y0 = interpolate_pixel_cords(
-                ds_points_2d_arr, flydra_points_3d_arr[:,Y_INDEX],
-                img_width=dsc.width,
-                img_height=dsc.height,
-                method=FILT_METHOD)
-        x0 = interpolate_pixel_cords(
-                ds_points_2d_arr, flydra_points_3d_arr[:,X_INDEX],
-                img_width=dsc.width,
-                img_height=dsc.height,
-                method=FILT_METHOD)
+        u0nonan = np.nan_to_num(u0)
+        v0nonan = np.nan_to_num(v0)
+        if u0nonan.max() > 1 or u0nonan.min() > 0:
+            #the cubic interpolate function is sensitive to step changes, and introduces quite large
+            #errors in smoothing. Crudely replace those values with invalid (nan)
+            print 'replacing out of range errors in smoothed u'
+            u0[u0>1] = np.nan
+            u0[u0<0] = np.nan
+        if v0nonan.max() > 1 or v0nonan.min() > 0:
+            #the cubic interpolate function is sensitive to step changes, and introduces quite large
+            #errors in smoothing. Crudely replace those values with invalid (nan)
+            print 'replacing out of range errors in smoothed u'
+            v0[v0>1] = np.nan
+            v0[v0<0] = np.nan
 
         if 0:
             #mask out invalid parts if the convex hull doesnt work....
@@ -238,46 +239,34 @@ for dsnum in (0,):
             mask = dsc.get_virtual_display_mask('vdisp').squeeze()
             mask = ~mask
 
-            x0[mask] = FILL_VALUE
-            y0[mask] = FILL_VALUE
             u0[mask] = FILL_VALUE
             v0[mask] = FILL_VALUE
 
 
         plt.figure()
         plt.subplot(211)
-        plt.imshow(arr[:,:,Y_INDEX])
+        plt.imshow(arr[:,:,X_INDEX])
         plt.colorbar()
-        plt.title('%s Original Y' % dsname)
+        plt.title('%s X' % dsname)
         plt.subplot(212)
-        plt.imshow(y0)
+        plt.imshow(u0)
+        plt.title('%s U' % dsname)
         plt.colorbar()
-        plt.title('Filtered %s' % FILT_METHOD)
 
         plt.figure()
         plt.subplot(211)
-        plt.imshow(arr[:,:,X_INDEX])
+        plt.imshow(arr[:,:,Y_INDEX])
         plt.colorbar()
-        plt.title('%s Original X' % dsname)
+        plt.title('%s Y' % dsname)
         plt.subplot(212)
-        plt.imshow(x0)
-        plt.colorbar()
-        plt.title('Filtered %s' % FILT_METHOD)
-
-        plt.figure()
-        plt.imshow(u0)
-        plt.colorbar()
-        plt.title('%s u' % dsname)
-
-        plt.figure()
         plt.imshow(v0)
         plt.colorbar()
-        plt.title('%s v' % dsname)
+        plt.title('%s V' % dsname)
 
         #save the exr file, -1 means no data, not NaN
         u0[np.isnan(u0)] = -1
         v0[np.isnan(v0)] = -1
-        exrpath = '/tmp/%s.exr' % dsname
+        exrpath = decode_url('package://flycave/calibration/exr/%s.exr' % dsname)
         exr.save_exr(exrpath, r=u0, g=v0, b=np.zeros_like(u0))
 
         #save the resulting geometry to the parameter server
