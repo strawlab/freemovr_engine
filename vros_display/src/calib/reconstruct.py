@@ -25,6 +25,8 @@ class CylinderPointCloudTransformer(object):
         rotation_axis = np.cross(axis, (0, 0, 1))
         rotation_angle = simple_geom.angle_between_vectors((0, 0, 1), axis)
         rotation_quaternion = tf.transformations.quaternion_about_axis(rotation_angle, axis)
+        
+        self._s = 1.0
 
         #rotate points
         Rh = tf.transformations.rotation_matrix(rotation_angle, rotation_axis)
@@ -35,9 +37,9 @@ class CylinderPointCloudTransformer(object):
         cx,cy,_ = np.mean(new,axis=0)
         _,_,zmin = np.min(new,axis=0)
         _,_,zmax = np.max(new,axis=0)
-        self._T = np.array([[cx,cy,zmin]])
+        self._t = np.array([[cx,cy,zmin]])
 
-        self.cloud = new - self._T
+        self.cloud = new - self._t
 
         height = zmax - zmin
 
@@ -48,13 +50,24 @@ class CylinderPointCloudTransformer(object):
 
     def move_cloud(self, arr):
         new = np.dot(self._R,arr.T).T
-        return new - self._T
+        return new - self._t
 
     def in_cylinder_coordinates(self, arr):
         return self._cyl.worldcoord2texcoord(arr)
 
     def get_geom_dict(self):
         return self._cyl.to_geom_dict()
+        
+    def get_transformation(self):
+        return self._s,self._R,self._t
+
+    def get_transformation_matrix(self):
+        s,R,t = self.get_transformation()
+        M = np.zeros((4,4),dtype=np.float)
+        M[:3,:3] = s*R
+        M[:3,3] = t
+        M[3,3]=1.0
+        return M
 
 def interpolate_pixel_cords(points_2d, values_1d, img_width, img_height, method='cubic', fill_value=np.nan):
     assert points_2d.ndim == 2

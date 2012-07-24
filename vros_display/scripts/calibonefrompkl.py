@@ -109,6 +109,11 @@ show_pointcloud_3d_plot(xyz)
 cx,cy,cz,ax,ay,az,radius = [0.331529438495636, 0.5152832865715027, 0.2756080627441406, -0.7905913591384888, 0.24592067301273346, -7.272743225097656, 2.241607666015625]
 recon = CylinderPointCloudTransformer(cx,cy,cz,ax,ay,az,radius,xyz)
 
+#M = recon.get_transformation_matrix()
+#
+#newfly = fly.get_aligned_copy(M)
+#newfly.save_to_xml_filename('/tmp/flydra.xml')
+
 create_point_cloud_message_publisher(
         recon.move_cloud(xyz),
         topic_name='/flydracalib/points2',
