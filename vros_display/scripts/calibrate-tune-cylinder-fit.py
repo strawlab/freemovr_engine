@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os.path
 import contextlib
 
@@ -35,8 +37,9 @@ class Tune(object):
                                 latch=True)
         self.pubptsinliers.publish(pts)
 
+        thisdir = os.path.dirname(os.path.abspath(__file__))
         self.ui = Gtk.Builder()
-        self.ui.add_from_file("tune.ui")
+        self.ui.add_from_file(os.path.join(thisdir,"tune.ui"))
 
         self._sr = 0.5
         self.ui.get_object("sr_adjustment").props.value = self._sr
