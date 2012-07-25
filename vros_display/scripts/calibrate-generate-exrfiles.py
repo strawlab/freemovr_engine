@@ -308,6 +308,9 @@ if __name__ == "__main__":
         '--flydra-calib', type=str, default='package://flycave/calibration/flydra',
         help='path to flydra multicamselfcal result dir')
     parser.add_argument('--undistort-radial', default=False, action='store_true')
+    parser.add_argument('--parameter-server-properties', default=False, action='store_true',
+        help='get display server properties (height, width, etc) from the parameter server. '\
+             'this means the display server does not need to be running.')
     parser.add_argument(
         '--display-server-numbers', type=str, default='0,1,3',
         help='comma separated list of display server numbers')
@@ -327,7 +330,7 @@ if __name__ == "__main__":
 
     c.generate_exrs(
         [int(i) for i in args.display_server_numbers.split(',')],
-        prefer_parameter_server_properties=True,
+        prefer_parameter_server_properties=False,
         filt_method='linear',
         mask_out=False,
         mask_fill_value=np.nan)
