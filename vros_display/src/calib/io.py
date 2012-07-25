@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import pickle
 import itertools
+import random
 
 import numpy as np
 import scipy.io
@@ -185,9 +186,9 @@ class AllPointPickle:
         with open(directory+'/resolution.pkl','w') as f:
             pickle.dump(resolutions,f)
 
-    def get_points_in_cameras(self, camera_ids=None, min_num_visible=2):
+    def get_points_in_cameras(self, camera_ids=None, min_num_visible=2, num_results=-1, random_num_results=0):
         """
-        Return points visible in the cameras specified by camera_ids if the point is visible
+        Return num points visible in the cameras specified by camera_ids if the point is visible
         in at least min_num_visible cameras. If camera_ids is not specified, all cameras are
         considered
 
@@ -197,8 +198,12 @@ class AllPointPickle:
                 A point must be visible in this many cameras (default: 2)
                 passing -1 means it must be visible in all camreas
 
+        num_results: how many points to return (-1 for all points)
+
         returns: list of [(cam,(x,y)), ...] tuples
         """
+        if num_results < 0 or random_num_results > 0:
+            num_results = self.num_results
         if not camera_ids:
             camera_ids = self.cameras
 
@@ -214,7 +219,7 @@ class AllPointPickle:
             min_num_visible = len(camera_ids)
 
         result = []
-        for i in range(self.num_results):
+        for i in range(num_results):
             num_visible = 0
             visible_cams = []
             #check points are in ALL requested cameras
@@ -236,7 +241,10 @@ class AllPointPickle:
 
                 result.append(visible)
 
-        return result
+        if random_num_results:
+            return random.sample(result, random_num_results)
+        else:
+            return result
 
     @property
     def cameras(self):
