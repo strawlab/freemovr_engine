@@ -45,7 +45,11 @@ class Calibrator(object):
                     decode_url('package://flycave/calibration/cameras/%s.yaml' % c),
                     os.path.join(self.flydra_calib,name_map[c]))
 
+        #publish the camera positions and the inlier set from the flydra calibraion
+        MultiCalSelfCam.publish_calibration_points(self.flydra_calib, topic_base='/flydra')
+
         self.fly = flydra.reconstruct.Reconstructor(cal_source=self.flydra_calib)
+
         self.laser = AllPointPickle()
 
         #load default laser points
@@ -330,7 +334,7 @@ if __name__ == "__main__":
 
     c.generate_exrs(
         [int(i) for i in args.display_server_numbers.split(',')],
-        prefer_parameter_server_properties=False,
+        prefer_parameter_server_properties=args.parameter_server_properties,
         filt_method='linear',
         mask_out=False,
         mask_fill_value=np.nan)
