@@ -82,6 +82,9 @@ class Calibrator(object):
             show_pointcloud_3d_plot(self.xyz)
 
     def detect_clyinder(self, smooth=0):
+        raise Exception("NOT FINISHED YET. "\
+                        "It is better to do this manually using the tune cyl application, then enter the results into __main__")
+
         #fit a cylinder to this cloud
         p = pcl.PointCloud()
         p.from_list(self.xyz)
@@ -124,7 +127,7 @@ class Calibrator(object):
             topic_name='/flydracalib/cyl',
             publish_now=True,
             latch=True,
-            length=1,
+            length=3*radius,
             color=(0,1,0,0.3))
 
         create_point_cloud_message_publisher(
