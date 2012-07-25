@@ -164,6 +164,7 @@ cdef class MyNode:
     cdef Vec3* pose_position
     cdef Quat* pose_orientation
     cdef object subscription_mode
+    cdef int throttle
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -184,6 +185,7 @@ cdef class MyNode:
                             default='vr_display')
         parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
         parser.add_argument('--two_pass', default=False, action='store_true')
+        parser.add_argument('--throttle', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
         parser.add_argument('--config', type=str,
             help='JSON configuration file describing the setup. '\
@@ -265,6 +267,7 @@ cdef class MyNode:
                 self.register_subscribers(name)
 
         self._switch_to_stimulus_plugin('Stimulus3DDemo') # default stimulus
+        self.throttle = args.throttle
 
     def handle_get_display_server_mode(self,request):
         # this is called in some callback thread by ROS
@@ -450,6 +453,8 @@ cdef class MyNode:
                 last = now
 
             #time.sleep(0.001) # spin ROS listeners
+            if self.throttle:
+                time.sleep(0.1) # run at 10 fps
 
 def main(ros_package_name):
     node = MyNode(ros_package_name)
