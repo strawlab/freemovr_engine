@@ -26,12 +26,13 @@ class CylinderPointCloudTransformer(object):
         rotation_angle = simple_geom.angle_between_vectors((0, 0, 1), axis)
         rotation_quaternion = tf.transformations.quaternion_about_axis(rotation_angle, axis)
         
-        self._s = 1.0
+        print "FIXING SCALE " * 5
+        self._s = 1.0/radius
 
         #rotate points
         Rh = tf.transformations.rotation_matrix(rotation_angle, rotation_axis)
         self._R = Rh[0:3,0:3]
-        new = np.dot(self._R,arr.T).T
+        new = np.dot(self._s * self._R,arr.T).T
 
         #move this to the origin
         cx,cy,_ = np.mean(new,axis=0)
@@ -49,7 +50,8 @@ class CylinderPointCloudTransformer(object):
                         radius=radius)
 
     def move_cloud(self, arr):
-        new = np.dot(self._R,arr.T).T
+        #do it lazily because arr is not homogenous coords
+        new = np.dot(self._s * self._R,arr.T).T
         return new - self._t
 
     def in_cylinder_coordinates(self, arr):

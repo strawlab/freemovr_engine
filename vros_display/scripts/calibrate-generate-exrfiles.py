@@ -14,7 +14,7 @@ import rospy
 
 
 from calib.io import MultiCalSelfCam, AllPointPickle
-from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher
+from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
 from calib.reconstruct import CylinderPointCloudTransformer, interpolate_pixel_cords
 from rosutils.io import decode_url
 from rosutils.formats import camera_calibration_yaml_to_radfile
@@ -129,6 +129,13 @@ class Calibrator(object):
             latch=True,
             length=3*radius,
             color=(0,1,0,0.3))
+        create_point_publisher(
+            cx,cy,cz,
+            r=0.1,
+            topic_name='/flydracalib/cylcenter',
+            publish_now=True,
+            latch=True,
+            color=(1,0,0,0.5))
 
         create_point_cloud_message_publisher(
                 self.recon.move_cloud(self.xyz),
@@ -141,6 +148,18 @@ class Calibrator(object):
 
         newfly = self.fly.get_aligned_copy(M)
         newfly.save_to_xml_filename(path)
+
+        pts2d = self.laser.get_points_in_cameras(newfly.get_cam_ids(), random_num_results=1)
+        pts3d = newfly.find3d(pts2d[0],return_line_coords=False)
+
+        cx,cy,cz = pts3d
+        create_point_publisher(
+            cx,cy,cz,
+            r=0.1,
+            topic_name='/flydracalib/testpoint',
+            publish_now=True,
+            latch=True,
+            color=(0,0,1,0.5))
 
         return path
 
