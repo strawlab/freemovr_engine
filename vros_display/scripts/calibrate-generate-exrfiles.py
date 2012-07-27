@@ -48,6 +48,10 @@ class Calibrator(object):
         #publish the camera positions and the inlier set from the flydra calibraion
         MultiCalSelfCam.publish_calibration_points(self.flydra_calib, topic_base='/flydra')
 
+        print '*'*80
+        print 'loaded original calibration from', self.flydra_calib
+        print '*'*80
+
         self.fly = flydra.reconstruct.Reconstructor(cal_source=self.flydra_calib)
 
         self.laser = AllPointPickle()
@@ -364,5 +368,5 @@ if __name__ == "__main__":
     if args.visualize:
         plt.show()
 
+    print 'now spinning forever...'
     rospy.spin()
-
