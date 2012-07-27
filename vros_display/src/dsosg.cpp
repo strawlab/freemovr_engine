@@ -830,13 +830,12 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 			osg::ref_ptr<osg::GraphicsContext::ResizedCallback> rc = new DSOSGResizedCallback(gc->getResizedCallback(),this);
 			gc->setResizedCallback(rc);
 		}
+        setCursorVisible(false);
 
 	}
 	else {
 		throw std::invalid_argument("unknown mode");
 	}
-
-    setCursorVisible(false);
 
 	resized(width, height); // notify listeners that we have a new size
 };
