@@ -284,7 +284,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--display-server-numbers', type=str, default='0,1,3',
         help='comma separated list of display server numbers')
-    parser.add_argument('--visualize', default=True, action='store_true')
+    parser.add_argument('--visualize', default=False, action='store_true')
     args = parser.parse_args()
 
     c = Calibrator(
