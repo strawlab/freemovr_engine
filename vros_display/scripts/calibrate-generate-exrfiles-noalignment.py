@@ -44,14 +44,6 @@ class Calibrator(object):
         self.undistort_flydra_points = undistort_flydra_points
         self.visualize = visualize
 
-        #make sure the flydra cameras have associated calibration information. We might
-        #not actually use the undistorted points (depends on the --undistort argument)
-        name_map = MultiCalSelfCam.get_camera_names_map(self.flydra_calib)
-        for c in MultiCalSelfCam.read_calibration_names(self.flydra_calib):
-            camera_calibration_yaml_to_radfile(
-                    decode_url('package://flycave/calibration/cameras/%s.yaml' % c),
-                    os.path.join(self.flydra_calib,name_map[c]))
-
         #publish the camera positions and the inlier set from the flydra calibraion
         MultiCalSelfCam.publish_calibration_points(self.inlier_dir, topic_base='/flydra')
 
