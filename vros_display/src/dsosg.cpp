@@ -334,11 +334,12 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 
 // constructor
 DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius,
-             std::string config_fname, bool two_pass, bool show_geom_coords) :
+             std::string config_fname, bool two_pass, bool show_geom_coords,
+             bool tethered_mode) :
     _current_stimulus(NULL), _mode(mode),
     _vros_display_basepath(vros_display_basepath),
     _config_file_path(config_fname),
-    _tethered_mode(true)
+    _tethered_mode(tethered_mode)
 {
     json_error_t json_error;
     json_t *json_config, *json_stimulus, *json_geom;

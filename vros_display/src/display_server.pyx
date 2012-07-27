@@ -89,6 +89,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               std_string config_data_dir,
               int two_pass,
               int show_geom_coords,
+              int tethered_mode,
               ) nogil except +
         void setup_viewer(std_string viewer_window_name, std_string json_config) nogil except +
         void update( double, Vec3, Quat )
@@ -228,6 +229,8 @@ cdef class MyNode:
 
         rospy.loginfo("wrote config_file to %s" % config_file)
 
+        tethered_mode = config_dict.get('tethered_mode',True)
+
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
                                std_string(args.mode),
@@ -235,6 +238,7 @@ cdef class MyNode:
                                std_string(config_file),
                                args.two_pass,
                                args.show_geom_coords,
+                               tethered_mode,
                                )
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
 
