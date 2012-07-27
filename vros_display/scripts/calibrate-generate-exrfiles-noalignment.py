@@ -32,7 +32,12 @@ X_INDEX = 0
 Y_INDEX = 1
 
 class Calibrator(object):
-    def __init__(self, flydra_calib, laser_pkl, undistort_flydra_points, visualize):
+    def __init__(self, flydra_calib, laser_pkl, undistort_flydra_points, visualize, inlier_dir):
+
+        if inlier_dir is None:
+            self.inlier_dir = flydra_calib
+        else:
+            self.inlier_dir = inlier_dir
 
         self.flydra_calib = flydra_calib
         self.laser_pkl = laser_pkl
@@ -48,10 +53,14 @@ class Calibrator(object):
                     os.path.join(self.flydra_calib,name_map[c]))
 
         #publish the camera positions and the inlier set from the flydra calibraion
-        MultiCalSelfCam.publish_calibration_points(self.flydra_calib, topic_base='/flydra')
+        MultiCalSelfCam.publish_calibration_points(self.inlier_dir, topic_base='/flydra')
 
         print '*'*80
         print 'loaded original calibration from', self.flydra_calib
+        print '*'*80
+
+        print '*'*80
+        print 'loaded inliers from', self.inlier_dir
         print '*'*80
 
         self.fly = flydra.reconstruct.Reconstructor(cal_source=self.flydra_calib)
@@ -271,6 +280,9 @@ if __name__ == "__main__":
     parser.add_argument(
         '--flydra-calib', type=str, default='package://flycave/calibration/flydra.aligned',
         help='path to flydra multicamselfcal result dir')
+    parser.add_argument(
+        '--inlier-dir', type=str, default=None,
+        help='path to directory containing Xe.dat, Re.dat, Ce.dat')
     parser.add_argument('--undistort-radial', default=False, action='store_true')
     parser.add_argument('--parameter-server-properties', default=False, action='store_true',
         help='get display server properties (height, width, etc) from the parameter server. '\
@@ -285,7 +297,8 @@ if __name__ == "__main__":
             decode_url(args.flydra_calib),
             decode_url(args.laser_pkldir),
             args.undistort_radial,
-            args.visualize)
+            args.visualize,
+            args.inlier_dir)
 
     c.generate_exrs(
         [int(i) for i in args.display_server_numbers.split(',')],
