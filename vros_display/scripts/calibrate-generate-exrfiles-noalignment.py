@@ -45,7 +45,9 @@ class Calibrator(object):
         self.visualize = visualize
 
         #publish the camera positions and the inlier set from the flydra calibraion
-        MultiCalSelfCam.publish_calibration_points(self.inlier_dir, topic_base='/flydra')
+        MultiCalSelfCam.publish_calibration_points(self.flydra_calib,
+                                                   topic_base='/flydra',
+                                                   inlier_dir=self.inlier_dir)
 
         print '*'*80
         print 'loaded original calibration from', self.flydra_calib
