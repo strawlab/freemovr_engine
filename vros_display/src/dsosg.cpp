@@ -259,7 +259,7 @@ public:
         osg::Camera* camera = Cameras.at(i);
         camera->setClearColor(color);
     }
-      
+
   }
   osg::Node* get_node() {
     return _top.get();
@@ -334,7 +334,7 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 
 // constructor
 DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius,
-             std::string config_fname, bool two_pass, bool show_geom_coords) : 
+             std::string config_fname, bool two_pass, bool show_geom_coords) :
     _current_stimulus(NULL), _mode(mode),
     _vros_display_basepath(vros_display_basepath),
     _config_file_path(config_fname),
@@ -346,7 +346,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     // ensure we interpret this as a directory (ensure trailing slash)
     _vros_display_basepath.makeAbsolute(); _vros_display_basepath.makeDirectory();
     // ensure we interpret this as a file
-    _config_file_path.makeAbsolute(); _config_file_path.makeFile(); 
+    _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
     Poco::Path shader_path = _vros_display_basepath;
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
