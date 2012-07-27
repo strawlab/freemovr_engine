@@ -35,6 +35,8 @@ class Calibrator(object):
     def __init__(self, flydra_calib, laser_pkl, undistort_flydra_points, visualize, inlier_dir):
 
         if inlier_dir is None:
+            if not os.path.isdir(flydra_calib):
+                raise RuntimeError('cannot guess inlier directory')
             self.inlier_dir = flydra_calib
         else:
             self.inlier_dir = inlier_dir
