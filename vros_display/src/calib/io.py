@@ -6,6 +6,7 @@ import shutil
 import pickle
 import itertools
 import random
+import warnings
 
 import numpy as np
 import scipy.io
@@ -445,12 +446,17 @@ class MultiCamSelfCal(_Calibrator):
         return xe[0:3,:].T.tolist()
 
     @staticmethod
-    def read_calibration_result(out_dirname):
-        Xe = load_ascii_matrix(os.path.join(out_dirname,'Xe.dat'))
-        Ce = load_ascii_matrix(os.path.join(out_dirname,'Ce.dat'))
-        Re = load_ascii_matrix(os.path.join(out_dirname,'Re.dat'))
-
+    def read_inliers(inlier_dirname):
+        Xe = load_ascii_matrix(os.path.join(inlier_dirname,'Xe.dat'))
+        Ce = load_ascii_matrix(os.path.join(inlier_dirname,'Ce.dat'))
+        Re = load_ascii_matrix(os.path.join(inlier_dirname,'Re.dat'))
         return Xe,Ce,Re
+
+    @staticmethod
+    def read_calibration_result(out_dirname):
+        warnings.warn( "read_calibration_result is renamed to read_inliers()",
+                       DeprecationWarning)
+        return MultiCamSelfCal.read_inliers(out_dirname)
 
     @staticmethod
     def transform_and_save(xe, ce, re, dirname, recon0):
