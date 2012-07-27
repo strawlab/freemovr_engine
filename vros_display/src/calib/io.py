@@ -257,7 +257,7 @@ class AllPointPickle:
     def num_points(self):
         return self.num_results
 
-class MultiCalSelfCam(_Calibrator):
+class MultiCamSelfCal(_Calibrator):
 
     LOG = logging.getLogger('mcsc')
     INPUT = ("camera_order.txt","IdMat.dat","points.dat","Res.dat","multicamselfcal.cfg")
@@ -478,7 +478,7 @@ class MultiCalSelfCam(_Calibrator):
         names = MultiCalSelfCam.read_calibration_names(dirname)
 
         create_point_cloud_message_publisher(
-            MultiCalSelfCam.reshape_calibrated_points(xe),
+            MultiCamSelfCal.reshape_calibrated_points(xe),
             topic_base+'/points',
             publish_now=True,
             latch=True)
@@ -491,8 +491,8 @@ class MultiCalSelfCam(_Calibrator):
 
     @staticmethod
     def save_to_pcd(dirname, fname):
-        xe,ce,re = MultiCalSelfCam.read_calibration_result(dirname)
-        points = MultiCalSelfCam.reshape_calibrated_points(xe)
+        xe,ce,re = MultiCamSelfCal.read_calibration_result(dirname)
+        points = MultiCamSelfCal.reshape_calibrated_points(xe)
         create_pcd_file_from_points(fname,points)
 
     @staticmethod
@@ -503,9 +503,10 @@ class MultiCalSelfCam(_Calibrator):
             raise ValueError("Only rad files supported")
 
         result = {}
-        for i,name in enumerate(MultiCalSelfCam.read_calibration_names(dirname)):
+        for i,name in enumerate(MultiCamSelfCal.read_calibration_names(dirname)):
             result[name] = tmpl % (i+1)
 
         return result
 
-
+# backwards compatibility
+MultiCalSelfCam = MultiCamSelfCal
