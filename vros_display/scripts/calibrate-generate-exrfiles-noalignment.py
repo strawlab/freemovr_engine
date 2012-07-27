@@ -32,7 +32,7 @@ X_INDEX = 0
 Y_INDEX = 1
 
 class Calibrator(object):
-    def __init__(self, flydra_calib, laser_pkl, undistort_flydra_points, visualize, inlier_dir):
+    def __init__(self, flydra_calib, laser_pkl, visualize, inlier_dir):
 
         if inlier_dir is None:
             if not os.path.isdir(flydra_calib):
@@ -43,7 +43,6 @@ class Calibrator(object):
 
         self.flydra_calib = flydra_calib
         self.laser_pkl = laser_pkl
-        self.undistort_flydra_points = undistort_flydra_points
         self.visualize = visualize
 
         #publish the camera positions and the inlier set from the flydra calibraion
@@ -91,7 +90,7 @@ class Calibrator(object):
         #get all points visible in 2 or more cameras
         #and use the flydra calibration to get the 3d coords
         pts = self.laser.get_points_in_cameras(self.fly.get_cam_ids())
-        self.xyz = np.array([self.fly.find3d(pt,return_line_coords=False, undistort=self.undistort_flydra_points) for pt in pts])
+        self.xyz = np.array([self.fly.find3d(pt,return_line_coords=False, undistort=True) for pt in pts])
 
         create_point_cloud_message_publisher(
             self.xyz,
@@ -160,7 +159,7 @@ class Calibrator(object):
 
                     try:
                         #get the real 3D coord
-                        flydra_3d = self.fly.find3d(flydra_ds_points_2d,return_line_coords=False, undistort=self.undistort_flydra_points)
+                        flydra_3d = self.fly.find3d(flydra_ds_points_2d,return_line_coords=False, undistort=True)
                         x,y,z = flydra_3d
 
                         #this is just a debug image for asessing coverage
@@ -279,7 +278,6 @@ if __name__ == "__main__":
     parser.add_argument(
         '--inlier-dir', type=str, default=None,
         help='path to directory containing Xe.dat, Re.dat, Ce.dat')
-    parser.add_argument('--undistort-radial', default=False, action='store_true')
     parser.add_argument('--parameter-server-properties', default=False, action='store_true',
         help='get display server properties (height, width, etc) from the parameter server. '\
              'this means the display server does not need to be running.')
@@ -292,7 +290,6 @@ if __name__ == "__main__":
     c = Calibrator(
             decode_url(args.flydra_calib),
             decode_url(args.laser_pkldir),
-            args.undistort_radial,
             args.visualize,
             args.inlier_dir)
 
