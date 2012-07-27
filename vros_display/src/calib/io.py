@@ -10,6 +10,7 @@ import warnings
 
 import numpy as np
 import scipy.io
+from flydra.reconstruct import Reconstructor
 
 import roslib
 roslib.load_manifest('motmot_ros_utils')
@@ -470,18 +471,16 @@ class MultiCamSelfCal(_Calibrator):
         save_ascii_matrix( re2, os.path.join(dirname, 'Re.dat' ))
 
     @staticmethod
-    def read_calibration_names(out_dirname):
-        f = os.path.join(out_dirname,'camera_order.txt')
-        if os.path.isfile(f):
-            return [l.strip() for l in open(f,'r').readlines()]
-        else:
-            print "WARNING: could not find camera_order.txt"
-            return []
+    def read_calibration_names(flydra_cal_src):
+        R = Reconstructor(flydra_cal_src)
+        return R.get_cam_ids()
 
     @staticmethod
-    def publish_calibration_points(dirname, topic_base=''):
-        xe,ce,re = MultiCalSelfCam.read_calibration_result(dirname)
-        names = MultiCalSelfCam.read_calibration_names(dirname)
+    def publish_calibration_points(flydra_cal_src, topic_base='',inlier_dir=None):
+        if inlier_dir is None:
+            inlier_dir = flydra_cal_src
+        xe,ce,re = MultiCamSelfCal.read_inliers(inlier_dir)
+        names = MultiCamSelfCal.read_calibration_names(flydra_cal_src)
 
         create_point_cloud_message_publisher(
             MultiCamSelfCal.reshape_calibrated_points(xe),
