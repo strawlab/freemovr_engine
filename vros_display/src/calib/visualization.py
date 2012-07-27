@@ -171,6 +171,20 @@ def show_pointcloud_3d_plot(points, ax=None):
     if not ax:
         ax = plt.gca(projection='3d')
     ax.plot(points[:,0],points[:,1],points[:,2],'o')
-
-
         
+def show_pointcloud_2d_plots(points, fig=None):
+    points = _points_check(points, ensure_ndarray=True)
+    x = points[:,0]
+    y = points[:,1]
+    z = points[:,2]
+
+    ax1 = fig.add_subplot(2,1,1)
+    ax1.plot( x,z,'b.')
+    ax1.set_ylabel('z')
+    ax1.set_aspect('equal')
+
+    ax2 = fig.add_subplot(2,1,2,sharex=ax1)
+    ax2.plot( x,y,'b.')
+    ax2.set_ylabel('y')
+    ax2.set_xlabel('x')
+    ax2.set_aspect('equal')
