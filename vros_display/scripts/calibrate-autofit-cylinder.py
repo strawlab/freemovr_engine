@@ -13,19 +13,6 @@ from calib.io import MultiCalSelfCam, save_ascii_matrix
 import tf
 from simple_geom import Cylinder
 
-def transform_and_save(xe, ce, re, dirname, recon0):
-    print 'xe.shape',xe.shape
-    print 'ce.shape',ce.shape
-    print 're.shape',re.shape
-    xe_short = xe[:3,:]
-    xe2_short = recon0.move_cloud(xe_short.T).T
-    ce2 = recon0.move_cloud(ce.T).T
-    re2 = recon0.move_cloud(re)
-    xe2 = np.vstack( (xe2_short, np.ones_like( xe2_short[np.newaxis,0,:] )) )
-    save_ascii_matrix( xe2, os.path.join(dirname,'Xe.dat' ))
-    save_ascii_matrix( ce2, os.path.join(dirname, 'Ce.dat' ))
-    save_ascii_matrix( re2, os.path.join(dirname, 'Re.dat' ))
-
 class Autofitter:
     def __init__(self, filename, orig_flydra_R, out_fname=None):
         self.srcR = flydra.reconstruct.Reconstructor( orig_flydra_R )
@@ -77,7 +64,7 @@ class Autofitter:
             if 1:
                 # debug xform before opt
                 xe, ce, re = self.orig_XCR_e
-                transform_and_save( xe, ce, re, '/tmp', recon0 )
+                MultiCalSelfCam.transform_and_save( xe, ce, re, '/tmp', recon0 )
 
         start_err = self.calc_error( p0 )
         print 'start_err',start_err

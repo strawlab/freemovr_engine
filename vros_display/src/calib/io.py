@@ -453,6 +453,17 @@ class MultiCalSelfCam(_Calibrator):
         return Xe,Ce,Re
 
     @staticmethod
+    def transform_and_save(xe, ce, re, dirname, recon0):
+        xe_short = xe[:3,:]
+        xe2_short = recon0.move_cloud(xe_short.T).T
+        ce2 = recon0.move_cloud(ce.T).T
+        re2 = recon0.move_cloud(re)
+        xe2 = np.vstack( (xe2_short, np.ones_like( xe2_short[np.newaxis,0,:] )) )
+        save_ascii_matrix( xe2, os.path.join(dirname,'Xe.dat' ))
+        save_ascii_matrix( ce2, os.path.join(dirname, 'Ce.dat' ))
+        save_ascii_matrix( re2, os.path.join(dirname, 'Re.dat' ))
+
+    @staticmethod
     def read_calibration_names(out_dirname):
         f = os.path.join(out_dirname,'camera_order.txt')
         if os.path.isfile(f):
