@@ -458,8 +458,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
                 try {
                     _stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
                 } catch (...) {
-                    std::cerr << "ERROR: while calling post_init() on plugin " << itMan->name() << std::endl;
-                    throw std::runtime_error("error while calling post_init()");
+                    std::cerr << "ERROR while calling post_init() on plugin " << itMan->name() << ": " << std::endl;
+                    throw; // Cython converts the C++ exception to Python.
                 }
 				if (_current_stimulus == NULL) {
 					_current_stimulus = _stimulus_plugins[ itMan->name() ];
