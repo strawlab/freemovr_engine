@@ -18,11 +18,11 @@ def align_inliers( align_json, in_dir, out_dir ):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--align-json', type=str)
+        '--align-json', type=str, required=True)
     parser.add_argument(
-        '--in-dir', type=str)
+        '--in-dir', type=str, required=True)
     parser.add_argument(
-        '--out-dir', type=str)
+        '--out-dir', type=str, required=True)
     args = parser.parse_args()
 
     align_inliers( args.align_json, args.in_dir, args.out_dir )
