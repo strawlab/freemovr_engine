@@ -198,8 +198,10 @@ cdef class MyNode:
         args = parser.parse_args(argv[1:])
 
         rospy.init_node("display_server")
+        time.sleep(1.0) # give a second to join ROS network, else early rospy.log* messages are lost
 
         config_dict = rospy.get_param('~',{})
+        rospy.loginfo("starting display_server")
         if args.config and os.path.exists(args.config):
             config_file = args.config
             with open(config_file,'r') as f:
@@ -230,6 +232,7 @@ cdef class MyNode:
         rospy.loginfo("wrote config_file to %s" % config_file)
 
         tethered_mode = config_dict.get('tethered_mode',True)
+        rospy.loginfo('tethered_mode: %s'%tethered_mode)
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
