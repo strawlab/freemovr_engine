@@ -42,7 +42,7 @@ def show_image(fname,white,black,viewport):
 
 def main():
     wd = roslib.packages.get_pkg_dir('vros_display')
-    default_fname = os.path.join(wd,'vienna-morning.jpg')
+    default_fname = os.path.join(wd,'data','vienna-morning.jpg')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('fname',nargs='?',default=default_fname)
