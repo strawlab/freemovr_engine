@@ -278,7 +278,8 @@ if __name__ == "__main__":
     parser.add_argument(
         '--inlier-dir', type=str, default=None,
         help='path to directory containing Xe.dat, Re.dat, Ce.dat')
-    parser.add_argument('--parameter-server-properties', default=False, action='store_true',
+    parser.add_argument(
+        '--parameter-server-properties', default=False, action='store_true',
         help='get display server properties (height, width, etc) from the parameter server. '\
              'this means the display server does not need to be running.')
     parser.add_argument(
