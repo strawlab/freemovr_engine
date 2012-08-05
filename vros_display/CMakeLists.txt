@@ -89,14 +89,17 @@ IF(BUILD_VROS)
   TARGET_LINK_LIBRARIES(vros_display)
 
   # default stimulus plugins --------------------
-  rosbuild_add_library(stimulus_3d_demo src/stimulus_3d_demo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
   rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
 
-  rosbuild_add_library(stimulus_standby src/stimulus_standby.cpp)
-  TARGET_LINK_LIBRARIES(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/base64.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+
+  rosbuild_add_library(StimulusStandby src/StimulusStandby.cpp)
+  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
   rosbuild_add_library(Stimulus2DSprite src/Stimulus2DSprite.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
@@ -136,14 +139,17 @@ ELSE(BUILD_VROS)
   TARGET_LINK_LIBRARIES(vros_display)
 
   # default stimulus plugins --------------------
-  ADD_LIBRARY(stimulus_3d_demo SHARED src/stimulus_3d_demo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(stimulus_3d_demo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
-  ADD_LIBRARY(stimulus_2d_blit SHARED src/stimulus_2d_blit.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+  ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
-  ADD_LIBRARY(stimulus_standby SHARED src/stimulus_standby.cpp)
-  TARGET_LINK_LIBRARIES(stimulus_standby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/base64.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+
+  ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp)
+  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
   ADD_LIBRARY(Stimulus2DSprite SHARED src/Stimulus2DSprite.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
