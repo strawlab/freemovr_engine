@@ -6,7 +6,7 @@ import tf.transformations
 import numpy as np
 import argparse
 
-def send_pose(positionstr, verbose):
+def send_pose(positionstr, verbose, freq):
     if positionstr:
         try:
             position = map(float,positionstr.split(','))
@@ -39,7 +39,7 @@ def send_pose(positionstr, verbose):
             print msg
 
         pub.publish(msg)
-        rospy.sleep(0.01)
+        rospy.sleep(1.0/freq)
 
 if __name__ == '__main__':
     rospy.init_node('send_pose')
@@ -47,9 +47,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--xyz', type=str, help='comma separated position')
     parser.add_argument('--verbose', action='store_true', help='print message to command line')
+    parser.add_argument('--frequency', type=float, help='frequency to send pose (default: 100)', default=100)
    
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    send_pose(args.xyz, args.verbose)
+    send_pose(args.xyz, args.verbose, args.frequency)
 
