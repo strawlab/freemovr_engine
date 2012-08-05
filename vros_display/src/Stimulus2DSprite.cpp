@@ -31,15 +31,9 @@ Stimulus2DSprite() : anchor("center") {
 	pat = new osg::PositionAttitudeTransform;
 }
 
-virtual void post_init(std::string _config_data_dir) {
-
-	// just load a default image initially
-	Poco::Path config_data_dir = Poco::Path(_vros_display_base_path);
-
-    std::string fname = config_data_dir.append("data").append("cursor.png").absolute().toString();
-	std::cerr << __FILE__ << "(" << __LINE__ << "): loading image: " << fname << std::endl;
+virtual void post_init(void) {
+    std::string fname = get_plugin_data_path(std::string("cursor.png"));
     osg::ref_ptr<osg::Image> image = osgDB::readImageFile(fname);
-
 	_load_image(image);
 }
 

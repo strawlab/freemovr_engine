@@ -13,10 +13,14 @@ class StimulusInterface
   virtual ~StimulusInterface();
 
   // This is called when initializing the plugin to tell it where to find vros_display's data.
-  virtual void set_vros_display_base_path(std::string vros_display_base_path);
+  virtual void set_vros_display_base_path(std::string path);
 
-  // Initialization that requires access to configuration data directory goes here.
-  virtual void post_init(std::string config_data_dir) {};
+  // This is called when initializing the plugin to tell it its path
+  virtual void set_plugin_path(std::string path);
+
+  // Initialization. Called after the plugin path has been set. Plugins can call get_plugin_shader_dir
+  // and friends in here.
+  virtual void post_init(void) {};
 
   // An event fired when the display window is resized.
   virtual void resized(int width,int height) {}; 
@@ -45,6 +49,11 @@ class StimulusInterface
   virtual void receive_json_message(const std::string& topic_name, const std::string& json_message) = 0;
 
  protected:
+  std::string get_plugin_shader_path(std::string name);
+  std::string get_plugin_data_path(std::string name);
+  osg::Node* load_osg_file(std::string name);
+  void load_shader_source(osg::Shader* shader, std::string name);
+
   // your derived class can call this if you want to add a skybox
   virtual void add_skybox(osg::ref_ptr<osg::Group> top, std::string image_basepath, std::string image_extension);
   virtual void add_default_skybox(osg::ref_ptr<osg::Group> top);
@@ -52,6 +61,7 @@ class StimulusInterface
   osg::ref_ptr<osg::PositionAttitudeTransform> _skybox_pat;
 
   std::string _vros_display_base_path;
+  std::string _plugin_path;
 };
 
 #endif // StimulusInterface.h

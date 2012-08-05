@@ -92,8 +92,8 @@ IF(BUILD_VROS)
   rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
-  rosbuild_add_library(stimulus_2d_blit src/stimulus_2d_blit.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(stimulus_2d_blit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+  rosbuild_add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
   rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
