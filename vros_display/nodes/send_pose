@@ -4,31 +4,52 @@ import rospy
 from geometry_msgs.msg import Pose
 import tf.transformations
 import numpy as np
+import argparse
 
-def talker():
+def send_pose(positionstr, verbose):
+    if positionstr:
+        try:
+            position = map(float,positionstr.split(','))
+            assert len(position) == 3
+        except:
+            positionstr = None
+
     pub = rospy.Publisher('pose', Pose)
-    rospy.init_node('talker')
     while not rospy.is_shutdown():
         t = rospy.get_time()
-        x=0;z=0
-        x = 10*np.sin( t*2*np.pi/5.0 )
-        #y = 0.4*np.cos( t*2*np.pi/15.0 )
-        y = 0
-        z = 0.4*np.cos( t*2*np.pi/15.0 ) + 0.5
+
+        if not positionstr:
+            x = 10*np.sin( t*2*np.pi/5.0 )
+            #y = 0.4*np.cos( t*2*np.pi/15.0 )
+            y = 0
+            z = 0.4*np.cos( t*2*np.pi/15.0 ) + 0.5
+            position = [x,y,z]
+
         msg = Pose()
-        msg.position.x=x
-        msg.position.y=y
-        msg.position.z=z
+
+        for i in range(3):
+            setattr(msg.position,'xyz'[i], position[i])
 
         theta = (t*2*np.pi / 17.0) % (2*np.pi)
         quat = tf.transformations.quaternion_about_axis(  theta, (0,0,1) )
         for i in range(4):
             setattr(msg.orientation,'xyzw'[i], quat[i])
 
+        if verbose:
+            print msg
+
         pub.publish(msg)
         rospy.sleep(0.01)
 
 if __name__ == '__main__':
-    try:
-        talker()
-    except rospy.ROSInterruptException: pass
+    rospy.init_node('send_pose')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--xyz', type=str, help='comma separated position')
+    parser.add_argument('--verbose', action='store_true', help='print message to command line')
+   
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    send_pose(args.xyz, args.verbose)
+
