@@ -23,7 +23,7 @@ class StimulusInterface
   virtual void post_init(void) {};
 
   // An event fired when the display window is resized.
-  virtual void resized(int width,int height) {}; 
+  virtual void resized(int width,int height) {};
 
   // The plugin returns 3D part of scenegraph from this call.
   virtual osg::ref_ptr<osg::Group> get_3d_world() {return 0;}
