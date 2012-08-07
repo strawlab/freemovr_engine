@@ -523,7 +523,11 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
     DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
     _observer_geometry_pat = new osg::PositionAttitudeTransform;
-    _observer_geometry_pat->setDataVariance(osg::Object::DYNAMIC);
+    if (_tethered_mode) {
+        _observer_geometry_pat->setDataVariance(osg::Object::DYNAMIC);
+    } else {
+        _observer_geometry_pat->setPosition(osg::Vec3(0.0,0.0,0.0));
+    }
     root->addChild( _observer_geometry_pat );
 
 	// render cubemap onto geometry
@@ -866,7 +870,6 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
         // we let the observer move within the geometry
         _observer_pat->setAttitude(osg::Quat()); // do not rotate the cameras that project onto cubemap
         _observer_cb->setObserverPosition(observer_position); // update the shader that projects cubemap onto geometry
-        _observer_geometry_pat->setPosition(osg::Vec3(0.0,0.0,0.0)); // update the display rendering in various debug modes (e.g. overview mode)
     }
 
 	if (_current_stimulus != NULL) {
