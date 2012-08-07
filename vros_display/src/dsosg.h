@@ -58,6 +58,7 @@ namespace dsosg{
 
 		float getFrameRate();
 		void setCursorVisible(bool visible);
+		void setWindowName(std::string name);
 	private:
 		StimulusLoader _stimulus_loader;
 
