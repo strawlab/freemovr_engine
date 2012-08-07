@@ -302,6 +302,7 @@ cdef class MyNode:
     def handle_set_display_server_mode(self, request):
         with self._mode_lock:
             self._mode_change = request.mode
+        return vros_display.srv.SetDisplayServerModeResponse()
 
     def handle_return_to_standby(self,request):
         with self._mode_lock:
@@ -323,6 +324,7 @@ cdef class MyNode:
                                                 'plugin': plugin,
                                                 'topic_name': 'blit_images',
                                                 'msg_json': json_image})
+        return vros_display.srv.BlitCompressedImageResponse()
 
     def pose_callback(self, msg):
         # this is called in some callback thread by ROS

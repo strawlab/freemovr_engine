@@ -1,4 +1,5 @@
 import rospy
+import std_msgs.msg
 import vros_display.srv
 import vros_display.msg
 
@@ -58,7 +59,7 @@ class DisplayServerProxy(object):
         return self.get_display_info()['height']
 
     @staticmethod
-    def set_simulus_mode(self, mode):
+    def set_stimulus_mode(mode):
         publisher = rospy.Publisher('/stimulus_mode', std_msgs.msg.String, latch=True)
         publisher.publish(mode)
 
@@ -66,16 +67,16 @@ class DisplayServerProxy(object):
         return self._server_node_name+'/'+name
 
     def _spin_wait(self,mode):
-        done = False
-        first_mode = None
-        while not done:
-            response = self.get_display_server_mode_proxy()
-            if response.mode == mode:
-                done = True
-            elif mode=='rotate_forest' and response.mode == 'scene3d_metamode':
-                # backwards compatibility
-                done = True
-            time.sleep(0.02) # wait 20 msec
+        done = [False]
+        def cb(msg):
+            if msg.data==mode:
+                done[0] = True
+        sub = rospy.Subscriber( self.get_fullname('stimulus_mode'),
+                                std_msgs.msg.String, cb )
+        r = rospy.Rate(10.0)
+        while not done[0]:
+             r.sleep()
+        sub.unregister()
 
     def enter_standby_mode(self):
         response = self.get_display_server_mode_proxy()
@@ -192,5 +193,5 @@ class DisplayServerProxy(object):
         with open(path,'rb') as f:
             b = xmlrpclib.Binary(f.read())
             rospy.set_param(self._server_node_name+"/p2g", b)
-            
+
 
