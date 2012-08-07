@@ -105,9 +105,6 @@ class Cylinder(ModelBase):
 
         tc0 = range_0_2pi(angle)/(2*np.pi)
         tc1 = z0/self._height
-
-        print height,tc1
-
         result = np.vstack((tc0,tc1))
         return result.T
 
