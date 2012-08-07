@@ -381,6 +381,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	std::string default_lib_dir = default_plugin_path.toString();
 
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DDemo");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DShaderDemo");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DBlit");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusStandby");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DSprite");

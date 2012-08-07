@@ -92,6 +92,9 @@ IF(BUILD_VROS)
   rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
+  rosbuild_add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
   rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
 
@@ -138,6 +141,9 @@ ELSE(BUILD_VROS)
   # default stimulus plugins --------------------
   ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+
+  ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
 
   ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
