@@ -2,7 +2,6 @@
 #ifndef StimulusInterface_INCLUDED
 #define StimulusInterface_INCLUDED
 
-#include <iostream>
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
 
