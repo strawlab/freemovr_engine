@@ -59,18 +59,28 @@ std::string StimulusInterface::get_plugin_data_path(std::string name)
     return path.absolute().toString();
 }
 
-osg::Node* StimulusInterface::load_osg_file(std::string name)
+osg::Node* StimulusInterface::load_osg_file(std::string name, bool throw_on_failure)
 {
     // FIXME: We should do this (and load_shader_source) using the osgDB resource
     //        framework. When set_xxx_path is called, add the appropriate subdirs
     //        (data and src/shaders) to the osgDB, and then query them here
     Poco::Path path(get_plugin_data_path(name));
-    if (!Poco::File(path).exists()) {
+    if (throw_on_failure) {
+      if (!Poco::File(path).exists()) {
         std::ostringstream os;
         os << "Could not load OSG file, does not exist " << path.toString();
         throw std::runtime_error(os.str());
+      }
     }
-    return osgDB::readNodeFile(path.absolute().toString());
+    osg::Node* result = osgDB::readNodeFile(path.absolute().toString());
+    if (throw_on_failure) {
+      if (result==NULL) {
+        std::ostringstream os;
+        os << "Could not load OSG file, exists but failed " << path.toString();
+        throw std::runtime_error(os.str());
+      }
+    }
+    return result;
 }
 void StimulusInterface::load_shader_source(osg::Shader* shader, std::string name)
 {

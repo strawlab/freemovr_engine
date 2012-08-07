@@ -51,7 +51,7 @@ class StimulusInterface
  protected:
   std::string get_plugin_shader_path(std::string name);
   std::string get_plugin_data_path(std::string name);
-  osg::Node* load_osg_file(std::string name);
+  osg::Node* load_osg_file(std::string name, bool throw_on_failure=true);
   void load_shader_source(osg::Shader* shader, std::string name);
 
   // your derived class can call this if you want to add a skybox
