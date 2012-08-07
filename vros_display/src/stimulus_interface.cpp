@@ -122,7 +122,7 @@ void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
 }
 
 osg::Vec4 StimulusInterface::get_clear_color() const {
-  return osg::Vec4(0.0, 0.0, 0.0, 0.0); // default to transparent black
+  return osg::Vec4(1.0, 1.0, 0.0, 1.0); // default to yellow
 }
 
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
