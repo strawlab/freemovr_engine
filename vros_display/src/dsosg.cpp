@@ -355,7 +355,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
 		  _mode==std::string("virtual_world") || _mode==std::string("overview") ||
-		  _mode==std::string("geometry_texture"))) {
+		  _mode==std::string("geometry") ||
+          _mode==std::string("geometry_texture"))) {
 		throw std::invalid_argument("unknown mode");
 	}
 
@@ -487,7 +488,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     _observer_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
     _observer_pat->setAttitude(osg::Quat(osg::inDegrees(0.0f),osg::Vec3(0.0f,0.0f,1.0f)));
     _observer_pat->setDataVariance(osg::Object::DYNAMIC);
-    if (_mode==std::string("overview") || _mode==std::string("virtual_world")) {
+    if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
+        _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
 			// draw a small red sphere as the observer
 			osg::Geode* geode_1 = new osg::Geode;
@@ -530,7 +532,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 																		  _observer_cb,
 																		  geometry_parameters);
 	root->addChild(pctcp->get_top().get());
-	if (_mode==std::string("overview")) {
+	if (_mode==std::string("overview")||_mode==std::string("geometry")) {
         // XXX should make the geometry itself move in tethered mode?
 		_observer_geometry_pat->addChild( pctcp->get_textured_geometry() );
 	}
@@ -775,6 +777,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	traits->height = height;
 
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
+        _mode==std::string("geometry") ||
 		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
 
         if (1) {
@@ -799,7 +802,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
             _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
         }
 
-        if (_mode==std::string("overview") || _mode==std::string("virtual_world")) {
+        if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
+            _mode==std::string("geometry")) {
             _cameraManipulator = new osgGA::TrackballManipulator();
             _cameraManipulator->setAutoComputeHomePosition(true);
             _viewer->setCameraManipulator(_cameraManipulator);
