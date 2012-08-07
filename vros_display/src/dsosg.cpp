@@ -35,7 +35,6 @@
 #include <stdio.h>
 #include <stdexcept>
 
-#include "Poco/Manifest.h"
 #include "Poco/Exception.h"
 #include "Poco/Path.h"
 #include "Poco/File.h"
@@ -53,7 +52,6 @@
 //    Front face culling for dome projection:
 //        http://www.mail-archive.com/osg-users@openscenegraph.net/msg01256.html
 
-typedef Poco::Manifest<StimulusInterface> StimulusManifest;
 
 namespace dsosg
 {
@@ -382,9 +380,10 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     default_plugin_path.pushDirectory("lib");
 	std::string default_lib_dir = default_plugin_path.toString();
 
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_3d_demo");
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_2d_blit");
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_standby");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DDemo");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DShaderDemo");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DBlit");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusStandby");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DSprite");
 
 	if (!Poco::File(_config_file_path).exists()) {
@@ -417,9 +416,9 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	{
 		// load the shared library for each plugin path
 		for (unsigned int i=0; i<stimulus_plugin_paths.size(); i++) {
+            std::string plugin_name = stimulus_plugin_names.at(i);
             Poco::Path path_parent(stimulus_plugin_paths.at(i));
-            Poco::Path path_leaf(
-                        "lib" + stimulus_plugin_names.at(i) + Poco::SharedLibrary::suffix()); // append .dll or .so
+            Poco::Path path_leaf("lib" + plugin_name + Poco::SharedLibrary::suffix()); // append .dll or .so
 
             Poco::Path path_lib = path_parent;
             path_lib.append(path_leaf);
@@ -431,43 +430,39 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 				    _stimulus_loader.loadLibrary(lib_name);
 			    }
 			    catch (Poco::Exception& exc) {
-				    std::cerr << exc.displayText() << std::endl;
-				    exc.rethrow();
+				    std::cerr << "ERROR loading library: " << exc.displayText() << std::endl;
+				    throw;
 			    }
+
+                try {
+                    _stimulus_plugins[ plugin_name ] = _stimulus_loader.create(plugin_name);
+                } catch (...) {
+                    std::cerr << "ERROR creating plugin: " << plugin_name << std::endl;
+                    throw;
+                }
+
+				_stimulus_plugins[ plugin_name ]->set_vros_display_base_path(_vros_display_basepath.toString());
+				_stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
+
+                try {
+                    _stimulus_plugins[ plugin_name ]->post_init();
+                } catch (...) {
+                    std::cerr << "ERROR while calling post_init() on plugin: " << plugin_name << std::endl;
+                    throw;
+                }
+
+                // ensure we always have a current stimulus
+				if (_current_stimulus == NULL) {
+					_current_stimulus = _stimulus_plugins[ plugin_name ];
+				}
+
             } else {
-                std::cerr << "missing stimulus: " << lib_name << std::endl;
+                std::cerr << "ERROR missing stimulus plugin: " << lib_name << std::endl;
             }
 		}
 	}
 
-	{
-        std::cout << "Now loading plugins. If you get seg faults at this point, make sure " << \
-            "your plugins are compiled against the latest stimulus_interface.h" << std::endl;
-        // XXX Should implement some kind of version checking to prevent such seg faults...
-
-		// iterate over each library's plugins
-		StimulusLoader::Iterator it(_stimulus_loader.begin());
-		StimulusLoader::Iterator end(_stimulus_loader.end());
-		for (; it != end; ++it) {
-			StimulusManifest::Iterator itMan(it->second->begin());
-			StimulusManifest::Iterator endMan(it->second->end());
-			for (; itMan != endMan; ++itMan) {
-				assert( _stimulus_plugins.count( itMan->name() ) == 0);
-				_stimulus_plugins[ itMan->name() ] = itMan->create();
-				_stimulus_plugins[ itMan->name() ]->set_vros_display_base_path(_vros_display_basepath.toString());
-                try {
-                    _stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
-                } catch (...) {
-                    std::cerr << "ERROR while calling post_init() on plugin " << itMan->name() << ": " << std::endl;
-                    throw; // Cython converts the C++ exception to Python.
-                }
-				if (_current_stimulus == NULL) {
-					_current_stimulus = _stimulus_plugins[ itMan->name() ];
-				}
-			}
-		}
-	}
-
+    // but default the current stimulus to the 3D one
 	if (_stimulus_plugins.count("Stimulus3DDemo")) {
 		// default is demo (only if present)
 		_current_stimulus = _stimulus_plugins["Stimulus3DDemo"];

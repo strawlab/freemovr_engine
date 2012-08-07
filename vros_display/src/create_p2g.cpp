@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     viewer->setUpViewInWindow( 32, 32, 1024, 768 );
 
     std::string _shader_dir = "shaders";
-    std::string config_data_dir = "../sample_data";
+    std::string config_data_dir = "../config";
 
     osg::Group* root = new osg::Group;
 

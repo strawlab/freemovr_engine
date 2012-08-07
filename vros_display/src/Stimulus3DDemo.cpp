@@ -27,8 +27,8 @@ std::string name() const {
 	return "Stimulus3DDemo";
 }
 
-virtual void post_init(std::string config_data_dir) {
-	_virtual_world = create_virtual_world();//_vros_display_base_path);
+virtual void post_init(void) {
+	_virtual_world = create_virtual_world();
 }
 
 void resized(int width,int height) {

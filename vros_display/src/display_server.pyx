@@ -234,10 +234,10 @@ cdef class MyNode:
                 f.write(json.dumps(config_dict))
         else:
             rospy.loginfo("using default config")
-            config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'sample_data','config.json')
+            config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'config','config.json')
             config_dict = json.load(open(config_file,'r'))
 
-        rospy.loginfo("wrote config_file to %s" % config_file)
+        rospy.loginfo("config_file = %s" % config_file)
 
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo('tethered_mode: %s'%tethered_mode)

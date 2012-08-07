@@ -75,10 +75,13 @@ void create_HUD_group(unsigned int width, unsigned int height, osg::Texture* tex
 
 }
 
-virtual void post_init(std::string config_data_dir) {
+virtual void post_init(void) {
     // TODO: show with 1:1 pixel scaling.
 
-    std::string fname = config_data_dir + std::string("/brightday1_cubemap/posz.png");
+    std::string fname = get_plugin_data_path(std::string("vienna-morning.jpg"));
+
+	std::cerr << "2Dblit------- " << fname << "\n";
+
     osg::ref_ptr<osg::Image> image = osgDB::readImageFile(fname);
     osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);

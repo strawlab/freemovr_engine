@@ -41,8 +41,64 @@ StimulusInterface::~StimulusInterface()
 {
 }
 
-void StimulusInterface::set_vros_display_base_path(std::string bp) {
-  _vros_display_base_path = bp;
+std::string StimulusInterface::get_plugin_shader_path(std::string name)
+{
+    Poco::Path path(_plugin_path);
+    path.makeDirectory();
+    path.popDirectory();
+    path.append("src").append("shaders").append(name);
+    return path.absolute().toString();
+}
+
+std::string StimulusInterface::get_plugin_data_path(std::string name)
+{
+    Poco::Path path(_plugin_path);
+    path.makeDirectory();
+    path.popDirectory();
+    path.append("data").append(name);
+    return path.absolute().toString();
+}
+
+osg::Node* StimulusInterface::load_osg_file(std::string name, bool throw_on_failure)
+{
+    // FIXME: We should do this (and load_shader_source) using the osgDB resource
+    //        framework. When set_xxx_path is called, add the appropriate subdirs
+    //        (data and src/shaders) to the osgDB, and then query them here
+    Poco::Path path(get_plugin_data_path(name));
+    if (throw_on_failure) {
+      if (!Poco::File(path).exists()) {
+        std::ostringstream os;
+        os << "Could not load OSG file, does not exist " << path.toString();
+        throw std::runtime_error(os.str());
+      }
+    }
+    osg::Node* result = osgDB::readNodeFile(path.absolute().toString());
+    if (throw_on_failure) {
+      if (result==NULL) {
+        std::ostringstream os;
+        os << "Could not load OSG file, exists but failed " << path.toString();
+        throw std::runtime_error(os.str());
+      }
+    }
+    return result;
+}
+void StimulusInterface::load_shader_source(osg::Shader* shader, std::string name)
+{
+    Poco::Path path(get_plugin_shader_path(name));
+    if (!Poco::File(path).exists()) {
+        std::ostringstream os;
+        os << "Could not load shader file, does not exist " << path.toString();
+        throw std::runtime_error(os.str());
+    }
+    shader->loadShaderSourceFromFile(path.absolute().toString());
+}
+
+void StimulusInterface::set_vros_display_base_path(std::string path) {
+  _vros_display_base_path = path;
+}
+
+void StimulusInterface::set_plugin_path(std::string path) {
+  _plugin_path = path;
 }
 
 void StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
@@ -56,7 +112,7 @@ void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
   Poco::Path base_path(_vros_display_base_path);
 
   base_path.makeDirectory();
-  base_path.pushDirectory("sample_data");
+  base_path.pushDirectory("data");
   base_path.pushDirectory("Pond");
 
   std::string basepath = base_path.toString();
@@ -132,9 +188,9 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ShowCubemapProgram->addShader( ShowCubemapFragObj );
 		  ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-		  std::string shader_dir = join_path( _vros_display_base_path, "src/shaders" );
-		  LoadShaderSource( ShowCubemapVertObj, join_path(shader_dir,"skybox.vert" ));
-		  LoadShaderSource( ShowCubemapFragObj, join_path(shader_dir, "skybox.frag" ));
+          Poco::Path shader_path = Poco::Path(_vros_display_base_path).append("src").append("shaders");
+          ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.vert").toString());
+          ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.frag").toString());
 
 		  osg::Uniform* skymapSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "skybox" );
 
