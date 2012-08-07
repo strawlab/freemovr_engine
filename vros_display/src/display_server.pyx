@@ -159,9 +159,13 @@ def _get_verts_from_viewport(viewport):
 cdef class MyNode:
     cdef DSOSG* dsosg
     cdef object _commands
+    cdef object _commands_lock
     cdef object _current_subscribers
     cdef object _pose_lock
+    cdef object _mode_lock
+    cdef object _mode_change
     cdef object _pub_fps
+    cdef object _pub_mode
     cdef Vec3* pose_position
     cdef Quat* pose_orientation
     cdef object subscription_mode
@@ -170,10 +174,14 @@ cdef class MyNode:
     def __init__(self,ros_package_name):
         self._current_subscribers = []
         self._commands = Queue.Queue()
+        self._commands_lock = threading.Lock()
         self._pose_lock = threading.Lock()
+        self._mode_lock = threading.Lock()
         with self._pose_lock:
             self.pose_position = new Vec3(0,0,0)
             self.pose_orientation = new Quat(0,0,0,1)
+        with self._mode_lock:
+            self._mode_change = None
 
         self.subscription_mode = 'always'
 
@@ -244,6 +252,7 @@ cdef class MyNode:
                                tethered_mode,
                                )
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
+        rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
         display_window_name = rospy.get_name();
         display_json_str = json.dumps(config_dict['display'])
@@ -252,9 +261,6 @@ cdef class MyNode:
         rospy.Service('~get_display_info',
                       vros_display.srv.GetDisplayInfo,
                       self.handle_get_display_info)
-        rospy.Service('~get_display_server_mode',
-                      vros_display.srv.GetDisplayServerMode,
-                      self.handle_get_display_server_mode)
         rospy.Service('~set_display_server_mode',
                       vros_display.srv.SetDisplayServerMode,
                       self.handle_set_display_server_mode)
@@ -265,6 +271,7 @@ cdef class MyNode:
                       vros_display.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
+        self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
 
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
@@ -273,15 +280,11 @@ cdef class MyNode:
             if self.subscription_mode == 'always':
                 self.register_subscribers(name)
 
-        self._switch_to_stimulus_plugin('Stimulus3DDemo') # default stimulus
-        self.throttle = args.throttle
+        #next iteration of render loop change to default mode
+        with self._mode_lock:
+            self._mode_change = 'Stimulus3DDemo'
 
-    def handle_get_display_server_mode(self,request):
-        # this is called in some callback thread by ROS
-        plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
-        response = vros_display.srv.GetDisplayServerModeResponse()
-        response.mode = plugin
-        return response
+        self.throttle = args.throttle
 
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS
@@ -296,49 +299,30 @@ cdef class MyNode:
         response.info_json = json.dumps(result)
         return response
 
-    def handle_set_display_server_mode(self,request):
-        # this is called in some callback thread by ROS
-        request_mode = request.mode
-
-        plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
-        if plugin == request_mode:
-            return vros_display.srv.SetDisplayServerModeResponse()
-
-        # We're in a different thread than main draw loop, so put command into queue.
-        self.call_pseudo_synchronous( cmd_dict={'command':'enter stimulus plugin',
-                                                'name': request_mode},
-                                      )
-        plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
-
-        if plugin == request_mode:
-            return vros_display.srv.SetDisplayServerModeResponse()
-        else:
-            raise RuntimeError("Did not switch to requested mode %s."%(request_mode,))
+    def handle_set_display_server_mode(self, request):
+        with self._mode_lock:
+            self._mode_change = request.mode
 
     def handle_return_to_standby(self,request):
-        # this is called in some callback thread by ROS
-        warnings.warn( 'call to ROS service ~return_to_standby made', DeprecationWarning )
-        new_request = vros_display.srv.SetDisplayServerMode()
-        new_request.mode = 'StimulusStandby'
-        self.handle_set_display_server_mode(new_request)
-        return vros_display.srv.ReturnToStandbyResponse()
+        with self._mode_lock:
+            self._mode_change = 'StimulusStandby'
 
     def handle_blit_compressed_image(self,request):
         # this is called in some callback thread by ROS
         plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
-        assert plugin == b'Stimulus2DBlit'
+
+        #change to image blit mode
+        with self._mode_lock:
+            self._mode_change = 'Stimulus2DBlit'
 
         # put on command queue for main thread.
         image = request.image
         json_image = rosmsg2json.rosmsg2json(image)
-        self.call_pseudo_synchronous( cmd_dict={'command':'send plugin message',
+        with self._commands_lock:
+            self._commands.put({'command':'send plugin message',
                                                 'plugin': plugin,
                                                 'topic_name': 'blit_images',
-                                                'msg_json': json_image},
-                                      lock=False,
-                                      )
-
-        return vros_display.srv.BlitCompressedImageResponse()
+                                                'msg_json': json_image})
 
     def pose_callback(self, msg):
         # this is called in some callback thread by ROS
@@ -355,33 +339,9 @@ cdef class MyNode:
             self.pose_position = new_position
             self.pose_orientation = new_orientation
 
-    def call_pseudo_synchronous(self, cmd_dict=None,lock=True):
-        if lock:
-            condition = threading.Condition()
-        else:
-            condition = None
-        self._commands.put( (condition,cmd_dict) )
-        if lock:
-            with condition: # acquire lock
-                condition.wait() # release the lock, wait for notify(), and re-acquire the lock
-
-    def _switch_to_stimulus_plugin(self,name):
-
-        # This is done in the main thread between frame drawing.
-
-        if self.subscription_mode == 'current_only':
-
-            # tear down old topic name listeners
-            while len(self._current_subscribers):
-                sub = self._current_subscribers.pop()
-                sub.unregister()
-
-        # activate plugin
-        self.dsosg.set_stimulus_plugin(std_string(name))
-
-        if self.subscription_mode == 'current_only':
-            plugin = self.dsosg.get_current_stimulus_plugin_name()
-            self.register_subscribers(plugin.c_str())
+    def mode_callback(self, msg):
+        with self._mode_lock:
+            self._mode_change = msg.data
 
     def register_subscribers(self, plugin):
         # establish new topic name listeners
@@ -390,26 +350,24 @@ cdef class MyNode:
 
         for tn in new_topic_names:
             msg_type = self.dsosg.stimulus_get_message_type(std_string(plugin),std_string(tn))
-            self._create_subscriber( plugin, tn, msg_type.c_str() )
+            self.create_subscriber( plugin, tn, msg_type.c_str() )
 
-    def _stimulus_plugin_callback(self, msg, callback_args):
+    def stimulus_plugin_callback(self, msg, callback_args):
         # This is called in some callback thread by ROS. After
         # conversion to JSON string, put on command queue for main thread.
         plugin,topic_name = callback_args
         msg_json = rosmsg2json.rosmsg2json(msg)
 
-        self.call_pseudo_synchronous( cmd_dict={'command':'send plugin message',
+        with self._commands_lock:
+            self._commands.put({'command':'send plugin message',
                                                 'plugin': plugin,
                                                 'topic_name': topic_name,
-                                                'msg_json': msg_json},
-                                      lock=False,
-                                      )
+                                                'msg_json': msg_json})
 
-
-    def _create_subscriber(self, plugin, topic_name, message_type_name ):
+    def create_subscriber(self, plugin, topic_name, message_type_name ):
         message_type = _import_message_name( message_type_name )
         sub = rospy.Subscriber(topic_name, message_type,
-                               callback=self._stimulus_plugin_callback, callback_args=(plugin,topic_name))
+                               callback=self.stimulus_plugin_callback, callback_args=(plugin,topic_name))
         self._current_subscribers.append(sub)
 
     def run(self):
@@ -422,27 +380,37 @@ cdef class MyNode:
         do_shutdown = 0
         last = rospy.get_time()
         while not rospy.is_shutdown():
-            try:
-                while 1:
-                    cmd = self._commands.get_nowait()
-                    (condition, cmd_dict) = cmd
-                    if condition is not None:
-                        with condition: # acquire lock
-                            if cmd_dict['command'] == 'enter stimulus plugin':
-                                name = cmd_dict['name']
-                                self._switch_to_stimulus_plugin(name)
-                                condition.notifyAll()
-                            else:
-                                raise ValueError('did not understand command "%s"'%cmd_dict['command'])
-                    else:
-                        if cmd_dict['command'] == 'send plugin message':
-                            self.dsosg.stimulus_receive_json_message(std_string(cmd_dict['plugin']),
-                                                                  std_string(cmd_dict['topic_name']),
-                                                                  std_string(cmd_dict['msg_json']))
-                        else:
-                            raise ValueError('did not understand command "%s"'%cmd_dict['command'])
-            except Queue.Empty:
-                pass
+            with self._commands_lock:
+                while True:
+                    try:
+                        cmd_dict = self._commands.get_nowait()
+                    except Queue.Empty:
+                        break
+
+                    self.dsosg.stimulus_receive_json_message(std_string(cmd_dict['plugin']),
+                                                          std_string(cmd_dict['topic_name']),
+                                                          std_string(cmd_dict['msg_json']))
+
+            with self._mode_lock:
+                if self._mode_change:
+                    if self.subscription_mode == 'current_only':
+                        # tear down old topic name listeners
+                        while len(self._current_subscribers):
+                            sub = self._current_subscribers.pop()
+                            sub.unregister()
+
+                    # activate plugin
+                    self.dsosg.set_stimulus_plugin(std_string(self._mode_change))
+
+                    if self.subscription_mode == 'current_only':
+                        plugin = self.dsosg.get_current_stimulus_plugin_name()
+                        self.register_subscribers(plugin.c_str())
+
+                    #publish the mode change
+                    self._pub_mode.publish(self._mode_change)
+
+                    self._mode_change = None
+
 
             with self._pose_lock:
                 now = rospy.get_time()

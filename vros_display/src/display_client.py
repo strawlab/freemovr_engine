@@ -57,6 +57,11 @@ class DisplayServerProxy(object):
     def height(self):
         return self.get_display_info()['height']
 
+    @staticmethod
+    def set_simulus_mode(self, mode):
+        publisher = rospy.Publisher('/stimulus_mode', std_msgs.msg.String, latch=True)
+        publisher.publish(mode)
+
     def get_fullname(self,name):
         return self._server_node_name+'/'+name
 
