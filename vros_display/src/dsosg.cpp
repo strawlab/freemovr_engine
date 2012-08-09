@@ -531,7 +531,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     root->addChild( _observer_geometry_pat );
 
 	// render cubemap onto geometry
-	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(shader_dir,
+	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_vros_display_basepath.toString(),
 																		  _cubemap_maker->get_cubemap(),
 																		  _observer_cb,
 																		  geometry_parameters);

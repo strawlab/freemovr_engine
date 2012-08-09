@@ -9,10 +9,11 @@
 #include <osg/Texture2D>
 
 #include "display_screen_geometry.h"
+#include "vros_display/ResourceLoader.h"
 
-class ProjectCubemapToGeometryPass {
+class ProjectCubemapToGeometryPass: protected ResourceLoader {
 public:
-	ProjectCubemapToGeometryPass(std::string shader_dir,
+	ProjectCubemapToGeometryPass(std::string vros_display_basepath,
 								 osg::TextureCubeMap* texture,
 								 osg::Uniform::Callback* observer_position_cb,
 								 DisplaySurfaceGeometry* geometry_parameters,
