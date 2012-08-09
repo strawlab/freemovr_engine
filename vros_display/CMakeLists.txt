@@ -30,6 +30,7 @@ SET(EXR_LIBS ${OPENEXR_LIBRARIES})
 
 SET(DS_SOURCES
   src/dsosg.cpp
+  src/ResourceLoader.cpp
   src/ProjectCubemapToGeometryPass.cpp
   src/display_screen_geometry.cpp
   src/util.cpp
@@ -85,8 +86,8 @@ IF(BUILD_VROS)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
 
   # the vros_display library (for building stimulus plugins) --------------------
-  rosbuild_add_library(vros_display src/stimulus_interface.cpp)
-  TARGET_LINK_LIBRARIES(vros_display)
+  rosbuild_add_library(vros_display src/ResourceLoader.cpp src/stimulus_interface.cpp)
+  TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
   rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
@@ -135,8 +136,8 @@ ELSE(BUILD_VROS)
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
   # the vros_display library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(vros_display src/stimulus_interface.cpp)
-  TARGET_LINK_LIBRARIES(vros_display)
+  ADD_LIBRARY(vros_display src/ResourceLoader.cpp src/stimulus_interface.cpp)
+  TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
   ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
