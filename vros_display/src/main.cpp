@@ -10,6 +10,8 @@
 
 #include "dsosg.h"
 
+#include <iostream>
+
 int main(int argc, char**argv) {
   dsosg::DSOSG *dsosg;
   Poco::Timestamp time;
@@ -27,7 +29,7 @@ int main(int argc, char**argv) {
       exit(0);
   }
 
-  std::string config_filename = "~/vros-devel/vros/vros_display/sample_data/config.json";
+  std::string config_filename = "~/vros-devel/vros/vros_display/config/config.json";
   while(arguments.read("--config", config_filename));
 
   std::string display_mode = "vr_display";

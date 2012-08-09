@@ -30,12 +30,9 @@
 
 #include <osgViewer/ViewerEventHandlers>
 
-#include <assert.h>
-
 #include <stdio.h>
 #include <stdexcept>
 
-#include "Poco/Manifest.h"
 #include "Poco/Exception.h"
 #include "Poco/Path.h"
 #include "Poco/File.h"
@@ -49,11 +46,11 @@
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
 
+#include "vros_display/vros_assert.h"
+
 // Notes:
 //    Front face culling for dome projection:
 //        http://www.mail-archive.com/osg-users@openscenegraph.net/msg01256.html
-
-typedef Poco::Manifest<StimulusInterface> StimulusManifest;
 
 namespace dsosg
 {
@@ -259,7 +256,7 @@ public:
         osg::Camera* camera = Cameras.at(i);
         camera->setClearColor(color);
     }
-      
+
   }
   osg::Node* get_node() {
     return _top.get();
@@ -334,11 +331,12 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 
 // constructor
 DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius,
-             std::string config_fname, bool two_pass, bool show_geom_coords) : 
+             std::string config_fname, bool two_pass, bool show_geom_coords,
+             bool tethered_mode) :
     _current_stimulus(NULL), _mode(mode),
     _vros_display_basepath(vros_display_basepath),
     _config_file_path(config_fname),
-    _tethered_mode(true)
+    _tethered_mode(tethered_mode)
 {
     json_error_t json_error;
     json_t *json_config, *json_stimulus, *json_geom;
@@ -346,7 +344,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     // ensure we interpret this as a directory (ensure trailing slash)
     _vros_display_basepath.makeAbsolute(); _vros_display_basepath.makeDirectory();
     // ensure we interpret this as a file
-    _config_file_path.makeAbsolute(); _config_file_path.makeFile(); 
+    _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
     Poco::Path shader_path = _vros_display_basepath;
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
@@ -356,7 +354,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
 		  _mode==std::string("virtual_world") || _mode==std::string("overview") ||
-		  _mode==std::string("geometry_texture"))) {
+		  _mode==std::string("geometry") ||
+          _mode==std::string("geometry_texture"))) {
 		throw std::invalid_argument("unknown mode");
 	}
 
@@ -381,9 +380,10 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     default_plugin_path.pushDirectory("lib");
 	std::string default_lib_dir = default_plugin_path.toString();
 
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_3d_demo");
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_2d_blit");
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("stimulus_standby");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DDemo");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DShaderDemo");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DBlit");
+	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusStandby");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DSprite");
 
 	if (!Poco::File(_config_file_path).exists()) {
@@ -416,9 +416,9 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	{
 		// load the shared library for each plugin path
 		for (unsigned int i=0; i<stimulus_plugin_paths.size(); i++) {
+            std::string plugin_name = stimulus_plugin_names.at(i);
             Poco::Path path_parent(stimulus_plugin_paths.at(i));
-            Poco::Path path_leaf(
-                        "lib" + stimulus_plugin_names.at(i) + Poco::SharedLibrary::suffix()); // append .dll or .so
+            Poco::Path path_leaf("lib" + plugin_name + Poco::SharedLibrary::suffix()); // append .dll or .so
 
             Poco::Path path_lib = path_parent;
             path_lib.append(path_leaf);
@@ -430,49 +430,45 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 				    _stimulus_loader.loadLibrary(lib_name);
 			    }
 			    catch (Poco::Exception& exc) {
-				    std::cerr << exc.displayText() << std::endl;
-				    exc.rethrow();
+				    std::cerr << "ERROR loading library: " << exc.displayText() << std::endl;
+				    throw;
 			    }
+
+                try {
+                    _stimulus_plugins[ plugin_name ] = _stimulus_loader.create(plugin_name);
+                } catch (...) {
+                    std::cerr << "ERROR creating plugin: " << plugin_name << std::endl;
+                    throw;
+                }
+
+				_stimulus_plugins[ plugin_name ]->set_vros_display_base_path(_vros_display_basepath.toString());
+				_stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
+
+                try {
+                    _stimulus_plugins[ plugin_name ]->post_init();
+                } catch (...) {
+                    std::cerr << "ERROR while calling post_init() on plugin: " << plugin_name << std::endl;
+                    throw;
+                }
+
+                // ensure we always have a current stimulus
+				if (_current_stimulus == NULL) {
+					_current_stimulus = _stimulus_plugins[ plugin_name ];
+				}
+
             } else {
-                std::cerr << "missing stimulus: " << lib_name << std::endl;
+                std::cerr << "ERROR missing stimulus plugin: " << lib_name << std::endl;
             }
 		}
 	}
 
-	{
-        std::cout << "Now loading plugins. If you get seg faults at this point, make sure " << \
-            "your plugins are compiled against the latest stimulus_interface.h" << std::endl;
-        // XXX Should implement some kind of version checking to prevent such seg faults...
-
-		// iterate over each library's plugins
-		StimulusLoader::Iterator it(_stimulus_loader.begin());
-		StimulusLoader::Iterator end(_stimulus_loader.end());
-		for (; it != end; ++it) {
-			StimulusManifest::Iterator itMan(it->second->begin());
-			StimulusManifest::Iterator endMan(it->second->end());
-			for (; itMan != endMan; ++itMan) {
-				assert( _stimulus_plugins.count( itMan->name() ) == 0);
-				_stimulus_plugins[ itMan->name() ] = itMan->create();
-				_stimulus_plugins[ itMan->name() ]->set_vros_display_base_path(_vros_display_basepath.toString());
-                try {
-                    _stimulus_plugins[ itMan->name() ]->post_init(config_data_dir);
-                } catch (...) {
-                    std::cerr << "ERROR: while calling post_init() on plugin " << itMan->name() << std::endl;
-                    throw std::runtime_error("error while calling post_init()");
-                }
-				if (_current_stimulus == NULL) {
-					_current_stimulus = _stimulus_plugins[ itMan->name() ];
-				}
-			}
-		}
-	}
-
+    // but default the current stimulus to the 3D one
 	if (_stimulus_plugins.count("Stimulus3DDemo")) {
 		// default is demo (only if present)
 		_current_stimulus = _stimulus_plugins["Stimulus3DDemo"];
 	}
 
-	assert(_current_stimulus != NULL);
+	vros_assert(_current_stimulus != NULL);
 	std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
 	_active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
@@ -491,7 +487,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     _observer_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
     _observer_pat->setAttitude(osg::Quat(osg::inDegrees(0.0f),osg::Vec3(0.0f,0.0f,1.0f)));
     _observer_pat->setDataVariance(osg::Object::DYNAMIC);
-    if (_mode==std::string("overview") || _mode==std::string("virtual_world")) {
+    if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
+        _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
 			// draw a small red sphere as the observer
 			osg::Geode* geode_1 = new osg::Geode;
@@ -525,19 +522,34 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
     DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
     _observer_geometry_pat = new osg::PositionAttitudeTransform;
-    _observer_geometry_pat->setDataVariance(osg::Object::DYNAMIC);
+    _observer_geometry_pat->addDescription("_observer_geometry_pat");
+    if (_tethered_mode) {
+        _observer_geometry_pat->setDataVariance(osg::Object::DYNAMIC);
+    } else {
+        _observer_geometry_pat->setPosition(osg::Vec3(0.0,0.0,0.0));
+    }
     root->addChild( _observer_geometry_pat );
 
 	// render cubemap onto geometry
-	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(shader_dir,
+	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_vros_display_basepath.toString(),
 																		  _cubemap_maker->get_cubemap(),
 																		  _observer_cb,
 																		  geometry_parameters);
 	root->addChild(pctcp->get_top().get());
-	if (_mode==std::string("overview")) {
+	if (_mode==std::string("overview")||_mode==std::string("geometry")) {
         // XXX should make the geometry itself move in tethered mode?
 		_observer_geometry_pat->addChild( pctcp->get_textured_geometry() );
 	}
+
+    if (_mode==std::string("geometry_texture")) {
+        osg::Texture2D* geomtex = pctcp->get_output_texture();
+        osg::Group* g = make_textured_quad(geomtex,
+                                           -1.0,
+                                           1.0,
+                                           1.0,
+                                           0, 0, 1.0, 1.0);
+        debug_hud_cam->addChild(g);
+    }
 
 	if (two_pass) {
 		CameraModel* cam1_params = make_real_camera_parameters();
@@ -547,18 +559,6 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 			//g = geometry_parameters->make_texcoord_group(shader_dir);
 		} else {
 			g = pctcp->get_textured_geometry();
-		}
-
-		if (_mode==std::string("geometry_texture")) {
-            osg::Texture2D* geomtex = pctcp->get_output_texture();
-
-			osg::Group* g = make_textured_quad(geomtex,
-											   -1.0,
-											   1.0,
-											   1.0,
-											   0, 0, 1.0, 1.0);
-			debug_hud_cam->addChild(g);
-
 		}
 
 		TexturedGeometryToCameraImagePass *tg2ci=new TexturedGeometryToCameraImagePass(g,
@@ -637,12 +637,12 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
 	}
 
-
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
     _viewer->setLightingMode(osg::View::NO_LIGHT);
     _viewer->getViewerStats()->collectStats("frame_rate",true);
 
+    //osgDB::writeNodeFile(*(root.get()), _mode + std::string(".osg"));
 }
 
 std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
@@ -656,7 +656,7 @@ std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
 
 void DSOSG::set_stimulus_plugin(const std::string& name) {
 	std::cout << "setting stimulus plugin: " << name << std::endl;
-	assert( _stimulus_plugins.count(name) == 1);
+	vros_assert( _stimulus_plugins.count(name) == 1);
 	// switch off old stimulus
 	_active_3d_world->removeChild( _current_stimulus->get_3d_world() );
 	_active_2d_hud->removeChild( _current_stimulus->get_2d_hud() );
@@ -680,13 +680,13 @@ void DSOSG::set_stimulus_plugin(const std::string& name) {
 
 std::vector<std::string> DSOSG::stimulus_get_topic_names(const std::string& plugin_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    assert(stimulus!=NULL);
+    vros_assert(stimulus!=NULL);
 	return stimulus->get_topic_names();
 }
 
 std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    assert(stimulus!=NULL);
+    vros_assert(stimulus!=NULL);
     try {
         return stimulus->get_message_type( topic_name );
     } catch (...) {
@@ -697,13 +697,29 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
 
 void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    assert(stimulus!=NULL);
+    vros_assert(stimulus!=NULL);
 	stimulus->receive_json_message( topic_name, json_message );
+}
+
+void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+    if(from.empty())
+        return;
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
+}
+
+std::string escape_filename(const std::string& fname) {
+    std::string result;
+    result = fname;
+    replaceAll(result,"/","");
+    return result;
 }
 
 void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::string& json_config) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-    traits->windowName = viewer_window_name;
 
     // make sure these have decent defaults
 	int width = 512;
@@ -779,6 +795,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	traits->height = height;
 
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
+        _mode==std::string("geometry") ||
 		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
 
         if (1) {
@@ -803,7 +820,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
             _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
         }
 
-        if (_mode==std::string("overview") || _mode==std::string("virtual_world")) {
+        if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
+            _mode==std::string("geometry")) {
             _cameraManipulator = new osgGA::TrackballManipulator();
             _cameraManipulator->setAutoComputeHomePosition(true);
             _viewer->setCameraManipulator(_cameraManipulator);
@@ -811,33 +829,32 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
+		_viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
+                   new osgViewer::ScreenCaptureHandler::WriteToFile(
+            std::string("screenshot_")+escape_filename(viewer_window_name),"png")));
 		_viewer->realize();
 	}
 	else if (_mode==std::string("vr_display")) {
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		assert(gc.valid());
-
-		//_viewer->setUpViewInWindow( win_origin_x, win_origin_y, width, height );
+		vros_assert(gc.valid());
 		_viewer->getCamera()->setGraphicsContext(gc.get());
 		_viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
 		GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
 		_viewer->getCamera()->setDrawBuffer(buffer);
 		_viewer->getCamera()->setReadBuffer(buffer);
 
-		{
-			osg::GraphicsContext* gc = _viewer->getCamera()->getGraphicsContext();
-			osg::ref_ptr<osg::GraphicsContext::ResizedCallback> rc = new DSOSGResizedCallback(gc->getResizedCallback(),this);
-			gc->setResizedCallback(rc);
-		}
+        osg::ref_ptr<osg::GraphicsContext::ResizedCallback> rc = new DSOSGResizedCallback(gc->getResizedCallback(),this);
+        gc->setResizedCallback(rc);
+
+        setCursorVisible(false);
 
 	}
 	else {
 		throw std::invalid_argument("unknown mode");
 	}
 
-    setCursorVisible(false);
-
+    setWindowName(viewer_window_name);
 	resized(width, height); // notify listeners that we have a new size
 };
 
@@ -867,7 +884,6 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
         // we let the observer move within the geometry
         _observer_pat->setAttitude(osg::Quat()); // do not rotate the cameras that project onto cubemap
         _observer_cb->setObserverPosition(observer_position); // update the shader that projects cubemap onto geometry
-        _observer_geometry_pat->setPosition(osg::Vec3(0.0,0.0,0.0)); // update the display rendering in various debug modes (e.g. overview mode)
     }
 
 	if (_current_stimulus != NULL) {
@@ -900,5 +916,12 @@ void DSOSG::setCursorVisible(bool visible) {
     }
 };
 
+void DSOSG::setWindowName(std::string name) {
+    osgViewer::Viewer::Windows windows;
+    _viewer->getWindows(windows);
+    for(osgViewer::Viewer::Windows::iterator itr = windows.begin(); itr != windows.end();++itr) {
+        (*itr)->setWindowName(name);
+    }
+};
 
 }

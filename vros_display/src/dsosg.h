@@ -35,7 +35,8 @@ namespace dsosg{
 
 	class DSOSG {
 	public:
-		DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false, bool show_geom_coords=false);
+		DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
+			  bool show_geom_coords=false, bool tethered_mode=true);
 
 		std::vector<std::string> get_stimulus_plugin_names();
 		std::string get_current_stimulus_plugin_name() { return std::string(_current_stimulus->name()); }
@@ -57,6 +58,7 @@ namespace dsosg{
 
 		float getFrameRate();
 		void setCursorVisible(bool visible);
+		void setWindowName(std::string name);
 	private:
 		StimulusLoader _stimulus_loader;
 

@@ -13,7 +13,6 @@
 #include <sstream>
 
 #include "base64.h"
-#include <assert.h>
 
 #include <jansson.h>
 
@@ -24,6 +23,8 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
+#include "vros_display/vros_assert.h"
+
 class Stimulus2DSprite: public StimulusInterface
 {
 public:
@@ -31,15 +32,9 @@ Stimulus2DSprite() : anchor("center") {
 	pat = new osg::PositionAttitudeTransform;
 }
 
-virtual void post_init(std::string _config_data_dir) {
-
-	// just load a default image initially
-	Poco::Path config_data_dir = Poco::Path(_vros_display_base_path);
-
-    std::string fname = config_data_dir.append("data").append("cursor.png").absolute().toString();
-	std::cerr << __FILE__ << "(" << __LINE__ << "): loading image: " << fname << std::endl;
+virtual void post_init(void) {
+    std::string fname = get_plugin_data_path(std::string("cursor.png"));
     osg::ref_ptr<osg::Image> image = osgDB::readImageFile(fname);
-
 	_load_image(image);
 }
 
@@ -141,10 +136,10 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 		}
     } else {
 		fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-		assert(false);
+		vros_assert(false);
 	}
 	fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-	assert(false);
+	vros_assert(false);
   } else if  (topic_name=="sprite_pose") {
 	  
 	json_t *data_json;

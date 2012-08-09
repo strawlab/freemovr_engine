@@ -1,25 +1,24 @@
+/* -*- Mode: C++ -*- */
 // This is used both by the class library and by the application.
 #ifndef StimulusInterface_INCLUDED
 #define StimulusInterface_INCLUDED
 
-#include <iostream>
+#include "ResourceLoader.h"
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
 
-class StimulusInterface
+class StimulusInterface: public ResourceLoader
 {
  public:
   StimulusInterface();
   virtual ~StimulusInterface();
 
-  // This is called when initializing the plugin to tell it where to find vros_display's data.
-  virtual void set_vros_display_base_path(std::string vros_display_base_path);
-
-  // Initialization that requires access to configuration data directory goes here.
-  virtual void post_init(std::string config_data_dir) {};
+  // Initialization. Called after the plugin path has been set. Plugins can call get_plugin_shader_dir
+  // and friends in here.
+  virtual void post_init(void) {};
 
   // An event fired when the display window is resized.
-  virtual void resized(int width,int height) {}; 
+  virtual void resized(int width,int height) {};
 
   // The plugin returns 3D part of scenegraph from this call.
   virtual osg::ref_ptr<osg::Group> get_3d_world() {return 0;}
@@ -50,8 +49,6 @@ class StimulusInterface
   virtual void add_default_skybox(osg::ref_ptr<osg::Group> top);
 
   osg::ref_ptr<osg::PositionAttitudeTransform> _skybox_pat;
-
-  std::string _vros_display_base_path;
 };
 
 #endif // StimulusInterface.h

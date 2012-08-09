@@ -6,7 +6,7 @@ varying vec3 oVec;
 void main(void)
 {
     // calculate direction from observer to vertex position
-    oVec = normalize(gl_Vertex.xyz - ObserverPosition);
+    oVec = gl_Vertex.xyz - ObserverPosition;
 
     // leave vertex position unchanged from normal OpenGL operation
     //gl_Position	= ftransform();

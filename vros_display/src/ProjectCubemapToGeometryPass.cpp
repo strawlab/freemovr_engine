@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
 #include <osg/TextureCubeMap>
 #include <osg/Group>
@@ -13,7 +13,6 @@
 
 #include <math.h>
 #include <iostream>
-#include <assert.h>
 
 #include <stdexcept>
 #include <sstream>
@@ -21,7 +20,7 @@
 #include "util.h"
 #include "ProjectCubemapToGeometryPass.h"
 
-ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string shader_dir,
+ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string vros_display_basepath,
 														   osg::TextureCubeMap* texture,
 														   osg::Uniform::Callback* observer_position_cb,
 														   DisplaySurfaceGeometry* geometry_parameters,
@@ -29,6 +28,9 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string shader_di
 														   unsigned int tex_height) :
 	_geometry_parameters(geometry_parameters), _tex_width(tex_width), _tex_height(tex_height)
  {
+	 set_vros_display_base_path(vros_display_basepath);
+	 set_plugin_path(vros_display_basepath,false);
+
   _top = new osg::Group;
   _top->addDescription("ProjectCubemapToGeometryPass top node");
   _in_texture_cubemap = texture;
@@ -41,8 +43,9 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string shader_di
   _geometry = create_textured_geometry();
   _camera->addChild( _geometry.get() );
   _top->addChild( _camera );
-  set_shader( join_path(shader_dir,"ProjectCubemapToGeometryPass.vert"),
-			  join_path(shader_dir,"ProjectCubemapToGeometryPass.frag") );
+
+  set_shader( "ProjectCubemapToGeometryPass.vert",
+              "ProjectCubemapToGeometryPass.frag");
 }
 
 void ProjectCubemapToGeometryPass::create_output_texture() {
@@ -78,36 +81,18 @@ void ProjectCubemapToGeometryPass::setup_camera()
 
 void ProjectCubemapToGeometryPass::set_shader(std::string vert_filename, std::string frag_filename)
 {
-    osg::ref_ptr<osg::Shader> vshader = new osg::Shader( osg::Shader::VERTEX );
-	{
-		std::string fqFileName = osgDB::findDataFile(vert_filename);
-		if( fqFileName.length() == 0 )
-			{
-				std::stringstream ss;
-				ss << "File \"" << vert_filename << "\" not found.";
-				throw std::ios_base::failure(ss.str());
-			}
-		vshader->loadShaderSourceFromFile(fqFileName);
-	}
+  osg::ref_ptr<osg::Shader> vshader = new osg::Shader( osg::Shader::VERTEX );
+  osg::ref_ptr<osg::Shader> fshader = new osg::Shader( osg::Shader::FRAGMENT );
 
-    osg::ref_ptr<osg::Shader> fshader = new osg::Shader( osg::Shader::FRAGMENT );
-	{
-		std::string fqFileName = osgDB::findDataFile(frag_filename);
-		if( fqFileName.length() == 0 )
-			{
-				std::stringstream ss;
-				ss << "File \"" << frag_filename << "\" not found.";
-				throw std::ios_base::failure(ss.str());
-			}
-		fshader->loadShaderSourceFromFile(fqFileName);
-	}
+	load_shader_source( vshader, vert_filename );
+	load_shader_source( fshader, frag_filename );
 
-    _program = new osg::Program;
+  _program = new osg::Program;
 
-    _program->addShader(vshader.get());
-    _program->addShader(fshader.get());
+  _program->addShader(vshader.get());
+  _program->addShader(fshader.get());
 
-    _state_set->setAttributeAndModes(_program.get(), osg::StateAttribute::ON);// | osg::StateAttribute::OVERRIDE );
+  _state_set->setAttributeAndModes(_program.get(), osg::StateAttribute::ON);// | osg::StateAttribute::OVERRIDE );
 }
 
 // use shaders to generate a texture

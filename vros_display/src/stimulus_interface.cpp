@@ -18,20 +18,9 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
+#include "load_cubemap.h"
+
 #include <stdexcept>
-
-std::string mkfname(std::string basepath, std::string middle, std::string extension) {
-  Poco::Path path(basepath);
-  path.makeDirectory();
-  path.append(Poco::Path(middle));
-
-  if (extension.at(0) == '.') {
-    extension = extension.substr(1,extension.length());
-  }
-  path.setExtension(extension);
-
-  return path.toString();
-}
 
 StimulusInterface::StimulusInterface() :  _skybox_pat(NULL)
 {
@@ -39,10 +28,6 @@ StimulusInterface::StimulusInterface() :  _skybox_pat(NULL)
 
 StimulusInterface::~StimulusInterface()
 {
-}
-
-void StimulusInterface::set_vros_display_base_path(std::string bp) {
-  _vros_display_base_path = bp;
 }
 
 void StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
@@ -56,7 +41,7 @@ void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
   Poco::Path base_path(_vros_display_base_path);
 
   base_path.makeDirectory();
-  base_path.pushDirectory("sample_data");
+  base_path.pushDirectory("data");
   base_path.pushDirectory("Pond");
 
   std::string basepath = base_path.toString();
@@ -66,52 +51,15 @@ void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
 }
 
 osg::Vec4 StimulusInterface::get_clear_color() const {
-  return osg::Vec4(0.0, 0.0, 0.0, 0.0); // default to transparent black
+  return osg::Vec4(1.0, 1.0, 0.0, 1.0); // default to yellow
 }
 
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
   if (1) {
 	  // add skybox
-    std::string example = mkfname(basepath,"posx",extension);
-    if (!Poco::File(Poco::Path(example)).exists()) {
-      std::cerr << "skymap file like " << example << "do not exist" << std::endl;
-    }
-
-	  osg::Image* posx = osgDB::readImageFile(mkfname(basepath,"posx",extension));
-	  osg::Image* posy = osgDB::readImageFile(mkfname(basepath,"posy",extension));
-	  osg::Image* posz = osgDB::readImageFile(mkfname(basepath,"posz",extension));
-	  osg::Image* negx = osgDB::readImageFile(mkfname(basepath,"negx",extension));
-	  osg::Image* negy = osgDB::readImageFile(mkfname(basepath,"negy",extension));
-	  osg::Image* negz = osgDB::readImageFile(mkfname(basepath,"negz",extension));
-
-	  if (!posx) throw std::runtime_error("could not read skymap file");
-	  if (!posy) throw std::runtime_error("could not read skymap file");
-	  if (!posz) throw std::runtime_error("could not read skymap file");
-	  if (!negx) throw std::runtime_error("could not read skymap file");
-	  if (!negy) throw std::runtime_error("could not read skymap file");
-	  if (!negz) throw std::runtime_error("could not read skymap file");
-
-	  posx->flipVertical();
-	  posy->flipVertical();
-	  posz->flipVertical();
-	  negx->flipVertical();
-	  negy->flipVertical();
-	  negz->flipVertical();
 
 	  if (1) {
-		  osg::TextureCubeMap* skymap = new osg::TextureCubeMap;
-		  skymap->setImage(osg::TextureCubeMap::POSITIVE_X, posx);
-		  skymap->setImage(osg::TextureCubeMap::NEGATIVE_X, negx);
-		  skymap->setImage(osg::TextureCubeMap::POSITIVE_Y, posy);
-		  skymap->setImage(osg::TextureCubeMap::NEGATIVE_Y, negy);
-		  skymap->setImage(osg::TextureCubeMap::POSITIVE_Z, posz);
-		  skymap->setImage(osg::TextureCubeMap::NEGATIVE_Z, negz);
-		  skymap->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-		  skymap->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-		  skymap->setWrap(osg::Texture::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-
-		  skymap->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
-		  skymap->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);
+                  osg::TextureCubeMap* skymap = load_cubemap(basepath,extension);
 
 		  _skybox_pat = new osg::PositionAttitudeTransform;
 		  osg::Geode* geode = new osg::Geode();
@@ -132,9 +80,9 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ShowCubemapProgram->addShader( ShowCubemapFragObj );
 		  ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-		  std::string shader_dir = join_path( _vros_display_base_path, "src/shaders" );
-		  LoadShaderSource( ShowCubemapVertObj, join_path(shader_dir,"skybox.vert" ));
-		  LoadShaderSource( ShowCubemapFragObj, join_path(shader_dir, "skybox.frag" ));
+          Poco::Path shader_path = Poco::Path(_vros_display_base_path).append("src").append("shaders");
+          ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.vert").toString());
+          ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.frag").toString());
 
 		  osg::Uniform* skymapSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "skybox" );
 

@@ -1,4 +1,4 @@
-/* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #version 120
 uniform samplerCube observerViewCube;
 
@@ -11,9 +11,9 @@ void main(void)
 
 	vec3 v;
 	bool noface;
-	
+
 	noface=false;
-	
+
 	if (gl_TexCoord[0].y < 0.25) {
 		// bottom row
 		if ((0.25 <= gl_TexCoord[0].x) && (gl_TexCoord[0].x < 0.5)) {

@@ -27,8 +27,8 @@ std::string name() const {
 	return "Stimulus3DDemo";
 }
 
-virtual void post_init(std::string config_data_dir) {
-	_virtual_world = create_virtual_world();//_vros_display_base_path);
+virtual void post_init(void) {
+	_virtual_world = create_virtual_world();
 }
 
 void resized(int width,int height) {
@@ -80,10 +80,6 @@ osg::ref_ptr<osg::Group> create_virtual_world()
   osg::ref_ptr<osg::TessellationHints> hints = new osg::TessellationHints;
   hints->setDetailRatio(2.0f);
   osg::ref_ptr<osg::ShapeDrawable> shape;
-
-  shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, -10.0f, 0.0f), 8.0f), hints.get());
-  shape->setColor(osg::Vec4(0.5f, 0.5f, 0.7f, 1.0f));
-  geode_1->addDrawable(shape.get());
 
   shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(-3.0f, 0.0f, 0.0f), radius), hints.get());
   shape->setColor(osg::Vec4(0.6f, 0.8f, 0.8f, 1.0f));

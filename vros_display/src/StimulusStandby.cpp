@@ -24,7 +24,7 @@ std::string name() const {
 }
 
 virtual void post_init(std::string config_data_dir) {
-    std::string fname = config_data_dir + std::string("/Pond/posz.png");
+    std::string fname = get_plugin_data_path(std::string("/Pond/posz.png"));
     osg::Image* image = osgDB::readImageFile(fname);
     osg::Texture2D* texture = new osg::Texture2D(image);
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);

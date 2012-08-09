@@ -6,7 +6,6 @@
 #include "Poco/ClassLibrary.h"
 
 #include <sstream>
-#include <assert.h>
 
 #include <osg/TextureRectangle>
 
@@ -17,6 +16,8 @@
 #include <stdexcept>
 
 #include <jansson.h>
+
+#include "vros_display/vros_assert.h"
 
 osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int height) {
 	osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
@@ -75,10 +76,13 @@ void create_HUD_group(unsigned int width, unsigned int height, osg::Texture* tex
 
 }
 
-virtual void post_init(std::string config_data_dir) {
+virtual void post_init(void) {
     // TODO: show with 1:1 pixel scaling.
 
-    std::string fname = config_data_dir + std::string("/brightday1_cubemap/posz.png");
+    std::string fname = get_plugin_data_path(std::string("vienna-morning.jpg"));
+
+	std::cerr << "2Dblit------- " << fname << "\n";
+
     osg::ref_ptr<osg::Image> image = osgDB::readImageFile(fname);
     osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
@@ -110,12 +114,12 @@ std::vector<std::string> get_topic_names() const {
 }
 
 std::string get_message_type(const std::string& topic_name) const {
-	assert(topic_name=="blit_images");
+	vros_assert(topic_name=="blit_images");
 	return "vros_display.msg.VROSCompressedImage";
 }
 
 void receive_json_message(const std::string& topic_name, const std::string& json_message) {
-	assert(topic_name=="blit_images");
+	vros_assert(topic_name=="blit_images");
 
     json_t *root;
     json_error_t error;
@@ -163,10 +167,10 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 		}
     } else {
 		fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-		assert(false);
+		vros_assert(false);
 	}
 	fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-	assert(false);
+	vros_assert(false);
 }
 
 private:

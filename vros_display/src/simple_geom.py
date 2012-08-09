@@ -14,6 +14,11 @@ class Vec3:
         self.y=y
         self.z=z
 
+    def to_dict(self):
+        #this dict is usually used for serializing, and some libraries have trouble serializing
+        #numpy types (im looking at you ROS parameter server API)
+        return dict(x=float(self.x),y=float(self.y),z=float(self.z))
+
 def point_dict_to_vec(d):
     return Vec3(**d)
 
@@ -32,7 +37,10 @@ class ModelBase:
 
         return Nx3 array of points
         """
-        raise NotImplementedError("calling abstract base class")
+        raise NotImplementedError
+
+    def to_geom_dict(self):
+        raise NotImplementedError
 
 class Cylinder(ModelBase):
     def __init__(self, base=None, axis=None, radius=None):
@@ -52,6 +60,13 @@ class Cylinder(ModelBase):
         self._matrix = np.eye(3) # currently we're forcing vertical cylinder, so this is OK
         self._height = self.axis.z - self.base.z
         self._base = np.expand_dims(np.array( (self.base.x, self.base.y, self.base.z) ),1)
+
+    def to_geom_dict(self):
+        return dict(
+            axis=self.axis.to_dict(),
+            base=self.base.to_dict(),
+            radius=float(self.radius),
+            model="cylinder")
 
     def texcoord2worldcoord(self,tc):
         # Parse inputs
@@ -169,6 +184,12 @@ class Sphere(ModelBase):
         # keep in sync with display_screen_geometry.cpp
         self._radius = radius
         self._center = np.expand_dims(np.array( (self.center.x, self.center.y, self.center.z) ),1)
+
+    def to_geom_dict(self):
+        return dict(
+            center=self.center.to_dict(),
+            radius=float(self.radius),
+            model="sphere")
 
     def texcoord2worldcoord(self,tc):
         # Parse inputs
@@ -390,3 +411,11 @@ class Geometry:
             output = np.concatenate((tc0,tc1),axis=2)
             assert output.shape == (camera.height, camera.width, 2)
         return output
+
+def angle_between_vectors(v1, v2):
+    dot = np.dot(v1, v2)
+    len_a = np.sqrt(np.dot(v1, v1))
+    len_b = np.sqrt(np.dot(v2, v2))
+    if len_a == 0 or len_b == 0:
+        return 0
+    return np.arccos(dot / (len_a * len_b))

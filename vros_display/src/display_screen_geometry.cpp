@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <jansson.h>
 
+#include <stdexcept>
+#include <sstream>
+
 class CylinderModel : public GeomModel {
 public:
 	CylinderModel(float radius, osg::Vec3 base, osg::Vec3 axis) :
@@ -257,22 +260,19 @@ osg::Vec3 parse_vec3( json_t *root) {
 
 	json_t *x_json = json_object_get(root, "x");
 	if(!json_is_number(x_json)){
-		fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-		throw 0;
+		throw std::runtime_error("Error parsing vec3: x is not a number");
 	}
 	x = json_number_value( x_json );
 
 	json_t *y_json = json_object_get(root, "y");
 	if(!json_is_number(y_json)){
-		fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-		throw 0;
+		throw std::runtime_error("Error parsing vec3: y is not a number");
 	}
 	y = json_number_value( y_json );
 
 	json_t *z_json = json_object_get(root, "z");
 	if(!json_is_number(z_json)){
-		fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-		throw 0;
+		throw std::runtime_error("Error parsing vec3: z is not a number");
 	}
 	z = json_number_value( z_json );
 
@@ -285,8 +285,9 @@ DisplaySurfaceGeometry::DisplaySurfaceGeometry(const char *json) {
 
 	root = json_loads(json, 0, &error);
 	if(!root) {
-		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
-		throw 0;
+        std::ostringstream os;
+        os << "Could not load json line " << error.line << ": " << error.text;
+		throw std::runtime_error(os.str());
 	}
 
 	parse_json(root);
@@ -299,30 +300,26 @@ DisplaySurfaceGeometry::DisplaySurfaceGeometry(json_t *root) {
 void DisplaySurfaceGeometry::parse_json(json_t *root) {
 	json_t *model_json = json_object_get(root, "model");
 	if(!json_is_string(model_json)){
-		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw 0;
+		throw std::runtime_error("parsing model: expected string");
 	}
 	std::string model( json_string_value( model_json ) );
 	if (model==std::string("cylinder")) {
 
 		json_t *radius_json = json_object_get(root, "radius");
 		if(!json_is_number(radius_json)){
-			fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-			throw 0;
+			throw std::runtime_error("cylinder parsing radius: expected number");
 		}
 		double radius = json_number_value( radius_json );
 
 		json_t *base_json = json_object_get(root, "base");
 		if(!json_is_object(base_json)){
-			fprintf(stderr, "error: in %s(%d): expected object\n", __FILE__, __LINE__);
-			throw 0;
+			throw std::runtime_error("cylinder parsing base: expected object");
 		}
 		osg::Vec3 base = parse_vec3( base_json );
 
 		json_t *axis_json = json_object_get(root, "axis");
 		if(!json_is_object(axis_json)){
-			fprintf(stderr, "error: in %s(%d): expected object\n", __FILE__, __LINE__);
-			throw 0;
+			throw std::runtime_error("cylinder parsing axis: expected object");
 		}
 		osg::Vec3 axis = parse_vec3( axis_json );
 
@@ -331,22 +328,21 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
 
 		json_t *radius_json = json_object_get(root, "radius");
 		if(!json_is_number(radius_json)){
-			fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-			throw 0;
+			throw std::runtime_error("sphere parsing radius: expected number");
 		}
 		double radius = json_number_value( radius_json );
 
 		json_t *center_json = json_object_get(root, "center");
 		if(!json_is_object(center_json)){
-			fprintf(stderr, "error: in %s(%d): expected object\n", __FILE__, __LINE__);
-			throw 0;
+			throw std::runtime_error("sphere parsing center: expected object");
 		}
 		osg::Vec3 center = parse_vec3( center_json );
 
 		_geom = new SphereModel(radius,center);
 	} else {
-		fprintf(stderr, "error: in %s(%d): unknown model %s\n", __FILE__, __LINE__, model.c_str());
-		throw 0;
+        std::ostringstream os;
+        os << "unknown model " << model;
+		throw std::runtime_error(os.str());
 	}
 
 	json_decref(root);

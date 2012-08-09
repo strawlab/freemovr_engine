@@ -12,7 +12,10 @@ def fill_polygon(pts,image,fill_value=255):
     if len(pts)>=3:
         height, width = image.shape[:2]
         pts = [ (posint(y,height-1),posint(x,width-1)) for (x,y) in pts]
-        _fill_polygon(pts, image[:,:,0], color=fill_value)
+        if image.ndim == 3:
+            _fill_polygon(pts, image[:,:,0], color=fill_value)
+        else:
+            _fill_polygon(pts, image[:,:], color=fill_value)
 
 # from https://raw.github.com/luispedro/mahotas/master/mahotas/polygon.py
 def _fill_polygon(polygon, canvas, color=1):
