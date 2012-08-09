@@ -13,7 +13,6 @@
 
 #include <math.h>
 #include <iostream>
-#include <assert.h>
 
 #include <stdexcept>
 #include <sstream>

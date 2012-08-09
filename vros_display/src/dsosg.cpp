@@ -30,8 +30,6 @@
 
 #include <osgViewer/ViewerEventHandlers>
 
-#include <assert.h>
-
 #include <stdio.h>
 #include <stdexcept>
 
@@ -47,6 +45,8 @@
 #include "TexturedGeometryToCameraImagePass.h"
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
+
+#include "vros_display/vros_assert.h"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -469,7 +469,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		_current_stimulus = _stimulus_plugins["Stimulus3DDemo"];
 	}
 
-	assert(_current_stimulus != NULL);
+	vros_assert(_current_stimulus != NULL);
 	std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
 	_active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
@@ -656,7 +656,7 @@ std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
 
 void DSOSG::set_stimulus_plugin(const std::string& name) {
 	std::cout << "setting stimulus plugin: " << name << std::endl;
-	assert( _stimulus_plugins.count(name) == 1);
+	vros_assert( _stimulus_plugins.count(name) == 1);
 	// switch off old stimulus
 	_active_3d_world->removeChild( _current_stimulus->get_3d_world() );
 	_active_2d_hud->removeChild( _current_stimulus->get_2d_hud() );
@@ -680,13 +680,13 @@ void DSOSG::set_stimulus_plugin(const std::string& name) {
 
 std::vector<std::string> DSOSG::stimulus_get_topic_names(const std::string& plugin_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    assert(stimulus!=NULL);
+    vros_assert(stimulus!=NULL);
 	return stimulus->get_topic_names();
 }
 
 std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    assert(stimulus!=NULL);
+    vros_assert(stimulus!=NULL);
     try {
         return stimulus->get_message_type( topic_name );
     } catch (...) {
@@ -697,7 +697,7 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
 
 void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    assert(stimulus!=NULL);
+    vros_assert(stimulus!=NULL);
 	stimulus->receive_json_message( topic_name, json_message );
 }
 
@@ -821,7 +821,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	else if (_mode==std::string("vr_display")) {
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		assert(gc.valid());
+		vros_assert(gc.valid());
 
 		//_viewer->setUpViewInWindow( win_origin_x, win_origin_y, width, height );
 		_viewer->getCamera()->setGraphicsContext(gc.get());

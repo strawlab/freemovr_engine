@@ -13,7 +13,6 @@
 #include <sstream>
 
 #include "base64.h"
-#include <assert.h>
 
 #include <jansson.h>
 
@@ -23,6 +22,8 @@
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
+
+#include "vros_display/vros_assert.h"
 
 class Stimulus2DSprite: public StimulusInterface
 {
@@ -135,10 +136,10 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 		}
     } else {
 		fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-		assert(false);
+		vros_assert(false);
 	}
 	fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-	assert(false);
+	vros_assert(false);
   } else if  (topic_name=="sprite_pose") {
 	  
 	json_t *data_json;

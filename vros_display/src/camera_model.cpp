@@ -5,16 +5,11 @@
 #include <osg/MatrixTransform>
 
 #include <stdexcept>
+#include "vros_display/vros_assert.h"
 
 CameraModel::CameraModel(unsigned int width, unsigned int height, bool y_up)  :
 	_width(width), _height(height), _y_up(y_up), intrinsic_valid(false), extrinsic_valid(false)
 {
-}
-
-void assert( bool value ) {
-    if (!value) {
-        throw "invalid";
-    }
 }
 
 // get extrinsic parameter information
@@ -198,7 +193,7 @@ osg::Matrix CameraModel::get_rot_inv() const {
 osg::Vec3 CameraModel::get_translation() const {
     osg::Vec4 eye( _eye[0], _eye[1], _eye[2], 1.0);
     osg::Vec4 t = -(eye*get_rot());
-    assert(t[3]==1.0);
+    vros_assert(t[3]==1.0);
     osg::Vec3 result(t[0], t[1], t[2]);
     return result;
 }
