@@ -522,6 +522,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
     DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
     _observer_geometry_pat = new osg::PositionAttitudeTransform;
+    _observer_geometry_pat->addDescription("_observer_geometry_pat");
     if (_tethered_mode) {
         _observer_geometry_pat->setDataVariance(osg::Object::DYNAMIC);
     } else {
@@ -636,12 +637,12 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		}
 	}
 
-
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
     _viewer->setLightingMode(osg::View::NO_LIGHT);
     _viewer->getViewerStats()->collectStats("frame_rate",true);
 
+    //osgDB::writeNodeFile(*(root.get()), _mode + std::string(".osg"));
 }
 
 std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
