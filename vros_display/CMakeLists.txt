@@ -136,7 +136,7 @@ ELSE(BUILD_VROS)
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
   # the vros_display library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(vros_display src/ResourceLoader.cpp src/stimulus_interface.cpp)
+  ADD_LIBRARY(vros_display SHARED src/ResourceLoader.cpp src/stimulus_interface.cpp)
   TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------

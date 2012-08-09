@@ -10,6 +10,8 @@
 
 #include "dsosg.h"
 
+#include <iostream>
+
 int main(int argc, char**argv) {
   dsosg::DSOSG *dsosg;
   Poco::Timestamp time;
