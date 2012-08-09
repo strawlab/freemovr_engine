@@ -40,6 +40,15 @@ SET(DS_SOURCES
   src/CameraImageToDisplayImagePass.cpp
   src/GeometryTextureToDisplayImagePass.cpp)
 
+set(CUBMAP_TO_GEOMETRY_PART_SOURCES
+  src/project_cubemap_onto_geometry.cpp
+  src/load_cubemap.cpp
+  src/util.cpp
+  src/ResourceLoader.cpp
+  src/ProjectCubemapToGeometryPass.cpp
+  src/display_screen_geometry.cpp
+)
+
 SET(P2G_SOURCES
   src/create_p2g.cpp
   src/display_screen_geometry.cpp
@@ -86,7 +95,7 @@ IF(BUILD_VROS)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
 
   # the vros_display library (for building stimulus plugins) --------------------
-  rosbuild_add_library(vros_display src/ResourceLoader.cpp src/stimulus_interface.cpp)
+  rosbuild_add_library(vros_display src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
   TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
@@ -125,7 +134,7 @@ ELSE(BUILD_VROS)
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
   # the vros_display library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(vros_display SHARED src/ResourceLoader.cpp src/stimulus_interface.cpp)
+  ADD_LIBRARY(vros_display SHARED src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
   TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
@@ -151,6 +160,10 @@ ELSE(BUILD_VROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
 ENDIF(BUILD_VROS)
+
+# build non-ROS programs  ----------
+ADD_EXECUTABLE(project_cubemap_onto_geometry ${CUBMAP_TO_GEOMETRY_PART_SOURCES})
+TARGET_LINK_LIBRARIES(project_cubemap_onto_geometry ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
 # build other calibration programs  ----------
 ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
