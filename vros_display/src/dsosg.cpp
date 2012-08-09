@@ -541,6 +541,16 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 		_observer_geometry_pat->addChild( pctcp->get_textured_geometry() );
 	}
 
+    if (_mode==std::string("geometry_texture")) {
+        osg::Texture2D* geomtex = pctcp->get_output_texture();
+        osg::Group* g = make_textured_quad(geomtex,
+                                           -1.0,
+                                           1.0,
+                                           1.0,
+                                           0, 0, 1.0, 1.0);
+        debug_hud_cam->addChild(g);
+    }
+
 	if (two_pass) {
 		CameraModel* cam1_params = make_real_camera_parameters();
 		osg::ref_ptr<osg::Group> g;
@@ -549,18 +559,6 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 			//g = geometry_parameters->make_texcoord_group(shader_dir);
 		} else {
 			g = pctcp->get_textured_geometry();
-		}
-
-		if (_mode==std::string("geometry_texture")) {
-            osg::Texture2D* geomtex = pctcp->get_output_texture();
-
-			osg::Group* g = make_textured_quad(geomtex,
-											   -1.0,
-											   1.0,
-											   1.0,
-											   0, 0, 1.0, 1.0);
-			debug_hud_cam->addChild(g);
-
 		}
 
 		TexturedGeometryToCameraImagePass *tg2ci=new TexturedGeometryToCameraImagePass(g,
