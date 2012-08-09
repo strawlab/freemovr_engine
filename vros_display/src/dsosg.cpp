@@ -700,6 +700,23 @@ void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const 
 	stimulus->receive_json_message( topic_name, json_message );
 }
 
+void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+    if(from.empty())
+        return;
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+    }
+}
+
+std::string escape_filename(const std::string& fname) {
+    std::string result;
+    result = fname;
+    replaceAll(result,"/","");
+    return result;
+}
+
 void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::string& json_config) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
 
@@ -811,6 +828,9 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
+		_viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
+                   new osgViewer::ScreenCaptureHandler::WriteToFile(
+            std::string("screenshot_")+escape_filename(viewer_window_name),"png")));
 		_viewer->realize();
 	}
 	else if (_mode==std::string("vr_display")) {
