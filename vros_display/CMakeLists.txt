@@ -116,17 +116,6 @@ IF(BUILD_VROS)
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
-  # build other calibration programs  ----------
-  rosbuild_add_executable(create_p2g ${P2G_SOURCES})
-  INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
-  TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
-
-  rosbuild_add_executable(calib_test_osg ${CALIB_TEST_SOURCES})
-  TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
-
-  rosbuild_add_executable(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
-  TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
-
   # add dynamic reconfigure api
   rosbuild_find_ros_package(dynamic_reconfigure)
 ELSE(BUILD_VROS)
@@ -161,15 +150,15 @@ ELSE(BUILD_VROS)
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES} ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
-  # build other calibration programs  ----------
-  ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
-  INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
-  TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
-
-  ADD_EXECUTABLE(calib_test_osg ${CALIB_TEST_SOURCES})
-  TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
-
-  ADD_EXECUTABLE(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
-  TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
 ENDIF(BUILD_VROS)
 
+# build other calibration programs  ----------
+ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
+INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
+TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
+
+ADD_EXECUTABLE(calib_test_osg ${CALIB_TEST_SOURCES})
+TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
+
+ADD_EXECUTABLE(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
+TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
