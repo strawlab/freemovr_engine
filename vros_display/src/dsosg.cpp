@@ -844,11 +844,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->getCamera()->setDrawBuffer(buffer);
 		_viewer->getCamera()->setReadBuffer(buffer);
 
-		{
-			osg::GraphicsContext* gc = _viewer->getCamera()->getGraphicsContext();
-			osg::ref_ptr<osg::GraphicsContext::ResizedCallback> rc = new DSOSGResizedCallback(gc->getResizedCallback(),this);
-			gc->setResizedCallback(rc);
-		}
+        osg::ref_ptr<osg::GraphicsContext::ResizedCallback> rc = new DSOSGResizedCallback(gc->getResizedCallback(),this);
+        gc->setResizedCallback(rc);
 
         setCursorVisible(false);
 
