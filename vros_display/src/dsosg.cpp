@@ -52,7 +52,6 @@
 //    Front face culling for dome projection:
 //        http://www.mail-archive.com/osg-users@openscenegraph.net/msg01256.html
 
-
 namespace dsosg
 {
 
@@ -703,7 +702,6 @@ void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const 
 
 void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::string& json_config) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
-    traits->windowName = viewer_window_name;
 
     // make sure these have decent defaults
 	int width = 512;
@@ -777,7 +775,6 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	}
 	traits->width = width;
 	traits->height = height;
-    traits->windowName = _mode;
 
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
         _mode==std::string("geometry") ||
@@ -813,8 +810,6 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
         }
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
-        setWindowName(std::string("VROS: ")+_mode);
-
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
 		_viewer->realize();
 	}
@@ -822,8 +817,6 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
 		vros_assert(gc.valid());
-
-		//_viewer->setUpViewInWindow( win_origin_x, win_origin_y, width, height );
 		_viewer->getCamera()->setGraphicsContext(gc.get());
 		_viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
 		GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
@@ -835,7 +828,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 			osg::ref_ptr<osg::GraphicsContext::ResizedCallback> rc = new DSOSGResizedCallback(gc->getResizedCallback(),this);
 			gc->setResizedCallback(rc);
 		}
-        setWindowName(std::string("VROS: ")+_mode);
+
         setCursorVisible(false);
 
 	}
@@ -843,6 +836,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		throw std::invalid_argument("unknown mode");
 	}
 
+    setWindowName(viewer_window_name);
 	resized(width, height); // notify listeners that we have a new size
 };
 
