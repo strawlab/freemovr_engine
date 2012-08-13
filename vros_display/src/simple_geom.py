@@ -363,7 +363,7 @@ class Geometry:
             pass
         else:
             raise Exception("must supply filename OR geometry dict")
-        
+
         if geom_dict['model']=='cylinder':
             self.model = Cylinder(base=geom_dict['base'],
                                   axis=geom_dict['axis'],
