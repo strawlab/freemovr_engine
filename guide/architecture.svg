@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="893.42853"
+   height="483.3064"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="architecture.svg">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="Arrow1Send"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Send"
+       style="overflow:visible">
+      <path
+         id="path5376"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.2,0,0,-0.2,-1.2,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <clipPath
+       id="p7ff5b81e1d">
+      <rect
+         height="345.60001"
+         width="446.39999"
+         x="72"
+         y="43.200001"
+         id="rect4148" />
+    </clipPath>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="448.45317"
+     inkscape:cy="281.54186"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1495"
+     inkscape:window-height="986"
+     inkscape:window-x="57"
+     inkscape:window-y="110"
+     inkscape:window-maximized="0"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-20.714293,-47.877239)">
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="22.857143"
+       y="58.076458"
+       id="text2985"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan2987"
+         x="22.857143"
+         y="58.076458"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">VROS display_server architecture overview</tspan></text>
+    <image
+       y="68.790749"
+       x="20.714293"
+       id="image3046"
+       xlink:href="images/architecture_virtual_world.jpg"
+       height="156.14285"
+       width="212.92207" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="20.698521"
+       y="246.84"
+       id="text2985-0"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan2987-3"
+         x="20.698521"
+         y="246.84"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold">virtual world</tspan><tspan
+         sodipodi:role="line"
+         x="20.698521"
+         y="259.34"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3072">• arbitrary scene rendered with OpenSceneGraph</tspan><tspan
+         sodipodi:role="line"
+         x="20.698521"
+         y="271.84"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3078">• drawn via user-created plugin</tspan><tspan
+         sodipodi:role="line"
+         x="20.698521"
+         y="284.34"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3076">• defined in lab frame</tspan></text>
+    <image
+       y="68.71933"
+       x="266.42856"
+       id="image3201"
+       xlink:href="images/architecture_cubemap.png"
+       height="159.76624"
+       width="212.76375" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3204"
+       y="246.84"
+       x="266.41281"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold"
+         y="246.84"
+         x="266.41281"
+         id="tspan3206"
+         sodipodi:role="line">cubemap</tspan><tspan
+         id="tspan3208"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="259.34"
+         x="266.41281"
+         sodipodi:role="line">• six camera views of virtual world</tspan><tspan
+         id="tspan3212"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="271.84"
+         x="266.41281"
+         sodipodi:role="line">• from viewpoint of observer in lab frame</tspan></text>
+    <image
+       y="69.505043"
+       x="-669.28571"
+       id="image3275"
+       xlink:href="images/architecture_geometry_texture.jpg"
+       height="158.57143"
+       width="158.57143"
+       transform="scale(-1,1)" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="510.69852"
+       y="246.84"
+       id="text3278"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3280"
+         x="510.69852"
+         y="246.84"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold">geometry texture</tspan><tspan
+         sodipodi:role="line"
+         x="510.69852"
+         y="259.34"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3284">• created by projecting cubemap onto</tspan><tspan
+         sodipodi:role="line"
+         x="510.69852"
+         y="271.84"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3288">  3D model of display surface in lab</tspan><tspan
+         sodipodi:role="line"
+         x="510.69852"
+         y="284.34"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3384">  frame</tspan></text>
+    <image
+       y="69.969307"
+       x="706.57141"
+       id="image3365"
+       xlink:href="images/architecture_projector.jpg"
+       height="155.67857"
+       width="207.57143" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3368"
+       y="241.1257"
+       x="706.41278"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold"
+         y="241.1257"
+         x="706.41278"
+         id="tspan3370"
+         sodipodi:role="line">display view</tspan><tspan
+         id="tspan3376"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="253.6257"
+         x="706.41278"
+         sodipodi:role="line">• created by lookup table from geometry</tspan><tspan
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="266.1257"
+         x="706.41278"
+         sodipodi:role="line"
+         id="tspan3382">  texture coordinates to projector coordinates</tspan><tspan
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="278.6257"
+         x="706.41278"
+         sodipodi:role="line"
+         id="tspan4546">• physically displayed</tspan></text>
+    <g
+       transform="matrix(0.5076189,0,0,0.5076189,423.62869,283.08201)"
+       style="stroke-linecap:square;stroke-linejoin:round"
+       id="axes_1">
+      <g
+         style="stroke-linecap:square;stroke-linejoin:round"
+         id="line2d_20">
+        <path
+           inkscape:connector-curvature="0"
+           id="path4143"
+           style="fill:none;stroke:#0000ff;stroke-linecap:square;stroke-linejoin:round"
+           d="m 410.83,150.974 -5.462,164.251 8.858,-9.043 -3.396,-155.208 9.275,-8.191 -5.879,163.399 4.352,-9.516 1.527,-153.883 4.526,-8.614 -6.053,162.497 -0.215,-9.607 6.268,-152.89 -0.279,-8.688 -5.989,161.578 -4.665,-9.33 10.654,-152.248 -4.952,-8.431 -5.702,160.679 -8.835,-8.711 14.537,-151.968 -9.325,-7.865 -5.212,159.833 -12.589,-7.79 17.801,-152.043 -13.256,-7.029 -4.545,159.072 -15.822,-6.611 20.367,-152.461 -16.634,-5.9608 -3.733,158.4218 -18.444,-5.221 22.177,-153.2008 -19.373,-4.7047 -2.804,157.9055 -20.396,-3.669 23.2,-154.2365 -21.409,-3.3057 -1.791,157.5422 -21.633,-2.009 23.424,-155.5332 -22.7,-1.8091 -0.724,157.3423 -22.134,-0.289 22.858,-157.0533 -23.22,-0.2602 0.362,157.3135 -21.883,1.44 21.521,-158.7535 -22.96,1.2964 1.439,157.4571 -20.889,3.125 19.45,-160.5821 -21.924,2.8155 2.474,157.7666 -19.172,4.719 16.698,-162.4856 -20.132,4.2521 3.434,158.2335 -16.766,6.169 13.332,-164.4025 -17.622,5.5605 4.29,158.842 -13.73,7.423 9.44,-166.265 -14.448,6.697 5.008,159.568 -10.139,8.436 5.131,-168.004 -10.691,7.615 5.56,160.389 -6.093,9.16 0.533,-169.549 -6.45,8.274 5.917,161.275 -1.72,9.554 -4.197,-170.829 -1.861,8.638 6.058,162.191 2.827,9.589 -8.885,-171.78 2.922,8.677 5.963,163.103 7.375,9.243 -13.338,-172.346 7.711,8.371 5.627,163.975 11.73,8.514 -17.357,-172.489 12.305,7.717 5.052,164.772 15.693,7.416 -20.745,-172.188 16.492,6.727 4.253,165.461 19.067,5.986 -23.32,-171.447 20.061,5.432 3.259,166.015 21.675,4.277 -24.934,-170.292 22.825,3.883 2.109,166.409 23.377,2.367 -25.486,-168.776 24.626,2.15 0.86,166.626 24.073,0.341 -24.933,-166.967 25.364,0.31 -0.431,166.657 23.723,-1.699 -23.292,-164.958 24.994,-1.544 -1.702,166.502 22.35,-3.659 -20.648,-162.843 23.538,-3.322 -2.89,166.165 20.029,-5.444 -17.139,-160.721 21.08,-4.941 -3.941,165.662 16.892,-6.974 -12.951,-158.688 17.76,-6.327 -4.809,165.015 13.104,-8.187 -8.295,-156.828 13.757,-7.423 -5.462,164.251 8.858,-9.043 -3.396,-155.208 0,0"
+           clip-path="url(#p7ff5b81e1d)" />
+      </g>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="509.65509"
+       y="491.57913"
+       id="text3278-2"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3280-0"
+         x="509.65509"
+         y="491.57913"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold">3D model of display surface</tspan><tspan
+         sodipodi:role="line"
+         x="509.65509"
+         y="504.07913"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan4444">• vertices defined in lab frame</tspan><tspan
+         sodipodi:role="line"
+         x="509.65509"
+         y="516.5791"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan4456">• texture coordinates in arbitrary system</tspan><tspan
+         sodipodi:role="line"
+         x="509.65509"
+         y="529.0791"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan4452">• measured during auto-calibration</tspan></text>
+    <image
+       y="313.63644"
+       x="706.71429"
+       id="image4517"
+       xlink:href="images/architecture_p2g.png"
+       height="156.26685"
+       width="206.57143" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text4520"
+       y="491.57913"
+       x="703.9408"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold"
+         y="491.57913"
+         x="703.9408"
+         id="tspan4522"
+         sodipodi:role="line">LUT from tex coords to display coords</tspan><tspan
+         id="tspan4528"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="504.07913"
+         x="703.9408"
+         sodipodi:role="line">• measured during auto-calibration</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4530"
+       y="491.57913"
+       x="268.22653"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4534"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold"
+         y="491.57913"
+         x="268.22653"
+         sodipodi:role="line">3D location of observer</tspan><tspan
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="504.07913"
+         x="268.22653"
+         sodipodi:role="line"
+         id="tspan4542">• defined in lab frame</tspan><tspan
+         id="tspan4538"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         y="516.5791"
+         x="268.22653"
+         sodipodi:role="line" /></text>
+    <path
+       sodipodi:type="arc"
+       style="fill:none;stroke:#ff0000;stroke-width:6.25;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       id="path4552"
+       sodipodi:cx="318.57144"
+       sodipodi:cy="311.16354"
+       sodipodi:rx="4.2857141"
+       sodipodi:ry="4.2857141"
+       d="m 322.85716,311.16354 a 4.2857141,4.2857141 0 1 1 -8.57143,0 4.2857141,4.2857141 0 1 1 8.57143,0 z"
+       transform="translate(-5.7142786,108.59152)" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text4530-7"
+       y="423.5152"
+       x="326.29324"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4538-1"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold"
+         y="423.5152"
+         x="326.29324"
+         sodipodi:role="line">&lt;x,y,z&gt;</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 219.28571,102.59211 14.28572,0"
+       id="path4587"
+       inkscape:connector-curvature="0"
+       transform="translate(20.714293,47.877239)" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path5801"
+       d="m 485,150.46935 14.28572,0"
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 678.57143,150.46935 14.28572,0"
+       id="path5803"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path5805"
+       d="m 810.67322,304.714 0,-14.28572"
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 577.81608,304.714 0,-14.28572"
+       id="path5807"
+       inkscape:connector-curvature="0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path5809"
+       d="m 333.53037,304.714 0,-14.28572"
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
+  </g>
+</svg>
