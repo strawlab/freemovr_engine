@@ -81,19 +81,19 @@ osg::ref_ptr<osg::Group> create_virtual_world()
   hints->setDetailRatio(2.0f);
   osg::ref_ptr<osg::ShapeDrawable> shape;
 
-  shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(-3.0f, 0.0f, 0.0f), radius), hints.get());
+  shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(-3.0f, 0.3f, 0.0f), radius), hints.get());
   shape->setColor(osg::Vec4(0.6f, 0.8f, 0.8f, 1.0f));
   geode_2->addDrawable(shape.get());
 
-  shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(3.0f, 0.0f, 0.0f), 2 * radius, height), hints.get());
+  shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(3.0f, 0.3f, 0.0f), 2 * radius, height), hints.get());
   shape->setColor(osg::Vec4(0.4f, 0.9f, 0.3f, 1.0f));
   geode_2->addDrawable(shape.get());
 
-  shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(0.0f, 0.0f, -3.0f), radius, height), hints.get());
+  shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(0.0f, 0.3f, -3.0f), radius, height), hints.get());
   shape->setColor(osg::Vec4(0.2f, 0.5f, 0.7f, 1.0f));
   geode_2->addDrawable(shape.get());
 
-  shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 3.0f), radius), hints.get());
+  shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.3f, 3.0f), radius), hints.get());
   shape->setColor(osg::Vec4(0.5f, 0.3f, 0.5f, 1.0f));
   geode_2->addDrawable(shape.get());
 
