@@ -794,6 +794,10 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	traits->width = width;
 	traits->height = height;
 
+    _viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
+       new osgViewer::ScreenCaptureHandler::WriteToFile(
+           std::string("screenshot_")+escape_filename(viewer_window_name),"png")));
+
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
         _mode==std::string("geometry") ||
 		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
@@ -829,9 +833,6 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
-		_viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
-                   new osgViewer::ScreenCaptureHandler::WriteToFile(
-            std::string("screenshot_")+escape_filename(viewer_window_name),"png")));
 		_viewer->realize();
 	}
 	else if (_mode==std::string("vr_display")) {
