@@ -19,6 +19,7 @@
 
 #include "util.h"
 #include "ProjectCubemapToGeometryPass.h"
+#include "vros_display/vros_assert.h"
 
 ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string vros_display_basepath,
 														   osg::TextureCubeMap* texture,
@@ -26,15 +27,17 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string vros_disp
 														   DisplaySurfaceGeometry* geometry_parameters,
 														   unsigned int tex_width,
 														   unsigned int tex_height) :
-	_geometry_parameters(geometry_parameters), _tex_width(tex_width), _tex_height(tex_height)
+  _geometry_parameters( geometry_parameters), _tex_width(tex_width), _tex_height(tex_height), _observer_position_callback(observer_position_cb)
  {
+   vros_assert( texture!=NULL );
+   vros_assert( geometry_parameters!=NULL );
+
 	 set_vros_display_base_path(vros_display_basepath);
 	 set_plugin_path(vros_display_basepath,false);
 
   _top = new osg::Group;
   _top->addDescription("ProjectCubemapToGeometryPass top node");
   _in_texture_cubemap = texture;
-  _observer_position_callback = observer_position_cb;
 
   create_output_texture();
 
@@ -115,9 +118,11 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
     _state_set->addUniform(observerViewCubeUniformSampler);
 
 	osg::Uniform* observerPositionUniform = new osg::Uniform( "ObserverPosition",
-															  osg::Vec3(0.0f, 0.0f, 0.0f) );
+															  osg::Vec3(0.22f, 0.22f, 0.9f) );
+  if (_observer_position_callback!=NULL) {
     observerPositionUniform->setUpdateCallback(_observer_position_callback);
-    _state_set->addUniform(observerPositionUniform);
+  }
+  _state_set->addUniform(observerPositionUniform);
 
     geode->addDrawable(this_geom.get());
     top_group->addChild(geode.get());
