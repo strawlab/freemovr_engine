@@ -170,6 +170,7 @@ cdef class MyNode:
     cdef Quat* pose_orientation
     cdef object subscription_mode
     cdef int throttle
+    cdef object _timer
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -285,6 +286,11 @@ cdef class MyNode:
             self._mode_change = 'Stimulus3DDemo'
 
         self.throttle = args.throttle
+        self._timer = rospy.Timer(rospy.Duration(60), # every 60 seconds
+                                  self._on_heartbeat)
+
+    def _on_heartbeat(self,event):
+        rospy.loginfo('heartbeat at ' + str(event.current_real))
 
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS
