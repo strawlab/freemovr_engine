@@ -182,7 +182,7 @@ cdef class MyNode:
             self.pose_position = new Vec3(0,0,0)
             self.pose_orientation = new Quat(0,0,0,1)
         with self._mode_lock:
-            self._mode_change = None
+            self._mode_change = 'Stimulus3DDemo' # default
 
         self.subscription_mode = 'always'
 
@@ -280,10 +280,6 @@ cdef class MyNode:
             rospy.loginfo('loaded plugin: %s' % name)
             if self.subscription_mode == 'always':
                 self.register_subscribers(name)
-
-        #next iteration of render loop change to default mode
-        with self._mode_lock:
-            self._mode_change = 'Stimulus3DDemo'
 
         self.throttle = args.throttle
         self._timer = rospy.Timer(rospy.Duration(60), # every 60 seconds
