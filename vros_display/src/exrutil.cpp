@@ -81,7 +81,7 @@ osg::ref_ptr<osg::Image> load_exr( std::string p2c_filename, int& width, int& he
 	unsigned int proj_height = projector_height;
 	unsigned int proj_depth = 3;
 
-	float* proj_image_rgb = new float[proj_width*proj_height*proj_depth]; // XXX TODO: this will leak unless deleted
+	float* proj_image_rgb = new float[proj_width*proj_height*proj_depth];
 	for (size_t j=0; j< proj_height; j++) {
 		size_t row_offset = j*proj_width*proj_depth;
 		for (size_t i=0; i< proj_width; i++) {
@@ -104,7 +104,7 @@ osg::ref_ptr<osg::Image> load_exr( std::string p2c_filename, int& width, int& he
 	memcpy( result->data(), pData1, result->getTotalSizeInBytes());
 	assert (result->valid() );
 
-	delete proj_image_rgb;
+	delete[] proj_image_rgb;
 
 	width=proj_width;
 	height=proj_height;
