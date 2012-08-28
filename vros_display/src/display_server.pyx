@@ -199,7 +199,7 @@ cdef class MyNode:
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
         parser.add_argument('--config', type=str,
             help='JSON configuration file describing the setup. '\
-                 'If specified configuration is taken from here, otherwise config is taken from'\
+                 'If specified configuration is taken from here, otherwise config is taken from '\
                  'ROS parameters under this node')
 
         # use argparse, but only after ROS did its thing
