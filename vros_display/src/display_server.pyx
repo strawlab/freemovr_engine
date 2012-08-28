@@ -181,8 +181,6 @@ cdef class MyNode:
         with self._pose_lock:
             self.pose_position = new Vec3(0,0,0)
             self.pose_orientation = new Quat(0,0,0,1)
-        with self._mode_lock:
-            self._mode_change = 'Stimulus3DDemo' # default
 
         self.subscription_mode = 'always'
 
@@ -201,10 +199,14 @@ cdef class MyNode:
             help='JSON configuration file describing the setup. '\
                  'If specified configuration is taken from here, otherwise config is taken from '\
                  'ROS parameters under this node')
+        parser.add_argument('--stimulus', type=str, default='Stimulus3DDemo', help='The stimulus to start in')
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
+
+        with self._mode_lock:
+            self._mode_change =  args.stimulus
 
         rospy.init_node("display_server")
         time.sleep(1.0) # give a second to join ROS network, else early rospy.log* messages are lost
@@ -404,6 +406,7 @@ cdef class MyNode:
                             sub.unregister()
 
                     # activate plugin
+                    rospy.loginfo("Setting stimulus plugin %s" % self._mode_change)
                     self.dsosg.set_stimulus_plugin(std_string(self._mode_change))
 
                     if self.subscription_mode == 'current_only':

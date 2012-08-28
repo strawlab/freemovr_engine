@@ -655,7 +655,6 @@ std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
 }
 
 void DSOSG::set_stimulus_plugin(const std::string& name) {
-	std::cout << "setting stimulus plugin: " << name << std::endl;
 	vros_assert( _stimulus_plugins.count(name) == 1);
 	// switch off old stimulus
 	_active_3d_world->removeChild( _current_stimulus->get_3d_world() );
