@@ -44,6 +44,7 @@ import calib.imgproc
 from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
 from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
+from calib.sampling import gen_horiz_snake, gen_vert_snake
 from rosutils.io import decode_url
 
 import flydra.reconstruct
@@ -97,17 +98,6 @@ def generate_sampling_pixel_coords_5(vdmask,pts,space,img=None):
     return corners
 
 def generate_sampling_pixel_coords(vdmask,pts,space,img=None):
-    def gen_snake(w,h,s):
-        reverse = 0
-        for hh in range(0,h,s):
-            if reverse:
-                for ww in reversed(range(0,w,s)):
-                    yield ww,hh
-                reverse = 0
-            else:
-                for ww in range(0,w,s):
-                    yield ww,hh
-                reverse = 1
 
     ncol = vdmask.shape[1]
     nrow = vdmask.shape[0]
@@ -123,7 +113,7 @@ def generate_sampling_pixel_coords(vdmask,pts,space,img=None):
 
 
     valid = []
-    for col,row in gen_snake(ncol,nrow,space):
+    for col,row in gen_horiz_snake(w=ncol,h=nrow,sw=space,sh=space):
         if vdmask[row,col]:
             valid.append( (col,row) )
 
@@ -205,7 +195,6 @@ class Calib:
         laser_camera = config["laser_camera"]
         trigger = config["trigger"]
         laser = config["laser"]
-        self.laser_sleep = config["laser_sleep"]
         self.projector_sleep = config["projector_sleep"]
         self.display_servers = config["display_servers"]
 
@@ -262,7 +251,7 @@ class Calib:
         if show_laser_scatter:
             handle = laser_handle
             cv2.namedWindow(handle)
-            self._laser_handles[handle] = np.zeros((50,360),dtype=np.uint8)
+            self._laser_handles[handle] = np.zeros((51,361,3),dtype=np.uint8)
             cv2.imshow(handle, self._laser_handles[handle])
 
         self._light_proj_cache = tuple()
@@ -371,11 +360,11 @@ class Calib:
                 rospy.loginfo("Setting %s mask = %s" % (cam,mask_name))
 
     def _light_laser_pixel(self, pan, tilt, power):
-        minpan,maxpan,nsteppan = self.laser_range_pan
-        mintilt,maxtilt,nsteptilt = self.laser_range_tilt
+        minpan,maxpan,npan = self.laser_range_pan
+        mintilt,maxtilt,ntilt = self.laser_range_tilt
         
-        pan = np.clip(pan,minpan,maxpan)
-        tilt = np.clip(tilt,mintilt,maxtilt)
+        pan = np.clip(pan,minpan,maxpan-1)
+        tilt = np.clip(tilt,mintilt,maxtilt-1)
         
         dist = numpy.linalg.norm(
                 np.array((self._laser_currpan,self._laser_currtilt)) -
@@ -389,15 +378,26 @@ class Calib:
         self._laser_currtilt = tilt
         self.laser_proxy_tilt(tilt)
         self.laser_proxy_power(power)
+
+        if show_laser_scatter:
+            handle = laser_handle
+            img = self._laser_handles[handle].copy()
+            add_crosshairs_to_nparr(
+                        arr=img,
+                        row=math.floor(tilt)+50, col=math.floor(pan)+180,
+                        sz=-1,  fill=255, chan=1)
+            cv2.imshow(handle, img)
         
         if dist > 200:
-            rospy.sleep(1.0)
+            rospy.sleep(2.0)
         elif dist > 100:
             rospy.sleep(1.0)
         elif dist > 50:
+            rospy.sleep(0.8)
+        elif dist > 10:
             rospy.sleep(0.5)
         else:
-            rospy.sleep(0.2)
+            rospy.sleep(0.3)
         
         return pan,tilt
 
@@ -405,6 +405,9 @@ class Calib:
         self._light_proj_pixel(ds, None, None)
 
     def _light_proj_pixel(self, ds, row, col):
+        row = math.floor(row) if row != None else None
+        col = math.floor(col) if col != None else None
+
         target = (ds, col, row)
         if self._light_proj_cache == target:
             rospy.loginfo("not lighting projector %s col:%s row:%s (already lit)" % target)
@@ -415,8 +418,11 @@ class Calib:
         arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK, mask=None)
         
         if col != None:
-            ptsize = self.ptsize
-            arr[row-ptsize:row+ptsize,col-ptsize:col+ptsize,:3] = dsc.IMAGE_COLOR_WHITE
+            sz = self.ptsize
+            ri = arr.shape[0]
+            ci = arr.shape[1]
+            arr[max(0,row-sz):min(row+sz,ri),max(0,col-sz):min(col+sz,ci),:3] = dsc.IMAGE_COLOR_WHITE
+
         dsc.show_pixels(arr)
         
         if ds in self.show_display_servers:
@@ -566,7 +572,7 @@ class Calib:
                         vdmask = dsc.get_virtual_display_mask(vdispname)
                         vdpts = dsc.get_virtual_display_points(vdispname)
 
-                        centroids = generate_sampling_pixel_coords_5(vdmask,vdpts,50,img)
+                        centroids = generate_sampling_pixel_coords(vdmask,vdpts,60,img)
                         for c in centroids:
                             tocal.append( (ds,vdispname,vdisp.copy(),c) )
 
@@ -607,33 +613,72 @@ class Calib:
                 colmid,rowmid = centroid
 
                 #we have found the pixel location in the projector around which we
-                #should search, using the laser. The search is not a proper closed
-                #loop controller because all we need to do is get the laser close
-                #enough to the pixel that subsequently we can move the pixel to the laser
+                #should search, using the laser. Now we get the laser close
+                #enough to the pixel that subsequently we can later move the pixel
+                #to the laser
                 self._light_proj_pixel(ds, row=rowmid, col=colmid)
 
-                mindist = 1e3
                 found = False
                 
-                #start search at current location
-                searchpath = [(self._laser_currpan,self._laser_currtilt)]
-                searchpath.extend( (p,t) for p in np.linspace(*self.laser_range_pan)\
-                                         for t in np.linspace(*self.laser_range_tilt))
+                #start search at current location (twice for reliability)
+                searchpath = [(self._laser_currpan,self._laser_currtilt),
+                              (self._laser_currpan,self._laser_currtilt)]
+                
+                minpan,maxpan,npan = self.laser_range_pan
+                mintilt,maxtilt,ntilt = self.laser_range_tilt
+                searchpath.extend( gen_vert_snake(
+                                        w=maxpan,h=maxtilt,
+                                        startw=minpan,starth=mintilt,
+                                        sw=npan,sh=ntilt,
+                                        linspace=True) )
 
                 for pan,tilt in searchpath:
-                    self._light_laser_pixel(pan=pan,tilt=tilt,power=False)
+                    pan,tilt = self._light_laser_pixel(pan=pan,tilt=tilt,power=False)
                     col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
                     if col:
                         expected = np.array(self.laser_expected_detect_location)
-                        actual = np.array((col,row))
-                        expdist = numpy.linalg.norm(expected - actual)
-                        mindist = min(mindist, expdist)
-                        if expdist < 200:
-                            found = True
+                        expdist = numpy.linalg.norm(expected - np.array((col,row)))
+                        fine_dist = expdist
+                        if expdist < 150:
+
+                            #we have a rough estimate, refine it                            
+                            tries = 40
+                            print "ROUGH n%d" % tries,expdist,expected - np.array((col,row))
+                            
+                            while (tries > 0):
+                                diffcol,diffrow = expected - np.array((col,row))
+                                newpan  = pan  + (np.sign(diffcol) * self._vdispinfo["p_laser_col"])
+                                newtilt = tilt + (np.sign(diffrow) * self._vdispinfo["p_laser_row"])
+                                pan,tilt = self._light_laser_pixel(pan=newpan,tilt=newtilt,power=False)
+                                oldcol = col
+                                oldrow = row
+                                col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
+                                #we lost the pixel
+                                if not col:
+                                    col = oldcol
+                                    row = oldrow
+                                    tries -= 1
+                                    print "ROUGH LOST"
+                                else:
+                                    fine_dist = numpy.linalg.norm(expected - np.array((col,row)))
+                                    print "FINE n%d" % tries,fine_dist,expected - np.array((col,row))
+                                    if fine_dist < 3:
+                                        tries = 0
+                                        found = True
+                                    else:
+                                        tries -= 1
+                                        
+                            if not found and (fine_dist < 10):
+                                print "AVERAGE DIST", fine_dist
+                                found = True
+                                        
                             break
+                        else:
+                            rospy.loginfo("2D pixel too far from start location (dist:%.1f)" % (expdist))
+
                 if found:
                     rospy.loginfo("found starting pixel: col:%s row:%s pan:%s tilt:%s (dist:%.1f)" % (
-                                    colmid,rowmid,pan,tilt,expdist))
+                                    colmid,rowmid,pan,tilt,fine_dist))
                     self._vdispinfo["panmid"] = pan
                     self._vdispinfo["tiltmid"] = tilt
 
@@ -650,8 +695,8 @@ class Calib:
 
                     self.change_mode(self.MODE_DISPLAY_SERVER_HOME)
                 else:
-                    rospy.logwarn("could not find find starting pixel col:%s row:%s (mindist:%.1f)" %(
-                                    colmid,rowmid,mindist))
+                    rospy.logwarn("could not find find starting pixel col:%s row:%s" %(
+                                    colmid,rowmid))
                 
                 if ds in self.show_display_servers:
                     handle = self.show_display_servers[ds]["handle"]
@@ -766,8 +811,8 @@ class Calib:
                         rowfound = True
                         
                     #clamp the projection range and then
-                    self._vdispinfo["projcol"] = np.clip(projcol,0,self._vdispinfo["width"])
-                    self._vdispinfo["projrow"] = np.clip(projrow,0,self._vdispinfo["height"])
+                    self._vdispinfo["projcol"] = np.clip(projcol,0,self._vdispinfo["width"]-1)
+                    self._vdispinfo["projrow"] = np.clip(projrow,0,self._vdispinfo["height"]-1)
 
                     if colfound and rowfound:
                         if ds in self.show_display_servers:
@@ -803,7 +848,14 @@ class Calib:
                         if show_laser_scatter:
                             handle = laser_handle
                             img = self._laser_handles[handle]
-                            img[self._vdispinfo["currtilt"]+51,self._vdispinfo["currpan"]+181] = 255
+                            try:
+                                t = math.floor(self._vdispinfo["currtilt"]+50)
+                                p = math.floor(self._vdispinfo["currpan"]+180)
+                                img[t,p,:] = 255
+                            except:
+                                rospy.logerr("invalid pan/tilt: tilt:%s pan:%s" % (
+                                        self._vdispinfo["currtilt"],
+                                        self._vdispinfo["currpan"]))
                             cv2.imshow(handle, img)
                         
                         if self._vdispinfo["pointsneeded"] > 0:
