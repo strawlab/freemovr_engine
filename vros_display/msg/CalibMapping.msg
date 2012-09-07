@@ -1,0 +1,9 @@
+Calib2DPoint[] points
+string display_server
+string vdisp
+geometry_msgs/Point32 position
+float32 pan
+float32 tilt
+geometry_msgs/Point32 pixel_projector
+geometry_msgs/Point32 pixel_ptc_laser
+geometry_msgs/Point32 pixel_ptc_projector
