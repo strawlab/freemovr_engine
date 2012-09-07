@@ -152,6 +152,13 @@ class DisplayServerProxy(object):
         fill_polygon.fill_polygon(points, image, 1)
         return image
 
+    def get_display_mask(self):
+        """ Gets the mask of all virtual displays (logical or) """
+        image = np.zeros((self.height, self.width, 1), dtype=np.bool)
+        for vdisp in self.get_display_info()['virtualDisplays']:
+            image |= self.get_virtual_display_mask(vdisp["id"])
+        return image
+
     def show_image(self, fname, unlink=False):
         try:
             image = vros_display.msg.VROSCompressedImage()
