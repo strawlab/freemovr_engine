@@ -205,9 +205,6 @@ cdef class MyNode:
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
-        with self._mode_lock:
-            self._mode_change =  args.stimulus
-
         rospy.init_node("display_server")
         time.sleep(1.0) # give a second to join ROS network, else early rospy.log* messages are lost
 
@@ -244,6 +241,13 @@ cdef class MyNode:
 
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo('tethered_mode: %s'%tethered_mode)
+        
+        self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
+        self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
+
+        with self._mode_lock:
+            self._mode_change =  args.stimulus
+            self._pub_mode.publish(self._mode_change)
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
@@ -273,8 +277,6 @@ cdef class MyNode:
         rospy.Service('~blit_compressed_image',
                       vros_display.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
-        self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
-        self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
 
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
