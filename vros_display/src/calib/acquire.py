@@ -30,9 +30,9 @@ class CameraHandler(object):
                 print self.topic_prefix,"full"
 
 class _Runner(object):
-    def __init__(self,cam_handlers,ros_latency=0.2):
+    def __init__(self,cam_handlers,ros_latency=0.2,queue_depth=20):
         self.cam_handlers = cam_handlers
-        self.im_queue = Queue.Queue(len(cam_handlers)*20)
+        self.im_queue = Queue.Queue(len(cam_handlers)*queue_depth)
         for ch in self.cam_handlers:
             ch.set_im_queue(self.im_queue)
         self.ros_latency = ros_latency
@@ -109,28 +109,34 @@ class SimultainousCameraRunner(_Runner):
 
         if post_func: post_func(*post_func_args)
 
-class SequentialCameraRunner(object):
-    def __init__(self,cam_handlers):
+class SequentialCameraRunner(_Runner):
+    def __init__(self,cam_handlers,**kwargs):
         _Runner.__init__(self, cam_handlers,**kwargs)
+        self.wait_duration = kwargs.get("wait_duration", 0.1)
+        self.check_earliest = False
+        self.check_latest = False
 
     def get_images(self,n_per_camera):
-        self.clear_queue()
-        tstart = time.time()
-        self.cycle_duration( self.wait_duration )
-        t_earliest = tstart + self.wait_duration
-        self.clear_queue()
         self._result.clear()
         for ch in self.cam_handlers:
             self._result[ch.topic_prefix] = []
+
+        t_earliest = time.time()
         self.clear_queue()
+        t_latest = t_earliest + (self.ros_latency + self.max_cam_latency)
+
         while not self._is_done(self._result,n_per_camera):
-            topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
-            t_image = msg.header.stamp.to_sec()
-            t_diff = abs(t_image-t_earliest)
-            if t_diff > 10.0:
-                raise ValueError('image timestamps more than 10 seconds different (was %f)' % t_diff)
-            if t_image < t_earliest:
-                # image too old
+            try:
+                topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
+            except Queue.Empty:
                 continue
+
+            t_image = msg.header.stamp.to_sec()
+            if self.check_latest and t_image > t_latest:
+                rospy.logwarn("image from %s at t=%f was too slow (by %f)" % (topic_prefix, t_image, t_image - t_latest))
+            if self.check_earliest and t_image < t_earliest:
+                rospy.logwarn("image from %s at t=%f was too early (by %f)" % (topic_prefix, t_image, t_earliest - t_image))
+                continue
+
             self._result[topic_prefix].append( msg )
 
