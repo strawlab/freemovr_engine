@@ -38,14 +38,10 @@ class DisplayServerProxy(object):
             rospy.loginfo('waiting for display server: %s' % self._server_node_name)
             rospy.wait_for_service(self.get_fullname('set_display_server_mode'))
 
-        self.get_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('get_display_server_mode'),
-                                                                vros_display.srv.GetDisplayServerMode)
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
                                                                 vros_display.srv.SetDisplayServerMode)
         self.blit_compressed_image_proxy = rospy.ServiceProxy(self.get_fullname('blit_compressed_image'),
                                                                 vros_display.srv.BlitCompressedImage)
-
-
     @property
     def name(self):
         return self._server_node_name
@@ -63,14 +59,12 @@ class DisplayServerProxy(object):
         publisher = rospy.Publisher('/stimulus_mode', std_msgs.msg.String, latch=True)
         publisher.publish(mode)
 
-    def get_fullname(self,name):
-        return self._server_node_name+'/'+name
-
-    def _spin_wait(self,mode):
-        done = [False]
+    def _spin_wait_for_mode(self,mode):
+        done = [False, None]
         def cb(msg):
-            if msg.data==mode:
+            if mode == None or msg.data == mode:
                 done[0] = True
+            done[1] = msg.data
         sub = rospy.Subscriber( self.get_fullname('stimulus_mode'),
                                 std_msgs.msg.String, cb )
         r = rospy.Rate(10.0)
@@ -78,16 +72,20 @@ class DisplayServerProxy(object):
              r.sleep()
         sub.unregister()
 
-    def enter_standby_mode(self):
-        response = self.get_display_server_mode_proxy()
+        return done[1]
 
+    def get_fullname(self,name):
+        return self._server_node_name+'/'+name
+
+    def enter_standby_mode(self):
+        mode = self._spin_wait_for_mode(None)
         # return to standby mode in server if needed
-        if response.mode != 'standby':
+        if mode != 'standby':
             return_to_standby_proxy = rospy.ServiceProxy(self.get_fullname('return_to_standby'),
                                                          vros_display.srv.ReturnToStandby)
 
             return_to_standby_proxy()
-            self._spin_wait('StimulusStandby') # wait until in standby mode
+            self._spin_wait_for_mode('StimulusStandby') # wait until in standby mode
 
     def enter_2dblit_mode(self):
         self.set_mode('Stimulus2DBlit')
@@ -99,15 +97,15 @@ class DisplayServerProxy(object):
             mode = 'Stimulus2DBlit'
 
         self.set_display_server_mode_proxy(mode)
-        if mode=='quit':
+        if mode == 'quit':
             return
 
         # Wait until in desired mode - important so published messages
         # get to the receiver.
-        self._spin_wait(mode)
+        self._spin_wait_for_mode(mode)
 
     def get_mode(self):
-        return self.get_display_server_mode_proxy().mode
+        return self._spin_wait_for_mode(None)
 
     def get_display_info(self, nocache=False):
         if nocache or not self._info_cached:
