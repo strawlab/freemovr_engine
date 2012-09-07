@@ -1,23 +1,21 @@
 #!/usr/bin/env python
 
-import argparse
-
-# ROS imports ############################
 import roslib; roslib.load_manifest('vros_display')
 import rospy
+
+import os
+import argparse
 
 import numpy as np
 import scipy.misc
 
 import vros_display.srv
 import display_client
-##########################################
-import os
 
-def show_image(fname,white,black,viewport):
+def show_image(ds,viewport,fname,white,black,pixel):
     rospy.init_node('show_image')
 
-    dsc = display_client.DisplayServerProxy()
+    dsc = display_client.DisplayServerProxy(ds)
     dsc.enter_2dblit_mode()
 
     if viewport:
@@ -38,6 +36,13 @@ def show_image(fname,white,black,viewport):
                 arr = np.resize(arr, masks.shape)
             arr *= masks
 
+    if pixel and (white or black):
+        ptsize = 2
+        col,row = map(int,pixel.split(','))
+        arr[row-ptsize:row+ptsize,col-ptsize:col+ptsize,:3] =\
+            dsc.IMAGE_COLOR_BLACK if white else dsc.IMAGE_COLOR_WHITE
+        print col
+
     dsc.show_pixels(arr)
 
 def main():
@@ -49,11 +54,15 @@ def main():
     parser.add_argument('--white', action='store_true', help='show a white screen')
     parser.add_argument('--black', action='store_true', help='show a black screen')
     parser.add_argument('--viewport', type=str, help='only show on this viewport')
+    parser.add_argument(
+        '--display-server', type=str, metavar='/display_server', required=True, help=\
+        'the path of the display server to configure')
+    parser.add_argument('--pixel', type=str, help='light this pixel', metavar='x,y')
     
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    show_image(args.fname, args.white, args.black, args.viewport)
+    show_image(args.display_server, args.viewport, args.fname, args.white, args.black, args.pixel)
 
 if __name__=='__main__':
     main()
