@@ -1,8 +1,10 @@
 import time
 
+import math
 import numpy as np
 import scipy.ndimage
 import cv,cv2
+import traceback
 
 class DotBGFeatureDetector:
     WIN_TYPES = {
@@ -53,30 +55,44 @@ class DotBGFeatureDetector:
                 img = arr
             cv2.imshow(self._handles[win_type], img)
 
-    def _show_features_and_diff(self, diff, features, sz=-1):
+    def _show_features_and_diff(self, diff, dmax, features, sz=-1, scalediff=False,
+                                                                   scalediffonlyfeatures=False,
+                                                                   showdmax=True):
         if "F" in self._handles:
-            ri,ci = diff.shape
+            if scalediff:
+                if not scalediffonlyfeatures or (scaldiffonlyfeatures and features):
+                    if dmax < 255:
+                        diff /= (dmax / 255.0)
+            
             b = np.zeros(diff.shape,dtype=np.uint8)
             g = np.zeros(diff.shape,dtype=np.uint8)
+            rgb = np.dstack((b,g,diff))
 
+            #dstack doesnt copy the memory in such a way that it works with
+            #opencv.... sigh.
+            img = rgb.copy()
+            
             for f in features:
                 rf,cf = int(f[0]),int(f[1])
-                if sz < 0:
-                    g[rf,0:ci] = 255
-                    g[0:ri,cf] = 255
-                elif sz == 0:
-                    g[rf,cf] = 255
-                else:
-                    g[max(0,rf-sz):min(rf+sz,ri),max(0,cf-sz):min(cf+sz,ci)] = 255
+                add_crosshairs_to_nparr(
+                        arr=img,
+                        row=rf, col=cf,
+                        sz=sz, fill=255, chan=1)
 
-            rgb = np.dstack((b,g,diff))
-            cv2.imshow(self._handles["F"], rgb.copy())
+            if showdmax:
+                cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
+
+            cv2.imshow(self._handles["F"], img)
 
     def _argmax(self, arr):
         return np.unravel_index(arr.argmax(), arr.shape)
 
-    def set_mask(self, arr):
-        self._mask = arr.astype(np.bool).copy()
+    def set_mask(self, arr, copy=True):
+        if copy:
+            #FIXME: DO I NEED TO MAKE THIS COPY IN ANY CASE???
+            self._mask = arr.astype(np.bool).copy()
+        else:
+            self._mask = arr
 
     def clear_mask(self):
         self._mask = None
@@ -99,34 +115,39 @@ class DotBGFeatureDetector:
 
         t1 = time.time()
 
-        #prevent wrap-around unsiged subtraction (is there a better way to do this??)
-        diff = imarr.astype(np.int16) - self._bg
-        diff = diff.clip(0,255).astype(np.uint8)
+        if self._bg != None:
+            #prevent wrap-around unsiged subtraction (is there a better way to do this??)
+            diff = imarr.astype(np.int16) - self._bg
+            diff = diff.clip(0,255).astype(np.uint8)
+        else:
+            diff = imarr.astype(np.uint8)
 
         if self._mask != None:
             diff *= self._mask
 
+        dmax = diff.max()
+
         self._show_img(diff, "D")
 
         if self._debug:
-            print "diff max: %d (thresh: %d) %s" % (diff.max(), thresh, self._name)
+            print "diff max: %d (thresh: %d) %s" % (dmax, thresh, self._name)
 
-        if diff.max() < thresh:
+        if dmax < thresh:
             features = []
-            feature_detector_vis = diff
+            feature_detector_vis_diff = diff
         elif self._method == "medbinary":
             scipy.ndimage.median_filter(diff,3,output=diff)
             binary = np.where(diff > thresh, 255, 0).astype(np.uint8)
-            feature_detector_vis = binary
+            feature_detector_vis_diff = binary
             features = [self._argmax(binary)]
         elif self._method == "morphbinary":
             binary = np.where(diff > thresh, 255, 0)
             scipy.ndimage.binary_opening(binary, output=binary)
-            feature_detector_vis = (binary*255).astype(np.uint8)
+            feature_detector_vis_diff = (binary*255).astype(np.uint8)
             features = [self._argmax(binary)]
         elif self._method == "med":
             scipy.ndimage.median_filter(diff,3,output=diff)
-            feature_detector_vis = diff
+            feature_detector_vis_diff = diff
             features = [self._argmax(diff)]
         else:
             raise Exception("Not Supported")
@@ -135,7 +156,7 @@ class DotBGFeatureDetector:
         if self._benchmark:
             print "%s (%s) = %.1fms" % (self._method, self._name, (t2-t1)*1000)
 
-        self._show_features_and_diff(feature_detector_vis, features)
+        self._show_features_and_diff(feature_detector_vis_diff, dmax, features)
 
         return features
 
@@ -154,5 +175,37 @@ def load_mask_image(mask_image_fname):
     alpha = im[:,:,3]
     mask = ~alpha.astype(np.bool)
     return mask
+
+def add_crosshairs_to_nparr(arr, row, col, sz=-1, fill=255, chan=None):
+    ri = arr.shape[0]
+    ci = arr.shape[1]
+    
+    row = np.clip(math.floor(row),0,ri-1)
+    col = np.clip(math.floor(col),0,ci-1)
+    
+    try:
+        if sz < 0:
+            if chan == None:
+                arr[row,0:ci] = fill
+                arr[0:ri,col] = fill
+            else:
+                arr[row,0:ci,chan] = fill
+                arr[0:ri,col,chan] = fill
+        elif sz == 0:
+            if chan == None:
+                arr[row,col] = fill
+            else:
+                arr[row,col,chan] = fill
+        else:
+            if chan == None:
+                arr[max(0,row-sz):min(row+sz,ri),max(0,col-sz):min(col+sz,ci)] = fill
+            else:
+                arr[max(0,row-sz):min(row+sz,ri),max(0,col-sz):min(col+sz,ci),chan] = fill
+    except:
+        print "-----"*5
+        print "ERROR PAINTING ARRAY",row,col,sz,fill,chan,arr.shape
+        traceback.print_exc()
+        print "-----"*5
+
 
 
