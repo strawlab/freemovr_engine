@@ -181,7 +181,6 @@ class DisplayServerProxy(object):
         arr.fill(color)
         if mask != None:
             arr *= mask
-        #arr[:,:,3]=255
         return arr
 
     @property
