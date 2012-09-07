@@ -313,6 +313,7 @@ cdef class MyNode:
     def handle_return_to_standby(self,request):
         with self._mode_lock:
             self._mode_change = 'StimulusStandby'
+        return vros_display.srv.ReturnToStandbyResponse()
 
     def handle_blit_compressed_image(self,request):
         # this is called in some callback thread by ROS
