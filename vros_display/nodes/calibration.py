@@ -56,6 +56,7 @@ from std_msgs.msg import UInt32, String
 CHAN_R = 2
 CHAN_G = 1
 CHAN_B = 0
+CALIBMAPPING_TOPIC = '/calibration/mapping'
 
 def get_centre_of_vdisp(vdmask):
     """ returns col,row """
@@ -145,11 +146,23 @@ class DataIO:
     def close(self):
         self._bag.close()
         rospy.loginfo("Saved to %s" % self._dest)
-        
-    def load(self, name):
-        self._bag = rosbag.Bag(
-                        os.path.join(self.outdir,name) if name[0] != '/' else name,
-                        'r')
+
+    def load(self, name, vis_callback_2d=None):
+        with rosbag.Bag(name, 'r') as bag:
+            for topic, msg, t in bag.read_messages(topics=[CALIBMAPPING_TOPIC]):
+                self._add_mapping(msg)
+                if vis_callback_2d:
+                    vis_callback_2d(ds=msg.display_server, 
+                                    col=msg.pixel_projector.x,
+                                    row=msg.pixel_projector.y,
+                                    pan=msg.pan,
+                                    tilt=msg.tilt)
+
+    def _add_mapping(self, c):
+        self._bag.write(self.CALIBMAPPING_TOPIC,c)
+        self.num_points += 1
+        self._pub_mapping.publish(c)
+        self._pub_num_pts.publish(self.num_points)
 
     def add_mapping(self, **kwargs):
         c = CalibMapping()
@@ -165,11 +178,7 @@ class DataIO:
         c.pixel_ptc_laser = Point32(*kwargs["pixel_ptc_laser"])
         c.pixel_ptc_projector = Point32(*kwargs["pixel_ptc_projector"])
         
-        self.num_points += 1
-        self._bag.write(self.CALIBMAPPING_TOPIC,c)
-        
-        self._pub_mapping.publish(c)
-        self._pub_num_pts.publish(self.num_points)
+        self._add_mapping(c)
 
 show_laser_scatter = True
 laser_handle = "pantilt"
@@ -179,6 +188,7 @@ class Calib:
     MODE_SLEEP = "sleep"
     MODE_MANUAL_TRACKING = "manual_tracking"
     MODE_MANUAL_PROJECTOR = "manual_projector"
+    MODE_MANUAL_CLICKED = "manual_clicked"
     MODE_DISPLAY_SERVER = "display_server"
     MODE_DISPLAY_SERVER_STOP = "display_server_stop"
     MODE_DISPLAY_SERVER_VDISP = "display_server_vdisp"
@@ -251,23 +261,31 @@ class Calib:
         if show_laser_scatter:
             handle = laser_handle
             cv2.namedWindow(handle)
-            self._laser_handles[handle] = np.zeros((51,361,3),dtype=np.uint8)
+            sizepan = self.laser_range_pan[1] - self.laser_range_pan[0]
+            sizetilt = self.laser_range_tilt[1] - self.laser_range_tilt[0]
+            self._laser_handles[handle] = np.zeros((sizetilt+1,sizepan+1,3),dtype=np.uint8)
             cv2.imshow(handle, self._laser_handles[handle])
 
         self._light_proj_cache = tuple()
         for d in self.display_servers:
-            for vdisp in self.display_servers[d]["virtualDisplays"]:
-                vdispname = vdisp["id"]
-                self.results[d] = dict(vdispname=list())
             dsc = display_client.DisplayServerProxy(d,wait=True)
             dsc.enter_2dblit_mode()
 
+            self.display_servers[d]["vdmask"] = {}
+            for vdisp in self.display_servers[d]["virtualDisplays"]:
+                vdispname = vdisp["id"]
+                self.results[d] = dict(vdispname=list())
+                self.display_servers[d]["vdmask"][vdispname] = dsc.get_virtual_display_mask(vdisp)
+
             self.display_servers[d]["display_client"] = dsc
             rospy.loginfo("Calibrating %s" % d)
-            
+
+            self._click_queue = {} #display_server:[(col, row), ...]
             if d in show_display_servers:
                 handle = d+"-xyz"
                 cv2.namedWindow(handle)
+                self._click_queue[d] = []
+                cv2.setMouseCallback(handle, self._display_server_window_click, d)                
                 self.show_display_servers[d] = {}
 
                 #get the masks for the lot
@@ -307,24 +325,26 @@ class Calib:
                                 (CameraHandler(laser_camera,debug=debug>0),),
                                 queue_depth=1)
         self.laser_detector = fd
-        self._set_bg_mask(self.laser_camera, self.laser_detector)
+        self.laser_mask = load_mask_image(decode_url(config["laser_camera_mask"]))
 
         #need to recieve images (i.e. by calculating the background) before
         #being able to read the resoluions
         self._calculate_background()
-
-        if continue_calibration:
-            path = os.path.abspath(os.path.expanduser(continue_calibration))
-            self._load_previous_calibration(path)
 
         self._vdisptocalibrate = []            
         self._vdispinfo = {}
 
         self.mode_lock = threading.Lock()
         self.mode_args = tuple()
-        
-        s = rospy.Service('~calib_change_mode', vros_display.srv.CalibMode, self._change_mode)
 
+        if continue_calibration:
+            path = decode_url(continue_calibration)
+            if os.path.exists(path):
+                self._load_previous_calibration(path)
+            else:
+                rospy.logerr("could not find requested calibration to load")
+
+        s = rospy.Service('~calib_change_mode', vros_display.srv.CalibMode, self._change_mode)
         self.change_mode(self.MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
@@ -332,6 +352,14 @@ class Calib:
             self.mode = mode
             self.mode_args = service_args
             rospy.loginfo("Changing to mode -> %s (args %s)" % (mode,repr(self.mode_args)))
+
+    def _display_server_window_click(self, event, col, row, flags, ds):
+        if flags & cv.CV_EVENT_FLAG_LBUTTON:
+            rospy.loginfo("queuing point col:%s row:%s" % (col,row))
+            self._click_queue[ds].append( (col,row) )
+        elif flags & cv.CV_EVENT_FLAG_RBUTTON:
+            rospy.loginfo("clearing queued points")
+            self._click_queue[ds] = []
 
     def _change_mode(self, req):
         self.change_mode(req.mode, req.sa, req.fa, req.fb, req.fc)
@@ -384,7 +412,8 @@ class Calib:
             img = self._laser_handles[handle].copy()
             add_crosshairs_to_nparr(
                         arr=img,
-                        row=math.floor(tilt)+50, col=math.floor(pan)+180,
+                        row=math.floor(tilt)+(0-self.laser_range_tilt[0]),
+                        col=math.floor(pan)+(0-self.laser_range_pan[0]),
                         sz=-1,  fill=255, chan=1)
             cv2.imshow(handle, img)
         
@@ -462,9 +491,17 @@ class Calib:
     def _detect_laser_camera_2d_point(self, thresh, msgprefix=""):
         self.laser_runner.get_images(1)
         imgs = self.laser_runner.result_as_nparray
+
+        if thresh == self.laser_thresh:
+            self.laser_detector.set_mask(self.laser_mask, copy=False)
+
         features = self.laser_detector.detect(
                         imgs[self.laser_camera][:,:,0],
                         thresh)
+
+        if thresh == self.laser_thresh:
+            self.laser_detector.clear_mask()
+
         if features:
             row,col = features[0]
             if thresh == self.laser_thresh:
@@ -488,19 +525,42 @@ class Calib:
     def _detect_3d_point(self, runner, thresh):
         restrict = self.tracking_cameras.keys()
         detected,nvisible = self._detect_points(runner, thresh, restrict)
-        if nvisible >= 3:
+        xyz = None
+        pts = None
+        reproj = 0
+        if nvisible >= 2:
             rospy.logdebug("#%d: (%d visible: %s)" % (self.num_results, nvisible, ','.join(detected.keys())))
             pts = []
             for d in detected:
                 safe_name = d if d[0] != "/" else d[1:]
                 pts.append( (safe_name,detected[d]) )
             xyz = self.flydra.find3d(pts,return_line_coords=False, undistort=True)
-            rospy.loginfo("detect 3D: %s" % repr(xyz))
-            return xyz,pts
-        return None,None
+        if xyz != None:
+            recon_3d = []
+            for camid,(u,v) in pts:
+                u2,v2 = self.flydra.find2d(camid,xyz,distorted=True)
+                d = math.sqrt((u-u2)**2 + (v-v2)**2)
+                recon_3d.append(d)
+            reproj = np.mean(recon_3d)
+
+            if reproj >= 10:
+                xyz = None
+
+        if xyz != None:
+            rospy.loginfo("detect 3D: %s (reproj:%.1f)" % (repr(xyz),reproj))
+
+        return xyz,pts,nvisible,reproj
 
     def _load_previous_calibration(self, path):
-        pass
+        self.data.load(path, vis_callback_2d=self._show_correspondence)
+        for ds in self.show_display_servers:
+            cv2.imshow(
+                    self.show_display_servers[ds]["handle"],
+                    self.show_display_servers[ds]["visualizeimg"])
+        if show_laser_scatter:
+            cv2.imshow(
+                    laser_handle,
+                    self._laser_handles[laser_handle])
 
     def _parse_ds_specified(self, args):
         try:
@@ -524,6 +584,25 @@ class Calib:
 
         return ds,vdisp,vdispinfo,centroid
 
+    def _show_correspondence(self, ds, col, row, pan, tilt):
+        handle = self.show_display_servers[ds]["handle"]
+        img =  self.show_display_servers[ds]["visualizeimg"]
+        add_crosshairs_to_nparr(
+            arr=img,
+            row=row,
+            col=col,
+            sz=1, fill=255, chan=0)
+
+        if show_laser_scatter:
+            handle = laser_handle
+            img = self._laser_handles[handle]
+            try:
+                t = math.floor(tilt+(0-self.laser_range_tilt[0]))
+                p = math.floor(pan+(0-self.laser_range_pan[0]))
+                img[t,p,:] = 255
+            except:
+                rospy.logerr("could not plot pan/tilt: tilt:%s pan:%s" % (tilt,pan))
+
     def run(self):
         while not rospy.is_shutdown():
             with self.mode_lock:
@@ -536,8 +615,8 @@ class Calib:
                 pass
                 
             elif mode == self.MODE_MANUAL_TRACKING:
-                xyz, pts = self._detect_3d_point(self.runner, self.laser_thresh)
-                col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
+                xyz,pts,nvisible,reproj = self._detect_3d_point(self.runner, self.laser_thresh)
+                col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
 
             elif mode == self.MODE_MANUAL_PROJECTOR:
                 try:
@@ -555,7 +634,30 @@ class Calib:
 
                 self._light_proj_pixel(ds, row=row, col=col)
                 col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
-                
+
+            elif mode == self.MODE_MANUAL_CLICKED:
+                tocal = []
+                for ds,pts in self._click_queue.items():    
+                    if pts:
+                        for vdisp in self.display_servers[ds]["virtualDisplays"]:
+                            dsc = self.display_servers[ds]["display_client"]
+                            vdispname = vdisp["id"]
+                            vdmask = dsc.get_virtual_display_mask(vdispname)
+                            for col,row in pts:
+                                if vdmask[row,col]:
+                                    rospy.loginfo("clicked to select col:%s row:%s in %s" % (col,row,vdispname))
+                                    tocal.append( (ds,vdispname,vdisp.copy(),(col,row)) )
+
+                for ds in self.show_display_servers:
+                    self._click_queue[ds] = []
+
+                if tocal:
+                    self._vdisptocalibrate = tocal
+                    self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                    continue
+
+                self.change_mode(self.MODE_SLEEP)
+
             elif mode == self.MODE_DISPLAY_SERVER:
                 tocal = []
                 for ds in ["display_server0"]:
@@ -668,7 +770,7 @@ class Calib:
                                     else:
                                         tries -= 1
                                         
-                            if not found and (fine_dist < 10):
+                            if not found and (fine_dist < 40):
                                 print "AVERAGE DIST", fine_dist
                                 found = True
                                         
@@ -692,6 +794,8 @@ class Calib:
                     self._vdispinfo["height"] = self.display_servers[ds]["height"]
 
                     self._vdispinfo["pointsneeded"] = int(self.laser_need_n_points)
+                    
+                    self._vdispinfo["homeattempt"] = 30
 
                     self.change_mode(self.MODE_DISPLAY_SERVER_HOME)
                 else:
@@ -704,37 +808,54 @@ class Calib:
                     cv2.imshow(handle, img)
 
             elif mode == self.MODE_DISPLAY_SERVER_HOME:
-                self.laser_proxy_pan(self._vdispinfo["panmid"])
-                self.laser_proxy_tilt(self._vdispinfo["tiltmid"])
-                dsc = self._vdispinfo["dsc"]
-                dsc.show_pixels(dsc.new_image(dsc.IMAGE_COLOR_BLACK, mask=None))
-                self.laser_proxy_power(True)
-                rospy.sleep(2.0)
+                ds = self._vdispinfo["ds"]
+                self._light_laser_pixel(self._vdispinfo["panmid"], self._vdispinfo["tiltmid"], power=True)
+                self._black_projector(ds)
+                
+                self._vdispinfo["homeattempt"] -= 1
+                if self._vdispinfo["homeattempt"] < 0:
+                    rospy.logwarn("giving up, could not get laser home location (maybe reflection)")
+                    self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                    continue
+                
                 col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
                 if col != None:
                     self.laser_proxy_power(False)
-                    self._vdispinfo["currattempt3d"] = 0
+                    
+                    #generate N random points about the start - and include the
+                    #start point. This sampling could be better done as a grid...
+                    #
+                    #this is the maximum number of points we will test, so be generous
+                    #because this loop is exited when we have collected enough points,
+                    #not when this list is empty (so we will not necessarily take this long)
+                    self._vdispinfo["currattempt3d"] = [(self._vdispinfo["panmid"],self._vdispinfo["tiltmid"])]
+                    self._vdispinfo["currattempt3d"].extend(
+                            [(self._vdispinfo["panmid"]  + random.randint(*self.laser_search_size),
+                              self._vdispinfo["tiltmid"] + random.randint(*self.laser_search_size)) \
+                                for i in range(150)])
+
                     self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
 
             elif mode == self.MODE_DISPLAY_SERVER_LASER:
-                ds = self._vdispinfo["ds"]
-                self._black_projector(ds)
-
-                if self._vdispinfo["currattempt3d"] == 0:
-                    pan = self._vdispinfo["panmid"] + random.randint(*self.laser_search_size)
-                    tilt = self._vdispinfo["tiltmid"] + random.randint(*self.laser_search_size)
+                try:
+                    pan,tilt = self._vdispinfo["currattempt3d"].pop()
                     pan,tilt = self._light_laser_pixel(pan, tilt, power=True)
                     self._vdispinfo["currpan"] = pan
                     self._vdispinfo["currtilt"] = tilt
-                    self._vdispinfo["currattempt3d"] = 3
+                except IndexError:
+                    rospy.logwarn("giving up, could not get a 3D reconstruction")
+                    self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)                    
+
+                ds = self._vdispinfo["ds"]
+                self._black_projector(ds)
                 
-                xyz, pts = self._detect_3d_point(self.runner, self.laser_thresh)
+                xyz,pts,nvisible,reproj = self._detect_3d_point(self.runner, self.laser_thresh)
                 #always do this detection to keep the basler camera updated... even
                 #if there is a chance we throw away the result
                 col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
 
                 if xyz == None:
-                    self._vdispinfo["currattempt3d"] -= 1
+                    rospy.loginfo("no 3d point (visible in %d cams, reproj error: %f)" % (nvisible,reproj))
                     continue
 
                 if col != None:
@@ -755,24 +876,24 @@ class Calib:
                 self.laser_proxy_power(False)
                 
                 self._vdispinfo["currattempt"] -= 1
-
                 if self._vdispinfo["currattempt"] < 0:
-                    #FIXME: Need to break out of here
-                    rospy.logwarn("GIVE UP (No attempts left)")
-                    self._vdispinfo["currattempt3d"] = 0
+                    rospy.logwarn("giving up, could not get a 3D reconstruction")
                     self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
+                    continue
     
-                #FIXME: THIS IS FAIL. IF WE MISS THE PROJ PIXEL THEM WE JUST KEEP
-                #TRYING THE SAME ONE AND GIVE UP. THIS NEEDS TO BE FLIPPED
                 self._light_proj_pixel(
                         ds,
                         row=self._vdispinfo["projrow"],
                         col=self._vdispinfo["projcol"])
 
-                col,row = self._detect_laser_camera_2d_point(self.visible_thresh,
-                                                             msgprefix="attempt %d " % self._vdispinfo["currattempt"])
+                col,row = self._detect_laser_camera_2d_point(
+                                    self.visible_thresh,
+                                    msgprefix="attempt %d " % self._vdispinfo["currattempt"])
+
+                #missed the projector pixel. try again (we are safe from looping
+                #because of the currattempt test)
                 if col == None:
-                    self._vdispinfo["currattempt"] -= 1
+                    continue
                 else:
                     targetcol = self._vdispinfo["targetcol"]
                     targetrow = self._vdispinfo["targetrow"]
@@ -815,17 +936,23 @@ class Calib:
                     self._vdispinfo["projrow"] = np.clip(projrow,0,self._vdispinfo["height"]-1)
 
                     if colfound and rowfound:
-                        if ds in self.show_display_servers:
-                            handle = self.show_display_servers[ds]["handle"]
-                            img =  self.show_display_servers[ds]["visualizeimg"]
-                            add_crosshairs_to_nparr(
-                                arr=img,
-                                row=self._vdispinfo["projrow"],
-                                col=self._vdispinfo["projcol"],
-                                sz=1, fill=255, chan=0)
-                            cv2.imshow(handle, img.copy())
+                        if ds in self.show_display_servers or show_laser_scatter:
+                            self._show_correspondence(
+                                    ds=ds,
+                                    col=self._vdispinfo["projcol"],
+                                    row=self._vdispinfo["projrow"],
+                                    pan=self._vdispinfo["currpan"],
+                                    tilt=self._vdispinfo["currtilt"])
+                            if ds in self.show_display_servers:
+                                cv2.imshow(
+                                        self.show_display_servers[ds]["handle"],
+                                        self.show_display_servers[ds]["visualizeimg"])
+                            if show_laser_scatter:
+                                cv2.imshow(
+                                        laser_handle,
+                                        self._laser_handles[laser_handle])
 
-                        rospy.loginfo("FOUND")
+                        rospy.loginfo("FOUND CORRESPONDENCE")
                         self.data.add_mapping(
                                 points=self._vdispinfo["currpts"],
                                 display_server=ds,
@@ -842,22 +969,8 @@ class Calib:
                                 pixel_ptc_projector=(col,
                                                      row,
                                                      0))
+
                         self._vdispinfo["pointsneeded"] -= 1
-                        self._vdispinfo["currattempt3d"] = 0
-                        
-                        if show_laser_scatter:
-                            handle = laser_handle
-                            img = self._laser_handles[handle]
-                            try:
-                                t = math.floor(self._vdispinfo["currtilt"]+50)
-                                p = math.floor(self._vdispinfo["currpan"]+180)
-                                img[t,p,:] = 255
-                            except:
-                                rospy.logerr("invalid pan/tilt: tilt:%s pan:%s" % (
-                                        self._vdispinfo["currtilt"],
-                                        self._vdispinfo["currpan"]))
-                            cv2.imshow(handle, img)
-                        
                         if self._vdispinfo["pointsneeded"] > 0:
                             self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
                         else:
@@ -900,7 +1013,7 @@ if __name__ == '__main__':
         help='path to save calibration data')
     parser.add_argument(
         '--continue-calibration', type=str,
-        help='path to previous calibration .pkl file')
+        help='path to previous calibration bag file')
     parser.add_argument(
         '--show-display-servers', type=str, default=("",),
         help='show display servers with the given names (or "all") calibration in process',
