@@ -56,6 +56,7 @@ class ViewportDefiner(HasTraits):
     display_mode = traits.Trait('white on black', 'black on white')
     display_server = traits.Any
     display_info = traits.Any
+    show_grid = traits.Bool
 
     traits_view = View(
                     Group(
@@ -104,13 +105,14 @@ class ViewportDefiner(HasTraits):
         self._image = np.zeros( (self.height, self.width, 3), dtype=np.uint8)
         fill_polygon.fill_polygon( self.linedraw.points, self._image )
 
-        # draw red horizontal stripes
-        for i in range(0,self.height,100):
-            self._image[i:i+10,:,0] = 255
+        if self.show_grid:
+            # draw red horizontal stripes
+            for i in range(0,self.height,100):
+                self._image[i:i+10,:,0] = 255
 
-        # draw blue vertical stripes
-        for i in range(0,self.width,100):
-            self._image[:,i:i+10,2] = 255
+            # draw blue vertical stripes
+            for i in range(0,self.width,100):
+                self._image[:,i:i+10,2] = 255
 
         if hasattr(self,'_pd'):
             self._pd.set_data("imagedata", self._image)
@@ -184,11 +186,14 @@ def main():
         '--display-server', type=str, metavar='/display_server', required=True, help=\
         'the path of the display server to configure')
     parser.add_argument(
-        '--virtual-display-id', type=str, metavar='vdisp', required=True, help=\
+        '--viewport', type=str, metavar='vdisp', required=True, help=\
         'the id of the virtual display on the display server')
     parser.add_argument(
         '--wait', action='store_true', default=False, help=\
         'wait for display server to start (useful when roslaunched)')
+    parser.add_argument(
+        '--show-grid', action='store_true', default=False, help=\
+        'show red and blue grid in the viewports')
     # use argparse, but only after ROS did its thing
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
@@ -206,7 +211,8 @@ def main():
                            width=display_info['width'],
                            height=display_info['height'],
                            display_name=args.display_server,
-                           viewport_id = args.virtual_display_id)
+                           viewport_id = args.viewport,
+                           show_grid = args.show_grid)
 
     tmp = demo.linedraw # trigger default value to be initialized. (XXX how else to do this?)
     demo.configure_traits()
