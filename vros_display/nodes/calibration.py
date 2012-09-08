@@ -660,22 +660,44 @@ class Calib:
                 self.change_mode(self.MODE_SLEEP)
 
             elif mode == self.MODE_DISPLAY_SERVER:
+                try:
+                    ds,selected_vdisp = service_args[0].split('/')
+                    if ds not in self.display_servers:
+                        raise ValueError
+                    options = [ds]
+                except (ValueError, KeyError):
+                    options = self.display_servers.keys()
+                    selected_vdisp = None
+
+                try:
+                    pointspace = int(service_args[1])
+                except:
+                    pointspace = 40
+                finally:
+                    pointspace = np.clip(pointspace,0,200)
+                    rospy.loginfo("calibrating display servers %r/%s with %d point space" % (
+                                    options, selected_vdisp, pointspace))
+
                 tocal = []
-                for ds in ["display_server0"]:
+                for ds in options:
                     for vdisp in self.display_servers[ds]["virtualDisplays"]:
                         vdispname = vdisp['id']
-                        dsc = self.display_servers[ds]["display_client"]
-
+                        
+                        #limit vdisps to thos specified
+                        if selected_vdisp != None and selected_vdisp != vdispname:
+                            continue
+                        
                         if ds in self.show_display_servers:
                             handle = self.show_display_servers[ds]["handle"]
                             img =  self.show_display_servers[ds]["visualizeimg"]
                         else:
                             img = None
 
+                        dsc = self.display_servers[ds]["display_client"]
                         vdmask = dsc.get_virtual_display_mask(vdispname)
                         vdpts = dsc.get_virtual_display_points(vdispname)
 
-                        centroids = generate_sampling_pixel_coords(vdmask,vdpts,60,img)
+                        centroids = generate_sampling_pixel_coords(vdmask,vdpts,pointspace,img)
                         for c in centroids:
                             tocal.append( (ds,vdispname,vdisp.copy(),c) )
 
