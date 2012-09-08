@@ -758,6 +758,9 @@ class Calib:
                                         linspace=True) )
 
                 for pan,tilt in searchpath:
+                    #so it doesnt look like we are hung
+                    self.pub_mode.publish(self.mode)
+
                     pan,tilt = self._light_laser_pixel(pan=pan,tilt=tilt,power=False)
                     col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
                     if col:
