@@ -266,7 +266,10 @@ class Calib:
             self._laser_handles[handle] = np.zeros((sizetilt+1,sizepan+1,3),dtype=np.uint8)
             cv2.imshow(handle, self._laser_handles[handle])
 
+#        display_client.DisplayServerProxy.set_stimulus_mode("Stimulus2DBlit")
+
         self._light_proj_cache = tuple()
+        self._click_queue = {} #display_server:[(col, row), ...]
         for d in self.display_servers:
             dsc = display_client.DisplayServerProxy(d,wait=True)
             dsc.enter_2dblit_mode()
@@ -280,12 +283,10 @@ class Calib:
             self.display_servers[d]["display_client"] = dsc
             rospy.loginfo("Calibrating %s" % d)
 
-            self._click_queue = {} #display_server:[(col, row), ...]
             if d in show_display_servers:
-                handle = d+"-xyz"
-                cv2.namedWindow(handle)
+                cv2.namedWindow(d)
                 self._click_queue[d] = []
-                cv2.setMouseCallback(handle, self._display_server_window_click, d)                
+                cv2.setMouseCallback(d, self._display_server_window_click, d)
                 self.show_display_servers[d] = {}
 
                 #get the masks for the lot
@@ -293,9 +294,9 @@ class Calib:
                 img = dsc.new_image(
                             color=255, mask=~allmask, nchan=3, dtype=np.uint8)
                 self.show_display_servers[d] = dict(
-                        handle=handle,
+                        handle=d,
                         visualizeimg=img)
-                cv2.imshow(handle, img)
+                cv2.imshow(d, img)
 
             self._black_projector(d)
             
