@@ -854,11 +854,18 @@ class Calib:
                     #this is the maximum number of points we will test, so be generous
                     #because this loop is exited when we have collected enough points,
                     #not when this list is empty (so we will not necessarily take this long)
-                    self._vdispinfo["currattempt3d"] = [(self._vdispinfo["panmid"],self._vdispinfo["tiltmid"])]
-                    self._vdispinfo["currattempt3d"].extend(
-                            [(self._vdispinfo["panmid"]  + random.randint(*self.laser_search_size),
-                              self._vdispinfo["tiltmid"] + random.randint(*self.laser_search_size)) \
-                                for i in range(150)])
+                    #
+                    #also, try each point twice in case the PTC was still moving
+                    reps = 2
+                    #start with current location
+                    p = self._vdispinfo["panmid"]
+                    t = self._vdispinfo["tiltmid"]
+                    self._vdispinfo["currattempt3d"] = [(p,t) for r in range(reps)]
+                    #random locatons
+                    for i in range(30):
+                        p = self._vdispinfo["panmid"]  + random.randint(*self.laser_search_size)
+                        t = self._vdispinfo["tiltmid"] + random.randint(*self.laser_search_size)
+                        self._vdispinfo["currattempt3d"].extend( (p,t) for i in range(reps) )
 
                     self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
 
@@ -903,7 +910,7 @@ class Calib:
                 
                 self._vdispinfo["currattempt"] -= 1
                 if self._vdispinfo["currattempt"] < 0:
-                    rospy.logwarn("giving up, could not get a 3D reconstruction")
+                    rospy.logwarn("giving up, no 3D reconstruction (%d attempts remain)" % self._vdispinfo["currattempt"])
                     self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
                     continue
     
