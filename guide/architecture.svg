@@ -49,16 +49,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.1179752"
-     inkscape:cx="531.74154"
-     inkscape:cy="282.10224"
+     inkscape:zoom="0.79052785"
+     inkscape:cx="649.74556"
+     inkscape:cy="322.66417"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1526"
-     inkscape:window-height="943"
-     inkscape:window-x="60"
-     inkscape:window-y="37"
+     inkscape:window-width="1039"
+     inkscape:window-height="866"
+     inkscape:window-x="854"
+     inkscape:window-y="146"
      inkscape:window-maximized="0"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -94,7 +94,7 @@
          y="58.076458"
          style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">VROS display_server architecture overview</tspan></text>
     <image
-       
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_virtual_world.jpg"
        xlink:href="images/architecture_virtual_world.jpg"
        width="212.92207"
        height="156.14285"
@@ -122,14 +122,19 @@
          x="20.698521"
          y="271.84"
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
-         id="tspan3078">• drawn via user-created plugin</tspan><tspan
+         id="tspan3046">  (e.g. skybox and foreground objects above)</tspan><tspan
          sodipodi:role="line"
          x="20.698521"
          y="284.34"
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
+         id="tspan3078">• drawn via user-created plugin</tspan><tspan
+         sodipodi:role="line"
+         x="20.698521"
+         y="296.84"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3076">• defined in lab frame</tspan></text>
     <image
-       
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_cubemap.png"
        xlink:href="images/architecture_cubemap.png"
        width="212.76375"
        height="159.76624"
@@ -159,7 +164,7 @@
          x="266.41281"
          sodipodi:role="line">• from viewpoint of observer in lab frame</tspan></text>
     <image
-       
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_geometry_texture.jpg"
        xlink:href="images/architecture_geometry_texture.jpg"
        transform="scale(-1,1)"
        width="158.57143"
@@ -195,7 +200,7 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3384">  frame</tspan></text>
     <image
-       
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_projector.jpg"
        xlink:href="images/architecture_projector.jpg"
        width="207.57143"
        height="155.67857"
@@ -223,7 +228,7 @@
          y="266.1257"
          x="706.41278"
          sodipodi:role="line"
-         id="tspan3382">  texture coordinates to projector coordinates</tspan><tspan
+         id="tspan3382">  texture coordinates to display pixels</tspan><tspan
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          y="278.6257"
          x="706.41278"
@@ -257,7 +262,7 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan4452">• measured during auto-calibration</tspan></text>
     <image
-       
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_p2g.png"
        xlink:href="images/architecture_p2g.png"
        width="206.57143"
        height="156.26685"
@@ -275,7 +280,7 @@
          y="491.57913"
          x="703.9408"
          id="tspan4522"
-         sodipodi:role="line">LUT from tex coords to display coords</tspan><tspan
+         sodipodi:role="line">LUT from tex coords to display pixels</tspan><tspan
          id="tspan4528"
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          y="504.07913"
@@ -357,19 +362,21 @@
        d="m 333.53037,304.714 0,-14.28572"
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
     <image
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/cyl-texcoords.png"
+       xlink:href="images/cyl-texcoords.png"
        y="309.25507"
        x="505.28571"
        id="image3313"
-       xlink:href="images/cyl-texcoords.png"
        height="151.84598"
        width="123.26724" />
     <g
        id="g3571"
        transform="translate(-11.069118,0.33542783)">
       <image
+         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/panels_full.png"
+         xlink:href="images/panels_full.png"
          width="36"
          height="36"
-         xlink:href="images/panels_full.png"
          id="image3378"
          x="642.71429"
          y="416.75507" />
@@ -384,7 +391,7 @@
            style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
            y="472.16437"
            x="659.34259"
-           sodipodi:role="line">x</tspan></text>
+           sodipodi:role="line">u</tspan></text>
       <text
          sodipodi:linespacing="125%"
          id="text3278-2-0-9"
@@ -396,21 +403,28 @@
            style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
            y="438.06213"
            x="691.92859"
-           sodipodi:role="line">y</tspan></text>
+           sodipodi:role="line">v</tspan></text>
       <image
+         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/panels_x.png"
+         xlink:href="images/panels_x.png"
          width="36.155239"
          height="9.2857141"
-         xlink:href="images/panels_x.png"
          id="image3503"
          x="642.49066"
          y="454.61221" />
       <image
+         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/panels_y.png"
+         xlink:href="images/panels_y.png"
          width="9.5817823"
          height="35.975048"
-         xlink:href="images/panels_y.png"
          id="image3568"
          x="680.534"
          y="416.82343" />
     </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 476.87569,302.21552 10.10153,-10.10153"
+       id="path3043"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>
