@@ -30,7 +30,7 @@ Y_INDEX = 1
 Z_INDEX = 2
 
 class Foo:
-    def __init__(self, visualize=True, new_reconstructor="", mask_out=False, update_parameter_server=False):
+    def __init__(self, visualize=True, new_reconstructor="", mask_out=False, update_parameter_server=True):
         self.data    = {}
         self.masks   = {}
         self.cvimgs  = {}
@@ -93,19 +93,57 @@ class Foo:
         self.dscs = dscs
         
     def make_exr(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
-        uv = self.geom.worldcoord2texcoord(xyz_arr)
-        
-        u0 = interpolate_pixel_cords(
-                points_2d_arr, uv[:,0],
-                img_width=dsc.width,
-                img_height=dsc.height,
-                method=filt_method)
-        v0 = interpolate_pixel_cords(
-                points_2d_arr, uv[:,1],
-                img_width=dsc.width,
-                img_height=dsc.height,
-                method=filt_method)
-                
+        if False:
+            uv = self.geom.worldcoord2texcoord(xyz_arr)
+
+            u0 = interpolate_pixel_cords(
+                    points_2d_arr, uv[:,0],
+                    img_width=dsc.width,
+                    img_height=dsc.height,
+                    method=filt_method)
+            v0 = interpolate_pixel_cords(
+                    points_2d_arr, uv[:,1],
+                    img_width=dsc.width,
+                    img_height=dsc.height,
+                    method=filt_method)
+        else:
+            x = xyz_arr[:,0]
+            y = xyz_arr[:,1]
+            z = xyz_arr[:,2]
+
+            x0 = interpolate_pixel_cords(
+                    points_2d_arr, x,
+                    img_width=dsc.width,
+                    img_height=dsc.height,
+                    method=filt_method)
+            y0 = interpolate_pixel_cords(
+                    points_2d_arr, y,
+                    img_width=dsc.width,
+                    img_height=dsc.height,
+                    method=filt_method)
+            z0 = interpolate_pixel_cords(
+                    points_2d_arr, z,
+                    img_width=dsc.width,
+                    img_height=dsc.height,
+                    method=filt_method)
+
+            xs = x0.ravel()
+            ys = y0.ravel()
+            zs = z0.ravel()
+            xyz_new = np.array( [xs, ys, zs] ).T
+            #q = np.empty((dsc.height,dsc.width,3))
+
+            #q[:,:,0] = x0
+            #q[:,:,1] = y0
+            #q[:,:,2] = z0
+
+            uv = self.geom.worldcoord2texcoord(xyz_new)
+            
+            u0 = uv[:,0]
+            v0 = uv[:,1]
+            u0.shape = x0.shape
+            v0.shape = x0.shape
+
         return u0, v0
 
     def fix_thing(self, u0, v0, u0nonan, v0nonan):
@@ -241,7 +279,12 @@ if __name__ == "__main__":
     rospy.init_node('calibration_generate_exr')
     cv2.startWindowThread()
 
-    C = decode_url("~/FLYDRA/vros-calibration/CALIB20120907_171639.bag")
+    ds0 = "CALIB20120907_222224.bag"
+    ds1 = "CALIB20120908_094650.bag"
+    ds3 = "CALIB20120908_175653.bag" #good middle
+    ds3 = "CALIB20120908_182035.bag" #sparse left mirror
+
+    C = decode_url("~/FLYDRA/vros-calibration/%s" % ds0)
 
     c = Foo()
     c.load(C)
