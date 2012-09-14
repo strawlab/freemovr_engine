@@ -9,6 +9,7 @@ import fnmatch
 import threading
 import tempfile
 import datetime
+import collections
 
 import json
 import yaml
@@ -41,6 +42,7 @@ import vros_display.srv
 
 import calib
 import calib.imgproc
+import calib.kdtree
 from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
 from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
@@ -52,6 +54,11 @@ import flydra.reconstruct
 from vros_display.msg import Calib2DPoint, CalibMapping
 from geometry_msgs.msg import Point32
 from std_msgs.msg import UInt32, String
+
+DisplayCorrespondence =     collections.namedtuple("DisplayCorrespondence",
+                                ["col","row","vdisp","pan","tilt","x","y","z"])
+PositionCorrenpondence =    collections.namedtuple("PositionCorrespondence",
+                                ["x","y","z","col","row","vdisp","pan","tilt"])
 
 CHAN_R = 2
 CHAN_G = 1
@@ -135,6 +142,9 @@ class DataIO:
 
         self.num_points = 0
         
+        self._display_tree = {}
+        self._position_tree = calib.kdtree.create(dimensions=3, check_dimensions=False)
+        
         self._pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self._pub_mapping = rospy.Publisher('~mapping', CalibMapping)
         
@@ -158,11 +168,52 @@ class DataIO:
                                     pan=msg.pan,
                                     tilt=msg.tilt)
 
+#        self._position_tree = self._position_tree.rebalance()
+#        for tree in self._display_tree.values():
+#            tree.rebalance()
+
     def _add_mapping(self, c):
+        dcorr = DisplayCorrespondence(
+                    col=c.pixel_projector.x,
+                    row=c.pixel_projector.y,
+                    vdisp=c.vdisp,
+                    pan=c.pan,
+                    tilt=c.tilt,
+                    x=c.position.x,
+                    y=c.position.y,
+                    z=c.position.z)
+        pcorr = PositionCorrenpondence(
+                    x=c.position.x,
+                    y=c.position.y,
+                    z=c.position.z,
+                    col=c.pixel_projector.x,
+                    row=c.pixel_projector.y,
+                    vdisp=c.vdisp,
+                    pan=c.pan,
+                    tilt=c.tilt)
+                    
+        self._position_tree.add(pcorr)
+
+        try:
+            self._display_tree[c.display_server]
+        except KeyError:
+            self._display_tree[c.display_server] = calib.kdtree.create(dimensions=2, check_dimensions=False)
+        finally:
+            self._display_tree[c.display_server].add(dcorr)
+        
         self._bag.write(self.CALIBMAPPING_TOPIC,c)
         self.num_points += 1
         self._pub_mapping.publish(c)
         self._pub_num_pts.publish(self.num_points)
+
+    def get_display_correspondence(self, ds, col, row):
+        dcorr = DisplayCorrespondence(
+                    col=col,row=row,
+                    vdisp="",pan=0,tilt=0,x=0,y=0,z=0)
+        try:
+            return self._display_tree[ds].search_nn(dcorr).data
+        except KeyError:
+            return None
 
     def add_mapping(self, **kwargs):
         c = CalibMapping()
@@ -730,9 +781,22 @@ class Calib:
                     
                 self._vdispinfo = vdispinfo
 
-                if not centroid:
+                searchpath = []
+                if centroid:
+                    #user has clicked
+                    #start at previous closest location
+                    pcorr = self.data.get_display_correspondence(ds, col, row)
+                    if pcorr:
+                        searchpath = [(pcorr.pan,pcorr.tilt),
+                                      (pcorr.pan,pcorr.tilt)]
+                else:
                     #find the centre of the vdisp by default
                     centroid = get_centre_of_vdisp(vdmask)
+                    
+                if not searchpath:
+                    #start search at current location (twice for reliability)
+                    searchpath = [(self._laser_currpan,self._laser_currtilt),
+                                  (self._laser_currpan,self._laser_currtilt)]
                     
                 rospy.loginfo("Calibrating %s:%s@%s" % (ds,vdisp,repr(centroid)))
                 colmid,rowmid = centroid
@@ -743,12 +807,6 @@ class Calib:
                 #to the laser
                 self._light_proj_pixel(ds, row=rowmid, col=colmid)
 
-                found = False
-                
-                #start search at current location (twice for reliability)
-                searchpath = [(self._laser_currpan,self._laser_currtilt),
-                              (self._laser_currpan,self._laser_currtilt)]
-                
                 minpan,maxpan,npan = self.laser_range_pan
                 mintilt,maxtilt,ntilt = self.laser_range_tilt
                 searchpath.extend( gen_vert_snake(
@@ -757,6 +815,8 @@ class Calib:
                                         sw=npan,sh=ntilt,
                                         linspace=True) )
 
+
+                found = False
                 for pan,tilt in searchpath:
                     #so it doesnt look like we are hung
                     self.pub_mode.publish(self.mode)
@@ -796,7 +856,7 @@ class Calib:
                                     else:
                                         tries -= 1
                                         
-                            if not found and (fine_dist < 40):
+                            if not found and (fine_dist < 50):
                                 print "AVERAGE DIST", fine_dist
                                 found = True
                                         
