@@ -34,6 +34,10 @@ class WindowOnScreen:
             screen.get_number(),
             width,
             height)
+        rospy.loginfo("Screen %d resolution %d x %d" % (
+            screen.get_number(),
+            width,
+            height))
 
         l.set_markup('<span size="xx-large">%s</span>' % label)
         b.add(l)
