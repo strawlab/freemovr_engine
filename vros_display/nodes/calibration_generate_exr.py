@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import roslib
 roslib.load_manifest('vros_display')
 roslib.load_manifest('rosbag')
@@ -9,27 +11,24 @@ import simple_geom
 import display_client
 import calib.imgproc
 from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
-from calib.reconstruct import CylinderPointCloudTransformer, interpolate_pixel_cords
+from calib.reconstruct import interpolate_pixel_cords
+from calib.calibrationconstants import CALIB_MAPPING_TOPIC
 from rosutils.io import decode_url
 import flydra.reconstruct
 
+import argparse
 import os.path
-import json
 
 import matplotlib.pyplot as plt
-import scipy.interpolate
 import numpy as np
 import cv,cv2
 import exr
-
-
-CALIBMAPPING_TOPIC = '/calibration/mapping'
 
 X_INDEX = 0
 Y_INDEX = 1
 Z_INDEX = 2
 
-class Foo:
+class Calibrator:
     def __init__(self, visualize=True, new_reconstructor="", mask_out=False, update_parameter_server=True):
         self.data    = {}
         self.masks   = {}
@@ -58,7 +57,7 @@ class Foo:
         dscs    = {}
 
         with rosbag.Bag(b, 'r') as bag:
-            for topic, msg, t in bag.read_messages(topics=[CALIBMAPPING_TOPIC]):
+            for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
                 key = msg.display_server
                 try:
                     data[key]
@@ -72,7 +71,8 @@ class Foo:
                     dscs[key] = dsc
                     cvimgs[key] = cvimg
                     masks[key] = mask
-                    cv2.namedWindow(key)
+                    if self.visualize:
+                        cv2.namedWindow(key)
 
                 finally:
                     xyz = np.array((msg.position.x,msg.position.y,msg.position.z))
@@ -93,60 +93,43 @@ class Foo:
         self.dscs = dscs
         
     def make_exr(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
-        if False:
-            uv = self.geom.worldcoord2texcoord(xyz_arr)
+        #interpolation in XYZ to stop filter / wraparound effects
 
-            u0 = interpolate_pixel_cords(
-                    points_2d_arr, uv[:,0],
-                    img_width=dsc.width,
-                    img_height=dsc.height,
-                    method=filt_method)
-            v0 = interpolate_pixel_cords(
-                    points_2d_arr, uv[:,1],
-                    img_width=dsc.width,
-                    img_height=dsc.height,
-                    method=filt_method)
-        else:
-            x = xyz_arr[:,0]
-            y = xyz_arr[:,1]
-            z = xyz_arr[:,2]
+        x = xyz_arr[:,0]
+        y = xyz_arr[:,1]
+        z = xyz_arr[:,2]
 
-            x0 = interpolate_pixel_cords(
-                    points_2d_arr, x,
-                    img_width=dsc.width,
-                    img_height=dsc.height,
-                    method=filt_method)
-            y0 = interpolate_pixel_cords(
-                    points_2d_arr, y,
-                    img_width=dsc.width,
-                    img_height=dsc.height,
-                    method=filt_method)
-            z0 = interpolate_pixel_cords(
-                    points_2d_arr, z,
-                    img_width=dsc.width,
-                    img_height=dsc.height,
-                    method=filt_method)
+        x0 = interpolate_pixel_cords(
+                points_2d_arr, x,
+                img_width=dsc.width,
+                img_height=dsc.height,
+                method=filt_method)
+        y0 = interpolate_pixel_cords(
+                points_2d_arr, y,
+                img_width=dsc.width,
+                img_height=dsc.height,
+                method=filt_method)
+        z0 = interpolate_pixel_cords(
+                points_2d_arr, z,
+                img_width=dsc.width,
+                img_height=dsc.height,
+                method=filt_method)
 
-            xs = x0.ravel()
-            ys = y0.ravel()
-            zs = z0.ravel()
-            xyz_new = np.array( [xs, ys, zs] ).T
-            #q = np.empty((dsc.height,dsc.width,3))
+        xs = x0.ravel()
+        ys = y0.ravel()
+        zs = z0.ravel()
+        xyz_new = np.array( [xs, ys, zs] ).T
 
-            #q[:,:,0] = x0
-            #q[:,:,1] = y0
-            #q[:,:,2] = z0
-
-            uv = self.geom.worldcoord2texcoord(xyz_new)
-            
-            u0 = uv[:,0]
-            v0 = uv[:,1]
-            u0.shape = x0.shape
-            v0.shape = x0.shape
+        uv = self.geom.worldcoord2texcoord(xyz_new)
+        
+        u0 = uv[:,0]
+        v0 = uv[:,1]
+        u0.shape = x0.shape
+        v0.shape = x0.shape
 
         return u0, v0
 
-    def fix_thing(self, u0, v0, u0nonan, v0nonan):
+    def fix_thing(self, u0, v0, u0nonan, v0nonan, dsc):
     
         if u0nonan.max() > 1 or u0nonan.min() > 0:
             #the cubic interpolate function is sensitive to step changes, and introduces quite large
@@ -167,14 +150,14 @@ class Foo:
             #... so fiddle the mask a little
             mask = dsc.get_virtual_display_mask('vdisp').squeeze()
             mask = ~mask
-
-            u0[mask] = mask_fill_value
-            v0[mask] = mask_fill_value
+            u0[mask] = np.nan
+            v0[mask] = np.nan
 
     def do_exr(self):
 
         for ds in self.data:
-            cv2.namedWindow(ds)
+            if self.visualize:
+                cv2.namedWindow(ds)
             img = self.cvimgs[ds]
             
             exrs_u = np.zeros((768,1024))
@@ -215,7 +198,7 @@ class Foo:
                 u0nonan = np.nan_to_num(u0)
                 v0nonan = np.nan_to_num(v0)
                 
-                self.fix_thing(u0, v0, u0nonan, v0nonan)
+                self.fix_thing(u0, v0, u0nonan, v0nonan, dsc)
 
                 exrs_u += u0nonan
                 exrs_v += v0nonan
@@ -243,7 +226,7 @@ class Foo:
 
             u0nonan = np.nan_to_num(exrs_u)
             v0nonan = np.nan_to_num(exrs_v)
-            self.fix_thing(exrs_u, exrs_v, u0nonan, v0nonan)
+            self.fix_thing(exrs_u, exrs_v, u0nonan, v0nonan, dsc)
 
             #save the exr file, -1 means no data, not NaN
             exrs_u[np.isnan(exrs_u)] = -1
@@ -271,26 +254,53 @@ class Foo:
             create_pcd_file_from_points(
                 decode_url('/tmp/%sflydra3d.pcd' % ds),
                 all_3d)
-            all_3d_arr = np.array(all_3d)
 
-            cv2.imshow(ds, img)
+            if self.visualize:
+                cv2.imshow(ds, img)
 
 if __name__ == "__main__":
-    rospy.init_node('calibration_generate_exr')
-    cv2.startWindowThread()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--calibration', type=str, help=\
+        "bag file containing calibration messages")
+    parser.add_argument(
+        '--visualize', action='store_true', default=False, help=\
+        "show plots")
+    parser.add_argument(
+        '--update', action='store_true', default=False, help=\
+        "update display server(s) with new exr data")
+    parser.add_argument(
+        '--reconstructor', type=str, help=\
+        "path to a new flydra calibration (use the "\
+        "new reconstructor to calculate the 3D position)")
+    args = parser.parse_args()
 
-    ds0 = "CALIB20120907_222224.bag"
-    ds1 = "CALIB20120908_094650.bag"
-    ds3 = "CALIB20120908_175653.bag" #good middle
-    ds3 = "CALIB20120908_182035.bag" #sparse left mirror
+    rospy.init_node('calibration_generate_exr', anonymous=True)
 
-    C = decode_url("~/FLYDRA/vros-calibration/%s" % ds0)
+    if args.visualize:
+        cv2.startWindowThread()
 
-    c = Foo()
-    c.load(C)
+#    ds0 = "CALIB20120907_222224.bag"
+#    ds1 = "CALIB20120927_105939.bag" #new back 
+#    ds3 = "CALIB20120908_175653.bag" #good middle
+#    ds3 = "CALIB20120908_182035.bag" #sparse left mirror
+#    C = decode_url("~/FLYDRA/vros-calibration/%s" % ds1)
+
+    c = Calibrator(
+            visualize=args.visualize,
+            new_reconstructor=args.reconstructor,
+            mask_out=False,
+            update_parameter_server=args.update)
+
+    if args.calibration:
+        fn = decode_url(args.calibration)
+        assert os.path.exists(fn)
+        c.load(fn)
+
     c.do_exr()
-    
     if c.visualize:
         plt.show()
-    else:
+
+    if not args.calibration:
         rospy.spin()
+
