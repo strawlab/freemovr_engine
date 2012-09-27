@@ -10,6 +10,7 @@ import threading
 import tempfile
 import datetime
 import collections
+import traceback
 
 import json
 import yaml
@@ -47,6 +48,8 @@ from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCam
 from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
 from calib.sampling import gen_horiz_snake, gen_vert_snake
+from calib.calibrationconstants import *
+
 from rosutils.io import decode_url
 
 import flydra.reconstruct
@@ -59,11 +62,6 @@ DisplayCorrespondence =     collections.namedtuple("DisplayCorrespondence",
                                 ["col","row","vdisp","pan","tilt","x","y","z"])
 PositionCorrenpondence =    collections.namedtuple("PositionCorrespondence",
                                 ["x","y","z","col","row","vdisp","pan","tilt"])
-
-CHAN_R = 2
-CHAN_G = 1
-CHAN_B = 0
-CALIBMAPPING_TOPIC = '/calibration/mapping'
 
 def get_centre_of_vdisp(vdmask):
     """ returns col,row """
@@ -133,8 +131,6 @@ def generate_sampling_pixel_coords(vdmask,pts,space,img=None):
 
 class DataIO:
 
-    CALIBMAPPING_TOPIC = '/calibration/mapping'
-
     def __init__(self, directory):
         self.outdir = directory
         if not os.path.isdir(self.outdir):
@@ -159,7 +155,7 @@ class DataIO:
 
     def load(self, name, vis_callback_2d=None):
         with rosbag.Bag(name, 'r') as bag:
-            for topic, msg, t in bag.read_messages(topics=[CALIBMAPPING_TOPIC]):
+            for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
                 self._add_mapping(msg)
                 if vis_callback_2d:
                     vis_callback_2d(ds=msg.display_server, 
@@ -201,7 +197,7 @@ class DataIO:
         finally:
             self._display_tree[c.display_server].add(dcorr)
         
-        self._bag.write(self.CALIBMAPPING_TOPIC,c)
+        self._bag.write(CALIB_MAPPING_TOPIC,c)
         self.num_points += 1
         self._pub_mapping.publish(c)
         self._pub_num_pts.publish(self.num_points)
@@ -213,7 +209,14 @@ class DataIO:
         try:
             return self._display_tree[ds].search_nn(dcorr).data
         except KeyError:
+            #OK, no data for display server yet
             return None
+        except Exception:
+            rospy.logwarn(
+                "Unknown error getting correspondence for %r\n%s\nTree:\n\n" %(
+                    dcorr,traceback.format_exc()))
+            calib.kdtree.visualize(self._display_tree[ds])
+
 
     def add_mapping(self, **kwargs):
         c = CalibMapping()
@@ -235,21 +238,6 @@ show_laser_scatter = True
 laser_handle = "pantilt"
 
 class Calib:
-
-    MODE_SLEEP = "sleep"
-    MODE_MANUAL_TRACKING = "manual_tracking"
-    MODE_MANUAL_PROJECTOR = "manual_projector"
-    MODE_MANUAL_CLICKED = "manual_clicked"
-    MODE_DISPLAY_SERVER = "display_server"
-    MODE_DISPLAY_SERVER_STOP = "display_server_stop"
-    MODE_DISPLAY_SERVER_VDISP = "display_server_vdisp"
-    MODE_DISPLAY_SERVER_HOME = "display_server+home"
-    MODE_DISPLAY_SERVER_LASER = "display_server+laser"
-    MODE_DISPLAY_SERVER_PROJECTOR = "display_server+projector"
-    MODE_RESTORE = "restore"
-    MODE_SET_BACKGROUND = "set_background"
-    MODE_CLEAR_BACKGROUND = "clear_background"
-    MODE_FINISHED = "finish"
 
     def __init__(self, config, show_cameras, show_display_servers, show_type, outdir, continue_calibration, debug):
         tracking_cameras = config["tracking_cameras"]
@@ -397,7 +385,7 @@ class Calib:
                 rospy.logerr("could not find requested calibration to load")
 
         s = rospy.Service('~calib_change_mode', vros_display.srv.CalibMode, self._change_mode)
-        self.change_mode(self.MODE_SLEEP)
+        self.change_mode(CALIB_MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
         with self.mode_lock:
@@ -409,6 +397,7 @@ class Calib:
         if flags & cv.CV_EVENT_FLAG_LBUTTON:
             rospy.loginfo("queuing point col:%s row:%s" % (col,row))
             self._click_queue[ds].append( (col,row) )
+            print flags & cv.CV_EVENT_FLAG_CTRLKEY
         elif flags & cv.CV_EVENT_FLAG_RBUTTON:
             rospy.loginfo("clearing queued points")
             self._click_queue[ds] = []
@@ -449,7 +438,7 @@ class Calib:
         dist = numpy.linalg.norm(
                 np.array((self._laser_currpan,self._laser_currtilt)) -
                 np.array((pan,tilt)))
-        rospy.loginfo("laser %s: pan: %d tilt: %d dist: %.1f" % (
+        rospy.logdebug("laser %s: pan: %d tilt: %d dist: %.1f" % (
                             "on" if power else "off",
                             pan,tilt,dist))
 
@@ -491,7 +480,7 @@ class Calib:
 
         target = (ds, col, row)
         if self._light_proj_cache == target:
-            rospy.loginfo("not lighting projector %s col:%s row:%s (already lit)" % target)
+            rospy.logdebug("not lighting projector %s col:%s row:%s (already lit)" % target)
             return
 
         dsc = self.display_servers[ds]["display_client"]
@@ -513,7 +502,7 @@ class Calib:
                 add_crosshairs_to_nparr(arr=img, row=row, col=col, sz=-1, fill=255, chan=1)
             cv2.imshow(handle, img)
 
-        rospy.loginfo("lighting projector %s col:%s row:%s" % target)
+        rospy.logdebug("lighting projector %s col:%s row:%s" % target)
         self._light_proj_cache = target
 
         rospy.sleep(0.5)
@@ -599,7 +588,8 @@ class Calib:
                 xyz = None
 
         if xyz != None:
-            rospy.loginfo("detect 3D: %s (reproj:%.1f)" % (repr(xyz),reproj))
+            rospy.loginfo("detect 3D: %s (%d visible, reproj:%.1f)" % (
+                    repr(xyz),nvisible,reproj))
 
         return xyz,pts,nvisible,reproj
 
@@ -660,21 +650,21 @@ class Calib:
             with self.mode_lock:
                 mode = self.mode
                 service_args = self.mode_args
-            if mode == self.MODE_FINISHED:
+            if mode == CALIB_MODE_FINISHED:
                 break
 
-            elif mode == self.MODE_SLEEP:
+            elif mode == CALIB_MODE_SLEEP:
                 pass
                 
-            elif mode == self.MODE_MANUAL_TRACKING:
+            elif mode == CALIB_MODE_MANUAL_TRACKING:
                 xyz,pts,nvisible,reproj = self._detect_3d_point(self.runner, self.laser_thresh)
                 col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
 
-            elif mode == self.MODE_MANUAL_PROJECTOR:
+            elif mode == CALIB_MODE_MANUAL_PROJECTOR:
                 try:
                     ds,vdisp,vdispinfo,centroid = self._parse_ds_specified(service_args)
                 except (ValueError, KeyError):
-                    self.change_mode(self.MODE_SLEEP)
+                    self.change_mode(CALIB_MODE_SLEEP)
                     continue
 
                 if centroid:                 
@@ -687,7 +677,7 @@ class Calib:
                 self._light_proj_pixel(ds, row=row, col=col)
                 col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
 
-            elif mode == self.MODE_MANUAL_CLICKED:
+            elif mode == CALIB_MODE_MANUAL_CLICKED:
                 tocal = []
                 for ds,pts in self._click_queue.items():    
                     if pts:
@@ -705,12 +695,12 @@ class Calib:
 
                 if tocal:
                     self._vdisptocalibrate = tocal
-                    self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
                     continue
 
-                self.change_mode(self.MODE_SLEEP)
+                self.change_mode(CALIB_MODE_SLEEP)
 
-            elif mode == self.MODE_DISPLAY_SERVER:
+            elif mode == CALIB_MODE_DISPLAY_SERVER:
                 try:
                     ds,selected_vdisp = service_args[0].split('/')
                     if ds not in self.display_servers:
@@ -753,13 +743,13 @@ class Calib:
                             tocal.append( (ds,vdispname,vdisp.copy(),c) )
 
                 self._vdisptocalibrate = tocal
-                self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
 
-            elif mode == self.MODE_DISPLAY_SERVER_STOP:
+            elif mode == CALIB_MODE_DISPLAY_SERVER_STOP:
                 self._vdisptocalibrate = []
-                self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
 
-            elif mode == self.MODE_DISPLAY_SERVER_VDISP:
+            elif mode == CALIB_MODE_DISPLAY_SERVER_VDISP:
                 if len(self._vdisptocalibrate):
                     ds,vdisp,vdispinfo,centroid = self._vdisptocalibrate.pop()
                 #did the user request a vdisp calibration
@@ -767,25 +757,24 @@ class Calib:
                     try:
                         ds,vdisp,vdispinfo,centroid = self._parse_ds_specified(service_args)
                     except (ValueError, KeyError):
-                        self.change_mode(self.MODE_SLEEP)
+                        self.change_mode(CALIB_MODE_SLEEP)
                         continue
                     self._vdisptocalibrate = []
                 else:
                     rospy.loginfo("nothing to do")
-                    self.change_mode(self.MODE_SLEEP)
+                    self.change_mode(CALIB_MODE_SLEEP)
                     continue
 
                 dsc = self.display_servers[ds]["display_client"]
                 vdmask = dsc.get_virtual_display_mask(vdisp)
-                vdpts = dsc.get_virtual_display_points(vdisp)
                     
                 self._vdispinfo = vdispinfo
 
                 searchpath = []
                 if centroid:
-                    #user has clicked
-                    #start at previous closest location
-                    pcorr = self.data.get_display_correspondence(ds, col, row)
+                    #user has clicked or we have generated a dense sampling grid.
+                    #to save time, start at previous closest location
+                    pcorr = self.data.get_display_correspondence(ds, centroid[0], centroid[1])
                     if pcorr:
                         searchpath = [(pcorr.pan,pcorr.tilt),
                                       (pcorr.pan,pcorr.tilt)]
@@ -814,6 +803,13 @@ class Calib:
                                         startw=minpan,starth=mintilt,
                                         sw=npan,sh=ntilt,
                                         linspace=True) )
+#
+#HACK FOR DS3 WHILE I DO NOT WRAP THE PTC PROPER
+#                searchpath.extend( reversed(list(gen_vert_snake(
+#                                        w=maxpan,h=maxtilt,
+#                                        startw=minpan,starth=mintilt,
+#                                        sw=npan,sh=ntilt,
+#                                        linspace=True) )))
 
 
                 found = False
@@ -883,7 +879,7 @@ class Calib:
                     
                     self._vdispinfo["homeattempt"] = 30
 
-                    self.change_mode(self.MODE_DISPLAY_SERVER_HOME)
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_HOME)
                 else:
                     rospy.logwarn("could not find find starting pixel col:%s row:%s" %(
                                     colmid,rowmid))
@@ -893,7 +889,7 @@ class Calib:
                     img =  self.show_display_servers[ds]["visualizeimg"]
                     cv2.imshow(handle, img)
 
-            elif mode == self.MODE_DISPLAY_SERVER_HOME:
+            elif mode == CALIB_MODE_DISPLAY_SERVER_HOME:
                 ds = self._vdispinfo["ds"]
                 self._light_laser_pixel(self._vdispinfo["panmid"], self._vdispinfo["tiltmid"], power=True)
                 self._black_projector(ds)
@@ -901,7 +897,7 @@ class Calib:
                 self._vdispinfo["homeattempt"] -= 1
                 if self._vdispinfo["homeattempt"] < 0:
                     rospy.logwarn("giving up, could not get laser home location (maybe reflection)")
-                    self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
                     continue
                 
                 col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
@@ -927,9 +923,9 @@ class Calib:
                         t = self._vdispinfo["tiltmid"] + random.randint(*self.laser_search_size)
                         self._vdispinfo["currattempt3d"].extend( (p,t) for i in range(reps) )
 
-                    self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_LASER)
 
-            elif mode == self.MODE_DISPLAY_SERVER_LASER:
+            elif mode == CALIB_MODE_DISPLAY_SERVER_LASER:
                 try:
                     pan,tilt = self._vdispinfo["currattempt3d"].pop()
                     pan,tilt = self._light_laser_pixel(pan, tilt, power=True)
@@ -937,7 +933,7 @@ class Calib:
                     self._vdispinfo["currtilt"] = tilt
                 except IndexError:
                     rospy.logwarn("giving up, could not get a 3D reconstruction")
-                    self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)                    
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)                    
 
                 ds = self._vdispinfo["ds"]
                 self._black_projector(ds)
@@ -962,16 +958,16 @@ class Calib:
                     self._vdispinfo["projrow"] = self._vdispinfo["rowmid"]
                     self._vdispinfo["currattempt"] = 30
                     self.laser_proxy_power(False)
-                    self.change_mode(self.MODE_DISPLAY_SERVER_PROJECTOR)
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_PROJECTOR)
 
-            elif mode == self.MODE_DISPLAY_SERVER_PROJECTOR:
+            elif mode == CALIB_MODE_DISPLAY_SERVER_PROJECTOR:
                 ds = self._vdispinfo["ds"]
                 self.laser_proxy_power(False)
                 
                 self._vdispinfo["currattempt"] -= 1
                 if self._vdispinfo["currattempt"] < 0:
                     rospy.logwarn("giving up, no 3D reconstruction (%d attempts remain)" % self._vdispinfo["currattempt"])
-                    self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
+                    self.change_mode(CALIB_MODE_DISPLAY_SERVER_LASER)
                     continue
     
                 self._light_proj_pixel(
@@ -1065,13 +1061,13 @@ class Calib:
 
                         self._vdispinfo["pointsneeded"] -= 1
                         if self._vdispinfo["pointsneeded"] > 0:
-                            self.change_mode(self.MODE_DISPLAY_SERVER_LASER)
+                            self.change_mode(CALIB_MODE_DISPLAY_SERVER_LASER)
                         else:
-                            self.change_mode(self.MODE_DISPLAY_SERVER_VDISP)
+                            self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
 
-            elif mode == self.MODE_RESTORE:
+            elif mode == CALIB_MODE_RESTORE:
                 self._load_previous_calibration(self.outdir)
-                self.change_mode(self.MODE_SLEEP)
+                self.change_mode(CALIB_MODE_SLEEP)
 
             #publish state
             self.pub_mode.publish(self.mode)
