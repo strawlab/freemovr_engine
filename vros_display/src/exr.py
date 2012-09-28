@@ -3,7 +3,7 @@ import numpy as np
 
 PIXEL_TYPE = Imath.PixelType(OpenEXR.FLOAT)
 
-def save_exr( fname, r=None, g=None, b=None ):
+def save_exr( fname, r=None, g=None, b=None, comments='' ):
     r = np.array(r); assert r.ndim==2
     g = np.array(g); assert g.ndim==2; assert g.shape==r.shape
     b = np.array(b); assert b.ndim==2; assert b.shape==r.shape
@@ -13,6 +13,7 @@ def save_exr( fname, r=None, g=None, b=None ):
                           'G': Imath.Channel(PIXEL_TYPE),
                           'B': Imath.Channel(PIXEL_TYPE),
                           }
+    header['comments'] = comments
     out = OpenEXR.OutputFile(fname, header)
     data = {'R': r.astype(np.float32).tostring(),
             'G': g.astype(np.float32).tostring(),

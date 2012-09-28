@@ -49,6 +49,8 @@ class Calibrator:
                             cal_source=new_reconstructor)
         else:
             self.flydra = None
+
+        self.filename = ''
         
     def load(self, b):
         data    = {}
@@ -57,6 +59,7 @@ class Calibrator:
         dscs    = {}
 
         with rosbag.Bag(b, 'r') as bag:
+            self.filename = b
             for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
                 key = msg.display_server
                 try:
@@ -232,7 +235,10 @@ class Calibrator:
             exrs_u[np.isnan(exrs_u)] = -1
             exrs_v[np.isnan(exrs_v)] = -1
             exrpath = decode_url('%s.exr' % ds)
-            exr.save_exr(exrpath, r=exrs_u, g=exrs_v, b=np.zeros_like(exrs_u))
+            exr.save_exr(
+                    exrpath,
+                    r=exrs_u, g=exrs_v, b=np.zeros_like(exrs_u),
+                    comments=self.filename)
 
             #save the resulting geometry to the parameter server
             if self.update_parameter_server:
