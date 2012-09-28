@@ -325,7 +325,7 @@ class Calib:
             if d in show_display_servers:
                 cv2.namedWindow(d)
                 self._click_queue[d] = []
-                cv2.setMouseCallback(d, self._display_server_window_click, d)
+                #cv2.setMouseCallback(d, self._display_server_window_click, d)
                 self.show_display_servers[d] = {}
 
                 #get the masks for the lot
@@ -395,9 +395,8 @@ class Calib:
 
     def _display_server_window_click(self, event, col, row, flags, ds):
         if flags & cv.CV_EVENT_FLAG_LBUTTON:
-            rospy.loginfo("queuing point col:%s row:%s" % (col,row))
+            rospy.loginfo("%s queuing point col:%s row:%s" % (ds,col,row))
             self._click_queue[ds].append( (col,row) )
-            print flags & cv.CV_EVENT_FLAG_CTRLKEY
         elif flags & cv.CV_EVENT_FLAG_RBUTTON:
             rospy.loginfo("clearing queued points")
             self._click_queue[ds] = []
@@ -595,14 +594,14 @@ class Calib:
 
     def _load_previous_calibration(self, path):
         self.data.load(path, vis_callback_2d=self._show_correspondence)
-        for ds in self.show_display_servers:
-            cv2.imshow(
-                    self.show_display_servers[ds]["handle"],
-                    self.show_display_servers[ds]["visualizeimg"])
-        if show_laser_scatter:
-            cv2.imshow(
-                    laser_handle,
-                    self._laser_handles[laser_handle])
+#        for ds in self.show_display_servers:
+#            cv2.imshow(
+#                    self.show_display_servers[ds]["handle"],
+#                    self.show_display_servers[ds]["visualizeimg"])
+#        if show_laser_scatter:
+#            cv2.imshow(
+#                    laser_handle,
+#                    self._laser_handles[laser_handle])
 
     def _parse_ds_specified(self, args):
         try:
@@ -627,13 +626,15 @@ class Calib:
         return ds,vdisp,vdispinfo,centroid
 
     def _show_correspondence(self, ds, col, row, pan, tilt):
-        handle = self.show_display_servers[ds]["handle"]
-        img =  self.show_display_servers[ds]["visualizeimg"]
-        add_crosshairs_to_nparr(
-            arr=img,
-            row=row,
-            col=col,
-            sz=1, fill=255, chan=0)
+        if ds in self.show_display_servers:
+            handle = self.show_display_servers[ds]["handle"]
+            img =  self.show_display_servers[ds]["visualizeimg"]
+            add_crosshairs_to_nparr(
+                arr=img,
+                row=row,
+                col=col,
+                sz=1, fill=255, chan=0)
+            cv2.imshow(handle, img)
 
         if show_laser_scatter:
             handle = laser_handle
@@ -644,6 +645,7 @@ class Calib:
                 img[t,p,:] = 255
             except:
                 rospy.logerr("could not plot pan/tilt: tilt:%s pan:%s" % (tilt,pan))
+            cv2.imshow(handle, img)
 
     def run(self):
         while not rospy.is_shutdown():
@@ -1032,14 +1034,14 @@ class Calib:
                                     row=self._vdispinfo["projrow"],
                                     pan=self._vdispinfo["currpan"],
                                     tilt=self._vdispinfo["currtilt"])
-                            if ds in self.show_display_servers:
-                                cv2.imshow(
-                                        self.show_display_servers[ds]["handle"],
-                                        self.show_display_servers[ds]["visualizeimg"])
-                            if show_laser_scatter:
-                                cv2.imshow(
-                                        laser_handle,
-                                        self._laser_handles[laser_handle])
+#                            if ds in self.show_display_servers:
+#                                cv2.imshow(
+#                                        self.show_display_servers[ds]["handle"],
+#                                        self.show_display_servers[ds]["visualizeimg"])
+#                            if show_laser_scatter:
+#                                cv2.imshow(
+#                                        laser_handle,
+#                                        self._laser_handles[laser_handle])
 
                         rospy.loginfo("FOUND CORRESPONDENCE")
                         self.data.add_mapping(
