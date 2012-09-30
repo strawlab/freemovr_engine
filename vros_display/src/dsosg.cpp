@@ -723,7 +723,7 @@ std::string escape_filename(const std::string& fname) {
     return result;
 }
 
-void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::string& json_config) {
+void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::string& json_config, bool use_pbuffer) {
 	osg::ref_ptr<osg::GraphicsContext::Traits> traits = new osg::GraphicsContext::Traits;
 
     // make sure these have decent defaults
@@ -792,12 +792,20 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		}
 		traits->doubleBuffer = true;
 		traits->sharedContext = 0;
-		traits->pbuffer = false;
 
 		json_decref(root);
 	}
 	traits->width = width;
 	traits->height = height;
+
+    traits->pbuffer = use_pbuffer;
+
+    osg::ref_ptr<osg::GraphicsContext> pbuffer;
+
+    if (use_pbuffer) {
+        pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
+        vros_assert(pbuffer.valid());
+    }
 
     _viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
        new osgViewer::ScreenCaptureHandler::WriteToFile(
@@ -807,7 +815,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
         _mode==std::string("geometry") ||
 		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
 
-        if (1) {
+        if (!use_pbuffer) {
             // setup in windowed mode
 
             if (_mode==std::string("cubemap") || _mode==std::string("geometry_texture")) {
@@ -815,14 +823,14 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
                 width=height;
             }
 
-
             // construct the viewer.
             _viewer->setUpViewInWindow( 32, 32, width, height );
-
-            _viewer->getCamera()->setProjectionMatrixAsPerspective(60.,
-                                                                   (double)width/(double)height,
-                                                                   0.01, 1000.);
         }
+
+        _viewer->getCamera()->setProjectionMatrixAsPerspective(60.,
+                                                               (double)width/(double)height,
+                                                               0.01, 1000.);
+
         if (_mode==std::string("cubemap")) {
             _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
         }
@@ -836,9 +844,24 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
+
+        if (pbuffer.valid()) {
+            osg::ref_ptr<osg::Camera> camera = new osg::Camera;
+            camera->setGraphicsContext(pbuffer.get());
+            camera->setViewport(new osg::Viewport(0,0,width,height));
+            GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
+            camera->setDrawBuffer(buffer);
+            camera->setReadBuffer(buffer);
+            // camera->setFinalDrawCallback(new WindowCaptureCallback(mode, position, readBuffer)); // XXXFIXME
+
+            _viewer->addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
+        }
+
 		_viewer->realize();
 	}
 	else if (_mode==std::string("vr_display")) {
+        vros_assert(!use_pbuffer); //unsupported (currently)
+
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
 		vros_assert(gc.valid());

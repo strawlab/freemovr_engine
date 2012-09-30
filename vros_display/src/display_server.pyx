@@ -91,7 +91,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int show_geom_coords,
               int tethered_mode,
               ) nogil except +
-        void setup_viewer(std_string viewer_window_name, std_string json_config) nogil except +
+        void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
         void update( double, Vec3, Quat )
         void frame() nogil except +
         int done() nogil except +
@@ -226,6 +226,7 @@ cdef class MyNode:
                             choices=['virtual_world','cubemap','overview','geometry','geometry_texture','vr_display'],
                             default='vr_display')
         parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
+        parser.add_argument('--pbuffer', default=False, action='store_true')
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--throttle', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
@@ -292,7 +293,8 @@ cdef class MyNode:
 
         display_window_name = rospy.get_name();
         display_json_str = json.dumps(config_dict['display'])
-        self.dsosg.setup_viewer(std_string(display_window_name),std_string(display_json_str))
+        self.dsosg.setup_viewer(std_string(display_window_name),std_string(display_json_str),
+                                args.pbuffer)
 
         rospy.Service('~get_display_info',
                       vros_display.srv.GetDisplayInfo,
