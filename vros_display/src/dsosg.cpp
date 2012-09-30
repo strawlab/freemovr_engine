@@ -553,94 +553,94 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
     if (_mode==std::string("overview")||_mode==std::string("vr_display")) {
 
-	  if (two_pass) {
-		CameraModel* cam1_params = make_real_camera_parameters();
-		osg::ref_ptr<osg::Group> g;
-		if (show_geom_coords) {
-			throw std::runtime_error("have not implemented this again");
-			//g = geometry_parameters->make_texcoord_group(shader_dir);
-		} else {
-			g = pctcp->get_textured_geometry();
-		}
+        if (two_pass) {
+            CameraModel* cam1_params = make_real_camera_parameters();
+            osg::ref_ptr<osg::Group> g;
+            if (show_geom_coords) {
+                throw std::runtime_error("have not implemented this again");
+                //g = geometry_parameters->make_texcoord_group(shader_dir);
+            } else {
+                g = pctcp->get_textured_geometry();
+            }
 
-		TexturedGeometryToCameraImagePass *tg2ci=new TexturedGeometryToCameraImagePass(g,
-																					   cam1_params);
-		root->addChild(tg2ci->get_top().get());
-		osg::Texture* mytex;
-		mytex = tg2ci->get_output_texture();
-		if (_mode==std::string("overview")) {
-			root->addChild( cam1_params->make_rendering(1) );
-			osg::Group* g = make_textured_quad(mytex,
-											   -1.0,
-											   cam1_params->width(),
-											   cam1_params->height(),
-											   0, 0, 0.3, 0.3);
-			debug_hud_cam->addChild(g);
-		}
+            TexturedGeometryToCameraImagePass *tg2ci=new TexturedGeometryToCameraImagePass(g,
+                                                                                           cam1_params);
+            root->addChild(tg2ci->get_top().get());
+            osg::Texture* mytex;
+            mytex = tg2ci->get_output_texture();
+            if (_mode==std::string("overview")) {
+                root->addChild( cam1_params->make_rendering(1) );
+                osg::Group* g = make_textured_quad(mytex,
+                                                   -1.0,
+                                                   cam1_params->width(),
+                                                   cam1_params->height(),
+                                                   0, 0, 0.3, 0.3);
+                debug_hud_cam->addChild(g);
+            }
 
 
-        Poco::Path p2c_path = _config_file_path.parent().resolve(
-                                        Poco::Path(json_string_value (
-                                                    json_object_get(json_config, "p2c"))));
-		std::string p2c_filename = p2c_path.toString();
-        std::cerr << "p2c file: " << p2c_filename << "\n";
-		CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_dir,
-																				 mytex,
-																				 p2c_filename);
-		root->addChild(ci2di->get_top().get());
-		{
-			bool show_hud = false;
-			float l,b,w,h;
-			l=0.0; b=0.0; w=1.0; h=1.0;
-			if (_mode==std::string("overview")) {
-				show_hud=true;
-				l=0.3; b=0.0; w=0.3; h=0.3;
-			}
-			if (_mode==std::string("vr_display")) {
-				show_hud=true;
-			}
-			if (show_hud) {
-				osg::Group* g = make_textured_quad(ci2di->get_output_texture(),
-												   -1.0,
-												   ci2di->get_display_width(), ci2di->get_display_height(),
-												   l,b,w,h);
-				debug_hud_cam->addChild(g);
-			}
-		}
-      } else {
+            Poco::Path p2c_path = _config_file_path.parent().resolve(
+                                     Poco::Path(json_string_value (
+                                       json_object_get(json_config, "p2c"))));
+            std::string p2c_filename = p2c_path.toString();
+            std::cerr << "p2c file: " << p2c_filename << "\n";
+            CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_dir,
+                                                                                     mytex,
+                                                                                     p2c_filename);
+            root->addChild(ci2di->get_top().get());
+            {
+                bool show_hud = false;
+                float l,b,w,h;
+                l=0.0; b=0.0; w=1.0; h=1.0;
+                if (_mode==std::string("overview")) {
+                    show_hud=true;
+                    l=0.3; b=0.0; w=0.3; h=0.3;
+                }
+                if (_mode==std::string("vr_display")) {
+                    show_hud=true;
+                }
+                if (show_hud) {
+                    osg::Group* g = make_textured_quad(ci2di->get_output_texture(),
+                                                       -1.0,
+                                                       ci2di->get_display_width(), ci2di->get_display_height(),
+                                                       l,b,w,h);
+                    debug_hud_cam->addChild(g);
+                }
+            }
+        } else {
 
-        json_t *p2g_json = json_object_get(json_config, "p2g");
-        vros_assert(p2g_json != NULL);
+            json_t *p2g_json = json_object_get(json_config, "p2g");
+            vros_assert(p2g_json != NULL);
 
-        Poco::Path p2g_path = _config_file_path.parent().resolve(
-                                                    Poco::Path(json_string_value(p2g_json)));
-		std::string p2g_filename = p2g_path.toString();
-        std::cerr << "p2g file: " << p2g_filename << "\n";
-		GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(shader_dir,
-																						pctcp->get_output_texture(),
-																						p2g_filename,
-																						show_geom_coords);
-		root->addChild(g2di->get_top().get());
-		{
-			bool show_hud = false;
-			float w,h;
-			w=1.0; h=1.0;
-			if (_mode==std::string("overview")) {
-				show_hud=true;
-				w=0.3; h=0.3;
-			}
-			if (_mode==std::string("vr_display")) {
-				show_hud=true;
-			}
-			if (show_hud) {
-				osg::Group* g = make_textured_quad(g2di->get_output_texture(),
-												   -1.0,
-												   g2di->get_display_width(), g2di->get_display_height(),
-												   0.0,0.0,w,h);
-				debug_hud_cam->addChild(g);
-			}
-		}
-      }
+            Poco::Path p2g_path = _config_file_path.parent().resolve(
+                                    Poco::Path(json_string_value(p2g_json)));
+            std::string p2g_filename = p2g_path.toString();
+            std::cerr << "p2g file: " << p2g_filename << "\n";
+            GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(shader_dir,
+                                                                                            pctcp->get_output_texture(),
+                                                                                            p2g_filename,
+                                                                                            show_geom_coords);
+            root->addChild(g2di->get_top().get());
+            {
+                bool show_hud = false;
+                float w,h;
+                w=1.0; h=1.0;
+                if (_mode==std::string("overview")) {
+                    show_hud=true;
+                    w=0.3; h=0.3;
+                }
+                if (_mode==std::string("vr_display")) {
+                    show_hud=true;
+                }
+                if (show_hud) {
+                    osg::Group* g = make_textured_quad(g2di->get_output_texture(),
+                                                       -1.0,
+                                                       g2di->get_display_width(), g2di->get_display_height(),
+                                                       0.0,0.0,w,h);
+                    debug_hud_cam->addChild(g);
+                }
+            }
+        }
     }
 
     _viewer = new osgViewer::Viewer;
