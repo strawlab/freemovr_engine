@@ -1,16 +1,29 @@
 import json
 import base64
+import re
 
 ROS_PACKAGE_NAME='vros_display'
 import roslib; roslib.load_manifest(ROS_PACKAGE_NAME)
 import vros_display.msg
 import geometry_msgs.msg
 import std_msgs.msg
+import rospkg
 
 import numpy as np
 
+# globals
+rospack = rospkg.RosPack()
+re_ros_path = re.compile(r'\$\(find (.*)\)')
+
 def debug(*args):
     pass
+
+def _findrepl(matchobj):
+    ros_pkg_name = matchobj.group(1)
+    return rospack.get_path(ros_pkg_name)
+
+def fixup_path( orig_path ):
+    return re_ros_path.sub( _findrepl, orig_path )
 
 def rosmsg2dict(msg):
     plain_dict = {}
@@ -34,10 +47,10 @@ def rosmsg2dict(msg):
                 plain_dict[varname + ' (base64)'] = base64.b64encode( getattr(msg,varname))
             elif vartype == 'time':
                 plain_dict[varname] = rosmsg2dict(getattr(msg,varname))
+            elif vartype == 'vros_display/ROSPath':
+                plain_dict[varname] = fixup_path(getattr(msg,varname).data)
             else:
-                debug('ERROR:')
-                debug('msg')
-                debug(msg)
+                debug('ERROR: vartype %r, msg %r'%(vartype,msg))
                 raise ValueError('unknown msg slot type: %s'%vartype)
     return plain_dict
 
