@@ -156,6 +156,40 @@ def _get_verts_from_viewport(viewport):
             raise ValueError('expected list of tuples')
     return verts
 
+def fixup_config( orig_config_dict ):
+    """fixup 'stimulus_plugins' list to lookup ROS package names
+
+    For example, this part of a config file::
+
+        stimulus_plugins:
+            - path: $(find my_ros_package)/lib
+              name: MyStimulus
+
+    will be replaced with::
+
+        stimulus_plugins:
+            - path: /some/path/to_my_ros_package/lib
+              name: MyStimulus
+
+    This allows specifying stimuli relative to the ROS install rather
+    than an absolute path. The syntax should be identical to the
+    substitutions done in ROS launch files. (If it's not, it's a bug).
+    """
+    def fixup( plugin_dict ):
+        pp = plugin_dict['path']
+        pp2 = rosmsg2json.fixup_path( pp )
+        plugin_dict['path'] = pp2
+        return plugin_dict
+    config_dict = orig_config_dict.copy()
+    orig_plugins = config_dict.get('stimulus_plugins',[])
+    plugins = [ fixup(p) for p in orig_plugins ]
+    config_dict['stimulus_plugins'] = plugins
+    config_file = '/tmp/%s.json' % rospy.get_name()
+    with open(config_file,mode='w') as f:
+        f.write(json.dumps(config_dict))
+
+    return config_dict, config_file
+
 cdef class MyNode:
     cdef DSOSG* dsosg
     cdef object _commands
@@ -232,13 +266,12 @@ cdef class MyNode:
                     exr.write(p2g.data)
                 config_dict['p2g'] = exrfile
                 rospy.loginfo("decoded exr file and saved to %s" % exrfile)
-            config_file = '/tmp/%s.json' % rospy.get_name()
-            with open(config_file,mode='w') as f:
-                f.write(json.dumps(config_dict))
         else:
             rospy.loginfo("using default config")
             config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'config','config.json')
             config_dict = json.load(open(config_file,'r'))
+
+        config_dict, config_file = fixup_config( config_dict )
 
         rospy.loginfo("config_file = %s" % config_file)
 
