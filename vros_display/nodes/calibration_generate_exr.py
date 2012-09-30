@@ -50,30 +50,26 @@ class Calibrator:
         else:
             self.flydra = None
 
-        self.filename = ''
+        self.filenames = []
         
     def load(self, b):
-        data    = {}
-        masks   = {}
-        cvimgs  = {}
-        dscs    = {}
-
         with rosbag.Bag(b, 'r') as bag:
-            self.filename = b
+            rospy.loginfo("processing %s" % b)
+            self.filenames.append(b)
             for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
                 key = msg.display_server
                 try:
-                    data[key]
+                    self.data[key]
                 except KeyError:
-                    data[key] = {}
+                    self.data[key] = {}
 
                     dsc = display_client.DisplayServerProxy(key,wait=True)
                     mask = dsc.get_display_mask()
                     cvimg = dsc.new_image(color=255, mask=~mask, nchan=3, dtype=np.uint8)
 
-                    dscs[key] = dsc
-                    cvimgs[key] = cvimg
-                    masks[key] = mask
+                    self.dscs[key] = dsc
+                    self.cvimgs[key] = cvimg
+                    self.masks[key] = mask
                     if self.visualize:
                         cv2.namedWindow(key)
 
@@ -86,15 +82,10 @@ class Calibrator:
                         pts.append( (projpt.camera,(projpt.pixel.x,projpt.pixel.y)) )
 
                     try:
-                        data[msg.display_server][msg.vdisp].append( (xyz,pixel,pts) )
+                        self.data[msg.display_server][msg.vdisp].append( (xyz,pixel,pts) )
                     except KeyError:
-                        data[msg.display_server][msg.vdisp] = [ (xyz,pixel,pts) ]
+                        self.data[msg.display_server][msg.vdisp] = [ (xyz,pixel,pts) ]
 
-        self.data = data
-        self.masks = masks
-        self.cvimgs = cvimgs
-        self.dscs = dscs
-        
     def make_exr(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
         #interpolation in XYZ to stop filter / wraparound effects
 
@@ -132,49 +123,57 @@ class Calibrator:
 
         return u0, v0
 
-    def fix_thing(self, u0, v0, u0nonan, v0nonan, dsc):
-    
-        if u0nonan.max() > 1 or u0nonan.min() > 0:
-            #the cubic interpolate function is sensitive to step changes, and introduces quite large
-            #errors in smoothing. Crudely replace those values with invalid (nan)
-            print 'replacing out of range errors in smoothed u'
-            u0[u0>1] = np.nan
-            u0[u0<0] = np.nan
-        if v0nonan.max() > 1 or v0nonan.min() > 0:
-            #the cubic interpolate function is sensitive to step changes, and introduces quite large
-            #errors in smoothing. Crudely replace those values with invalid (nan)
-            print 'replacing out of range errors in smoothed u'
-            v0[v0>1] = np.nan
-            v0[v0<0] = np.nan
-        if self.mask_out:
-            #mask out invalid parts if the convex hull doesnt work....
-            #mask is usually used for *= with an image, but here we will use boolean indexing to fill
-            #invalid areas with nan
-            #... so fiddle the mask a little
-            mask = dsc.get_virtual_display_mask('vdisp').squeeze()
-            mask = ~mask
-            u0[mask] = np.nan
-            v0[mask] = np.nan
+    def show_vdisp_points(self, arr, ds, vdisp):
+        plt.figure()
+        plt.subplot(211)
+        plt.imshow(arr[:,:,X_INDEX])
+        plt.colorbar()
+        plt.title('%s/%s X' % (ds,vdisp))
+        plt.subplot(212)
+        plt.imshow(u0)
+        plt.title('%s/%s U' % (ds,vdisp))
+        plt.colorbar()
+
+        plt.figure()
+        plt.subplot(211)
+        plt.imshow(arr[:,:,Y_INDEX])
+        plt.colorbar()
+        plt.title('%s/%s Y' % (ds,vdisp))
+        plt.subplot(212)
+        plt.imshow(v0)
+        plt.colorbar()
+        plt.title('%s/%s V' % (ds,vdisp))
 
     def do_exr(self):
 
+        all_3d = []
         for ds in self.data:
             if self.visualize:
                 cv2.namedWindow(ds)
             img = self.cvimgs[ds]
             
-            exrs_u = np.zeros((768,1024))
-            exrs_v = np.zeros((768,1024))
+            #FIXME: change to using masked arrays...
+            ds_u = np.zeros((768,1024))
+            ds_u_mask = np.zeros((768,1024), dtype=np.bool)
+            ds_vdisp_u_mask = np.ones((768,1024), dtype=np.bool)
+
+            ds_v = np.zeros((768,1024))
+            ds_v_mask = np.zeros((768,1024), dtype=np.bool)
+            ds_vdisp_v_mask = np.ones((768,1024), dtype=np.bool)
 
             dsc = self.dscs[ds]
 
-            all_3d = []
+            ds_3d = []
             for vdisp in self.data[ds]:
-            
+
+                ds_vdisp_u_mask.fill(True)
+                ds_vdisp_v_mask.fill(True)
                 vdisp_3d = []
                 vdisp_2d = []
-                arr = np.zeros((768,1024,3))
-                arr.fill(np.nan)
+
+                if self.visualize:
+                    arr = np.zeros((768,1024,3))
+                    arr.fill(np.nan)
 
                 for xyz,pixel,pts in self.data[ds][vdisp]: #just do one vdisp
                     col = pixel[0]
@@ -187,58 +186,37 @@ class Calibrator:
                     vdisp_2d.append(pixel)
                     vdisp_3d.append(xyz)
 
-                    all_3d.append(xyz)
-                    
-                    arr[row-2:row+2,col-2:col+2,X_INDEX] = xyz[0]
-                    arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]
-                    arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
+                    if self.visualize:
+                        arr[row-2:row+2,col-2:col+2,X_INDEX] = xyz[0]
+                        arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]
+                        arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
                     
                 u0,v0 = self.make_exr(
                             np.array(vdisp_3d, dtype=np.float),
                             np.array(vdisp_2d, dtype=np.float),
                             self.dscs[ds])
 
-                u0nonan = np.nan_to_num(u0)
-                v0nonan = np.nan_to_num(v0)
-                
-                self.fix_thing(u0, v0, u0nonan, v0nonan, dsc)
+                ds_vdisp_u_mask[np.isnan(u0)] = False
+                ds_u_mask |= ds_vdisp_u_mask 
+                ds_vdisp_v_mask[np.isnan(v0)] = False
+                ds_v_mask |= ds_vdisp_v_mask 
 
-                exrs_u += u0nonan
-                exrs_v += v0nonan
+                ds_u += np.nan_to_num(u0)
+                ds_v += np.nan_to_num(v0)
+
+                ds_3d.extend(vdisp_3d)
 
                 if self.visualize:
-                    plt.figure()
-                    plt.subplot(211)
-                    plt.imshow(arr[:,:,X_INDEX])
-                    plt.colorbar()
-                    plt.title('%s/%s X' % (ds,vdisp))
-                    plt.subplot(212)
-                    plt.imshow(u0)
-                    plt.title('%s/%s U' % (ds,vdisp))
-                    plt.colorbar()
-
-                    plt.figure()
-                    plt.subplot(211)
-                    plt.imshow(arr[:,:,Y_INDEX])
-                    plt.colorbar()
-                    plt.title('%s/%s Y' % (ds,vdisp))
-                    plt.subplot(212)
-                    plt.imshow(v0)
-                    plt.colorbar()
-                    plt.title('%s/%s V' % (ds,vdisp))
-
-            u0nonan = np.nan_to_num(exrs_u)
-            v0nonan = np.nan_to_num(exrs_v)
-            self.fix_thing(exrs_u, exrs_v, u0nonan, v0nonan, dsc)
+                    self.show_vdisp_points(arr, ds, visp)
 
             #save the exr file, -1 means no data, not NaN
-            exrs_u[np.isnan(exrs_u)] = -1
-            exrs_v[np.isnan(exrs_v)] = -1
+            ds_u[~ds_u_mask] = -1
+            ds_v[~ds_v_mask] = -1
             exrpath = decode_url('%s.exr' % ds)
             exr.save_exr(
                     exrpath,
-                    r=exrs_u, g=exrs_v, b=np.zeros_like(exrs_u),
-                    comments=self.filename)
+                    r=ds_u, g=ds_v, b=np.zeros_like(ds_u),
+                    comments=", ".join(self.filenames))
 
             #save the resulting geometry to the parameter server
             if self.update_parameter_server:
@@ -248,26 +226,30 @@ class Calibrator:
 
             if self.visualize:
                 plt.figure()
-                plt.imshow(exrs_u)
+                plt.imshow(ds_u)
                 plt.colorbar()
                 plt.title('%s U' % ds)
 
                 plt.figure()
-                plt.imshow(exrs_v)
+                plt.imshow(ds_v)
                 plt.colorbar()
                 plt.title('%s V' % ds)
 
             create_pcd_file_from_points(
                 decode_url('/tmp/%sflydra3d.pcd' % ds),
-                all_3d)
+                ds_3d)
 
             if self.visualize:
                 cv2.imshow(ds, img)
 
+            all_3d.extend(ds_3d)
+
+        create_pcd_file_from_points(decode_url('/tmp/allflydra3d.pcd'),all_3d)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--calibration', type=str, help=\
+        '--calibration', type=str, action='append', help=\
         "bag file containing calibration messages")
     parser.add_argument(
         '--visualize', action='store_true', default=False, help=\
@@ -292,19 +274,21 @@ if __name__ == "__main__":
 #    ds3 = "CALIB20120908_182035.bag" #sparse left mirror
 #    C = decode_url("~/FLYDRA/vros-calibration/%s" % ds1)
 
-    c = Calibrator(
-            visualize=args.visualize,
-            new_reconstructor=args.reconstructor,
-            mask_out=False,
-            update_parameter_server=args.update)
+    cal = Calibrator(
+                visualize=args.visualize,
+                new_reconstructor=args.reconstructor,
+                mask_out=False,
+                update_parameter_server=args.update)
 
     if args.calibration:
-        fn = decode_url(args.calibration)
-        assert os.path.exists(fn)
-        c.load(fn)
+        #multiple bag files
+        for c in args.calibration:
+            fn = decode_url(c)
+            assert os.path.exists(fn)
+            cal.load(fn)
 
-    c.do_exr()
-    if c.visualize:
+    cal.do_exr()
+    if cal.visualize:
         plt.show()
 
     if not args.calibration:
