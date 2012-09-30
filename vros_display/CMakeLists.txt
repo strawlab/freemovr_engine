@@ -44,6 +44,7 @@ SET(DS_SOURCES
 
 set(CUBMAP_TO_GEOMETRY_PART_SOURCES
   src/project_cubemap_onto_geometry.cpp
+  src/WindowCaptureCallback.cpp
   src/load_cubemap.cpp
   src/util.cpp
   src/ResourceLoader.cpp
