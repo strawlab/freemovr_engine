@@ -30,6 +30,8 @@ SET(EXR_LIBS ${OPENEXR_LIBRARIES})
 
 SET(DS_SOURCES
   src/dsosg.cpp
+  src/stimulus_interface.cpp
+  src/load_cubemap.cpp
   src/ResourceLoader.cpp
   src/ProjectCubemapToGeometryPass.cpp
   src/DisplaySurfaceGeometry.cpp
