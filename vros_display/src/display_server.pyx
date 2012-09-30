@@ -225,7 +225,7 @@ cdef class MyNode:
             rospy.loginfo("using ros config")
             #the exr file can be specified as a base64 string. In that case we decode it and write it
             #to a tmp file
-            p2g = config_dict['p2g']
+            p2g = config_dict.get('p2g',None)
             if isinstance(p2g, xmlrpclib.Binary):
                 exrfile = '/tmp/%s.exr' % rospy.get_name()
                 with open(exrfile, 'wb') as exr:

@@ -551,7 +551,9 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
         debug_hud_cam->addChild(g);
     }
 
-	if (two_pass) {
+    if (_mode==std::string("overview")||_mode==std::string("vr_display")) {
+
+	  if (two_pass) {
 		CameraModel* cam1_params = make_real_camera_parameters();
 		osg::ref_ptr<osg::Group> g;
 		if (show_geom_coords) {
@@ -605,10 +607,13 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 				debug_hud_cam->addChild(g);
 			}
 		}
-	} else {
+      } else {
+
+        json_t *p2g_json = json_object_get(json_config, "p2g");
+        vros_assert(p2g_json != NULL);
+
         Poco::Path p2g_path = _config_file_path.parent().resolve(
-                                        Poco::Path(json_string_value (
-                                                    json_object_get(json_config, "p2g"))));
+                                                    Poco::Path(json_string_value(p2g_json)));
 		std::string p2g_filename = p2g_path.toString();
         std::cerr << "p2g file: " << p2g_filename << "\n";
 		GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(shader_dir,
@@ -635,7 +640,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 				debug_hud_cam->addChild(g);
 			}
 		}
-	}
+      }
+    }
 
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
