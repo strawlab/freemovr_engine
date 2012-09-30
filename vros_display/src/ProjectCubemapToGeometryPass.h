@@ -8,7 +8,7 @@
 #include <osg/ref_ptr>
 #include <osg/Texture2D>
 
-#include "display_screen_geometry.h"
+#include "DisplaySurfaceGeometry.h"
 #include "vros_display/ResourceLoader.h"
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {

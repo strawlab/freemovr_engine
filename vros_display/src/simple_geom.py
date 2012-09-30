@@ -55,7 +55,7 @@ class Cylinder(ModelBase):
             raise NotImplementedError("only cylinder z>0 currently supported")
 
 
-        # keep in sync with display_screen_geometry.cpp
+        # keep in sync with DisplaySurfaceGeometry.cpp
         self._radius = radius
         self._matrix = np.eye(3) # currently we're forcing vertical cylinder, so this is OK
         self._height = self.axis.z - self.base.z
@@ -75,7 +75,7 @@ class Cylinder(ModelBase):
         assert tc.shape[1]==2
         tc = tc.T
 
-        # keep in sync with display_screen_geometry.cpp
+        # keep in sync with DisplaySurfaceGeometry.cpp
         frac_theta = tc[0]
         frac_height = tc[1]
 
@@ -181,7 +181,7 @@ class Sphere(ModelBase):
         self.center = point_dict_to_vec(center)
         self.radius = radius
 
-        # keep in sync with display_screen_geometry.cpp
+        # keep in sync with DisplaySurfaceGeometry.cpp
         self._radius = radius
         self._center = np.expand_dims(np.array( (self.center.x, self.center.y, self.center.z) ),1)
 
@@ -198,7 +198,7 @@ class Sphere(ModelBase):
         assert tc.shape[1]==2
         tc = tc.T
 
-        # keep in sync with display_screen_geometry.cpp
+        # keep in sync with DisplaySurfaceGeometry.cpp
         frac_az = tc[0]
         frac_el = tc[1]
 

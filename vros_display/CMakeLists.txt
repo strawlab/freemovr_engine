@@ -32,7 +32,7 @@ SET(DS_SOURCES
   src/dsosg.cpp
   src/ResourceLoader.cpp
   src/ProjectCubemapToGeometryPass.cpp
-  src/display_screen_geometry.cpp
+  src/DisplaySurfaceGeometry.cpp
   src/util.cpp
   src/exrutil.cpp
   src/camera_model.cpp
@@ -46,12 +46,12 @@ set(CUBMAP_TO_GEOMETRY_PART_SOURCES
   src/util.cpp
   src/ResourceLoader.cpp
   src/ProjectCubemapToGeometryPass.cpp
-  src/display_screen_geometry.cpp
+  src/DisplaySurfaceGeometry.cpp
 )
 
 SET(P2G_SOURCES
   src/create_p2g.cpp
-  src/display_screen_geometry.cpp
+  src/DisplaySurfaceGeometry.cpp
   src/util.cpp
   src/exrutil.cpp
   src/camera_model.cpp
@@ -60,7 +60,7 @@ SET(P2G_SOURCES
 
 SET(CALIB_TEST_SOURCES
   opengl_and_hartleyzisserman/calib_test_osg.cpp
-  src/display_screen_geometry.cpp
+  src/DisplaySurfaceGeometry.cpp
   src/util.cpp
   src/camera_model.cpp)
 
