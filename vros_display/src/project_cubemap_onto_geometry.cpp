@@ -98,7 +98,7 @@ int main(int argc, char**argv) {
 
   if (argc < 4)
   {
-    std::cerr << "Usage: " << argv[0] << " CUBEMAP_DIR JSON_FILE" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " CUBEMAP_DIR JSON_FILE OUTPUT_FILE" << std::endl;
     return -1;
   }
 
