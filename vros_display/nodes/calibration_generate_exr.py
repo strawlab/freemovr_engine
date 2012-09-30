@@ -86,7 +86,7 @@ class Calibrator:
                     except KeyError:
                         self.data[msg.display_server][msg.vdisp] = [ (xyz,pixel,pts) ]
 
-    def make_exr(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
+    def interpolate_points(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
         #interpolation in XYZ to stop filter / wraparound effects
 
         x = xyz_arr[:,0]
@@ -191,7 +191,7 @@ class Calibrator:
                         arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]
                         arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
                     
-                u0,v0 = self.make_exr(
+                u0,v0 = self.interpolate_points(
                             np.array(vdisp_3d, dtype=np.float),
                             np.array(vdisp_2d, dtype=np.float),
                             self.dscs[ds])
