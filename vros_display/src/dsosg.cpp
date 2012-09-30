@@ -336,7 +336,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     _current_stimulus(NULL), _mode(mode),
     _vros_display_basepath(vros_display_basepath),
     _config_file_path(config_fname),
-    _tethered_mode(tethered_mode)
+    _tethered_mode(tethered_mode), _wcc(NULL)
+
 {
     json_error_t json_error;
     json_t *json_config, *json_stimulus, *json_geom;
@@ -852,7 +853,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
             GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
             camera->setDrawBuffer(buffer);
             camera->setReadBuffer(buffer);
-            // camera->setFinalDrawCallback(new WindowCaptureCallback(mode, position, readBuffer)); // XXXFIXME
+            _wcc = new WindowCaptureCallback();
+            camera->setFinalDrawCallback(_wcc);
 
             _viewer->addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
         }
@@ -950,5 +952,12 @@ void DSOSG::setWindowName(std::string name) {
         (*itr)->setWindowName(name);
     }
 };
+
+
+void DSOSG::setCaptureFilename(std::string name) {
+    if (_wcc!=NULL) {
+        _wcc->set_next_filename( name );
+    }
+}
 
 }

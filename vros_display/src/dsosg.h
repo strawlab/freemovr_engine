@@ -17,6 +17,8 @@
 
 #include "vros_display/stimulus_interface.h"
 
+#include "WindowCaptureCallback.h"
+
 namespace dsosg{
 
 	typedef Poco::ClassLoader<StimulusInterface> StimulusLoader;
@@ -59,6 +61,8 @@ namespace dsosg{
 		float getFrameRate();
 		void setCursorVisible(bool visible);
 		void setWindowName(std::string name);
+
+		void setCaptureFilename(std::string name);
 	private:
 		StimulusLoader _stimulus_loader;
 
@@ -84,6 +88,7 @@ namespace dsosg{
 		int _width;
 		int _height;
 		osg::ref_ptr<osgGA::TrackballManipulator> _cameraManipulator;
+		WindowCaptureCallback* _wcc;
 	};
 
 }

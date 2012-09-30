@@ -1,3 +1,4 @@
+// -*- Mode: C++ -*-
 #include <osg/Camera>
 #include <osg/RenderInfo>
 
@@ -5,11 +6,14 @@
 class WindowCaptureCallback : public osg::Camera::DrawCallback
 {
 public:
-  WindowCaptureCallback(GLenum readBuffer, const std::string& name);
+
+  WindowCaptureCallback();
+
   virtual void operator () (osg::RenderInfo& renderInfo) const;
-protected:
-    GLenum                      _readBuffer;
-    std::string                 _fileName;
-    osg::ref_ptr<osg::Image>    _image;
-    mutable OpenThreads::Mutex  _mutex;
+  virtual void set_next_filename(const std::string& name);
+
+  osg::ref_ptr<osg::Image>    _image;
+  mutable OpenThreads::Mutex  _mutex;
+  mutable osg::GraphicsContext* _gc;
+  mutable std::string _fileName;
 };

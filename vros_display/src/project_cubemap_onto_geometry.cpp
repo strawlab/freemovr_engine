@@ -93,8 +93,8 @@ int main(int argc, char**argv) {
   _viewer->realize();
   _viewer->frame();
 
-  GLenum buffer = _viewer->getCamera()->getGraphicsContext()->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
-  osg::ref_ptr<osg::Camera::DrawCallback>  wcc = new WindowCaptureCallback(buffer, output_file.toString());
+  osg::ref_ptr<WindowCaptureCallback> wcc = new WindowCaptureCallback();
+  wcc->set_next_filename(output_file.toString());
   _viewer->getCamera()->setFinalDrawCallback(wcc);
 
   _viewer->frame();

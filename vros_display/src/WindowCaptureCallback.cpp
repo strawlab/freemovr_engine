@@ -1,59 +1,45 @@
 #include "WindowCaptureCallback.h"
 #include <iostream>
 #include <osgDB/WriteFile>
+#include "vros_display/vros_assert.h"
 
-WindowCaptureCallback::WindowCaptureCallback(GLenum readBuffer, const std::string& name):
-        _readBuffer(readBuffer),
-        _fileName(name)
-        {
-            _image = new osg::Image;
-        }
+WindowCaptureCallback::WindowCaptureCallback() : _gc(NULL) {
+  _image = new osg::Image;
+}
 
-void WindowCaptureCallback::operator () (osg::RenderInfo& renderInfo) const
-        {
-            #if !defined(OSG_GLES1_AVAILABLE) && !defined(OSG_GLES2_AVAILABLE)
-            glReadBuffer(_readBuffer);
-            #else
-            osg::notify(osg::NOTICE)<<"Error: GLES unable to do glReadBuffer"<<std::endl;
-            #endif
+void WindowCaptureCallback::set_next_filename(const std::string& name) {
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
+  _fileName = name;
+}
 
-            OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
-            osg::GraphicsContext* gc = renderInfo.getState()->getGraphicsContext();
-            if (gc->getTraits())
-            {
-                GLenum pixelFormat;
+void WindowCaptureCallback::operator () (osg::RenderInfo& renderInfo) const {
 
-                if (gc->getTraits()->alpha)
-                    pixelFormat = GL_RGBA;
-                else
-                    pixelFormat = GL_RGB;
+  osg::GraphicsContext* gc = renderInfo.getState()->getGraphicsContext();
+  if (_gc==NULL) {
+    _gc=gc;
+  }
 
-#if defined(OSG_GLES1_AVAILABLE) || defined(OSG_GLES2_AVAILABLE)
-                 if (pixelFormat == GL_RGB)
-                 {
-                    GLint value = 0;
-                    #ifndef GL_IMPLEMENTATION_COLOR_READ_FORMAT
-                        #define GL_IMPLEMENTATION_COLOR_READ_FORMAT 0x8B9B
-                    #endif
-                    glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &value);
-                    if ( value != GL_RGB ||
-                         value != GL_UNSIGNED_BYTE )
-                    {
-                        pixelFormat = GL_RGBA;//always supported
-                    }
-                 }
-#endif
-                int width = gc->getTraits()->width;
-                int height = gc->getTraits()->height;
+  vros_assert(_gc==gc); // only a single GraphicsContext supported
 
-                std::cout<<"Capture: size="<<width<<"x"<<height<<", format="<<(pixelFormat == GL_RGBA ? "GL_RGBA":"GL_RGB")<<std::endl;
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 
-                _image->readPixels(0, 0, width, height, pixelFormat, GL_UNSIGNED_BYTE);
-            }
+  if (_fileName.empty()) return; // no point in capturing image if it's not used
 
-            if (!_fileName.empty())
-            {
-                std::cout << "Writing to: " << _fileName << std::endl;
-                osgDB::writeImageFile(*_image, _fileName);
-            }
-       }
+  glReadBuffer(GL_BACK);
+  if (gc->getTraits()) {
+    GLenum pixelFormat;
+
+    pixelFormat = GL_RGBA; // force saving alpha
+
+    int width = gc->getTraits()->width;
+    int height = gc->getTraits()->height;
+
+    std::cout<<"Capture: size="<<width<<"x"<<height<<", format="<<(pixelFormat == GL_RGBA ? "GL_RGBA":"GL_RGB")<<std::endl;
+
+    _image->readPixels(0, 0, width, height, pixelFormat, GL_UNSIGNED_BYTE);
+
+    std::cout << "Writing to: " << _fileName << std::endl;
+    osgDB::writeImageFile(*_image, _fileName);
+    _fileName = "";
+  }
+}

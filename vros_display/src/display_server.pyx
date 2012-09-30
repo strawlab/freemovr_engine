@@ -9,6 +9,7 @@ import rospy
 import vros_display.srv
 import geometry_msgs.msg
 import std_msgs.msg
+from vros_display.msg import ROSPath
 
 import rosmsg2json
 
@@ -108,6 +109,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
 
         float getFrameRate() nogil except +
         setCursorVisible(int visible) nogil except +
+        void setCaptureFilename(std_string name) nogil except +
 
 # ================================================================
 
@@ -290,6 +292,7 @@ cdef class MyNode:
                                )
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_cb)
 
         display_window_name = rospy.get_name();
         display_json_str = json.dumps(config_dict['display'])
@@ -379,6 +382,12 @@ cdef class MyNode:
             del self.pose_orientation
             self.pose_position = new_position
             self.pose_orientation = new_orientation
+
+    def capture_cb(self, msg):
+        d = rosmsg2json.rosmsg2dict(msg)
+        fname = d['data']
+        rospy.loginfo("will capture next frame to filename: %r"%fname)
+        self.dsosg.setCaptureFilename(std_string(fname))
 
     def mode_callback(self, msg):
         with self._mode_lock:
