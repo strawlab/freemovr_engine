@@ -808,9 +808,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
 
         if (1) {
-            // setup in windowed mode with this resolution
-            width = 750;
-            height = 550;
+            // setup in windowed mode
 
             if (_mode==std::string("cubemap") || _mode==std::string("geometry_texture")) {
                 // best aspect ratio is square for this
