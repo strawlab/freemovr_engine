@@ -846,6 +846,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
 
+        _wcc = new WindowCaptureCallback();
+
         if (pbuffer.valid()) {
             osg::ref_ptr<osg::Camera> camera = new osg::Camera;
             camera->setGraphicsContext(pbuffer.get());
@@ -853,10 +855,11 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
             GLenum buffer = pbuffer->getTraits()->doubleBuffer ? GL_BACK : GL_FRONT;
             camera->setDrawBuffer(buffer);
             camera->setReadBuffer(buffer);
-            _wcc = new WindowCaptureCallback();
             camera->setFinalDrawCallback(_wcc);
 
             _viewer->addSlave(camera.get(), osg::Matrixd(), osg::Matrixd());
+        } else {
+            _viewer->getCamera()->setFinalDrawCallback(_wcc);
         }
 
 		_viewer->realize();
@@ -953,13 +956,10 @@ void DSOSG::setWindowName(std::string name) {
     }
 };
 
-
 void DSOSG::setCaptureFilename(std::string name) {
-    if (_wcc!=NULL) {
-        _wcc->set_next_filename( name );
-    }
+    vros_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
+    _wcc->set_next_filename( name );
 }
-
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
     vros_assert(_cameraManipulator.valid());
