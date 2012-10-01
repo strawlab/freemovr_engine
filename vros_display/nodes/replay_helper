@@ -79,6 +79,7 @@ def play_data( bagfiles, row, data, publishers ):
     k = (topic,msg_class)
     if k not in publishers:
         publishers[k] = rospy.Publisher(topic, msg_class)
+        time.sleep(1.1) # give ROS a chance to catch up. (Necessary but WTF.)
     pub = publishers[k]
     pub.publish(msg)
 
