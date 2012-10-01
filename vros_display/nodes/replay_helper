@@ -100,6 +100,8 @@ def play(args):
     list_of_bagfiles = args.bagfile
     topics = args.topics
     fps = args.fps
+    start_time_cli = args.start
+
     dt = 1.0/fps
 
     if topics is None:
@@ -111,8 +113,11 @@ def play(args):
     index, bagfiles, data = make_index(list_of_bagfiles, topics)
 
     start_time = index['t'][0]
+    if start_time_cli is not None:
+        start_time = start_time_cli
     stop_time = index['t'][-1]
     dur = stop_time-start_time
+
     frame_times = np.arange(start_time, stop_time, dt) + dt
     rospy.loginfo('Replaying %.1f seconds of data at %.1f fps. '
                   'This will be %d frames.)'%(dur,fps,len(frame_times)))
@@ -170,6 +175,8 @@ if __name__ == '__main__':
                              help='topic names')
     parser_play.add_argument('--fps',type=float,default=25.0,
                              help='frames per second')
+    parser_play.add_argument('--start',type=float, default=None,
+                             help='start time (in seconds since 1970)')
     parser_play.set_defaults(func=play)
     # ----------------------------
 
