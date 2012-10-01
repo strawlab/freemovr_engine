@@ -71,7 +71,7 @@ def play_data( bagfiles, row, data, publishers ):
     t = float(row['t'])
     fname = str(row['fname'])
     topic = str(row['topic'])
-    bag = bagfiles[fname]
+
     k2 = (t,fname,topic)
     msg = data[k2]
 
