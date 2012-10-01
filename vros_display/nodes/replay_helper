@@ -83,11 +83,7 @@ def play_data( bagfiles, row, data, publishers ):
     pub = publishers[k]
     pub.publish(msg)
 
-def render_frame(fno, n_messages, pub):
-    fname = 'frame%05d.png'%fno
-
-    fname = os.path.abspath(fname)
-
+def render_frame(fname, pub):
     if os.path.exists(fname):
         raise RuntimeError('target file %r already exists'%fname)
 
@@ -150,7 +146,9 @@ def play(args):
             if rospy.is_shutdown():
                 sys.exit(0)
 
-        render_frame(frame_num, n_messages, frame_pub)
+        fname = 'frame%05d.png'%frame_num
+        fname = os.path.abspath(fname)
+        render_frame(fname, frame_pub)
 
 if __name__ == '__main__':
     rospy.init_node('replay_helper')
