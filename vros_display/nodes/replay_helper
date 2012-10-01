@@ -120,6 +120,12 @@ def play(args):
     frame_pub = rospy.Publisher(BASE_NAME+'/capture_frame_to_path',
                                 ROSPath,
                                 latch=True)
+
+    if 1:
+        # Block on junk first frame so that display server is started
+        # before we start publishing.
+        render_frame('/tmp/trash.png', frame_pub)
+
     publishers = {}
     next_index_enum = 0
     for frame_num,frame_time in enumerate(frame_times):
