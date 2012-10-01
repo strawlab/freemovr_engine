@@ -226,7 +226,7 @@ public:
         osg::Camera* camera = new osg::Camera;
 
         camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        camera->setClearColor(osg::Vec4(0.5f, 0.0f, 0.0f, 1.0f)); // clear
+        camera->setClearColor(osg::Vec4(0.5f, 0.0f, 0.0f, 0.0f)); // clear red
 
         // set viewport
         camera->setViewport(0,0,tex_width,tex_height);
@@ -799,6 +799,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	traits->width = width;
 	traits->height = height;
 
+    traits->alpha = 8;
+
     traits->pbuffer = use_pbuffer;
 
     osg::ref_ptr<osg::GraphicsContext> pbuffer;
@@ -833,7 +835,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
                                                                0.01, 1000.);
 
         if (_mode==std::string("cubemap")) {
-            _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // black
+            _viewer->getCamera()->setClearColor(osg::Vec4(0.0f, 0.0f, 0.0f, 0.0f)); // clear black
         }
 
         if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
@@ -845,6 +847,12 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->setReleaseContextAtEndOfFrameHint(false);
 
 		_viewer->addEventHandler(new osgViewer::StatsHandler);
+
+		osg::ref_ptr<osg::GraphicsContext> gc;
+		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
+		vros_assert(gc.valid());
+		_viewer->getCamera()->setGraphicsContext(gc.get());
+        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.5f, 0.0f)); // clear blue
 
         _wcc = new WindowCaptureCallback();
 

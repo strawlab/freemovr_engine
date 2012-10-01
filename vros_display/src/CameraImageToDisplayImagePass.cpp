@@ -113,7 +113,7 @@ void CameraImageToDisplayImagePass::create_output_texture() {
 void CameraImageToDisplayImagePass::setup_camera()
 {
     // clearing
-    _camera->setClearColor(osg::Vec4(0.0f,0.0f,0.3f,1.0f)); // blue
+    _camera->setClearColor(osg::Vec4(0.0f,0.0f,0.3f,0.0f)); // clear blue
     _camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // projection and view
