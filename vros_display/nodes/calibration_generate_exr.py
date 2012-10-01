@@ -24,6 +24,8 @@ import numpy as np
 import cv,cv2
 import exr
 
+import pcl
+
 X_INDEX = 0
 Y_INDEX = 1
 Z_INDEX = 2
@@ -47,9 +49,12 @@ class Calibrator:
         if new_reconstructor:
             self.flydra = flydra.reconstruct.Reconstructor(
                             cal_source=new_reconstructor)
+            self.flydra_calib = new_reconstructor
         else:
             self.flydra = None
+            self.flydra_calib = ''
 
+        self.smoothed = None
         self.filenames = []
         
     def load(self, b):
@@ -74,17 +79,22 @@ class Calibrator:
                         cv2.namedWindow(key)
 
                 finally:
-                    xyz = np.array((msg.position.x,msg.position.y,msg.position.z))
                     pixel = np.array((msg.pixel_projector.x, msg.pixel_projector.y))
                     
                     pts = []
                     for projpt in msg.points:
                         pts.append( (projpt.camera,(projpt.pixel.x,projpt.pixel.y)) )
 
+                    #recompute 3D position
+                    if self.flydra:
+                        xyz = self.flydra.find3d(pts,return_line_coords=False, undistort=True)
+                    else:
+                        xyz = np.array((msg.position.x,msg.position.y,msg.position.z))
+
                     try:
-                        self.data[msg.display_server][msg.vdisp].append( (xyz,pixel,pts) )
+                        self.data[msg.display_server][msg.vdisp].append( [xyz,pixel,pts] )
                     except KeyError:
-                        self.data[msg.display_server][msg.vdisp] = [ (xyz,pixel,pts) ]
+                        self.data[msg.display_server][msg.vdisp] = [ [xyz,pixel,pts] ]
 
     def interpolate_points(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
         #interpolation in XYZ to stop filter / wraparound effects
@@ -144,13 +154,44 @@ class Calibrator:
         plt.colorbar()
         plt.title('%s/%s V' % (ds,vdisp))
 
+    def smooth(self, amount):
+        rospy.loginfo("smoothing points with MLS filter %f" % amount)
+        self.smoothed = amount
+
+        all_3d = []
+        for ds in self.data:
+            for vdisp in self.data[ds]:
+                for xyz,pixel,pts in self.data[ds][vdisp]:
+                    all_3d.append(xyz)
+
+        create_point_cloud_message_publisher(all_3d,'/calibration/pre_smooth',
+            publish_now=True, latch=True)
+
+        p = pcl.PointCloud()
+        p.from_array(np.array(all_3d,dtype=np.float32))
+        smoothed = p.filter_mls(amount).to_list()
+
+        i = 0
+        all_3d = []
+        for ds in self.data:
+            for vdisp in self.data[ds]:
+                for xyz,pixel,pts in self.data[ds][vdisp]:
+                    sxyz = smoothed[i]
+                    xyz[0] = sxyz[0]; xyz[1] = sxyz[1]; xyz[2] = sxyz[2]
+                    all_3d.append(xyz)
+                    i += 1
+
+        create_point_cloud_message_publisher(all_3d,'/calibration/post_smooth',
+            publish_now=True, latch=True)
+
+
     def do_exr(self):
 
         all_3d = []
         for ds in self.data:
             if self.visualize:
                 cv2.namedWindow(ds)
-            img = self.cvimgs[ds]
+                img = self.cvimgs[ds]
             
             #FIXME: change to using masked arrays...
             ds_u = np.zeros((768,1024))
@@ -176,17 +217,15 @@ class Calibrator:
                     arr.fill(np.nan)
 
                 for xyz,pixel,pts in self.data[ds][vdisp]: #just do one vdisp
-                    col = pixel[0]
-                    row = pixel[1]
-                    calib.imgproc.add_crosshairs_to_nparr(img, row=row, col=col, chan=2, sz=1)
-
-                    if self.flydra:
-                        xyz = self.flydra.find3d(pts,return_line_coords=False, undistort=True)
                     
                     vdisp_2d.append(pixel)
                     vdisp_3d.append(xyz)
 
                     if self.visualize:
+                        col = pixel[0]
+                        row = pixel[1]
+                        calib.imgproc.add_crosshairs_to_nparr(img, row=row, col=col, chan=2, sz=1)
+
                         arr[row-2:row+2,col-2:col+2,X_INDEX] = xyz[0]
                         arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]
                         arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
@@ -210,13 +249,22 @@ class Calibrator:
                     self.show_vdisp_points(arr, ds, visp)
 
             #save the exr file, -1 means no data, not NaN
+            fn = '%s.exr' % ds
             ds_u[~ds_u_mask] = -1
             ds_v[~ds_v_mask] = -1
-            exrpath = decode_url('%s.exr' % ds)
+            exrpath = decode_url(fn)
+
+            comment = '%s created from %s' % (fn, ", ".join(self.filenames))
+            if self.smoothed is not None:
+                comment += '. MLS smoothed by %f' % self.smoothed
+            if self.flydra_calib:
+                comment += '. 3D reconstruction from %s' % self.flydra_calib
+            rospy.loginfo(comment)
+
             exr.save_exr(
                     exrpath,
                     r=ds_u, g=ds_v, b=np.zeros_like(ds_u),
-                    comments=", ".join(self.filenames))
+                    comments=comment)
 
             #save the resulting geometry to the parameter server
             if self.update_parameter_server:
@@ -245,6 +293,8 @@ class Calibrator:
             all_3d.extend(ds_3d)
 
         create_pcd_file_from_points(decode_url('/tmp/allflydra3d.pcd'),all_3d)
+        create_point_cloud_message_publisher(all_3d,'/calibration/points',
+            publish_now=True, latch=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -261,18 +311,16 @@ if __name__ == "__main__":
         '--reconstructor', type=str, help=\
         "path to a new flydra calibration (use the "\
         "new reconstructor to calculate the 3D position)")
+    parser.add_argument(
+        '--smooth', type=float, help=\
+        "amount to smooth by, see pcl.filter_msl")
+
     args = parser.parse_args()
 
     rospy.init_node('calibration_generate_exr', anonymous=True)
 
     if args.visualize:
         cv2.startWindowThread()
-
-#    ds0 = "CALIB20120907_222224.bag"
-#    ds1 = "CALIB20120927_105939.bag" #new back 
-#    ds3 = "CALIB20120908_175653.bag" #good middle
-#    ds3 = "CALIB20120908_182035.bag" #sparse left mirror
-#    C = decode_url("~/FLYDRA/vros-calibration/%s" % ds1)
 
     cal = Calibrator(
                 visualize=args.visualize,
@@ -287,10 +335,15 @@ if __name__ == "__main__":
             assert os.path.exists(fn)
             cal.load(fn)
 
+    if args.smooth:
+        cal.smooth(args.smooth)
+
     cal.do_exr()
+
     if cal.visualize:
         plt.show()
 
-    if not args.calibration:
-        rospy.spin()
+    rospy.loginfo('finished')
+
+    rospy.spin()
 
