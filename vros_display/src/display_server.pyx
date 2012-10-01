@@ -10,6 +10,8 @@ import vros_display.srv
 import geometry_msgs.msg
 import std_msgs.msg
 from vros_display.msg import ROSPath
+import vros_display.msg
+from geometry_msgs.msg import Quaternion, Point
 
 import rosmsg2json
 
@@ -54,16 +56,19 @@ cdef extern from "osg/Vec2" namespace "osg":
     cdef cppclass Vec2:
         Vec2()
         Vec2(double,double)
+        double& operator[](int)
 
 cdef extern from "osg/Vec3" namespace "osg":
     cdef cppclass Vec3:
         Vec3()
         Vec3(double,double,double)
+        double& operator[](int)
 
 cdef extern from "osg/Quat" namespace "osg":
     cdef cppclass Quat:
         Quat()
-        Quat(double,double,double,double)
+        Quat(double,double,double,double) # x,y,z,w
+        double& operator[](int)
 
 cdef extern from "osg/Array" namespace "osg":
     cdef cppclass Vec2Array:
@@ -83,6 +88,11 @@ cdef extern from "osg/Geode" namespace "osg":
 
 # -------------------------------------------- DSOSG -----
 cdef extern from "dsosg.h" namespace "dsosg":
+    ctypedef struct TrackballManipulatorState:
+        Quat rotation
+        Vec3 center
+        double distance
+
     cdef cppclass DSOSG:
         DSOSG(std_string vros_display_basepath,
               std_string mode,
@@ -110,6 +120,9 @@ cdef extern from "dsosg.h" namespace "dsosg":
         float getFrameRate() nogil except +
         setCursorVisible(int visible) nogil except +
         void setCaptureFilename(std_string name) nogil except +
+
+        TrackballManipulatorState getTrackballManipulatorState() nogil except +
+        void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
 
 # ================================================================
 
@@ -191,6 +204,14 @@ def fixup_config( orig_config_dict ):
         f.write(json.dumps(config_dict))
 
     return config_dict, config_file
+
+cdef object osg_quat_to_msg_quat(Quat q):
+    result = Quaternion( q[0], q[1], q[2], q[3] ) # x,y,z,w
+    return result
+
+cdef object osg_vec3_to_msg_point(Vec3 v):
+    result = Point( v[0], v[1], v[2] ) # x,y,z
+    return result
 
 cdef class MyNode:
     cdef DSOSG* dsosg
@@ -293,6 +314,9 @@ cdef class MyNode:
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_cb)
+        rospy.Subscriber("~trackball_manipulator_state",
+                         vros_display.msg.TrackballManipulatorState,
+                         self.manipulator_callback)
 
         display_window_name = rospy.get_name();
         display_json_str = json.dumps(config_dict['display'])
@@ -311,6 +335,9 @@ cdef class MyNode:
         rospy.Service('~blit_compressed_image',
                       vros_display.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
+        rospy.Service('~get_trackball_manipulator_state',
+                      vros_display.srv.GetTrackballManipulatorState,
+                      self.handle_get_trackball_manipulator_state)
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
         self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
 
@@ -368,6 +395,19 @@ cdef class MyNode:
                                                 'msg_json': json_image})
         return vros_display.srv.BlitCompressedImageResponse()
 
+    def handle_get_trackball_manipulator_state(self,request):
+        # This is called in some callback thread by ROS.
+        # (Should it be handled in draw thread?)
+        cdef TrackballManipulatorState ts
+
+        response = vros_display.srv.GetTrackballManipulatorStateResponse()
+        result = response.data
+        ts = self.dsosg.getTrackballManipulatorState()
+        result.rotation = osg_quat_to_msg_quat(ts.rotation)
+        result.center = osg_vec3_to_msg_point(ts.center)
+        result.distance = ts.distance
+        return response
+
     def pose_callback(self, msg):
         # this is called in some callback thread by ROS
         new_position = new Vec3(msg.position.x,
@@ -388,6 +428,17 @@ cdef class MyNode:
         fname = d['data']
         rospy.loginfo("will capture next frame to filename: %r"%fname)
         self.dsosg.setCaptureFilename(std_string(fname))
+
+    def manipulator_callback(self, msg):
+        # This is called in some callback thread by ROS.
+        # (Should it be handled in draw thread?)
+        cdef TrackballManipulatorState ts
+        r = msg.rotation
+        v = msg.center
+        ts.rotation = Quat( r.x, r.y, r.z, r.w )
+        ts.center   = Vec3( v.x, v.y, v.z )
+        ts.distance = msg.distance
+        self.dsosg.setTrackballManipulatorState(ts)
 
     def mode_callback(self, msg):
         with self._mode_lock:

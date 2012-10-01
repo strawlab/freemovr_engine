@@ -960,4 +960,21 @@ void DSOSG::setCaptureFilename(std::string name) {
     }
 }
 
+
+TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
+    vros_assert(_cameraManipulator.valid());
+    TrackballManipulatorState result;
+    result.rotation = _cameraManipulator->getRotation();
+    result.center =  _cameraManipulator->getCenter();
+    result.distance =  _cameraManipulator->getDistance();
+    return result;
+}
+
+void DSOSG::setTrackballManipulatorState(TrackballManipulatorState s) {
+    vros_assert(_cameraManipulator.valid());
+    _cameraManipulator->setRotation(s.rotation);
+    _cameraManipulator->setCenter(s.center);
+    _cameraManipulator->setDistance(s.distance);
+}
+
 }

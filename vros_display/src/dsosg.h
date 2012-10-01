@@ -21,6 +21,12 @@
 
 namespace dsosg{
 
+	typedef struct {
+		osg::Quat rotation;
+		osg::Vec3 center;
+		double distance;
+	} TrackballManipulatorState;
+
 	typedef Poco::ClassLoader<StimulusInterface> StimulusLoader;
 
 	class ObserverPositionCallback: public osg::Uniform::Callback {
@@ -63,6 +69,10 @@ namespace dsosg{
 		void setWindowName(std::string name);
 
 		void setCaptureFilename(std::string name);
+
+        TrackballManipulatorState getTrackballManipulatorState();
+        void setTrackballManipulatorState(TrackballManipulatorState s);
+
 	private:
 		StimulusLoader _stimulus_loader;
 
