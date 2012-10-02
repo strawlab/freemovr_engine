@@ -34,11 +34,11 @@ void WindowCaptureCallback::operator () (osg::RenderInfo& renderInfo) const {
     int width = gc->getTraits()->width;
     int height = gc->getTraits()->height;
 
-    std::cout<<"Capture: size="<<width<<"x"<<height<<", format="<<(pixelFormat == GL_RGBA ? "GL_RGBA":"GL_RGB")<<std::endl;
+    //std::cout<<"Capture: size="<<width<<"x"<<height<<", format="<<(pixelFormat == GL_RGBA ? "GL_RGBA":"GL_RGB")<<std::endl;
 
     _image->readPixels(0, 0, width, height, pixelFormat, GL_UNSIGNED_BYTE);
 
-    std::cout << "Writing to: " << _fileName << std::endl;
+    //std::cout << "Writing to: " << _fileName << std::endl;
     osgDB::writeImageFile(*_image, _fileName);
     _fileName = "";
   }
