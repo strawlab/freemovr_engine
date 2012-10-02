@@ -133,6 +133,10 @@ def play(args):
 
     publishers = {}
     next_index_enum = 0
+
+    csv_log_fname = 'frame_data.csv'
+    fd = open( csv_log_fname, mode='w')
+
     for frame_num,frame_time in enumerate(frame_times):
 
         n_messages = 0
@@ -157,9 +161,11 @@ def play(args):
             if rospy.is_shutdown():
                 sys.exit(0)
 
-        fname = 'frame%05d.png'%frame_num
-        fname = os.path.abspath(fname)
+        fname_short = 'frame%05d.png'%frame_num
+        fname = os.path.abspath(fname_short)
         render_frame(fname, frame_pub)
+        fd.write('%r,%r\n'% (frame_time,fname_short) )
+    fd.close()
 
 if __name__ == '__main__':
     rospy.init_node('replay_helper')
