@@ -79,7 +79,7 @@ class Cylinder(ModelBase):
         frac_theta = tc[0]
         frac_height = tc[1]
 
-        angle = frac_theta * 2.0*np.pi
+        angle = frac_theta * 2.0*np.pi + np.pi
         c = np.cos(angle)
         s = np.sin(angle)
         r = self._radius
@@ -103,7 +103,7 @@ class Cylinder(ModelBase):
         angle = np.arctan2( y0, x0 )
         height = z0
 
-        tc0 = range_0_2pi(angle)/(2*np.pi)
+        tc0 = range_0_2pi(angle-np.pi)/(2*np.pi)
         tc1 = z0/self._height
         result = np.vstack((tc0,tc1))
         return result.T

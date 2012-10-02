@@ -32,7 +32,7 @@ public:
 		double frac_theta = tc[0];
 		double frac_height = tc[1];
 
-		double angle = frac_theta * 2.0*osg::PI;
+		double angle = frac_theta * 2.0*osg::PI + osg::PI;
 		float c = cosf(angle);
 		float s = sinf(angle);
 		double r = _radius;
