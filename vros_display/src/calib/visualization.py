@@ -157,12 +157,12 @@ def create_pcd_file_from_points(fname, points, npts=None):
     "HEIGHT 1\n"\
     "VIEWPOINT 0 0 0 1 0 0 0\n"\
     "POINTS %(npoints)d\n"\
-    "DATA ascii"
+    "DATA ascii\n"
 
     _points_check(points)
 
     with open(fname, 'w') as fd:
-        fd.write(HEADER % {"npoints":len(points)-1})
+        fd.write(HEADER % {"npoints":len(points)})
         for pt in points:
             fd.write("%f %f %f\n" % tuple(pt))
 
