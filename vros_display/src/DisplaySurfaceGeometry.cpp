@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#include "display_screen_geometry.h"
+#include "DisplaySurfaceGeometry.h"
 
 #include <iostream>
 #include <fstream>
@@ -32,7 +32,7 @@ public:
 		double frac_theta = tc[0];
 		double frac_height = tc[1];
 
-		double angle = frac_theta * 2.0*osg::PI;
+		double angle = frac_theta * 2.0*osg::PI + osg::PI;
 		float c = cosf(angle);
 		float s = sinf(angle);
 		double r = _radius;

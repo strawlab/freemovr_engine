@@ -57,4 +57,5 @@ glib2:
   ubuntu: libglib2.0-dev
 cython:
   ubuntu: cython
-
+rospkg:
+  ubuntu: python-rospkg

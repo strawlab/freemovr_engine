@@ -28,4 +28,5 @@
   <rosdep name="jansson"/>
   <rosdep name="python-yaml"/>
   <rosdep name="cython"/>
+  <rosdep name="rospkg"/>
 </package>

@@ -63,7 +63,7 @@ void ProjectCubemapToGeometryPass::create_output_texture() {
 void ProjectCubemapToGeometryPass::setup_camera()
 {
     // clearing
-    _camera->setClearColor(osg::Vec4(0.0f,0.0f,0.0f,1.0f)); // black
+    _camera->setClearColor(osg::Vec4(0.0f,0.0f,0.0f,0.0f)); // clear black
     _camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // projection and view

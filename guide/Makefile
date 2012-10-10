@@ -151,3 +151,7 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+# A rule to convert any svg file to png with inkscape
+%.png: %.svg
+	inkscape -f $< --export-dpi=90  --export-background=white --export-png=$@

@@ -1,0 +1,192 @@
+#!/usr/bin/env python
+import argparse
+import numpy as np
+import time
+import os
+import sys
+
+import roslib; roslib.load_manifest('vros_display')
+import std_msgs.msg
+import rospy
+from vros_display.msg import TrackballManipulatorState, ROSPath
+from geometry_msgs.msg import Quaternion, Point
+import rosbag
+
+BASE_NAME = 'ds_replay' # XXX FIXME (how to remap the name of a published topic?)
+
+class Bunch:
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+
+def publish_trackball():
+    """publish the camera location"""
+    tsdict = rospy.get_param('~trackball_manipulator_state')
+
+    rotation = Bunch(**tsdict['rotation'])
+    center = Bunch(**tsdict['center'])
+    distance = tsdict['distance']
+
+    rotation = Quaternion( rotation.x, rotation.y, rotation.z, rotation.w )
+    center = Point( center.x, center.y, center.z )
+
+    ts = TrackballManipulatorState(rotation=rotation, center=center, distance=distance)
+
+    trackball_pub = rospy.Publisher(BASE_NAME+'/trackball_manipulator_state',
+                                    TrackballManipulatorState, latch=True)
+    trackball_pub.publish(ts)
+
+def make_index(list_of_bagfiles, topics):
+    """index bagfiles"""
+    bagfiles = {}
+    data = {}
+    save_t = []
+    save_fname = []
+    save_topic = []
+    for fname in list_of_bagfiles:
+        bag = bagfiles[fname] = rosbag.Bag(fname)
+        for topic, msg, t in bag.read_messages(topics=topics):
+            k1 = t.to_sec()
+            save_t.append( k1 )
+            save_fname.append( fname )
+            save_topic.append( topic )
+
+            k2 = (k1,fname,topic)
+            assert k2 not in data
+            data[k2] = msg
+    save_t = np.array(save_t)
+    save_fname = np.array(save_fname)
+    save_topic = np.array(save_topic)
+    idxs = np.argsort( save_t ) # sort by timestamp
+    # create sorted index
+    index = np.empty( (len(idxs),),
+                      dtype=[( 't',save_t.dtype),
+                             ( 'fname',save_fname.dtype),
+                             ( 'topic',save_topic.dtype)])
+    index['t']= save_t[idxs]
+    index['fname']=save_fname[idxs]
+    index['topic']=save_topic[idxs]
+    return index, bagfiles, data
+
+def play_data( bagfiles, row, data, publishers ):
+    t = float(row['t'])
+    fname = str(row['fname'])
+    topic = str(row['topic'])
+
+    k2 = (t,fname,topic)
+    msg = data[k2]
+
+    msg_class = msg.__class__
+    k = (topic,msg_class)
+    if k not in publishers:
+        publishers[k] = rospy.Publisher(topic, msg_class)
+        time.sleep(1.1) # give ROS a chance to catch up. (Necessary but WTF.)
+    pub = publishers[k]
+    pub.publish(msg)
+
+def render_frame(fname, pub):
+    if os.path.exists(fname):
+        raise RuntimeError('target file %r already exists'%fname)
+
+    # send command to render frame
+    pub.publish(fname)
+
+    # wait for new frame to be saved
+    while not os.path.exists(fname):
+        if rospy.is_shutdown():
+            sys.exit(0)
+        time.sleep(0.05)
+
+def play(args):
+    list_of_bagfiles = args.bagfile
+    topics = args.topics
+    fps = args.fps
+    start_time_cli = args.start
+
+    dt = 1.0/fps
+
+    if topics is None:
+        rospy.loginfo('replaying all topics')
+    else:
+        rospy.loginfo('replaying topics: %r'%topics)
+
+    publish_trackball()
+    index, bagfiles, data = make_index(list_of_bagfiles, topics)
+
+    start_time = index['t'][0]
+    if start_time_cli is not None:
+        start_time = start_time_cli
+    stop_time = index['t'][-1]
+    dur = stop_time-start_time
+
+    frame_times = np.arange(start_time, stop_time, dt) + dt
+    rospy.loginfo('Replaying %.1f seconds of data at %.1f fps. '
+                  'This will be %d frames.)'%(dur,fps,len(frame_times)))
+
+    frame_pub = rospy.Publisher(BASE_NAME+'/capture_frame_to_path',
+                                ROSPath,
+                                latch=True)
+
+    if 1:
+        # Block on junk first frame so that display server is started
+        # before we start publishing.
+        render_frame('/tmp/trash.png', frame_pub)
+
+    publishers = {}
+    next_index_enum = 0
+
+    csv_log_fname = 'frame_data.csv'
+    fd = open( csv_log_fname, mode='w')
+
+    for frame_num,frame_time in enumerate(frame_times):
+
+        n_messages = 0
+        while 1:
+            # go through all messages in order
+
+            # peek at next data
+            if next_index_enum >= len(index):
+                break
+            next_row = index[next_index_enum]
+            next_time = next_row['t']
+            if next_time > frame_time:
+                # data is after this current frame, so render and advance to next frame
+                break # get out of while loop
+
+            # advance one step in bagfiles
+            n_messages += 1
+            this_row = next_row
+            play_data( bagfiles, this_row, data, publishers )
+            next_index_enum += 1
+
+            if rospy.is_shutdown():
+                sys.exit(0)
+
+        fname_short = 'frame%05d.png'%frame_num
+        fname = os.path.abspath(fname_short)
+        render_frame(fname, frame_pub)
+        fd.write('%r,%r\n'% (frame_time,fname_short) )
+    fd.close()
+
+if __name__ == '__main__':
+    rospy.init_node('replay_helper')
+
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(title='commands')
+    # ------ play --------------
+    parser_play = subparsers.add_parser('play',
+                                        help='play bag file')
+    parser_play.add_argument('bagfile',type=str,nargs='+',
+                             help='bag files to replay')
+    parser_play.add_argument('--topics',type=str,default=None,nargs='*',
+                             help='topic names')
+    parser_play.add_argument('--fps',type=float,default=25.0,
+                             help='frames per second')
+    parser_play.add_argument('--start',type=float, default=None,
+                             help='start time (in seconds since 1970)')
+    parser_play.set_defaults(func=play)
+    # ----------------------------
+
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    args.func(args)

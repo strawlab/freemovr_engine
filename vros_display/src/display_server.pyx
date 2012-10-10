@@ -9,6 +9,9 @@ import rospy
 import vros_display.srv
 import geometry_msgs.msg
 import std_msgs.msg
+from vros_display.msg import ROSPath
+import vros_display.msg
+from geometry_msgs.msg import Quaternion, Point
 
 import rosmsg2json
 
@@ -53,16 +56,19 @@ cdef extern from "osg/Vec2" namespace "osg":
     cdef cppclass Vec2:
         Vec2()
         Vec2(double,double)
+        double& operator[](int)
 
 cdef extern from "osg/Vec3" namespace "osg":
     cdef cppclass Vec3:
         Vec3()
         Vec3(double,double,double)
+        double& operator[](int)
 
 cdef extern from "osg/Quat" namespace "osg":
     cdef cppclass Quat:
         Quat()
-        Quat(double,double,double,double)
+        Quat(double,double,double,double) # x,y,z,w
+        double& operator[](int)
 
 cdef extern from "osg/Array" namespace "osg":
     cdef cppclass Vec2Array:
@@ -82,6 +88,11 @@ cdef extern from "osg/Geode" namespace "osg":
 
 # -------------------------------------------- DSOSG -----
 cdef extern from "dsosg.h" namespace "dsosg":
+    ctypedef struct TrackballManipulatorState:
+        Quat rotation
+        Vec3 center
+        double distance
+
     cdef cppclass DSOSG:
         DSOSG(std_string vros_display_basepath,
               std_string mode,
@@ -91,7 +102,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int show_geom_coords,
               int tethered_mode,
               ) nogil except +
-        void setup_viewer(std_string viewer_window_name, std_string json_config) nogil except +
+        void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
         void update( double, Vec3, Quat )
         void frame() nogil except +
         int done() nogil except +
@@ -108,6 +119,10 @@ cdef extern from "dsosg.h" namespace "dsosg":
 
         float getFrameRate() nogil except +
         setCursorVisible(int visible) nogil except +
+        void setCaptureFilename(std_string name) nogil except +
+
+        TrackballManipulatorState getTrackballManipulatorState() nogil except +
+        void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
 
 # ================================================================
 
@@ -156,6 +171,48 @@ def _get_verts_from_viewport(viewport):
             raise ValueError('expected list of tuples')
     return verts
 
+def fixup_config( orig_config_dict ):
+    """fixup 'stimulus_plugins' list to lookup ROS package names
+
+    For example, this part of a config file::
+
+        stimulus_plugins:
+            - path: $(find my_ros_package)/lib
+              name: MyStimulus
+
+    will be replaced with::
+
+        stimulus_plugins:
+            - path: /some/path/to_my_ros_package/lib
+              name: MyStimulus
+
+    This allows specifying stimuli relative to the ROS install rather
+    than an absolute path. The syntax should be identical to the
+    substitutions done in ROS launch files. (If it's not, it's a bug).
+    """
+    def fixup( plugin_dict ):
+        pp = plugin_dict['path']
+        pp2 = rosmsg2json.fixup_path( pp )
+        plugin_dict['path'] = pp2
+        return plugin_dict
+    config_dict = orig_config_dict.copy()
+    orig_plugins = config_dict.get('stimulus_plugins',[])
+    plugins = [ fixup(p) for p in orig_plugins ]
+    config_dict['stimulus_plugins'] = plugins
+    config_file = '/tmp/%s.json' % rospy.get_name()
+    with open(config_file,mode='w') as f:
+        f.write(json.dumps(config_dict))
+
+    return config_dict, config_file
+
+cdef object osg_quat_to_msg_quat(Quat q):
+    result = Quaternion( q[0], q[1], q[2], q[3] ) # x,y,z,w
+    return result
+
+cdef object osg_vec3_to_msg_point(Vec3 v):
+    result = Point( v[0], v[1], v[2] ) # x,y,z
+    return result
+
 cdef class MyNode:
     cdef DSOSG* dsosg
     cdef object _commands
@@ -192,6 +249,7 @@ cdef class MyNode:
                             choices=['virtual_world','cubemap','overview','geometry','geometry_texture','vr_display'],
                             default='vr_display')
         parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
+        parser.add_argument('--pbuffer', default=False, action='store_true')
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--throttle', default=False, action='store_true')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
@@ -222,20 +280,19 @@ cdef class MyNode:
             rospy.loginfo("using ros config")
             #the exr file can be specified as a base64 string. In that case we decode it and write it
             #to a tmp file
-            p2g = config_dict['p2g']
+            p2g = config_dict.get('p2g',None)
             if isinstance(p2g, xmlrpclib.Binary):
                 exrfile = '/tmp/%s.exr' % rospy.get_name()
                 with open(exrfile, 'wb') as exr:
                     exr.write(p2g.data)
                 config_dict['p2g'] = exrfile
                 rospy.loginfo("decoded exr file and saved to %s" % exrfile)
-            config_file = '/tmp/%s.json' % rospy.get_name()
-            with open(config_file,mode='w') as f:
-                f.write(json.dumps(config_dict))
         else:
             rospy.loginfo("using default config")
             config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'config','config.json')
             config_dict = json.load(open(config_file,'r'))
+
+        config_dict, config_file = fixup_config( config_dict )
 
         rospy.loginfo("config_file = %s" % config_file)
 
@@ -260,10 +317,15 @@ cdef class MyNode:
                                )
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_cb)
+        rospy.Subscriber("~trackball_manipulator_state",
+                         vros_display.msg.TrackballManipulatorState,
+                         self.manipulator_callback)
 
         display_window_name = rospy.get_name();
         display_json_str = json.dumps(config_dict['display'])
-        self.dsosg.setup_viewer(std_string(display_window_name),std_string(display_json_str))
+        self.dsosg.setup_viewer(std_string(display_window_name),std_string(display_json_str),
+                                args.pbuffer)
 
         rospy.Service('~get_display_info',
                       vros_display.srv.GetDisplayInfo,
@@ -277,6 +339,12 @@ cdef class MyNode:
         rospy.Service('~blit_compressed_image',
                       vros_display.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
+        rospy.Service('~get_trackball_manipulator_state',
+                      vros_display.srv.GetTrackballManipulatorState,
+                      self.handle_get_trackball_manipulator_state)
+
+        self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
+        self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
 
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
@@ -333,6 +401,19 @@ cdef class MyNode:
                                                 'msg_json': json_image})
         return vros_display.srv.BlitCompressedImageResponse()
 
+    def handle_get_trackball_manipulator_state(self,request):
+        # This is called in some callback thread by ROS.
+        # (Should it be handled in draw thread?)
+        cdef TrackballManipulatorState ts
+
+        response = vros_display.srv.GetTrackballManipulatorStateResponse()
+        result = response.data
+        ts = self.dsosg.getTrackballManipulatorState()
+        result.rotation = osg_quat_to_msg_quat(ts.rotation)
+        result.center = osg_vec3_to_msg_point(ts.center)
+        result.distance = ts.distance
+        return response
+
     def pose_callback(self, msg):
         # this is called in some callback thread by ROS
         new_position = new Vec3(msg.position.x,
@@ -347,6 +428,23 @@ cdef class MyNode:
             del self.pose_orientation
             self.pose_position = new_position
             self.pose_orientation = new_orientation
+
+    def capture_cb(self, msg):
+        d = rosmsg2json.rosmsg2dict(msg)
+        fname = d['data']
+        rospy.loginfo("will capture next frame to filename: %r"%fname)
+        self.dsosg.setCaptureFilename(std_string(fname))
+
+    def manipulator_callback(self, msg):
+        # This is called in some callback thread by ROS.
+        # (Should it be handled in draw thread?)
+        cdef TrackballManipulatorState ts
+        r = msg.rotation
+        v = msg.center
+        ts.rotation = Quat( r.x, r.y, r.z, r.w )
+        ts.center   = Vec3( v.x, v.y, v.z )
+        ts.distance = msg.distance
+        self.dsosg.setTrackballManipulatorState(ts)
 
     def mode_callback(self, msg):
         with self._mode_lock:

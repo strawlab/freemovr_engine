@@ -17,7 +17,15 @@
 
 #include "vros_display/stimulus_interface.h"
 
+#include "WindowCaptureCallback.h"
+
 namespace dsosg{
+
+	typedef struct {
+		osg::Quat rotation;
+		osg::Vec3 center;
+		double distance;
+	} TrackballManipulatorState;
 
 	typedef Poco::ClassLoader<StimulusInterface> StimulusLoader;
 
@@ -46,7 +54,7 @@ namespace dsosg{
 		std::string stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name);
 		void stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message);
 
-		void setup_viewer(const std::string& viewer_window_name, const std::string& json_config);
+		void setup_viewer(const std::string& viewer_window_name, const std::string& json_config, bool pbuffer=false);
 		void resized(const int& width, const int& height);
 
         void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
@@ -59,6 +67,12 @@ namespace dsosg{
 		float getFrameRate();
 		void setCursorVisible(bool visible);
 		void setWindowName(std::string name);
+
+		void setCaptureFilename(std::string name);
+
+        TrackballManipulatorState getTrackballManipulatorState();
+        void setTrackballManipulatorState(TrackballManipulatorState s);
+
 	private:
 		StimulusLoader _stimulus_loader;
 
@@ -84,6 +98,7 @@ namespace dsosg{
 		int _width;
 		int _height;
 		osg::ref_ptr<osgGA::TrackballManipulator> _cameraManipulator;
+		WindowCaptureCallback* _wcc;
 	};
 
 }

@@ -41,7 +41,7 @@
 #include <iostream>
 
 #include "util.h"
-#include "display_screen_geometry.h"
+#include "DisplaySurfaceGeometry.h"
 #include "camera_model.h"
 
 osg::Camera* createBG(int width, int height)
