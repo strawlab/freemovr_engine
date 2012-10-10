@@ -45,6 +45,12 @@ def rosmsg2dict(msg):
                 plain_dict[varname] = rosmsg2dict(getattr(msg,varname))
             elif vartype == 'vros_display/ROSPath':
                 plain_dict[varname] = fixup_path(getattr(msg,varname).data)
+            elif vartype == 'geometry_msgs/Point':
+                v = getattr(msg,varname)
+                plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
+            elif vartype == 'geometry_msgs/Quaternion':
+                v = getattr(msg,varname)
+                plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
             else:
                 raise ValueError('unknown msg slot type: %s'%vartype)
     return plain_dict
