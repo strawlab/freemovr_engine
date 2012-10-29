@@ -31,7 +31,8 @@ class DisplayServerProxy(object):
 
         self._use_param_server = prefer_parameter_server_properties
         if self._use_param_server:
-            rospy.logwarn('parameters will be feteched from the parameter server not the remote instance')
+            rospy.logwarn('parameters will be fetched from the parameter '
+                          'server not the remote instance')
 
         rospy.loginfo('trying display server: %s' % self._server_node_name)
         if wait:
