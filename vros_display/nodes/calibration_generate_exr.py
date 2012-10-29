@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import sys, glob
 
 import roslib
 roslib.load_manifest('vros_display')
@@ -344,8 +344,11 @@ if __name__ == "__main__":
                 mask_out=False,
                 update_parameter_server=args.update)
 
-    cal_files=[]
-    [cal_files.extend(_) for _ in args.calibration]
+    tmp=[]
+    [tmp.extend(_) for _ in args.calibration]
+    cal_files = []
+    [cal_files.extend(glob.glob(_)) for _ in tmp]
+    rospy.loginfo('cal_files: %r'%cal_files)
     if len(cal_files):
         #multiple bag files
         for c in cal_files:
