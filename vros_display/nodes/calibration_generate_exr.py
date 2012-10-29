@@ -57,7 +57,7 @@ class Calibrator:
         self.smoothed = None
         self.filenames = []
         
-    def load(self, b):
+    def load(self, b, nowait_display_server):
         with rosbag.Bag(b, 'r') as bag:
             rospy.loginfo("processing %s" % b)
             self.filenames.append(b)
@@ -68,7 +68,10 @@ class Calibrator:
                 except KeyError:
                     self.data[key] = {}
 
-                    dsc = display_client.DisplayServerProxy(key,wait=True)
+                    dsc = display_client.DisplayServerProxy(key,
+                                wait=not nowait_display_server,
+                                prefer_parameter_server_properties=nowait_display_server)
+
                     mask = dsc.get_display_mask()
                     cvimg = dsc.new_image(color=255, mask=~mask, nchan=3, dtype=np.uint8)
 
@@ -96,7 +99,7 @@ class Calibrator:
                     except KeyError:
                         self.data[msg.display_server][msg.vdisp] = [ [xyz,pixel,pts] ]
 
-    def interpolate_points(self, xyz_arr, points_2d_arr, dsc, filt_method='linear'):
+    def interpolate_points(self, xyz_arr, points_2d_arr, dsc, interp_method):
         #interpolation in XYZ to stop filter / wraparound effects
 
         x = xyz_arr[:,0]
@@ -107,17 +110,17 @@ class Calibrator:
                 points_2d_arr, x,
                 img_width=dsc.width,
                 img_height=dsc.height,
-                method=filt_method)
+                method=interp_method)
         y0 = interpolate_pixel_cords(
                 points_2d_arr, y,
                 img_width=dsc.width,
                 img_height=dsc.height,
-                method=filt_method)
+                method=interp_method)
         z0 = interpolate_pixel_cords(
                 points_2d_arr, z,
                 img_width=dsc.width,
                 img_height=dsc.height,
-                method=filt_method)
+                method=interp_method)
 
         xs = x0.ravel()
         ys = y0.ravel()
@@ -133,7 +136,7 @@ class Calibrator:
 
         return u0, v0
 
-    def show_vdisp_points(self, arr, ds, vdisp):
+    def show_vdisp_points(self, arr, ds, u0, v0, vdisp):
         plt.figure()
         plt.subplot(211)
         plt.imshow(arr[:,:,X_INDEX])
@@ -185,7 +188,7 @@ class Calibrator:
             publish_now=True, latch=True)
 
 
-    def do_exr(self):
+    def do_exr(self, interp_method):
 
         all_3d = []
         for ds in self.data:
@@ -233,7 +236,8 @@ class Calibrator:
                 u0,v0 = self.interpolate_points(
                             np.array(vdisp_3d, dtype=np.float),
                             np.array(vdisp_2d, dtype=np.float),
-                            self.dscs[ds])
+                            self.dscs[ds],
+                            interp_method)
 
                 ds_vdisp_u_mask[np.isnan(u0)] = False
                 ds_u_mask |= ds_vdisp_u_mask 
@@ -246,7 +250,7 @@ class Calibrator:
                 ds_3d.extend(vdisp_3d)
 
                 if self.visualize:
-                    self.show_vdisp_points(arr, ds, visp)
+                    self.show_vdisp_points(arr, ds, u0, v0, vdisp)
 
             #save the exr file, -1 means no data, not NaN
             fn = '%s.exr' % ds
@@ -259,6 +263,7 @@ class Calibrator:
                 comment += '. MLS smoothed by %f' % self.smoothed
             if self.flydra_calib:
                 comment += '. 3D reconstruction from %s' % self.flydra_calib
+            comment += '. Interpolation method %s' % interp_method
             rospy.loginfo(comment)
 
             exr.save_exr(
@@ -314,6 +319,13 @@ if __name__ == "__main__":
     parser.add_argument(
         '--smooth', type=float, help=\
         "amount to smooth by, see pcl.filter_msl")
+    parser.add_argument(
+        '--interpolation', type=str, default="linear", choices=["nearest", "linear","cubic"], help=\
+        "interpolation method in (see scipy.interpolate.griddata)")
+    parser.add_argument(
+        '--no-wait-display-server', action='store_true', default=False, help=\
+        "dont wait for display server - use display server configuration from "
+        "parameter server")
 
     args = parser.parse_args()
 
@@ -333,12 +345,12 @@ if __name__ == "__main__":
         for c in args.calibration:
             fn = decode_url(c)
             assert os.path.exists(fn)
-            cal.load(fn)
+            cal.load(fn, args.no_wait_display_server)
 
     if args.smooth:
         cal.smooth(args.smooth)
 
-    cal.do_exr()
+    cal.do_exr(args.interpolation)
 
     if cal.visualize:
         plt.show()
