@@ -327,7 +327,9 @@ if __name__ == "__main__":
         "dont wait for display server - use display server configuration from "
         "parameter server")
 
-    args = parser.parse_args()
+    # use argparse, but only after ROS did its thing
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
 
     rospy.init_node('calibration_generate_exr', anonymous=True)
 
