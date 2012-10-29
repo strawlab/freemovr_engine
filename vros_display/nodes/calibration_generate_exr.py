@@ -36,7 +36,7 @@ class Calibrator:
         self.masks   = {}
         self.cvimgs  = {}
         self.dscs    = {}
-        
+
         self.geom = simple_geom.Cylinder(
                 base=dict(x=0,y=0,z=0),
                 axis=dict(x=0,y=0,z=1),
@@ -56,7 +56,7 @@ class Calibrator:
 
         self.smoothed = None
         self.filenames = []
-        
+
     def load(self, b, nowait_display_server):
         with rosbag.Bag(b, 'r') as bag:
             rospy.loginfo("processing %s" % b)
@@ -83,7 +83,7 @@ class Calibrator:
 
                 finally:
                     pixel = np.array((msg.pixel_projector.x, msg.pixel_projector.y))
-                    
+
                     pts = []
                     for projpt in msg.points:
                         pts.append( (projpt.camera,(projpt.pixel.x,projpt.pixel.y)) )
@@ -128,7 +128,7 @@ class Calibrator:
         xyz_new = np.array( [xs, ys, zs] ).T
 
         uv = self.geom.worldcoord2texcoord(xyz_new)
-        
+
         u0 = uv[:,0]
         v0 = uv[:,1]
         u0.shape = x0.shape
@@ -195,7 +195,7 @@ class Calibrator:
             if self.visualize:
                 cv2.namedWindow(ds)
                 img = self.cvimgs[ds]
-            
+
             #FIXME: change to using masked arrays...
             ds_u = np.zeros((768,1024))
             ds_u_mask = np.zeros((768,1024), dtype=np.bool)
@@ -220,7 +220,7 @@ class Calibrator:
                     arr.fill(np.nan)
 
                 for xyz,pixel,pts in self.data[ds][vdisp]: #just do one vdisp
-                    
+
                     vdisp_2d.append(pixel)
                     vdisp_3d.append(xyz)
 
@@ -232,7 +232,7 @@ class Calibrator:
                         arr[row-2:row+2,col-2:col+2,X_INDEX] = xyz[0]
                         arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]
                         arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
-                    
+
                 u0,v0 = self.interpolate_points(
                             np.array(vdisp_3d, dtype=np.float),
                             np.array(vdisp_2d, dtype=np.float),
@@ -240,9 +240,9 @@ class Calibrator:
                             interp_method)
 
                 ds_vdisp_u_mask[np.isnan(u0)] = False
-                ds_u_mask |= ds_vdisp_u_mask 
+                ds_u_mask |= ds_vdisp_u_mask
                 ds_vdisp_v_mask[np.isnan(v0)] = False
-                ds_v_mask |= ds_vdisp_v_mask 
+                ds_v_mask |= ds_vdisp_v_mask
 
                 ds_u += np.nan_to_num(u0)
                 ds_v += np.nan_to_num(v0)
