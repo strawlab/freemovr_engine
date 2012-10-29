@@ -306,7 +306,7 @@ class Calibrator:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--calibration', type=str, action='append', help=\
+        '--calibration', type=str, action='append', nargs='*', help=\
         "bag file containing calibration messages")
     parser.add_argument(
         '--visualize', action='store_true', default=False, help=\
@@ -344,9 +344,11 @@ if __name__ == "__main__":
                 mask_out=False,
                 update_parameter_server=args.update)
 
-    if args.calibration:
+    cal_files=[]
+    [cal_files.extend(_) for _ in args.calibration]
+    if len(cal_files):
         #multiple bag files
-        for c in args.calibration:
+        for c in cal_files:
             fn = decode_url(c)
             assert os.path.exists(fn)
             cal.load(fn, args.no_wait_display_server)
