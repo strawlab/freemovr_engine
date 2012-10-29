@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 import roslib
 roslib.load_manifest('vros_display')
 roslib.load_manifest('rosbag')
@@ -348,6 +350,10 @@ if __name__ == "__main__":
             fn = decode_url(c)
             assert os.path.exists(fn)
             cal.load(fn, args.no_wait_display_server)
+    else:
+        rospy.logfatal('No data. Specify inputs with --calibration <file.bag>')
+        rospy.signal_shutdown('no data')
+        sys.exit(1)
 
     if args.smooth:
         cal.smooth(args.smooth)
