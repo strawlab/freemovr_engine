@@ -491,15 +491,22 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
         _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
-			// draw a small red sphere as the observer
+			// draw a small red cone as the observer
+            osg::ref_ptr<osg::PositionAttitudeTransform> obs_pat = new osg::PositionAttitudeTransform;
+            obs_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
+            osg::Quat attitude;
+            attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
+            obs_pat->setAttitude(attitude);
+
 			osg::Geode* geode_1 = new osg::Geode;
-			osg::ref_ptr<osg::ShapeDrawable> shape = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f,0.0f,0.0f),
-																							observer_radius));
+            float height = 2* observer_radius;
+            osg::ref_ptr<osg::ShapeDrawable> shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height));
 			shape->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 			osg::StateSet* ss = geode_1->getOrCreateStateSet();
 			ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 			geode_1->addDrawable(shape);
-			_observer_pat->addChild(geode_1);
+			obs_pat->addChild(geode_1);
+			_observer_pat->addChild(obs_pat);
 			root->addChild(_observer_pat);
 		}
     }
