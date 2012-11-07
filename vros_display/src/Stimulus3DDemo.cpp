@@ -115,10 +115,6 @@ osg::ref_ptr<osg::Group> create_virtual_world()
 
 	  geom_transform_node->getOrCreateStateSet()->setAssociatedModes(_light.get(),osg::StateAttribute::ON);
 
-	  osg::LightModel* lightmodel = new osg::LightModel;
-	  lightmodel->setAmbientIntensity(osg::Vec4(0.1f,0.1f,0.1f,1.0f));
-	  geom_transform_node->getOrCreateStateSet()->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
-
 	  // enable lighting by default.
 	  geom_transform_node->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::ON);
 

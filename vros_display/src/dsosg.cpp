@@ -21,6 +21,7 @@
 #include <osg/Camera>
 #include <osg/TexGenNode>
 #include <osg/View>
+#include <osg/LightModel>
 
 #include <osgGA/TrackballManipulator>
 
@@ -366,6 +367,9 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 	osg::Camera* debug_hud_cam = createHUD();
 	root->addChild( debug_hud_cam );
 
+    osg::LightModel* lightmodel = new osg::LightModel;
+    lightmodel->setLocalViewer(true);
+    root->getOrCreateStateSet()->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
 
 	_hud_cam = create_HUD_cam(512,512);
 	root->addChild( _hud_cam );
@@ -653,7 +657,6 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
-    _viewer->setLightingMode(osg::View::NO_LIGHT);
     _viewer->getViewerStats()->collectStats("frame_rate",true);
 
     //osgDB::writeNodeFile(*(root.get()), _mode + std::string(".osg"));
