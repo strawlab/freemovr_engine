@@ -148,6 +148,8 @@ class DataIO:
         self._dest = os.path.join(self.outdir,fn)
         self._bag = rosbag.Bag(self._dest, 'w')
         rospy.loginfo("Saving to %s" % self._dest)
+
+        self._pub_num_pts.publish(0)
         
     def close(self):
         self._bag.close()
@@ -322,7 +324,7 @@ class Calib:
             self.display_servers[d]["display_client"] = dsc
             rospy.loginfo("Calibrating %s" % d)
 
-            if d in show_display_servers:
+            if d in show_display_servers or show_display_servers[0] == "all":
                 cv2.namedWindow(d)
                 self._click_queue[d] = []
                 #cv2.setMouseCallback(d, self._display_server_window_click, d)
@@ -456,17 +458,6 @@ class Calib:
                         col=math.floor(pan)+(0-self.laser_range_pan[0]),
                         sz=-1,  fill=255, chan=1)
             cv2.imshow(handle, img)
-        
-        if dist > 200:
-            rospy.sleep(2.0)
-        elif dist > 100:
-            rospy.sleep(1.0)
-        elif dist > 50:
-            rospy.sleep(0.8)
-        elif dist > 10:
-            rospy.sleep(0.5)
-        else:
-            rospy.sleep(0.3)
         
         return pan,tilt
 
@@ -703,14 +694,19 @@ class Calib:
                 self.change_mode(CALIB_MODE_SLEEP)
 
             elif mode == CALIB_MODE_DISPLAY_SERVER:
-                try:
-                    ds,selected_vdisp = service_args[0].split('/')
-                    if ds not in self.display_servers:
-                        raise ValueError
-                    options = [ds]
-                except (ValueError, KeyError):
-                    options = self.display_servers.keys()
+                spec = service_args[0]
+                if spec in self.display_servers:
+                    options = [spec]
                     selected_vdisp = None
+                else:
+                    try:
+                        ds,selected_vdisp = spec.split('/')
+                        if ds not in self.display_servers:
+                            raise ValueError
+                        options = [ds]
+                    except ValueError:
+                        options = self.display_servers.keys()
+                        selected_vdisp = None
 
                 try:
                     pointspace = int(service_args[1])
@@ -1100,7 +1096,7 @@ if __name__ == '__main__':
         '--calib-config', type=str, default='package://flycave/conf/calib-all.yaml',
         help='path to calibration configuration yaml file')
     parser.add_argument(
-        '--save-dir', type=str, default=os.path.expanduser('~/FLYDRA/vros-calibration'),
+        '--save-dir', type=str, default=os.path.expanduser('~/FLYDRA/vros-calibration/wip'),
         help='path to save calibration data')
     parser.add_argument(
         '--continue-calibration', type=str,
