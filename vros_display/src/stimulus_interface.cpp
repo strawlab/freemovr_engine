@@ -30,6 +30,14 @@ StimulusInterface::~StimulusInterface()
 {
 }
 
+bool StimulusInterface::is_CUDA_available() {
+#ifdef VROS_USE_CUDA
+  return true;
+#else
+  return false;
+#endif
+}
+
 void StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
   if (_skybox_pat.valid()) {
     // this is a skybox - don't update the orientation with the observer

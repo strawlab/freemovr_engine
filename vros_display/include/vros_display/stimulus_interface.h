@@ -17,6 +17,8 @@ class StimulusInterface: public ResourceLoader
   // and friends in here.
   virtual void post_init(void) {};
 
+  bool is_CUDA_available();
+
   // An event fired when the display window is resized.
   virtual void resized(int width,int height) {};
 
