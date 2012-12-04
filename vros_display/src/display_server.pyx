@@ -298,7 +298,7 @@ cdef class MyNode:
 
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo('tethered_mode: %s'%tethered_mode)
-        
+
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
         self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
 
