@@ -446,7 +446,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
                 try {
                     _stimulus_plugins[ plugin_name ] = _stimulus_loader.create(plugin_name);
                 } catch (...) {
-                    std::cerr << "ERROR creating plugin: " << plugin_name << std::endl;
+                    std::cerr << "ERROR loading plugin: " << plugin_name << std::endl;
                     throw;
                 }
 
@@ -676,7 +676,16 @@ std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
 }
 
 void DSOSG::set_stimulus_plugin(const std::string& name) {
-	vros_assert( _stimulus_plugins.count(name) == 1);
+    if (!_stimulus_plugins.count(name) == 1) {
+        std::cerr << "ERROR: Could not find plugin when attempting to use: " << name << std::endl;
+        std::cerr << "  available plugins are: " << std::endl;
+        for (std::map<std::string, StimulusInterface*>::const_iterator i=_stimulus_plugins.begin();
+             i!=_stimulus_plugins.end(); ++i ) {
+            std::cerr << "    " << i->first << std::endl;
+        }
+        throw std::runtime_error("Requested stimulus was not found. Check stderr for more info.");
+    }
+
 	// switch off old stimulus
 	_active_3d_world->removeChild( _current_stimulus->get_3d_world() );
 	_active_2d_hud->removeChild( _current_stimulus->get_2d_hud() );
