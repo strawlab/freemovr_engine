@@ -183,6 +183,8 @@ ENDIF(BUILD_VROS)
 ADD_EXECUTABLE(project_cubemap_onto_geometry ${CUBMAP_TO_GEOMETRY_PART_SOURCES})
 TARGET_LINK_LIBRARIES(project_cubemap_onto_geometry ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
 
+ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
+
 # build other calibration programs  ----------
 ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
 INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
