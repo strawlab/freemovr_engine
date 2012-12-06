@@ -1,7 +1,3 @@
-# these are hacks for now...
-SET(CUDA_TOOLKIT_ROOT "/opt/cuda-5.0")
-
-# this shouldn't be too hacky below here
 SET(OSG_COMPUTE_INCLUDE_PATHS
   "${CUDA_TOOLKIT_ROOT}/include")
 
