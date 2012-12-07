@@ -241,7 +241,7 @@ laser_handle = "pantilt"
 
 class Calib:
 
-    def __init__(self, config, show_cameras, show_display_servers, show_type, outdir, continue_calibration, debug):
+    def __init__(self, config, show_cameras, show_display_servers, show_type, outdir, continue_calibration, enable_mouse_click, debug):
         tracking_cameras = config["tracking_cameras"]
         laser_camera = config["laser_camera"]
         trigger = config["trigger"]
@@ -327,7 +327,9 @@ class Calib:
             if d in show_display_servers or show_display_servers[0] == "all":
                 cv2.namedWindow(d)
                 self._click_queue[d] = []
-                #cv2.setMouseCallback(d, self._display_server_window_click, d)
+                if enable_mouse_click:
+                    cv2.setMouseCallback(d, self._display_server_window_click, d)
+                    rospy.logwarn("ENABLING UNSTABLE CRASHY MOUSE CLICK SELECTION ON %s" % d)
                 self.show_display_servers[d] = {}
 
                 #get the masks for the lot
@@ -850,7 +852,7 @@ class Calib:
                                     else:
                                         tries -= 1
                                         
-                            if not found and (fine_dist < 50):
+                            if not found and (fine_dist < 80):
                                 print "AVERAGE DIST", fine_dist
                                 found = True
                                         
@@ -903,7 +905,7 @@ class Calib:
                     self.laser_proxy_power(False)
                     
                     #generate N random points about the start - and include the
-                    #start point. This sampling could be better done as a grid...
+                    #start point several times. This sampling could be better done as a grid...
                     #
                     #this is the maximum number of points we will test, so be generous
                     #because this loop is exited when we have collected enough points,
@@ -914,7 +916,7 @@ class Calib:
                     #start with current location
                     p = self._vdispinfo["panmid"]
                     t = self._vdispinfo["tiltmid"]
-                    self._vdispinfo["currattempt3d"] = [(p,t) for r in range(reps)]
+                    self._vdispinfo["currattempt3d"] = [(p,t) for r in range(2*reps)]
                     #random locatons
                     for i in range(30):
                         p = self._vdispinfo["panmid"]  + random.randint(*self.laser_search_size)
@@ -1108,6 +1110,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '--debug', type=int, default=0,
         help='print image debugging >0=acquisition, >1=bgdiff')
+    parser.add_argument(
+        '--enable-mouse-click', action="store_true",
+        help='enable mouse click point selection (CAUSES HANGS, UNSTABLE)')
 
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
@@ -1132,6 +1137,7 @@ if __name__ == '__main__':
               show_type=set(args.show_type),
               outdir=outdir,
               continue_calibration=args.continue_calibration,
+              enable_mouse_click=args.enable_mouse_click,
               debug=args.debug)
     c.run()
 
