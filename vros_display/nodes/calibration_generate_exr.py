@@ -306,7 +306,7 @@ class Calibrator:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--calibration', type=str, action='append', nargs='*', help=\
+        '--calibration', type=str, action='append', required=True, nargs='*', help=\
         "bag file containing calibration messages")
     parser.add_argument(
         '--visualize', action='store_true', default=False, help=\
