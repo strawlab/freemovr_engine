@@ -223,10 +223,10 @@ cdef class MyNode:
     cdef object _mode_change
     cdef object _pub_fps
     cdef object _pub_mode
-    cdef Vec3* pose_position
-    cdef Quat* pose_orientation
-    cdef object subscription_mode
-    cdef int throttle
+    cdef Vec3* _pose_position
+    cdef Quat* _pose_orientation
+    cdef object _subscription_mode
+    cdef int _throttle
     cdef object _timer
 
     def __init__(self,ros_package_name):
@@ -235,11 +235,6 @@ cdef class MyNode:
         self._commands_lock = threading.Lock()
         self._pose_lock = threading.Lock()
         self._mode_lock = threading.Lock()
-        with self._pose_lock:
-            self.pose_position = new Vec3(0,0,0)
-            self.pose_orientation = new Quat(0,0,0,1)
-
-        self.subscription_mode = 'always'
 
         parser = argparse.ArgumentParser(
             description="VR display generator",
@@ -263,8 +258,10 @@ cdef class MyNode:
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
+        self._throttle = args.throttle
+        self._subscription_mode = 'always'
+
         rospy.init_node("display_server")
-        time.sleep(1.0) # give a second to join ROS network, else early rospy.log* messages are lost
 
         config_dict = rospy.get_param('~',{})
         rospy.loginfo("starting display_server")
@@ -299,12 +296,12 @@ cdef class MyNode:
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo('tethered_mode: %s'%tethered_mode)
 
-        self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
-        self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
-
         with self._mode_lock:
             self._mode_change =  args.stimulus
-            self._pub_mode.publish(self._mode_change)
+
+        with self._pose_lock:
+            self._pose_position = new Vec3(0,0,0)
+            self._pose_orientation = new Quat(0,0,0,1)
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
@@ -344,16 +341,17 @@ cdef class MyNode:
                       self.handle_get_trackball_manipulator_state)
 
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
+        self._pub_fps.publish(0)
         self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
+        self._pub_mode.publish(self._mode_change)
 
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
             name = plugin_names.at(i).c_str()
             rospy.loginfo('loaded plugin: %s' % name)
-            if self.subscription_mode == 'always':
+            if self._subscription_mode == 'always':
                 self.register_subscribers(name)
 
-        self.throttle = args.throttle
         self._timer = rospy.Timer(rospy.Duration(60), # every 60 seconds
                                   self._on_heartbeat)
 
@@ -424,10 +422,10 @@ cdef class MyNode:
                                    msg.orientation.z,
                                    msg.orientation.w)
         with self._pose_lock:
-            del self.pose_position
-            del self.pose_orientation
-            self.pose_position = new_position
-            self.pose_orientation = new_orientation
+            del self._pose_position
+            del self._pose_orientation
+            self._pose_position = new_position
+            self._pose_orientation = new_orientation
 
     def capture_cb(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
@@ -500,7 +498,7 @@ cdef class MyNode:
 
             with self._mode_lock:
                 if self._mode_change:
-                    if self.subscription_mode == 'current_only':
+                    if self._subscription_mode == 'current_only':
                         # tear down old topic name listeners
                         while len(self._current_subscribers):
                             sub = self._current_subscribers.pop()
@@ -510,7 +508,7 @@ cdef class MyNode:
                     rospy.loginfo("Setting stimulus plugin %s" % self._mode_change)
                     self.dsosg.set_stimulus_plugin(std_string(self._mode_change))
 
-                    if self.subscription_mode == 'current_only':
+                    if self._subscription_mode == 'current_only':
                         plugin = self.dsosg.get_current_stimulus_plugin_name()
                         self.register_subscribers(plugin.c_str())
 
@@ -522,7 +520,7 @@ cdef class MyNode:
 
             with self._pose_lock:
                 now = rospy.get_time()
-                self.dsosg.update( now, deref(self.pose_position), deref(self.pose_orientation))
+                self.dsosg.update( now, deref(self._pose_position), deref(self._pose_orientation))
 
             with nogil:
                 self.dsosg.frame()
@@ -536,7 +534,7 @@ cdef class MyNode:
                 last = now
 
             #time.sleep(0.001) # spin ROS listeners
-            if self.throttle:
+            if self._throttle:
                 time.sleep(0.1) # run at 10 fps
 
 def main(ros_package_name):
