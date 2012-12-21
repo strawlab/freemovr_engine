@@ -59,6 +59,7 @@ class DisplayServerProxy(object):
     def set_stimulus_mode(mode):
         publisher = rospy.Publisher('/stimulus_mode', std_msgs.msg.String, latch=True)
         publisher.publish(mode)
+        return publisher
 
     def _spin_wait_for_mode(self,mode):
         done = [False, None]

@@ -235,6 +235,10 @@ cdef class MyNode:
         self._commands_lock = threading.Lock()
         self._pose_lock = threading.Lock()
         self._mode_lock = threading.Lock()
+        self._mode_change =  None
+        self._pose_position = new Vec3(0,0,0)
+        self._pose_orientation = new Quat(0,0,0,1)
+        self._subscription_mode = 'always'
 
         parser = argparse.ArgumentParser(
             description="VR display generator",
@@ -252,14 +256,14 @@ cdef class MyNode:
             help='JSON configuration file describing the setup. '\
                  'If specified configuration is taken from here, otherwise config is taken from '\
                  'ROS parameters under this node')
-        parser.add_argument('--stimulus', type=str, default='Stimulus3DDemo', help='The stimulus to start in')
+        parser.add_argument('--stimulus', type=str, default=None,
+            help='The stimulus to start in (overrides any latched ROS topic')
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
         self._throttle = args.throttle
-        self._subscription_mode = 'always'
 
         rospy.init_node("display_server")
 
@@ -296,12 +300,25 @@ cdef class MyNode:
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo('tethered_mode: %s'%tethered_mode)
 
-        with self._mode_lock:
-            self._mode_change =  args.stimulus
+        rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
+        rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
-        with self._pose_lock:
-            self._pose_position = new Vec3(0,0,0)
-            self._pose_orientation = new Quat(0,0,0,1)
+        if args.stimulus is None:
+            #if the user did not specify a mode on the command line then
+            #wait for 2 seconds in case an existing stimulus mode is already latched
+            #(also gives a chance to get the initial pose)
+            t0 = t1 = rospy.get_time()
+            while (t1 - t0) < 2.0: #seconds
+                rospy.sleep(0.1)
+                t1 = rospy.get_time()
+                with self._mode_lock:
+                    if self._mode_change is not None:
+                        rospy.loginfo('got latched simulus mode %s' % self._mode_change)
+                        break
+        
+        with self._mode_lock:
+            if self._mode_change is None:
+                self._mode_change = 'Stimulus3DDemo'
 
         vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(vros_display_basepath),
@@ -312,8 +329,7 @@ cdef class MyNode:
                                args.show_geom_coords,
                                tethered_mode,
                                )
-        rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
-        rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        #these subscribers access self.dsosg
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_cb)
         rospy.Subscriber("~trackball_manipulator_state",
                          vros_display.msg.TrackballManipulatorState,
