@@ -287,12 +287,12 @@ cdef class MyNode:
                     exr.write(p2g.data)
                 config_dict['p2g'] = exrfile
                 rospy.loginfo("decoded exr file and saved to %s" % exrfile)
+
+            config_dict, config_file = fixup_config( config_dict )
         else:
             rospy.loginfo("using default config")
             config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'config','config.json')
             config_dict = json.load(open(config_file,'r'))
-
-        config_dict, config_file = fixup_config( config_dict )
 
         rospy.loginfo("config_file = %s" % config_file)
 
