@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VROS_DISPLAY_DIR=`python -c "import rospkg; rospack = rospkg.RosPack(); pkg_dir = rospack.get_path('vros_display'); print pkg_dir"`
+VROS_DISPLAY_DIR=`python -c "import rospkg; rospack = rospkg.RosPack(); pkg_dir = rospack.get_path('flyvr'); print pkg_dir"`
 
 export LD_PRELOAD=libnoaffinity.so
 export LD_LIBRARY_PATH=$VROS_DISPLAY_DIR/lib/:$LD_LIBRARY_PATH

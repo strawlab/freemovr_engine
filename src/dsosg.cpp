@@ -51,7 +51,7 @@
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
 
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -335,11 +335,11 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 }
 
 // constructor
-DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius,
+DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
              bool tethered_mode) :
     _current_stimulus(NULL), _mode(mode),
-    _vros_display_basepath(vros_display_basepath),
+    _flyvr_basepath(flyvr_basepath),
     _config_file_path(config_fname),
     _tethered_mode(tethered_mode), _wcc(NULL)
 
@@ -348,11 +348,11 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     json_t *json_config, *json_stimulus, *json_geom;
 
     // ensure we interpret this as a directory (ensure trailing slash)
-    _vros_display_basepath.makeAbsolute(); _vros_display_basepath.makeDirectory();
+    _flyvr_basepath.makeAbsolute(); _flyvr_basepath.makeDirectory();
     // ensure we interpret this as a file
     _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
-    Poco::Path shader_path = _vros_display_basepath;
+    Poco::Path shader_path = _flyvr_basepath;
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
 
 	std::string shader_dir = shader_path.toString();
@@ -384,8 +384,8 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
 
 	std::string config_data_dir = _config_file_path.parent().toString();
 
-	// Add the vros_display defaut stimulus plugins
-    Poco::Path default_plugin_path = _vros_display_basepath;
+	// Add the flyvr defaut stimulus plugins
+    Poco::Path default_plugin_path = _flyvr_basepath;
     default_plugin_path.pushDirectory("lib");
 	std::string default_lib_dir = default_plugin_path.toString();
 
@@ -450,7 +450,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
                     throw;
                 }
 
-				_stimulus_plugins[ plugin_name ]->set_vros_display_base_path(_vros_display_basepath.toString());
+				_stimulus_plugins[ plugin_name ]->set_flyvr_base_path(_flyvr_basepath.toString());
 				_stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
 
                 try {
@@ -547,7 +547,7 @@ DSOSG::DSOSG(std::string vros_display_basepath, std::string mode, float observer
     root->addChild( _observer_geometry_pat );
 
 	// render cubemap onto geometry
-	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_vros_display_basepath.toString(),
+	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_flyvr_basepath.toString(),
 																		  _cubemap_maker->get_cubemap(),
 																		  _observer_cb,
 																		  geometry_parameters);

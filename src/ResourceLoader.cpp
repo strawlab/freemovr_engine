@@ -1,4 +1,4 @@
-#include "vros_display/ResourceLoader.h"
+#include "flyvr/ResourceLoader.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
 ResourceLoader::ResourceLoader()
 {
@@ -101,8 +101,8 @@ void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name)
     shader->loadShaderSourceFromFile(path.absolute().toString());
 }
 
-void ResourceLoader::set_vros_display_base_path(std::string path) {
-  _vros_display_base_path = path;
+void ResourceLoader::set_flyvr_base_path(std::string path) {
+  _flyvr_base_path = path;
 }
 
 void ResourceLoader::set_plugin_path(std::string path,bool popdir) {

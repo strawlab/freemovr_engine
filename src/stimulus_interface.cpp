@@ -1,5 +1,5 @@
 // This is used both by the class library and by the application.
-#include "vros_display/stimulus_interface.h"
+#include "flyvr/stimulus_interface.h"
 #include "util.h"
 
 #include <osg/MatrixTransform>
@@ -46,7 +46,7 @@ void StimulusInterface::update( const double& time, const osg::Vec3& observer_po
 }
 
 void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
-  Poco::Path base_path(_vros_display_base_path);
+  Poco::Path base_path(_flyvr_base_path);
 
   base_path.makeDirectory();
   base_path.pushDirectory("data");
@@ -88,7 +88,7 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ShowCubemapProgram->addShader( ShowCubemapFragObj );
 		  ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-          Poco::Path shader_path = Poco::Path(_vros_display_base_path).append("src").append("shaders");
+          Poco::Path shader_path = Poco::Path(_flyvr_base_path).append("src").append("shaders");
           ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.vert").toString());
           ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.frag").toString());
 

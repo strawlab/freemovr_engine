@@ -1,7 +1,7 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rosbag
 
 # standard Python stuff

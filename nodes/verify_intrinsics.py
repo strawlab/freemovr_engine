@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 import camera_model
 import simple_geom

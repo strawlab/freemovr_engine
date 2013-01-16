@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "util.h"
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 #include "WindowCaptureCallback.h"
 
 std::string get_file_contents(std::string filename) {
@@ -41,9 +41,9 @@ int main(int argc, char**argv) {
   Poco::Path output_file(argv[3]);
 
   Poco::Path src(__FILE__);
-  Poco::Path vros_display_basepath = src.parent();
-  vros_display_basepath.popDirectory(); // remove trailing /src directory
-  std::cout << "vros_display_basepath: " << vros_display_basepath.toString() << std::endl;
+  Poco::Path flyvr_basepath = src.parent();
+  flyvr_basepath.popDirectory(); // remove trailing /src directory
+  std::cout << "flyvr_basepath: " << flyvr_basepath.toString() << std::endl;
 
   osg::ref_ptr<osg::TextureCubeMap> my_cubemap;
   my_cubemap = load_cubemap( cubemap_dir.toString(), "jpg" );
@@ -52,7 +52,7 @@ int main(int argc, char**argv) {
 
   DisplaySurfaceGeometry* geometry_parameters= new DisplaySurfaceGeometry(contents.c_str());
 
-  ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass( vros_display_basepath.toString(),
+  ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass( flyvr_basepath.toString(),
                                                                          my_cubemap,
                                                                          NULL,
                                                                          geometry_parameters);

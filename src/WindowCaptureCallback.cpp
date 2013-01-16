@@ -1,7 +1,7 @@
 #include "WindowCaptureCallback.h"
 #include <iostream>
 #include <osgDB/WriteFile>
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
 WindowCaptureCallback::WindowCaptureCallback() : _gc(NULL) {
   _image = new osg::Image;

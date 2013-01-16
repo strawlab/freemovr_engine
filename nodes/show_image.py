@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 
 import os
@@ -9,7 +9,7 @@ import argparse
 import numpy as np
 import scipy.misc
 
-import vros_display.srv
+import flyvr.srv
 import display_client
 
 def show_image(ds,viewport,fname,white,black,pixel):
@@ -46,7 +46,7 @@ def show_image(ds,viewport,fname,white,black,pixel):
     dsc.show_pixels(arr)
 
 def main():
-    wd = roslib.packages.get_pkg_dir('vros_display')
+    wd = roslib.packages.get_pkg_dir('flyvr')
     default_fname = os.path.join(wd,'data','vienna-morning.jpg')
 
     parser = argparse.ArgumentParser()

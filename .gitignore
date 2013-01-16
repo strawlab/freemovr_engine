@@ -6,5 +6,5 @@ cfg/cpp
 docs
 lib
 msg_gen
-src/vros_display
+src/flyvr
 srv_gen

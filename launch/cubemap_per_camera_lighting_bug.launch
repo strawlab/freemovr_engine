@@ -1,6 +1,6 @@
 <launch>
   <!-- Spawn the display server. -->
-  <node name="ds_replay" pkg="vros_display" type="display_server" args="--mode=cubemap">
+  <node name="ds_replay" pkg="flyvr" type="display_server" args="--mode=cubemap">
   </node>
 
   <node name="send_pose" pkg="rostopic" type="rostopic" args="pub -1 /pose geometry_msgs/Pose '{position: [0,0.4,0], orientation: [0,0,0.895422766332,-0.446902250086]}'" />

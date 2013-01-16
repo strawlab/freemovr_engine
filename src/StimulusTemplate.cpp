@@ -7,7 +7,7 @@
 
  */
 
-#include "vros_display/stimulus_interface.h"
+#include "flyvr/stimulus_interface.h"
 #include "Poco/ClassLibrary.h"
 #include <stdexcept>
 

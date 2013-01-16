@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 
 import pickle
 import os

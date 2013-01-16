@@ -9,11 +9,11 @@
 #include <osg/Texture2D>
 
 #include "DisplaySurfaceGeometry.h"
-#include "vros_display/ResourceLoader.h"
+#include "flyvr/ResourceLoader.h"
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {
 public:
-	ProjectCubemapToGeometryPass(std::string vros_display_basepath,
+	ProjectCubemapToGeometryPass(std::string flyvr_basepath,
 								 osg::TextureCubeMap* texture,
 								 osg::Uniform::Callback* observer_position_cb,
 								 DisplaySurfaceGeometry* geometry_parameters,

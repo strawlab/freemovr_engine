@@ -4,7 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import scipy.misc
 
 import roslib
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 from simple_geom import Cylinder, Vec3
 
 def make_xy_circle_at_z(z, r=0.5, n=1024):

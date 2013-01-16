@@ -29,13 +29,13 @@ int main(int argc, char**argv) {
       exit(0);
   }
 
-  std::string config_filename = "~/vros-devel/vros/vros_display/config/config.json";
+  std::string config_filename = "~/vros-devel/vros/flyvr/config/config.json";
   while(arguments.read("--config", config_filename));
 
   std::string display_mode = "vr_display";
   while(arguments.read("--display-mode", display_mode));
 
-  std::string vros_display_basepath = "/home/john/Programming/vros.git/vros_display/";
+  std::string flyvr_basepath = "/home/john/Programming/vros.git/flyvr/";
   float observer_radius = 0.01;
   bool two_pass = false;
   bool show_geom_coords = false;
@@ -44,7 +44,7 @@ int main(int argc, char**argv) {
   osg::Quat observer_orientation(0,0,0,1);
 
   dsosg = new dsosg::DSOSG(
-                        vros_display_basepath,
+                        flyvr_basepath,
                         display_mode,
                         observer_radius,
                         config_filename,

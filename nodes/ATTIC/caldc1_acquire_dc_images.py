@@ -10,10 +10,10 @@ import pickle
 import math
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 
-# local vros_display imports
+# local flyvr imports
 import display_client
 import fill_polygon
 from graycode import graycode_str, graycode_arange

@@ -2,7 +2,7 @@ import os.path
 import contextlib
 
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('tf')
 import rospy

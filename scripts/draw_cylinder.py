@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 import roslib
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 from simple_geom import Cylinder, Vec3
 
 def vec3(a,b,c):

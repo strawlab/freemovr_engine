@@ -2,7 +2,7 @@
 import numpy as np
 import argparse
 
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 import display_client # from vros_projectors package
 from geometry_msgs.msg import Pose

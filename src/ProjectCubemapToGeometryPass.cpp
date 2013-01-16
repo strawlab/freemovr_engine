@@ -19,9 +19,9 @@
 
 #include "util.h"
 #include "ProjectCubemapToGeometryPass.h"
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
-ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string vros_display_basepath,
+ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_basepath,
 														   osg::TextureCubeMap* texture,
 														   osg::Uniform::Callback* observer_position_cb,
 														   DisplaySurfaceGeometry* geometry_parameters,
@@ -32,8 +32,8 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string vros_disp
    vros_assert( texture!=NULL );
    vros_assert( geometry_parameters!=NULL );
 
-	 set_vros_display_base_path(vros_display_basepath);
-	 set_plugin_path(vros_display_basepath,false);
+	 set_flyvr_base_path(flyvr_basepath);
+	 set_plugin_path(flyvr_basepath,false);
 
   _top = new osg::Group;
   _top->addDescription("ProjectCubemapToGeometryPass top node");

@@ -7,7 +7,7 @@ from scipy.optimize import fmin
 import flydra.reconstruct
 
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 from calib.reconstruct import PointCloudTransformer
 from calib.io import MultiCalSelfCam, save_ascii_matrix
 import tf

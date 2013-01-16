@@ -12,8 +12,8 @@ class ResourceLoader
   ResourceLoader();
   virtual ~ResourceLoader() {}
 
-  // This is called when initializing the plugin to tell it where to find vros_display's data.
-  virtual void set_vros_display_base_path(std::string path);
+  // This is called when initializing the plugin to tell it where to find flyvr's data.
+  virtual void set_flyvr_base_path(std::string path);
 
   // This is called when initializing the plugin to tell it its path
   virtual void set_plugin_path(std::string path, bool popdir=true);
@@ -26,7 +26,7 @@ class ResourceLoader
 
 protected:
 
-  std::string _vros_display_base_path;
+  std::string _flyvr_base_path;
   std::string _plugin_path;
   bool _popdir;
 };

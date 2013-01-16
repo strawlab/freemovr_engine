@@ -1,7 +1,7 @@
 import rospy
 import std_msgs.msg
-import vros_display.srv
-import vros_display.msg
+import flyvr.srv
+import flyvr.msg
 
 import warnings
 import tempfile
@@ -40,9 +40,9 @@ class DisplayServerProxy(object):
             rospy.wait_for_service(self.get_fullname('set_display_server_mode'))
 
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
-                                                                vros_display.srv.SetDisplayServerMode)
+                                                                flyvr.srv.SetDisplayServerMode)
         self.blit_compressed_image_proxy = rospy.ServiceProxy(self.get_fullname('blit_compressed_image'),
-                                                                vros_display.srv.BlitCompressedImage)
+                                                                flyvr.srv.BlitCompressedImage)
     @property
     def name(self):
         return self._server_node_name
@@ -84,7 +84,7 @@ class DisplayServerProxy(object):
         # return to standby mode in server if needed
         if mode != 'standby':
             return_to_standby_proxy = rospy.ServiceProxy(self.get_fullname('return_to_standby'),
-                                                         vros_display.srv.ReturnToStandby)
+                                                         flyvr.srv.ReturnToStandby)
 
             return_to_standby_proxy()
             self._spin_wait_for_mode('StimulusStandby') # wait until in standby mode
@@ -115,7 +115,7 @@ class DisplayServerProxy(object):
                 self._info_cached = rospy.get_param(self._server_node_name+'/display')
             try:
                 get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
-                                                            vros_display.srv.GetDisplayInfo)
+                                                            flyvr.srv.GetDisplayInfo)
                 result = get_display_info_proxy()
                 self._info_cached = json.loads(result.info_json)
             except:
@@ -163,7 +163,7 @@ class DisplayServerProxy(object):
 
     def show_image(self, fname, unlink=False):
         try:
-            image = vros_display.msg.VROSCompressedImage()
+            image = flyvr.msg.VROSCompressedImage()
             image.format = os.path.splitext(fname)[-1]
             image.data = open(fname).read()
         finally:

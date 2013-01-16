@@ -6,7 +6,7 @@
 
  */
 
-#include "vros_display/stimulus_interface.h"
+#include "flyvr/stimulus_interface.h"
 #include "Poco/ClassLibrary.h"
 #include "Poco/Path.h"
 #include <stdexcept>
@@ -23,7 +23,7 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
 class Stimulus2DSprite: public StimulusInterface
 {
@@ -82,7 +82,7 @@ std::vector<std::string> get_topic_names() const {
 
 std::string get_message_type(const std::string& topic_name) const {
     if (topic_name=="sprite_image") {
-        return "vros_display.msg.VROSCompressedImage";
+        return "flyvr.msg.VROSCompressedImage";
     } else if  (topic_name=="sprite_pose") {
         return "geometry_msgs.msg.Pose2D";
     }

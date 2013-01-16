@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 roslib.load_manifest('motmot_ros_utils')
 import rospy
 

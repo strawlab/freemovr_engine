@@ -24,7 +24,7 @@ import random
 
 # ROS imports
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 roslib.load_manifest('camera_trigger')
 roslib.load_manifest('flycave')
 roslib.load_manifest('std_srvs')
@@ -34,12 +34,12 @@ roslib.load_manifest('rosbag')
 import rospy
 import rosbag
 
-# local vros_display imports
+# local flyvr imports
 import display_client
 import camera_trigger.srv
 import std_srvs.srv
 import flycave.srv
-import vros_display.srv
+import flyvr.srv
 
 import calib
 import calib.imgproc
@@ -54,7 +54,7 @@ from rosutils.io import decode_url
 
 import flydra.reconstruct
 
-from vros_display.msg import Calib2DPoint, CalibMapping
+from flyvr.msg import Calib2DPoint, CalibMapping
 from geometry_msgs.msg import Point32
 from std_msgs.msg import UInt32, String
 
@@ -388,7 +388,7 @@ class Calib:
             else:
                 rospy.logerr("could not find requested calibration to load")
 
-        s = rospy.Service('~calib_change_mode', vros_display.srv.CalibMode, self._change_mode)
+        s = rospy.Service('~calib_change_mode', flyvr.srv.CalibMode, self._change_mode)
         self.change_mode(CALIB_MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
@@ -407,7 +407,7 @@ class Calib:
 
     def _change_mode(self, req):
         self.change_mode(req.mode, req.sa, req.fa, req.fb, req.fc)
-        return vros_display.srv.CalibModeResponse()
+        return flyvr.srv.CalibModeResponse()
 
     def _calculate_background(self):
         rospy.loginfo("Collecting backgrounds")

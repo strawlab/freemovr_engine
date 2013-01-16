@@ -100,28 +100,28 @@ IF(BUILD_VROS)
     COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
 
-  # the vros_display library (for building stimulus plugins) --------------------
-  rosbuild_add_library(vros_display src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
-  TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
+  # the flyvr library (for building stimulus plugins) --------------------
+  rosbuild_add_library(flyvr src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
+  TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
   rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   rosbuild_add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   rosbuild_add_library(StimulusStandby src/StimulusStandby.cpp)
-  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   rosbuild_add_library(Stimulus2DSprite src/Stimulus2DSprite.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   rosbuild_add_library(StimulusTemplate src/StimulusTemplate.cpp)
-  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
   rosbuild_add_executable(display_server display_server.cpp ${DS_SOURCES})
@@ -145,25 +145,25 @@ ELSE(BUILD_VROS)
   SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-  # the vros_display library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(vros_display SHARED src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
-  TARGET_LINK_LIBRARIES(vros_display ${POCO_LIBRARIES})
+  # the flyvr library (for building stimulus plugins) --------------------
+  ADD_LIBRARY(flyvr SHARED src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
+  TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
   ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp)
-  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus2DSprite SHARED src/Stimulus2DSprite.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} vros_display)
+  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
   ADD_EXECUTABLE(display_server src/main.cpp ${DS_SOURCES})

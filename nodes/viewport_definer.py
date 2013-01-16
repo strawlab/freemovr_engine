@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 
-import vros_display.srv
-import vros_display.msg
+import flyvr.srv
+import flyvr.msg
 import display_client
 
 import json

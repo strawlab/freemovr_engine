@@ -10,13 +10,13 @@ import scipy.misc
 
 # ROS imports
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('std_srvs')
 roslib.load_manifest('camera_trigger')
 import rospy
 
-# local vros_display imports
+# local flyvr imports
 import display_client
 import std_srvs.srv
 import camera_trigger.srv

@@ -1,16 +1,16 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
 
-ROS_PACKAGE_NAME = 'vros_display'
+ROS_PACKAGE_NAME = 'flyvr'
 import roslib
 roslib.load_manifest(ROS_PACKAGE_NAME)
 roslib.load_manifest('std_msgs')
 import rospy
 
-import vros_display.srv
+import flyvr.srv
 import geometry_msgs.msg
 import std_msgs.msg
-from vros_display.msg import ROSPath
-import vros_display.msg
+from flyvr.msg import ROSPath
+import flyvr.msg
 from geometry_msgs.msg import Quaternion, Point
 
 import rosmsg2json
@@ -94,7 +94,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         double distance
 
     cdef cppclass DSOSG:
-        DSOSG(std_string vros_display_basepath,
+        DSOSG(std_string flyvr_basepath,
               std_string mode,
               float observer_radius,
               std_string config_data_dir,
@@ -320,8 +320,8 @@ cdef class MyNode:
             if self._mode_change is None:
                 self._mode_change = 'Stimulus3DDemo'
 
-        vros_display_basepath = roslib.packages.get_pkg_dir(ros_package_name)
-        self.dsosg = new DSOSG(std_string(vros_display_basepath),
+        flyvr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
+        self.dsosg = new DSOSG(std_string(flyvr_basepath),
                                std_string(args.mode),
                                args.observer_radius,
                                std_string(config_file),
@@ -332,7 +332,7 @@ cdef class MyNode:
         #these subscribers access self.dsosg
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_cb)
         rospy.Subscriber("~trackball_manipulator_state",
-                         vros_display.msg.TrackballManipulatorState,
+                         flyvr.msg.TrackballManipulatorState,
                          self.manipulator_callback)
 
         display_window_name = rospy.get_name();
@@ -341,19 +341,19 @@ cdef class MyNode:
                                 args.pbuffer)
 
         rospy.Service('~get_display_info',
-                      vros_display.srv.GetDisplayInfo,
+                      flyvr.srv.GetDisplayInfo,
                       self.handle_get_display_info)
         rospy.Service('~set_display_server_mode',
-                      vros_display.srv.SetDisplayServerMode,
+                      flyvr.srv.SetDisplayServerMode,
                       self.handle_set_display_server_mode)
         rospy.Service('~return_to_standby',
-                      vros_display.srv.ReturnToStandby,
+                      flyvr.srv.ReturnToStandby,
                       self.handle_return_to_standby)
         rospy.Service('~blit_compressed_image',
-                      vros_display.srv.BlitCompressedImage,
+                      flyvr.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
         rospy.Service('~get_trackball_manipulator_state',
-                      vros_display.srv.GetTrackballManipulatorState,
+                      flyvr.srv.GetTrackballManipulatorState,
                       self.handle_get_trackball_manipulator_state)
 
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
@@ -383,19 +383,19 @@ cdef class MyNode:
                   'virtualDisplays':rospy.get_param('~display/virtualDisplays')
                   }
 
-        response = vros_display.srv.GetDisplayInfoResponse()
+        response = flyvr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
 
     def handle_set_display_server_mode(self, request):
         with self._mode_lock:
             self._mode_change = request.mode
-        return vros_display.srv.SetDisplayServerModeResponse()
+        return flyvr.srv.SetDisplayServerModeResponse()
 
     def handle_return_to_standby(self,request):
         with self._mode_lock:
             self._mode_change = 'StimulusStandby'
-        return vros_display.srv.ReturnToStandbyResponse()
+        return flyvr.srv.ReturnToStandbyResponse()
 
     def handle_blit_compressed_image(self,request):
         # this is called in some callback thread by ROS
@@ -413,14 +413,14 @@ cdef class MyNode:
                                                 'plugin': plugin,
                                                 'topic_name': 'blit_images',
                                                 'msg_json': json_image})
-        return vros_display.srv.BlitCompressedImageResponse()
+        return flyvr.srv.BlitCompressedImageResponse()
 
     def handle_get_trackball_manipulator_state(self,request):
         # This is called in some callback thread by ROS.
         # (Should it be handled in draw thread?)
         cdef TrackballManipulatorState ts
 
-        response = vros_display.srv.GetTrackballManipulatorStateResponse()
+        response = flyvr.srv.GetTrackballManipulatorStateResponse()
         result = response.data
         ts = self.dsosg.getTrackballManipulatorState()
         result.rotation = osg_quat_to_msg_quat(ts.rotation)

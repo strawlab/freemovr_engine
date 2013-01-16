@@ -1,4 +1,4 @@
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 
 import cvnumpy
 import numpy as np

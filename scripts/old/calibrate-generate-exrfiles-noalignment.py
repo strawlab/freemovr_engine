@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import argparse
 
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 import rospy
 
 import simple_geom

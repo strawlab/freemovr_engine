@@ -14,7 +14,7 @@ import warnings
 import Image as PIL
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 
 # local ROS package imports
 from graycode import graycode_str, graycode_arange

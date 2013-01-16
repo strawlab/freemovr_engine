@@ -18,7 +18,7 @@ import cv,cv2
 
 # ROS imports
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 roslib.load_manifest('camera_trigger')
 roslib.load_manifest('flycave')
 roslib.load_manifest('std_srvs')
@@ -26,12 +26,12 @@ roslib.load_manifest('std_msgs')
 roslib.load_manifest('motmot_ros_utils')
 import rospy
 
-# local vros_display imports
+# local flyvr imports
 import display_client
 import camera_trigger.srv
 import std_srvs.srv
 import flycave.srv
-import vros_display.srv
+import flyvr.srv
 
 import calib
 from calib.acquire import CameraHandler, SimultainousCameraRunner
@@ -107,14 +107,14 @@ class Calib:
 
         s = rospy.Service('~calib_mode_points_manual', std_srvs.srv.Empty, self._change_mode_srv_points_manual)
         s = rospy.Service('~calib_mode_points_auto', std_srvs.srv.Empty, self._change_mode_srv_points_auto)
-        s = rospy.Service('~calib_mode_projector_visible', vros_display.srv.CalibProjector, self._change_mode_srv_projvis)
+        s = rospy.Service('~calib_mode_projector_visible', flyvr.srv.CalibProjector, self._change_mode_srv_projvis)
         s = rospy.Service('~calib_finish', std_srvs.srv.Empty, self._change_mode_srv_fin)
-        s = rospy.Service('~calib_save', vros_display.srv.CalibConfig, self._change_mode_srv_save)
+        s = rospy.Service('~calib_save', flyvr.srv.CalibConfig, self._change_mode_srv_save)
         s = rospy.Service('~calib_restore', std_srvs.srv.Empty, self._change_mode_srv_restore)
         s = rospy.Service('~calib_set_mask', std_srvs.srv.Empty, self._change_mode_set_mask)
         s = rospy.Service('~calib_clear_mask', std_srvs.srv.Empty, self._change_mode_clear_mask)
         s = rospy.Service('~calib_calculate_background', std_srvs.srv.Empty, self._change_mode_calculate_background)
-        s = rospy.Service('~calib_calibrate', vros_display.srv.CalibConfig, self._change_mode_calibrate)
+        s = rospy.Service('~calib_calibrate', flyvr.srv.CalibConfig, self._change_mode_calibrate)
 
 
         self.pub_num_pts = rospy.Publisher('~num_points', UInt32)
@@ -200,7 +200,7 @@ class Calib:
         else:
             selected = self.display_servers.keys()
         self.change_mode(self.MODE_PROJECTOR_VIS_SETUP,tuple(selected))
-        return vros_display.srv.CalibProjectorResponse(selected)
+        return flyvr.srv.CalibProjectorResponse(selected)
     def _change_mode_srv_fin(self, req):
         self.change_mode(self.MODE_FINISHED)
         return std_srvs.srv.EmptyResponse()
@@ -212,7 +212,7 @@ class Calib:
         else:
             cam_ids = self.cam_ids[:]
         self.change_mode(self.MODE_SAVE,cam_ids,req.undo_distortion,req.num_cameras_fill)
-        return vros_display.srv.CalibConfigResponse()
+        return flyvr.srv.CalibConfigResponse()
     def _change_mode_calibrate(self, req):
         if req.cams:
             cam_ids = [c for c in req.cams if c in self.cam_ids]
@@ -221,7 +221,7 @@ class Calib:
         else:
             cam_ids = self.cam_ids[:]
         self.change_mode(self.MODE_CALIBRATE,cam_ids,req.undo_distortion,req.num_cameras_fill)
-        return vros_display.srv.CalibConfigResponse()
+        return flyvr.srv.CalibConfigResponse()
     def _change_mode_srv_restore(self, req):
         self.change_mode(self.MODE_RESTORE)
         return std_srvs.srv.EmptyResponse()

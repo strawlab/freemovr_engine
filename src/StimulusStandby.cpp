@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#include "vros_display/stimulus_interface.h"
+#include "flyvr/stimulus_interface.h"
 #include "util.h"
 
 #include "Poco/ClassLibrary.h"

@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#include "vros_display/stimulus_interface.h"
+#include "flyvr/stimulus_interface.h"
 #include "util.h"
 #include "base64.h"
 
@@ -17,7 +17,7 @@
 
 #include <jansson.h>
 
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
 osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int height) {
 	osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
@@ -115,7 +115,7 @@ std::vector<std::string> get_topic_names() const {
 
 std::string get_message_type(const std::string& topic_name) const {
 	vros_assert(topic_name=="blit_images");
-	return "vros_display.msg.VROSCompressedImage";
+	return "flyvr.msg.VROSCompressedImage";
 }
 
 void receive_json_message(const std::string& topic_name, const std::string& json_message) {

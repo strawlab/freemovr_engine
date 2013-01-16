@@ -1,5 +1,5 @@
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 
 import scipy.optimize
 import camera_model
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from plot_utils import get_3d_verts, plot_camera
 
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 from tf.transformations import quaternion_from_matrix, \
     quaternion_matrix, rotation_from_matrix, rotation_matrix, \
     quaternion_about_axis

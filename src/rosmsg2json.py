@@ -2,9 +2,9 @@ import json
 import base64
 import re
 
-ROS_PACKAGE_NAME='vros_display'
+ROS_PACKAGE_NAME='flyvr'
 import roslib; roslib.load_manifest(ROS_PACKAGE_NAME)
-import vros_display.msg
+import flyvr.msg
 import geometry_msgs.msg
 import std_msgs.msg
 import rospkg
@@ -43,7 +43,7 @@ def rosmsg2dict(msg):
                 plain_dict[varname + ' (base64)'] = base64.b64encode( getattr(msg,varname))
             elif vartype == 'time':
                 plain_dict[varname] = rosmsg2dict(getattr(msg,varname))
-            elif vartype == 'vros_display/ROSPath':
+            elif vartype == 'flyvr/ROSPath':
                 plain_dict[varname] = fixup_path(getattr(msg,varname).data)
             elif vartype == 'geometry_msgs/Point':
                 v = getattr(msg,varname)
@@ -124,7 +124,7 @@ def test_point():
     compare(msg)
 
 def test_image():
-    msg = vros_display.msg.VROSCompressedImage()
+    msg = flyvr.msg.VROSCompressedImage()
     msg.format = '.png'
     # Smallest PNG image. ( See http://garethrees.org/2007/11/14/pngcrush/ )
     msg.data = ('\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06'

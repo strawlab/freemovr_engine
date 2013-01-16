@@ -11,7 +11,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 import camera_model
 import simple_geom

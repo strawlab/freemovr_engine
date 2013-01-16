@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # ROS imports
-import roslib; roslib.load_manifest('vros_display')
+import roslib; roslib.load_manifest('flyvr')
 import rospy
 import dynamic_reconfigure.client
 
-import vros_display.srv
-import vros_display.msg
+import flyvr.srv
+import flyvr.msg
 import display_client
 
 import json
@@ -175,7 +175,7 @@ class GenerateProjectorCalibration(HasTraits):
         fname = tempfile.mktemp('.png')
         try:
             scipy.misc.imsave(fname, self._image )
-            image = vros_display.msg.VROSCompressedImage()
+            image = flyvr.msg.VROSCompressedImage()
             image.format = 'png'
             image.data = open(fname).read()
             self.blit_compressed_image_proxy(image)
@@ -212,7 +212,7 @@ def main():
                 display_id,display_info['id']))
 
     blit_compressed_image_proxy = rospy.ServiceProxy(display_server.get_fullname('blit_compressed_image'),
-                                                     vros_display.srv.BlitCompressedImage)
+                                                     flyvr.srv.BlitCompressedImage)
 
     demo = GenerateProjectorCalibration(display_coords_filename=args.filename,
                                         display_id=display_id,

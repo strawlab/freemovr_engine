@@ -5,7 +5,7 @@
 #include <osg/MatrixTransform>
 
 #include <stdexcept>
-#include "vros_display/vros_assert.h"
+#include "flyvr/vros_assert.h"
 
 CameraModel::CameraModel(unsigned int width, unsigned int height, bool y_up)  :
 	_width(width), _height(height), _y_up(y_up), intrinsic_valid(false), extrinsic_valid(false)

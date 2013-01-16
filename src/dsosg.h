@@ -15,7 +15,7 @@
 #include "Poco/Manifest.h"
 #include "Poco/Path.h"
 
-#include "vros_display/stimulus_interface.h"
+#include "flyvr/stimulus_interface.h"
 
 #include "WindowCaptureCallback.h"
 
@@ -43,7 +43,7 @@ namespace dsosg{
 
 	class DSOSG {
 	public:
-		DSOSG(std::string vros_display_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
+		DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
 			  bool show_geom_coords=false, bool tethered_mode=true);
 
 		std::vector<std::string> get_stimulus_plugin_names();
@@ -80,7 +80,7 @@ namespace dsosg{
 		StimulusInterface* _current_stimulus;
 		std::string _mode;
 
-		Poco::Path _vros_display_basepath;
+		Poco::Path _flyvr_basepath;
 		Poco::Path _config_file_path;
 
 		osgViewer::Viewer* _viewer;

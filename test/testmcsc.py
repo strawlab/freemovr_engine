@@ -1,5 +1,5 @@
 import roslib;
-roslib.load_manifest('vros_display')
+roslib.load_manifest('flyvr')
 from calib.io import MultiCalSelfCam, load_ascii_matrix
 import rospy
 
