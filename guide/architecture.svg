@@ -94,7 +94,7 @@
          y="58.076458"
          style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">VROS display_server architecture overview</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_virtual_world.jpg"
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_virtual_world.jpg"
        xlink:href="images/architecture_virtual_world.jpg"
        width="212.92207"
        height="156.14285"
@@ -134,7 +134,7 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3076">• defined in lab frame</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_cubemap.png"
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_cubemap.png"
        xlink:href="images/architecture_cubemap.png"
        width="212.76375"
        height="159.76624"
@@ -164,7 +164,7 @@
          x="266.41281"
          sodipodi:role="line">• from viewpoint of observer in lab frame</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_geometry_texture.jpg"
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_geometry_texture.jpg"
        xlink:href="images/architecture_geometry_texture.jpg"
        transform="scale(-1,1)"
        width="158.57143"
@@ -200,7 +200,7 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3384">  frame</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_projector.jpg"
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_projector.jpg"
        xlink:href="images/architecture_projector.jpg"
        width="207.57143"
        height="155.67857"
@@ -262,7 +262,7 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan4452">• measured during auto-calibration</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/architecture_p2g.png"
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_p2g.png"
        xlink:href="images/architecture_p2g.png"
        width="206.57143"
        height="156.26685"
@@ -362,7 +362,7 @@
        d="m 333.53037,304.714 0,-14.28572"
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/cyl-texcoords.png"
+       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/cyl-texcoords.png"
        xlink:href="images/cyl-texcoords.png"
        y="309.25507"
        x="505.28571"
@@ -373,7 +373,7 @@
        id="g3571"
        transform="translate(-11.069118,0.33542783)">
       <image
-         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/panels_full.png"
+         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/panels_full.png"
          xlink:href="images/panels_full.png"
          width="36"
          height="36"
@@ -405,7 +405,7 @@
            x="691.92859"
            sodipodi:role="line">v</tspan></text>
       <image
-         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/panels_x.png"
+         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/panels_x.png"
          xlink:href="images/panels_x.png"
          width="36.155239"
          height="9.2857141"
@@ -413,7 +413,7 @@
          x="642.49066"
          y="454.61221" />
       <image
-         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/vros/guide/images/panels_y.png"
+         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/panels_y.png"
          xlink:href="images/panels_y.png"
          width="9.5817823"
          height="35.975048"

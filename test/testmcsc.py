@@ -8,7 +8,7 @@ import pickle
 
 import numpy as np
 
-d = '/home/stowers/vros-devel/vros/mcamall/'
+d = '/home/stowers/flyvr-devel/flyvr/mcamall/'
 
 rospy.init_node('testmcsc', anonymous=True)
 

@@ -23,7 +23,7 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
-#include "flyvr/vros_assert.h"
+#include "flyvr/flyvr_assert.h"
 
 class Stimulus2DSprite: public StimulusInterface
 {
@@ -136,10 +136,10 @@ void receive_json_message(const std::string& topic_name, const std::string& json
         }
     } else {
         fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-        vros_assert(false);
+        flyvr_assert(false);
     }
     fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-    vros_assert(false);
+    flyvr_assert(false);
   } else if  (topic_name=="sprite_pose") {
 
     json_t *data_json;

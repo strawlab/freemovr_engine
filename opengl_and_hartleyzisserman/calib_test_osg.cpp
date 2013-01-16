@@ -74,7 +74,7 @@ int main(int argc, char**argv) {
 	osg::ref_ptr<osg::Group> root = new osg::Group; root->addDescription("root node");
 
     // set up the texture state.
-	std::string filename = "/home/astraw/vros-devel/vros/flyvr/opengl_and_hartleyzisserman/luminance.png";
+	std::string filename = "/home/astraw/flyvr-devel/flyvr/flyvr/opengl_and_hartleyzisserman/luminance.png";
 	osg::Image* image = osgDB::readImageFile(filename);
 	if (!image) {
 		throw std::ios_base::failure("Could not open image file");

@@ -19,7 +19,7 @@
 
 #include "util.h"
 #include "ProjectCubemapToGeometryPass.h"
-#include "flyvr/vros_assert.h"
+#include "flyvr/flyvr_assert.h"
 
 ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_basepath,
 														   osg::TextureCubeMap* texture,
@@ -29,8 +29,8 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
 														   unsigned int tex_height) :
   _geometry_parameters( geometry_parameters), _tex_width(tex_width), _tex_height(tex_height), _observer_position_callback(observer_position_cb)
  {
-   vros_assert( texture!=NULL );
-   vros_assert( geometry_parameters!=NULL );
+   flyvr_assert( texture!=NULL );
+   flyvr_assert( geometry_parameters!=NULL );
 
 	 set_flyvr_base_path(flyvr_basepath);
 	 set_plugin_path(flyvr_basepath,false);

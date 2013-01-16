@@ -10,7 +10,7 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
-#include "flyvr/vros_assert.h"
+#include "flyvr/flyvr_assert.h"
 
 ResourceLoader::ResourceLoader()
 {
@@ -21,7 +21,7 @@ std::string ResourceLoader::get_plugin_shader_path(std::string name)
     Poco::Path path(_plugin_path);
     path.makeDirectory();
     if (_popdir) {
-      vros_assert_msg( path.depth() > 0,
+      flyvr_assert_msg( path.depth() > 0,
                        "_plugin_path does not include directory. (Is it set?)" );
       path.popDirectory();
     }
@@ -34,7 +34,7 @@ std::string ResourceLoader::get_plugin_data_path(std::string name)
     Poco::Path path(_plugin_path);
     path.makeDirectory();
     if (_popdir) {
-      vros_assert_msg( path.depth() > 0,
+      flyvr_assert_msg( path.depth() > 0,
                        "_plugin_path does not include directory. (Is it set?)" );
       path.popDirectory();
     }

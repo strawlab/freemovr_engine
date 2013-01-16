@@ -4,7 +4,7 @@ import argparse
 
 import roslib; roslib.load_manifest('flyvr')
 import rospy
-import display_client # from vros_projectors package
+import display_client # from flyvr_projectors package
 from geometry_msgs.msg import Pose
 import tf.transformations
 

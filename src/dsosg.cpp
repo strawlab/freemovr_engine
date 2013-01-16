@@ -51,7 +51,7 @@
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
 
-#include "flyvr/vros_assert.h"
+#include "flyvr/flyvr_assert.h"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -477,7 +477,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 		_current_stimulus = _stimulus_plugins["Stimulus3DDemo"];
 	}
 
-	vros_assert(_current_stimulus != NULL);
+	flyvr_assert(_current_stimulus != NULL);
 	std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
 	_active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
@@ -626,7 +626,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
         } else {
 
             json_t *p2g_json = json_object_get(json_config, "p2g");
-            vros_assert(p2g_json != NULL);
+            flyvr_assert(p2g_json != NULL);
 
             Poco::Path p2g_path = _config_file_path.parent().resolve(
                                     Poco::Path(json_string_value(p2g_json)));
@@ -709,13 +709,13 @@ void DSOSG::set_stimulus_plugin(const std::string& name) {
 
 std::vector<std::string> DSOSG::stimulus_get_topic_names(const std::string& plugin_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    vros_assert(stimulus!=NULL);
+    flyvr_assert(stimulus!=NULL);
 	return stimulus->get_topic_names();
 }
 
 std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    vros_assert(stimulus!=NULL);
+    flyvr_assert(stimulus!=NULL);
     try {
         return stimulus->get_message_type( topic_name );
     } catch (...) {
@@ -726,7 +726,7 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
 
 void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    vros_assert(stimulus!=NULL);
+    flyvr_assert(stimulus!=NULL);
 	stimulus->receive_json_message( topic_name, json_message );
 }
 
@@ -830,7 +830,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
     if (use_pbuffer) {
         pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-        vros_assert(pbuffer.valid());
+        flyvr_assert(pbuffer.valid());
     }
 
     _viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
@@ -873,7 +873,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		vros_assert(gc.valid());
+		flyvr_assert(gc.valid());
 		_viewer->getCamera()->setGraphicsContext(gc.get());
         _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.5f, 0.0f)); // clear blue
 
@@ -896,11 +896,11 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->realize();
 	}
 	else if (_mode==std::string("vr_display")) {
-        vros_assert(!use_pbuffer); //unsupported (currently)
+        flyvr_assert(!use_pbuffer); //unsupported (currently)
 
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		vros_assert(gc.valid());
+		flyvr_assert(gc.valid());
 		_viewer->getCamera()->setGraphicsContext(gc.get());
 		_viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
 		GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
@@ -993,12 +993,12 @@ void DSOSG::setWindowName(std::string name) {
 };
 
 void DSOSG::setCaptureFilename(std::string name) {
-    vros_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
+    flyvr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
     _wcc->set_next_filename( name );
 }
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
-    vros_assert(_cameraManipulator.valid());
+    flyvr_assert(_cameraManipulator.valid());
     TrackballManipulatorState result;
     result.rotation = _cameraManipulator->getRotation();
     result.center =  _cameraManipulator->getCenter();
@@ -1007,7 +1007,7 @@ TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
 }
 
 void DSOSG::setTrackballManipulatorState(TrackballManipulatorState s) {
-    vros_assert(_cameraManipulator.valid());
+    flyvr_assert(_cameraManipulator.valid());
     _cameraManipulator->setRotation(s.rotation);
     _cameraManipulator->setCenter(s.center);
     _cameraManipulator->setDistance(s.distance);

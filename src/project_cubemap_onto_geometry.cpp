@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "util.h"
-#include "flyvr/vros_assert.h"
+#include "flyvr/flyvr_assert.h"
 #include "WindowCaptureCallback.h"
 
 std::string get_file_contents(std::string filename) {
@@ -86,7 +86,7 @@ int main(int argc, char**argv) {
   traits->pbuffer = true;
 
   osg::ref_ptr<osg::GraphicsContext>gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-  vros_assert(gc.valid());
+  flyvr_assert(gc.valid());
   _viewer->getCamera()->setGraphicsContext(gc.get());
   _viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
 

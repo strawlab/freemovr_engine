@@ -1098,7 +1098,7 @@ if __name__ == '__main__':
         '--calib-config', type=str, default='package://flycave/conf/calib-all.yaml',
         help='path to calibration configuration yaml file')
     parser.add_argument(
-        '--save-dir', type=str, default=os.path.expanduser('~/FLYDRA/vros-calibration/wip'),
+        '--save-dir', type=str, default=os.path.expanduser('~/FLYDRA/flyvr-calibration/wip'),
         help='path to save calibration data')
     parser.add_argument(
         '--continue-calibration', type=str,

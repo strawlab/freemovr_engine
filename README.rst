@@ -34,18 +34,18 @@ Ubuntu Lucid (10.04).
 
       apt-get update
 
- 3. Get the vros.rosinstall file from github and save to a local
-    directory. Manually visit https://github.com/strawlab/vros and
-    download the ``vros.rosinstall`` file.
+ 3. Get the flyvr.rosinstall file from github and save to a local
+    directory. Manually visit https://github.com/strawlab/flyvr and
+    download the ``flyvr.rosinstall`` file.
 
- 4. Download VROS into ``~/vros-devel``::
+ 4. Download VROS into ``~/flyvr-devel``::
 
-      rosinstall ~/vros-devel ~/ros vros.rosinstall
+      rosinstall ~/flyvr-devel ~/ros flyvr.rosinstall
 
  5. Build VROS::
 
-      . ~/vros-devel/setup.sh
-      rosmake vros --rosdep-install
+      . ~/flyvr-devel/setup.sh
+      rosmake flyvr --rosdep-install
 
 Note, the above requires installation of package libeigen3-dev on
 Ubuntu, which is not available through normal Ubuntu channels. Binaries are available at:
