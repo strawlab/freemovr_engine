@@ -11,6 +11,8 @@ python-vtk:
   ubuntu: python-vtk
 osg:
   ubuntu: libopenscenegraph-dev openscenegraph
+osgcompute:
+  ubuntu: osgcompute
 openexr:
   ubuntu: libopenexr-dev
 opencv2.3:
