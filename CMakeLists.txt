@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4.6)
-SET(BUILD_VROS ON CACHE BOOL "Build Using VROS")
+SET(BUILD_FLYVR ON CACHE BOOL "Build Using FLYVR")
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 SET(CUDA_TOOLKIT_ROOT "/usr/local/cuda")
@@ -70,7 +70,7 @@ SET(CALIB_TEST_SOURCES
   src/util.cpp
   src/camera_model.cpp)
 
-IF(BUILD_VROS)
+IF(BUILD_FLYVR)
   MESSAGE("Building With ROS")
 
   INCLUDE($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
@@ -135,11 +135,11 @@ IF(BUILD_VROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
     ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
     ${OSG_COMPUTE_LIBRARIES})
-  add_definitions( -DVROS_USE_CUDA )
+  add_definitions( -DFLYVR_USE_CUDA )
 
   # add dynamic reconfigure api
   rosbuild_find_ros_package(dynamic_reconfigure)
-ELSE(BUILD_VROS)
+ELSE(BUILD_FLYVR)
   MESSAGE("Building Without ROS")
 
   SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
@@ -175,9 +175,9 @@ ELSE(BUILD_VROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
     ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
     ${OSG_COMPUTE_LIBRARIES})
-  add_definitions( -DVROS_USE_CUDA )
+  add_definitions( -DFLYVR_USE_CUDA )
 
-ENDIF(BUILD_VROS)
+ENDIF(BUILD_FLYVR)
 
 # build non-ROS programs  ----------
 ADD_EXECUTABLE(project_cubemap_onto_geometry ${CUBMAP_TO_GEOMETRY_PART_SOURCES})

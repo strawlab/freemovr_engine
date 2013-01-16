@@ -82,7 +82,7 @@ std::vector<std::string> get_topic_names() const {
 
 std::string get_message_type(const std::string& topic_name) const {
     if (topic_name=="sprite_image") {
-        return "flyvr.msg.VROSCompressedImage";
+        return "flyvr.msg.FlyVRCompressedImage";
     } else if  (topic_name=="sprite_pose") {
         return "geometry_msgs.msg.Pose2D";
     }

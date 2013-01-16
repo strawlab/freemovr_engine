@@ -124,7 +124,7 @@ def test_point():
     compare(msg)
 
 def test_image():
-    msg = flyvr.msg.VROSCompressedImage()
+    msg = flyvr.msg.FlyVRCompressedImage()
     msg.format = '.png'
     # Smallest PNG image. ( See http://garethrees.org/2007/11/14/pngcrush/ )
     msg.data = ('\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06'

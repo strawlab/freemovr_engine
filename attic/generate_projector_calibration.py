@@ -175,7 +175,7 @@ class GenerateProjectorCalibration(HasTraits):
         fname = tempfile.mktemp('.png')
         try:
             scipy.misc.imsave(fname, self._image )
-            image = flyvr.msg.VROSCompressedImage()
+            image = flyvr.msg.FlyVRCompressedImage()
             image.format = 'png'
             image.data = open(fname).read()
             self.blit_compressed_image_proxy(image)

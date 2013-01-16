@@ -31,7 +31,7 @@ StimulusInterface::~StimulusInterface()
 }
 
 bool StimulusInterface::is_CUDA_available() {
-#ifdef VROS_USE_CUDA
+#ifdef FLYVR_USE_CUDA
   return true;
 #else
   return false;

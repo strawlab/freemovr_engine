@@ -163,7 +163,7 @@ class DisplayServerProxy(object):
 
     def show_image(self, fname, unlink=False):
         try:
-            image = flyvr.msg.VROSCompressedImage()
+            image = flyvr.msg.FlyVRCompressedImage()
             image.format = os.path.splitext(fname)[-1]
             image.data = open(fname).read()
         finally:

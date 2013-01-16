@@ -31,7 +31,7 @@
 
 #include <osgViewer/ViewerEventHandlers>
 
-#ifdef VROS_USE_CUDA
+#ifdef FLYVR_USE_CUDA
 #include <osgCudaInit/Init>
 #endif
 
@@ -920,7 +920,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
     setWindowName(viewer_window_name);
 	resized(width, height); // notify listeners that we have a new size
 
-#ifdef VROS_USE_CUDA
+#ifdef FLYVR_USE_CUDA
     osgCuda::setupOsgCudaAndViewer( *_viewer );
 #endif
 

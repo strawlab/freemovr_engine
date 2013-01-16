@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#ifndef VROS_DISPLAY_UTIL_H
-#define VROS_DISPLAY_UTIL_H
+#ifndef FLYVR_UTIL_H
+#define FLYVR_UTIL_H
 
 #include <string>
 #include <osg/Shader>

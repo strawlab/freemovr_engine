@@ -115,7 +115,7 @@ std::vector<std::string> get_topic_names() const {
 
 std::string get_message_type(const std::string& topic_name) const {
 	flyvr_assert(topic_name=="blit_images");
-	return "flyvr.msg.VROSCompressedImage";
+	return "flyvr.msg.FlyVRCompressedImage";
 }
 
 void receive_json_message(const std::string& topic_name, const std::string& json_message) {

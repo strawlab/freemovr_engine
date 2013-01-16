@@ -1,8 +1,8 @@
 ****
-VROS
+FLYVR
 ****
 
-VROS (Virtual reality for the Robot Operating System) manages
+FLYVR (Virtual reality for the Robot Operating System) manages
 multi-computer realtime tracking and display.
 
 .. contents::
@@ -38,11 +38,11 @@ Ubuntu Lucid (10.04).
     directory. Manually visit https://github.com/strawlab/flyvr and
     download the ``flyvr.rosinstall`` file.
 
- 4. Download VROS into ``~/flyvr-devel``::
+ 4. Download FLYVR into ``~/flyvr-devel``::
 
       rosinstall ~/flyvr-devel ~/ros flyvr.rosinstall
 
- 5. Build VROS::
+ 5. Build FLYVR::
 
       . ~/flyvr-devel/setup.sh
       rosmake flyvr --rosdep-install
@@ -52,7 +52,7 @@ Ubuntu, which is not available through normal Ubuntu channels. Binaries are avai
  * http://packages.ros.org/ros/ubuntu/pool/main/e/eigen3/libeigen3-dev_3.0.1-1+ros4~lucid_amd64.deb
  * http://packages.ros.org/ros/ubuntu/pool/main/e/eigen3/libeigen3-dev_3.0.1-1+ros4~lucid_i386.deb
 
-VROS architecture overview
+FLYVR architecture overview
 **************************
 
 Theory of operation
@@ -71,17 +71,17 @@ output.
 flyvr nodes
 ==================
 
-display_server - the VROS display server
+display_server - the FLYVR display server
 ----------------------------------------
 
-The VROS display server node runs locally on the computer(s) connected
+The FLYVR display server node runs locally on the computer(s) connected
 to the physical display. During a typical experiment, it will be
 running an experiment plugin. Each experiment plugin updates the
 graphics engine on the basis of the fly's current position. Given the
 scenegraph and the calibrated screen layout, the node will compute the
 images shown on the projectors.
 
-viewport_definer.py - VROS viewport definer
+viewport_definer.py - FLYVR viewport definer
 -------------------------------------------
 
 Runs a GUI program that allows the user to interactively define the
@@ -115,7 +115,7 @@ effectively create multiple projections.
 
 **Viewport** - vertices of polygon defining projection region in
 display coordinates (x0,y0,x1,y1,...). It is used to limit the region
-of the physical display used to illuminate a surface. (The VROS
+of the physical display used to illuminate a surface. (The FLYVR
 Viewport corresponds to a 2D polygon onto which the image of the
 projection screen is shown.)
 
