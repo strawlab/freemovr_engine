@@ -1,9 +1,0 @@
-<config>
-  <stimulus_plugins>
-    <!-- the vros_display default plugins are loaded automatically -->
-
-    <!-- path is relative to the config file -->
-    <plugin path="../lib/" name="stimulus_sample"/>
-  </stimulus_plugins>
-  <display_geometry path="geom.json"/>
-</config>
