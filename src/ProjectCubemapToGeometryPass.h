@@ -9,7 +9,7 @@
 #include <osg/Texture2D>
 
 #include "DisplaySurfaceGeometry.h"
-#include "flyvr/ResourceLoader.h"
+#include "flyvr/ResourceLoader.hpp"
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {
 public:

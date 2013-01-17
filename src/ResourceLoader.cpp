@@ -1,4 +1,4 @@
-#include "flyvr/ResourceLoader.h"
+#include "flyvr/ResourceLoader.hpp"
 
 #include <sstream>
 #include <stdexcept>

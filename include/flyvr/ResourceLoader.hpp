@@ -31,4 +31,4 @@ protected:
   bool _popdir;
 };
 
-#endif // ResourceLoader.h
+#endif // ResourceLoader.hpp

@@ -3,7 +3,7 @@
 #ifndef StimulusInterface_INCLUDED
 #define StimulusInterface_INCLUDED
 
-#include "ResourceLoader.h"
+#include "ResourceLoader.hpp"
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
 
