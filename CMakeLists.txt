@@ -64,12 +64,6 @@ SET(P2G_SOURCES
   src/TexturedGeometryToCameraImagePass.cpp
   src/CameraImageToDisplayImagePass.cpp)
 
-SET(CALIB_TEST_SOURCES
-  opengl_and_hartleyzisserman/calib_test_osg.cpp
-  src/DisplaySurfaceGeometry.cpp
-  src/util.cpp
-  src/camera_model.cpp)
-
 IF(BUILD_WITH_ROS)
   MESSAGE("Building With ROS")
 
@@ -189,9 +183,3 @@ ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
 ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
 INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
 TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
-
-ADD_EXECUTABLE(calib_test_osg ${CALIB_TEST_SOURCES})
-TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
-
-ADD_EXECUTABLE(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
-TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
