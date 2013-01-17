@@ -1,9 +1,9 @@
-.. FLYVR documentation master file, created by
+.. FlyVR documentation master file, created by
    sphinx-quickstart on Fri Jan  6 15:52:13 2012.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to FLYVR's documentation!
+Welcome to FlyVR's documentation!
 ================================
 
 Contents:
