@@ -6,7 +6,7 @@
 
  */
 
-#include "flyvr/stimulus_interface.h"
+#include "flyvr/StimulusInterface.hpp"
 #include "Poco/ClassLibrary.h"
 #include "Poco/Path.h"
 #include <stdexcept>

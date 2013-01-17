@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
-#include "flyvr/stimulus_interface.h"
+#include "flyvr/StimulusInterface.hpp"
 #include "util.h"
 #include "base64.h"
 

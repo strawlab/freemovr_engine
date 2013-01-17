@@ -15,7 +15,7 @@
 #include "Poco/Manifest.h"
 #include "Poco/Path.h"
 
-#include "flyvr/stimulus_interface.h"
+#include "flyvr/StimulusInterface.hpp"
 
 #include "WindowCaptureCallback.h"
 

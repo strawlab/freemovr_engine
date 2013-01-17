@@ -1,5 +1,5 @@
 // This is used both by the class library and by the application.
-#include "flyvr/stimulus_interface.h"
+#include "flyvr/StimulusInterface.hpp"
 #include "util.h"
 
 #include <osg/MatrixTransform>

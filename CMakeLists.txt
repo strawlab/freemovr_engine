@@ -33,7 +33,7 @@ SET(EXR_LIBS ${OPENEXR_LIBRARIES})
 SET(DS_SOURCES
   src/dsosg.cpp
   src/WindowCaptureCallback.cpp
-  src/stimulus_interface.cpp
+  src/StimulusInterface.cpp
   src/load_cubemap.cpp
   src/ResourceLoader.cpp
   src/ProjectCubemapToGeometryPass.cpp
@@ -101,7 +101,7 @@ IF(BUILD_WITH_ROS)
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
 
   # the flyvr library (for building stimulus plugins) --------------------
-  rosbuild_add_library(flyvr src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
+  rosbuild_add_library(flyvr src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
   TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
@@ -146,7 +146,7 @@ ELSE(BUILD_WITH_ROS)
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
   # the flyvr library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(flyvr SHARED src/ResourceLoader.cpp src/stimulus_interface.cpp src/load_cubemap.cpp)
+  ADD_LIBRARY(flyvr SHARED src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
   TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
