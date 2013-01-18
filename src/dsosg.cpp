@@ -439,7 +439,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 				    _stimulus_loader.loadLibrary(lib_name);
 			    }
 			    catch (Poco::Exception& exc) {
-				    std::cerr << "ERROR loading library: " << exc.displayText() << std::endl;
+				    std::cerr << "ERROR loading library (" << lib_name << "): " << exc.displayText() << std::endl;
 				    throw;
 			    }
 
