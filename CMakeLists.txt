@@ -64,6 +64,10 @@ SET(P2G_SOURCES
   src/TexturedGeometryToCameraImagePass.cpp
   src/CameraImageToDisplayImagePass.cpp)
 
+IF(OSG_COMPUTE_FOUND)
+  add_definitions( -DFLYVR_USE_CUDA )
+ENDIF(OSG_COMPUTE_FOUND)
+
 IF(BUILD_WITH_ROS)
   MESSAGE("Building With ROS")
 
@@ -129,7 +133,6 @@ IF(BUILD_WITH_ROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
     ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
     ${OSG_COMPUTE_LIBRARIES})
-  add_definitions( -DFLYVR_USE_CUDA )
 
   # add dynamic reconfigure api
   rosbuild_find_ros_package(dynamic_reconfigure)
@@ -169,7 +172,6 @@ ELSE(BUILD_WITH_ROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
     ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
     ${OSG_COMPUTE_LIBRARIES})
-  add_definitions( -DFLYVR_USE_CUDA )
 
 ENDIF(BUILD_WITH_ROS)
 
