@@ -66,6 +66,8 @@ if __name__=='__main__':
                         default=False, action='store_true')
     parser.add_argument('--mm', help='size of single check',
                         default=None, type=float)
+    parser.add_argument('--pdf', help='use inkscape to convert to PDF',
+                        default=False, action='store_true')
     args = parser.parse_args()
 
     if args.mm is None:
@@ -113,5 +115,14 @@ if __name__=='__main__':
                             h=total_height,
                             elements=elements,
                           )
-    with open('checkerboard.svg',mode='w') as fd:
+    fname_svg = 'checkerboard.svg'
+    with open(fname_svg,mode='w') as fd:
         fd.write(s)
+
+    if args.pdf:
+        import subprocess
+
+        fname_pdf = fname_svg + '.pdf'
+
+        cmd = 'inkscape -f %s --export-pdf=%s'%(fname_svg, fname_pdf)
+        subprocess.check_call(cmd,shell=True)
