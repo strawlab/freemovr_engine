@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # /* -*- Mode: Python; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
+import argparse
 
 import roslib; roslib.load_manifest('flyvr')
 import rospy
@@ -12,7 +13,7 @@ import display_client
 import os
 
 class App:
-    def __init__(self):
+    def __init__(self,button=0):
         rospy.init_node('joystick_cursor')
 
         self.display_server = display_client.DisplayServerProxy()
@@ -29,6 +30,9 @@ class App:
         self.x = 100
         self.y = 100
 
+        self.button_idx = button
+        self.button_state = None
+
         self._gain_k = rospy.get_param('~gain_k', 2.0)
         self._gain_p = rospy.get_param('~gain_p', 3.0)
 
@@ -39,10 +43,14 @@ class App:
         self.cur_joy_x = msg.axes[0]
         self.cur_joy_y = msg.axes[1]
 
-        if msg.buttons[0]:
-            print '%.1f %.1f'%(self.x, self.y)
-            self.pubclick.publish(
-                            Pose2D(float(self.x), float(self.y), 0.0))
+        cur_state = msg.buttons[self.button_idx]
+        if cur_state != self.button_state:
+            self.button_state = cur_state
+
+            if self.button_state:
+                print '%.1f %.1f'%(self.x, self.y)
+                self.pubclick.publish(
+                    Pose2D(float(self.x), float(self.y), 0.0))
         
     def run(self):
         while not rospy.is_shutdown():
@@ -60,7 +68,13 @@ class App:
         self.display_server.set_mode(self.old_mode)
 
 def main():
-    app = App()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--button', default=0, type=int,
+                        help='the button number to listen to (PS3 square: 15)')
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    app = App(button=args.button)
 	app.run()
 
 if __name__=='__main__':
