@@ -10,14 +10,16 @@ n_columns = 7
 # chessboards. We will start with black material and the cutouts will
 # have white showing through. 
 
-width = 30
-height = 30
+DEFAULT_WIDTH = 30
+DEFAULT_HEIGHT = DEFAULT_WIDTH
 
 class Element(object):
-    def __init__(self,x0,y0,laser=False):
+    def __init__(self,x0,y0,w=DEFAULT_WIDTH,h=DEFAULT_HEIGHT,laser=False):
         self.x0=x0
         self.y0=y0
         self.laser = laser
+        self.w = w
+        self.h = h
     def get_rects(self):
         result = []
         if self.laser:
@@ -32,8 +34,8 @@ class Element(object):
             opts = dict(fill = "white")
         rd = dict(x=self.x0+indent,
                   y=self.y0+indent,
-                  width=width-indent,
-                  height=height-indent,
+                  width=self.w-indent,
+                  height=self.h-indent,
                   )
         rd.update(opts)
         return [rd]
@@ -62,7 +64,16 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--laser', help="draw only strokes for lasercutting",
                         default=False, action='store_true')
+    parser.add_argument('--mm', help='size of single check',
+                        default=None, type=float)
     args = parser.parse_args()
+
+    if args.mm is None:
+        width = DEFAULT_WIDTH
+        height= DEFAULT_HEIGHT
+    else:
+        width = args.mm
+        height = args.mm
 
     total_width = n_columns*width
     total_height = n_rows*height
@@ -87,7 +98,7 @@ if __name__=='__main__':
             else:
                 val = 1
             if j%2==val:
-                rects.extend( Element(x0,y0,laser=laser).get_rects() )
+                rects.extend( Element(x0,y0,w=width,h=height,laser=laser).get_rects() )
 
     file_contents = """<?xml version="1.0"?>
 <svg width="{w}mm" height="{h}mm" viewBox="0 0 {w} {h}"
