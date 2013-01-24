@@ -118,6 +118,7 @@ if __name__=='__main__':
     fname_svg = 'checkerboard.svg'
     with open(fname_svg,mode='w') as fd:
         fd.write(s)
+    print 'saved',fname_svg
 
     if args.pdf:
         import subprocess
@@ -126,3 +127,4 @@ if __name__=='__main__':
 
         cmd = 'inkscape -f %s --export-pdf=%s'%(fname_svg, fname_pdf)
         subprocess.check_call(cmd,shell=True)
+        print 'saved',fname_pdf
