@@ -79,8 +79,8 @@ if __name__=='__main__':
 
     total_width = n_columns*width
     total_height = n_rows*height
-    print 'total_width',total_width
-    print 'total_height',total_height
+    print 'total_width %g mm'%total_width
+    print 'total_height %g mm'%total_height
 
     laser = args.laser
 
