@@ -2,8 +2,11 @@
 Manual display calibration
 **************************
 
-The simplest way to calibrate a display is a manual procedure. We do
-this in several steps. 
+The simplest way to calibrate a display is a manual procedure. This
+procedure assumes that your projector is well fit by a pinhole camera
+model.
+
+As a summary, several steps are performed:
 
   0. If you are using virtual displays, define your viewports.
 
