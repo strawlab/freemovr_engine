@@ -10,7 +10,7 @@ from gi.repository import Gtk, GObject, Gdk, GLib
 GObject.threads_init()
 Gdk.threads_init()
 
-COLORS = ("red","green","blue","magenta","yellow","teal","brown")
+COLORS = ("red","green","magenta","blue","yellow","teal","brown")
 
 def check_shutdown(rosthread):
     alive = rosthread.is_alive()
