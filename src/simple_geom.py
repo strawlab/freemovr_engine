@@ -362,7 +362,7 @@ class Geometry:
         elif geom_dict and not filename:
             pass
         else:
-            raise Exception("must supply filename OR geometry dict")
+            raise Exception("must supply filename OR geometry dict (but not both)")
 
         if geom_dict['model']=='cylinder':
             self.model = Cylinder(base=geom_dict['base'],
