@@ -312,6 +312,13 @@ def mk_image_points(x2d):
             ipts[i,j] = x2d[i,j]
     return ipts
 
+def save_point_image(fname, sz, x2d ):
+    im = np.zeros( (sz[1], sz[0]), dtype=np.uint8 )
+    for xy in x2d:
+        x,y=xy
+        im[y-3:y+3,x-3:x+3] = 255
+    scipy.misc.imsave(fname,im)
+
 def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     assert x2d.ndim==2
     assert x2d.shape[1]==2
@@ -320,13 +327,9 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     assert X3d.shape[1]==3
 
     if 1:
-        im = np.zeros( (base_cam.height, base_cam.width), dtype=np.uint8 )
-        for xy in x2d:
-            x,y=xy
-            im[y-3:y+3,x-3:x+3] = 255
         fname = 'x2d_'+base_cam.name + '.png'
         fname = fname.replace('/','-')
-        scipy.misc.imsave(fname,im)
+        save_point_image(fname, (base_cam.width, base_cam.height), x2d )
         print 'saved pt debug image to',fname
 
     ipts = mk_image_points(x2d)
