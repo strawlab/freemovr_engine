@@ -233,6 +233,7 @@ class DataIO:
         c.pixel_projector = Point32(*kwargs["pixel_projector"])
         c.pixel_ptc_laser = Point32(*kwargs["pixel_ptc_laser"])
         c.pixel_ptc_projector = Point32(*kwargs["pixel_ptc_projector"])
+        c.pixel_ptc_projector_luminance = float(kwargs["pixel_ptc_projector_luminance"])
         
         self._add_mapping(c)
 
@@ -528,8 +529,9 @@ class Calib:
         if thresh == self.laser_thresh:
             self.laser_detector.set_mask(self.laser_mask, copy=False)
 
+        img = imgs[self.laser_camera][:,:,0]
         features = self.laser_detector.detect(
-                        imgs[self.laser_camera][:,:,0],
+                        img,
                         thresh)
 
         if thresh == self.laser_thresh:
@@ -537,6 +539,7 @@ class Calib:
 
         if features:
             row,col = features[0]
+            luminance = img[row,col]
             if thresh == self.laser_thresh:
                 msg = msgprefix + "PTC laser"
                 expected = np.array(self.laser_expected_detect_location)
@@ -550,10 +553,10 @@ class Calib:
                 msg = msgprefix + "PTC visible"
             else:
                 msg = msgprefix + "PTC (unknown threshold)"
-            rospy.loginfo("detect 2D %s: col:%s row:%s" % (msg,col,row))
-            return col,row
+            rospy.loginfo("detect 2D %s: col:%s row:%s val:%s" % (msg,col,row,luminance))
+            return col,row,luminance
 
-        return None,None
+        return None,None,None
 
     def _detect_3d_point(self, runner, thresh):
         restrict = self.tracking_cameras.keys()
@@ -653,7 +656,7 @@ class Calib:
                 
             elif mode == CALIB_MODE_MANUAL_TRACKING:
                 xyz,pts,nvisible,reproj = self._detect_3d_point(self.runner, self.laser_thresh)
-                col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
+                col,row,lum = self._detect_laser_camera_2d_point(self.laser_thresh)
 
             elif mode == CALIB_MODE_MANUAL_PROJECTOR:
                 try:
@@ -670,7 +673,7 @@ class Calib:
                     col,row = get_centre_of_vdisp(vdmask)
 
                 self._light_proj_pixel(ds, row=row, col=col)
-                col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
+                col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
 
             elif mode == CALIB_MODE_MANUAL_CLICKED:
                 tocal = []
@@ -818,7 +821,7 @@ class Calib:
                     self.pub_mode.publish(self.mode)
 
                     pan,tilt = self._light_laser_pixel(pan=pan,tilt=tilt,power=False)
-                    col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
+                    col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
                     if col:
                         expected = np.array(self.laser_expected_detect_location)
                         expdist = numpy.linalg.norm(expected - np.array((col,row)))
@@ -836,7 +839,7 @@ class Calib:
                                 pan,tilt = self._light_laser_pixel(pan=newpan,tilt=newtilt,power=False)
                                 oldcol = col
                                 oldrow = row
-                                col,row = self._detect_laser_camera_2d_point(self.visible_thresh)
+                                col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
                                 #we lost the pixel
                                 if not col:
                                     col = oldcol
@@ -900,7 +903,7 @@ class Calib:
                     self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
                     continue
                 
-                col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
+                col,row,lum = self._detect_laser_camera_2d_point(self.laser_thresh)
                 if col != None:
                     self.laser_proxy_power(False)
                     
@@ -941,7 +944,7 @@ class Calib:
                 xyz,pts,nvisible,reproj = self._detect_3d_point(self.runner, self.laser_thresh)
                 #always do this detection to keep the basler camera updated... even
                 #if there is a chance we throw away the result
-                col,row = self._detect_laser_camera_2d_point(self.laser_thresh)
+                col,row,lum = self._detect_laser_camera_2d_point(self.laser_thresh)
 
                 if xyz == None:
                     rospy.loginfo("no 3d point (visible in %d cams, reproj error: %f)" % (nvisible,reproj))
@@ -975,7 +978,7 @@ class Calib:
                         row=self._vdispinfo["projrow"],
                         col=self._vdispinfo["projcol"])
 
-                col,row = self._detect_laser_camera_2d_point(
+                col,row,lum = self._detect_laser_camera_2d_point(
                                     self.visible_thresh,
                                     msgprefix="attempt %d " % self._vdispinfo["currattempt"])
 
@@ -1057,7 +1060,9 @@ class Calib:
                                                  0),
                                 pixel_ptc_projector=(col,
                                                      row,
-                                                     0))
+                                                     0),
+                                pixel_ptc_projector_luminance=lum
+                        )
 
                         self._vdispinfo["pointsneeded"] -= 1
                         if self._vdispinfo["pointsneeded"] > 0:

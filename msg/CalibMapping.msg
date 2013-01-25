@@ -7,3 +7,4 @@ float32 tilt
 geometry_msgs/Point32 pixel_projector
 geometry_msgs/Point32 pixel_ptc_laser
 geometry_msgs/Point32 pixel_ptc_projector
+float32 pixel_ptc_projector_luminance

@@ -106,7 +106,7 @@ class DotBGFeatureDetector:
 
     def detect(self, imarr, thresh=None):
         """
-        returns in matrix coordinates: row, col
+        returns in matrix coordinates: [row, col], dmax
         """
         if not thresh:
             thresh = self._thresh
