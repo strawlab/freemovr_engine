@@ -85,9 +85,7 @@ virtual void post_init(void) {
 
 	create_HUD_group(512, 512, texture); // Initial guess for width and height will be fixed upon call to resize().
 
-    osg::ref_ptr<osg::Node> drawn_geometry_node = load_osg_file("Stimulus3DShaderDemo.osg");
-
-    osg::StateSet* state = drawn_geometry_node->getOrCreateStateSet();
+    osg::StateSet* state = _group->getOrCreateStateSet();
     state->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 
     osg::Program* MyProgram;
@@ -105,13 +103,15 @@ virtual void post_init(void) {
     load_shader_source( MyFragObj, "PinholeDisplay.frag" );
 
     state->setAttributeAndModes(MyProgram, osg::StateAttribute::ON);
-    example_param_uniform = new osg::Uniform( osg::Uniform::FLOAT, "example_param" );
-    state->addUniform( example_param_uniform );
 
-    _group = new osg::Group;
-    _group->addChild(drawn_geometry_node);
-    _group->setName("Stimulus3DShaderDemo._group");
+    modelview = new osg::Uniform( osg::Uniform::FLOAT_MAT4, "modelview" );
+	modelview->set( osg::Matrix::identity() );
+    state->addUniform( modelview );
 
+    projection = new osg::Uniform( osg::Uniform::FLOAT_MAT4, "projection" );
+	//projection->set()
+	projection->set( osg::Matrix::identity() );
+    state->addUniform( projection );
   }
 
 void resized(int width,int height) {
@@ -197,7 +197,7 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 private:
   osg::ref_ptr<osg::Group> _group;
   osg::ref_ptr<osg::Geode> _geode;
-  osg::Uniform* example_param_uniform;
+  osg::Uniform* modelview, *projection;
 };
 
 
