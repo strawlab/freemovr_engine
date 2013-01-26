@@ -90,17 +90,13 @@ virtual void post_init(void) {
 
     osg::Program* MyProgram;
     osg::Shader*  MyVertObj;
-    osg::Shader*  MyFragObj;
 
     MyProgram = new osg::Program;
     MyProgram->setName( "MyProgram" );
     MyVertObj = new osg::Shader( osg::Shader::VERTEX );
-    MyFragObj = new osg::Shader( osg::Shader::FRAGMENT );
-    MyProgram->addShader( MyFragObj );
     MyProgram->addShader( MyVertObj );
 
     load_shader_source( MyVertObj, "PinholeDisplay.vert" );
-    load_shader_source( MyFragObj, "PinholeDisplay.frag" );
 
     state->setAttributeAndModes(MyProgram, osg::StateAttribute::ON);
 
