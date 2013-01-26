@@ -318,7 +318,7 @@ cdef class MyNode:
                     if self._mode_change is not None:
                         rospy.loginfo('got latched simulus mode %s' % self._mode_change)
                         break
-        
+
         with self._mode_lock:
             if self._mode_change is None:
                 self._mode_change = 'Stimulus3DDemo'

@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--reset-stimulus', action='store_true',
                         help='reset the display servers')
-   
+
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
