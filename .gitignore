@@ -1,10 +1,2 @@
-*.pyc
-bin
 build
-cfg/*.cfgc
-cfg/cpp
-docs
-lib
-msg_gen
-src/flyvr
-srv_gen
+*.pyc
