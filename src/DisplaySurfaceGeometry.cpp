@@ -279,21 +279,17 @@ osg::Vec3 parse_vec3( json_t *root) {
 	return osg::Vec3(x,y,z);
 }
 
-DisplaySurfaceGeometry::DisplaySurfaceGeometry(const char *json) {
+DisplaySurfaceGeometry::DisplaySurfaceGeometry(const char *fname) {
 	json_t *root;
 	json_error_t error;
 
-	root = json_loads(json, 0, &error);
+	root = json_load_file(fname, 0, &error);
 	if(!root) {
         std::ostringstream os;
         os << "Could not load json line " << error.line << ": " << error.text;
 		throw std::runtime_error(os.str());
 	}
 
-	parse_json(root);
-}
-
-DisplaySurfaceGeometry::DisplaySurfaceGeometry(json_t *root) {
 	parse_json(root);
 }
 

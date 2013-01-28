@@ -17,8 +17,7 @@ public:
 
 class DisplaySurfaceGeometry {
 public:
-	DisplaySurfaceGeometry(json_t *json);
-	DisplaySurfaceGeometry(const char *json);
+	DisplaySurfaceGeometry(const char *fname);
 	osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors=false);
 	KeyPointMap get_key_points();
 private:
