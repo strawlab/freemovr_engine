@@ -31,6 +31,7 @@ import pcl
 X_INDEX = 0
 Y_INDEX = 1
 Z_INDEX = 2
+L_INDEX = 3
 
 class Calibrator:
     def __init__(self, visualize=True, new_reconstructor="", mask_out=False, update_parameter_server=True):
@@ -84,22 +85,27 @@ class Calibrator:
                         cv2.namedWindow(key)
 
                 finally:
-                    pixel = np.array((msg.pixel_projector.x, msg.pixel_projector.y))
+                    #support old bag files that lacked luminace information
+                    try:
+                        luminance = msg.pixel_ptc_projector_luminance
+                    except AttributeError:
+                        luminance = 255
 
-                    pts = []
-                    for projpt in msg.points:
-                        pts.append( (projpt.camera,(projpt.pixel.x,projpt.pixel.y)) )
+                    pixel = np.array((msg.pixel_projector.x, msg.pixel_projector.y))
 
                     #recompute 3D position
                     if self.flydra:
+                        pts = []
+                        for projpt in msg.points:
+                            pts.append( (projpt.camera,(projpt.pixel.x,projpt.pixel.y)) )
                         xyz = self.flydra.find3d(pts,return_line_coords=False, undistort=True)
                     else:
                         xyz = np.array((msg.position.x,msg.position.y,msg.position.z))
 
                     try:
-                        self.data[msg.display_server][msg.vdisp].append( [xyz,pixel,pts] )
+                        self.data[msg.display_server][msg.vdisp].append( [xyz,pixel,luminance] )
                     except KeyError:
-                        self.data[msg.display_server][msg.vdisp] = [ [xyz,pixel,pts] ]
+                        self.data[msg.display_server][msg.vdisp] = [ [xyz,pixel,luminance] ]
 
     def interpolate_points(self, xyz_arr, points_2d_arr, dsc, interp_method):
         #interpolation in XYZ and not in texcordinates
@@ -175,7 +181,7 @@ class Calibrator:
         all_3d = []
         for ds in self.data:
             for vdisp in self.data[ds]:
-                for xyz,pixel,pts in self.data[ds][vdisp]:
+                for xyz,pixel,lum in self.data[ds][vdisp]:
                     all_3d.append(xyz)
 
         create_point_cloud_message_publisher(all_3d,'/calibration/pre_smooth',
@@ -189,7 +195,7 @@ class Calibrator:
         all_3d = []
         for ds in self.data:
             for vdisp in self.data[ds]:
-                for xyz,pixel,pts in self.data[ds][vdisp]:
+                for xyz,pixel,lum in self.data[ds][vdisp]:
                     sxyz = smoothed[i]
                     xyz[0] = sxyz[0]; xyz[1] = sxyz[1]; xyz[2] = sxyz[2]
                     all_3d.append(xyz)
@@ -199,13 +205,15 @@ class Calibrator:
             publish_now=True, latch=True)
 
 
-    def do_exr(self, interp_method):
+    def do_exr(self, interp_method, do_luminance):
 
         all_3d = []
         for ds in self.data:
             if self.visualize:
                 cv2.namedWindow(ds)
                 img = self.cvimgs[ds]
+
+            dsc = self.dscs[ds]
 
             #FIXME: change to using masked arrays...
             ds_u = np.zeros((768,1024))
@@ -216,24 +224,30 @@ class Calibrator:
             ds_v_mask = np.zeros((768,1024), dtype=np.bool)
             ds_vdisp_v_mask = np.ones((768,1024), dtype=np.bool)
 
-            dsc = self.dscs[ds]
+            ds_l = np.zeros((768,1024))
+            ds_l_mask = np.zeros((768,1024), dtype=np.bool)
+            ds_vdisp_l_mask = np.ones((768,1024), dtype=np.bool)
 
             ds_3d = []
             for vdisp in self.data[ds]:
 
                 ds_vdisp_u_mask.fill(True)
                 ds_vdisp_v_mask.fill(True)
+                ds_vdisp_l_mask.fill(True)
+
                 vdisp_3d = []
                 vdisp_2d = []
+                vdisp_lum = []
 
                 if self.visualize:
-                    arr = np.zeros((768,1024,3))
+                    arr = np.zeros((768,1024,4))
                     arr.fill(np.nan)
 
-                for xyz,pixel,pts in self.data[ds][vdisp]: #just do one vdisp
+                for xyz,pixel,lum in self.data[ds][vdisp]: #just do one vdisp
 
                     vdisp_2d.append(pixel)
                     vdisp_3d.append(xyz)
+                    vdisp_lum.append(lum)
 
                     if self.visualize:
                         col = pixel[0]
@@ -243,20 +257,37 @@ class Calibrator:
                         arr[row-2:row+2,col-2:col+2,X_INDEX] = xyz[0]
                         arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]
                         arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
+                        arr[row-2:row+2,col-2:col+2,L_INDEX] = lum
 
+                vdisp_lum_arr = np.array(vdisp_lum, dtype=np.float)
+                vdisp_2d_arr = np.array(vdisp_2d, dtype=np.float)
+                vdisp_3d_arr = np.array(vdisp_3d, dtype=np.float)
+
+                #construct the geometry (uv) <-> 3d (xyz) mapping.
                 u0,v0 = self.interpolate_points(
-                            np.array(vdisp_3d, dtype=np.float),
-                            np.array(vdisp_2d, dtype=np.float),
-                            self.dscs[ds],
+                            vdisp_3d_arr,
+                            vdisp_2d_arr,
+                            dsc,
                             interp_method)
+
+                #interpolate luminance
+                l0 = interpolate_pixel_cords(
+                            points_2d=vdisp_2d_arr,
+                            values_1d=vdisp_lum_arr,
+                            img_width=dsc.width,
+                            img_height=dsc.height,
+                            method=interp_method)
 
                 ds_vdisp_u_mask[np.isnan(u0)] = False
                 ds_u_mask |= ds_vdisp_u_mask
                 ds_vdisp_v_mask[np.isnan(v0)] = False
                 ds_v_mask |= ds_vdisp_v_mask
+                ds_vdisp_l_mask[np.isnan(l0)] = False
+                ds_l_mask |= ds_vdisp_l_mask
 
                 ds_u += np.nan_to_num(u0)
                 ds_v += np.nan_to_num(v0)
+                ds_l += np.nan_to_num(l0)
 
                 ds_3d.extend(vdisp_3d)
 
@@ -267,6 +298,8 @@ class Calibrator:
             fn = '%s.exr' % ds
             ds_u[~ds_u_mask] = -1
             ds_v[~ds_v_mask] = -1
+            ds_l[~ds_l_mask] = -1
+
             exrpath = decode_url(fn)
 
             comment = '%s created from %s' % (fn, ", ".join(self.filenames))
@@ -277,9 +310,10 @@ class Calibrator:
             comment += '. Interpolation method %s' % interp_method
             rospy.loginfo(comment)
 
+
             exr.save_exr(
                     exrpath,
-                    r=ds_u, g=ds_v, b=np.zeros_like(ds_u),
+                    r=ds_u, g=ds_v, b=ds_l if do_luminance else np.zeros_like(ds_u),
                     comments=comment)
 
             #save the resulting geometry to the parameter server
@@ -298,6 +332,11 @@ class Calibrator:
                 plt.imshow(ds_v)
                 plt.colorbar()
                 plt.title('%s V' % ds)
+
+                plt.figure()
+                plt.imshow(ds_l)
+                plt.colorbar()
+                plt.title('%s L' % ds)
 
             create_pcd_file_from_points(
                 decode_url('/tmp/%sflydra3d.pcd' % ds),
@@ -320,6 +359,9 @@ if __name__ == "__main__":
     parser.add_argument(
         '--visualize', action='store_true', default=False, help=\
         "show plots")
+    parser.add_argument(
+        '--luminance', action='store_true', default=False, help=\
+        "also blen luminance")
     parser.add_argument(
         '--update', action='store_true', default=False, help=\
         "update display server(s) with new exr data")
@@ -372,7 +414,7 @@ if __name__ == "__main__":
     if args.smooth:
         cal.smooth(args.smooth)
 
-    cal.do_exr(args.interpolation)
+    cal.do_exr(args.interpolation, args.luminance)
 
     if cal.visualize:
         plt.show()
