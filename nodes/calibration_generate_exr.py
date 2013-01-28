@@ -102,7 +102,9 @@ class Calibrator:
                         self.data[msg.display_server][msg.vdisp] = [ [xyz,pixel,pts] ]
 
     def interpolate_points(self, xyz_arr, points_2d_arr, dsc, interp_method):
-        #interpolation in XYZ to stop filter / wraparound effects
+        #interpolation in XYZ and not in texcordinates
+        #to stop filter / wraparound effects (i.e. tex-coordinates in U/V)
+        #wrap 0->1->0
 
         x = xyz_arr[:,0]
         y = xyz_arr[:,1]
