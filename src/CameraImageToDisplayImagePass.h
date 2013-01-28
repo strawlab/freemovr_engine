@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 
 #ifndef CAMERA_IMAGE_TO_DISPLAY_IMAGE_PASS_H
 #define CAMERA_IMAGE_TO_DISPLAY_IMAGE_PASS_H
