@@ -133,15 +133,21 @@ class CylinderPointCloudTransformer(PointCloudTransformer):
 def interpolate_pixel_cords(points_2d, values_1d, img_width, img_height, method='cubic', fill_value=np.nan):
     assert points_2d.ndim == 2
     assert values_1d.ndim == 1
+    assert points_2d.shape[0] == values_1d.shape[0]
 
-    grid_y, grid_x = np.mgrid[0:img_height, 0:img_width]
-
-    res = scipy.interpolate.griddata(
-                points_2d,
-                values_1d,
-                (grid_x, grid_y),
-                method=method,
-                fill_value=fill_value)
+    if method == "none":
+        res = np.zeros((img_height, img_width), dtype=np.float)
+        res.fill(fill_value)
+        for p,v in zip(points_2d, values_1d):
+            res[p[1],p[0]] = v
+    else:
+        grid_y, grid_x = np.mgrid[0:img_height, 0:img_width]
+        res = scipy.interpolate.griddata(
+                    points_2d,
+                    values_1d,
+                    (grid_x, grid_y),
+                    method=method,
+                    fill_value=fill_value)
 
     return res
 
