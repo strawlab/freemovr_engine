@@ -22,7 +22,7 @@ FIND_PACKAGE(jansson)
 SET(OSG_LIBS ${OPENTHREADS_LIBRARIES} ${OSG_LIBRARIES} ${OSGVIEWER_LIBRARIES} ${OSGGA_LIBRARIES} ${OSGDB_LIBRARIES} ${OSGWIDGET_LIBRARIES} ${OSGUTIL_LIBRARIES} ${OSGTEXT_LIBRARIES})
 
 SET(CALIB_TEST_SOURCES
-  opengl_and_hartleyzisserman/calib_test_osg.cpp
+  src/calib_test_osg.cpp
   src/DisplaySurfaceGeometry.cpp
   src/util.cpp
   src/camera_model.cpp)
@@ -35,5 +35,5 @@ INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
 ADD_EXECUTABLE(calib_test_osg ${CALIB_TEST_SOURCES})
 TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
 
-ADD_EXECUTABLE(calib_test_opengl opengl_and_hartleyzisserman/calib_test_opengl.c)
+ADD_EXECUTABLE(calib_test_opengl src/calib_test_opengl.c)
 TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
