@@ -140,21 +140,28 @@ class Calibrator:
 
     def show_vdisp_points(self, arr, ds, u0, v0, vdisp):
         plt.figure()
-        plt.subplot(211)
+
+        plt.subplot(2,3,1)
         plt.imshow(arr[:,:,X_INDEX])
         plt.colorbar()
         plt.title('%s/%s X' % (ds,vdisp))
-        plt.subplot(212)
+
+        plt.subplot(2,3,2)
+        plt.imshow(arr[:,:,Y_INDEX])
+        plt.colorbar()
+        plt.title('%s/%s Y' % (ds,vdisp))
+
+        plt.subplot(2,3,3)
+        plt.imshow(arr[:,:,Z_INDEX])
+        plt.colorbar()
+        plt.title('%s/%s Z' % (ds,vdisp))
+
+        plt.subplot(2,3,4)
         plt.imshow(u0)
         plt.title('%s/%s U' % (ds,vdisp))
         plt.colorbar()
 
-        plt.figure()
-        plt.subplot(211)
-        plt.imshow(arr[:,:,Y_INDEX])
-        plt.colorbar()
-        plt.title('%s/%s Y' % (ds,vdisp))
-        plt.subplot(212)
+        plt.subplot(2,3,5)
         plt.imshow(v0)
         plt.colorbar()
         plt.title('%s/%s V' % (ds,vdisp))
