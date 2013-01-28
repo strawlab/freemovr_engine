@@ -34,3 +34,6 @@ TARGET_LINK_LIBRARIES(calib_test_osg ${OSG_LIBS} ${JANSSON_LIBRARIES})
 
 ADD_EXECUTABLE(calib_test_opengl src/calib_test_opengl.c)
 TARGET_LINK_LIBRARIES(calib_test_opengl ${GLU_LIBRARY} ${GLUT_LIBRARIES})
+
+ADD_EXECUTABLE(calib_test_glsl src/calib_test_glsl.c)
+TARGET_LINK_LIBRARIES(calib_test_glsl ${GLU_LIBRARY} ${GLUT_LIBRARIES} ${GLSL_LIBRARIES})
