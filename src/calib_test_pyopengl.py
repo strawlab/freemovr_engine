@@ -56,7 +56,8 @@ class PointCylinder(object):
 def main():
     global calib, cyl
 
-    data_dir = os.path.split(os.path.abspath(__file__))[0]
+    src_dir = os.path.split(os.path.abspath(__file__))[0]
+    data_dir = os.path.join(src_dir,'..','data')
     pmat = np.loadtxt( os.path.join(data_dir, 'cameramatrix.txt') )
     calib = decompose(pmat)
     width = 752
