@@ -146,7 +146,8 @@ class MyAppWindow(pyglet.window.Window):
         return pyglet.event.EVENT_HANDLED
 
 def main():
-    data_dir = os.path.split(os.path.abspath(__file__))[0]
+    src_dir = os.path.split(os.path.abspath(__file__))[0]
+    data_dir = os.path.join(src_dir,'..','data')
     pmat = np.loadtxt( os.path.join(data_dir, 'cameramatrix.txt') )
     image_fname = os.path.join(data_dir, 'luminance.png' )
     window = MyAppWindow(pmat=pmat,image_fname=image_fname,resizable=True)

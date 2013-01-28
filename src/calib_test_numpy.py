@@ -24,7 +24,8 @@ def main():
 
     window_coords = 'y down'
 
-    data_dir = os.path.split(os.path.abspath(__file__))[0]
+    src_dir = os.path.split(os.path.abspath(__file__))[0]
+    data_dir = os.path.join(src_dir,'..','data')
     pmat = np.loadtxt( os.path.join(data_dir, 'cameramatrix.txt') )
     luminance = scipy.misc.imread( os.path.join(data_dir, 'luminance.png' ) )
     img_height, img_width = luminance.shape
