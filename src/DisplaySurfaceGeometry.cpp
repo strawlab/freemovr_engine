@@ -85,12 +85,12 @@ public:
                 }
 
             if (!texcoord_colors) {
-                colors->push_back(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
+                colors->push_back(osg::Vec4(0.0f,1.0f,0.0f,1.0f));
             }
             this_geom->setVertexArray(vertices);
             this_geom->setNormalArray(normals);
             this_geom->setTexCoordArray(0,tc);
-            this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUAD_STRIP,0,2*_n_segments+2));
+            this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS,0,2*_n_segments+2));
             this_geom->setColorArray(colors.get());
             if (texcoord_colors) {
                 this_geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
