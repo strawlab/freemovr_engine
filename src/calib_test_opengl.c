@@ -125,7 +125,7 @@ unsigned int PointCylinder() {
 
     vertices = malloc(3*n_segs*2*sizeof(float));
     colors = malloc(3*n_segs*2*sizeof(float));
-    indices = malloc(3*n_segs*2*sizeof(unsigned int));
+    indices = malloc(n_segs*2*sizeof(unsigned int));
     len_indices=n_segs*2;
 
     make_cyl_data( n_segs, vertices, colors, indices);
