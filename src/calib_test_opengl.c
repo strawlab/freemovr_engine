@@ -48,7 +48,6 @@ void on_draw() {
 void on_resize(int width, int height) {
 	int x0, y0;
 	float* m;
-	int i;
 
 	x0 = 0;
 	y0 = 0;
@@ -169,7 +168,7 @@ int main(int argc, char* argv[]) {
 				  -0.19730308528412435, -0.4296835651435702, -0.88116032955579493); // up
 	}
 	glutDisplayFunc(on_draw);
-	on_resize(width,height);
+	glutReshapeFunc(on_resize);
 	glutMainLoop();
 	return 0;
 }
