@@ -205,7 +205,29 @@ class Calibrator:
             publish_now=True, latch=True)
 
 
-    def do_exr(self, interp_method, do_luminance):
+    def do_exr(self, interp_method, do_luminance, do_xyz=False):
+        exrs = {ds:{} for ds in self.data}
+
+        if do_xyz is True:
+            do_xyz = tuple("xyz")
+        else:
+            do_xyz = tuple()
+
+        def alloc_exr_mask(ds, name):
+            dsc = self.dscs[ds]
+            exrs[ds][name] = {
+                "exr":np.zeros((768,1024)),
+                "dsmask":np.zeros((768,1024), dtype=np.bool),
+                "vdispmask":np.ones((768,1024), dtype=np.bool)
+            }
+
+        def update_mask(ds, name, val):
+            exrs[ds][name]["vdispmask"][np.isnan(val)] = False
+            exrs[ds][name]["dsmask"] |= exrs[ds][name]["vdispmask"]
+            exrs[ds][name]["exr"] += np.nan_to_num(val)
+
+        def fill_masked_exr(ds, name, val):
+            exrs[ds][name]["exr"][~exrs[ds][name]["dsmask"]] = val
 
         all_3d = []
         for ds in self.data:
@@ -215,25 +237,20 @@ class Calibrator:
 
             dsc = self.dscs[ds]
 
-            #FIXME: change to using masked arrays...
-            ds_u = np.zeros((768,1024))
-            ds_u_mask = np.zeros((768,1024), dtype=np.bool)
-            ds_vdisp_u_mask = np.ones((768,1024), dtype=np.bool)
-
-            ds_v = np.zeros((768,1024))
-            ds_v_mask = np.zeros((768,1024), dtype=np.bool)
-            ds_vdisp_v_mask = np.ones((768,1024), dtype=np.bool)
-
-            ds_l = np.zeros((768,1024))
-            ds_l_mask = np.zeros((768,1024), dtype=np.bool)
-            ds_vdisp_l_mask = np.ones((768,1024), dtype=np.bool)
+            alloc_exr_mask(ds, "u")
+            alloc_exr_mask(ds, "v")
+            alloc_exr_mask(ds, "l")
+            for ax in do_xyz:
+                alloc_exr_mask(ds, ax)
 
             ds_3d = []
             for vdisp in self.data[ds]:
 
-                ds_vdisp_u_mask.fill(True)
-                ds_vdisp_v_mask.fill(True)
-                ds_vdisp_l_mask.fill(True)
+                exrs[ds]["u"]["vdispmask"].fill(True)
+                exrs[ds]["v"]["vdispmask"].fill(True)
+                exrs[ds]["l"]["vdispmask"].fill(True)
+                for ax in do_xyz:
+                    exrs[ds][ax]["vdispmask"].fill(True)
 
                 vdisp_3d = []
                 vdisp_2d = []
@@ -278,29 +295,28 @@ class Calibrator:
                             img_height=dsc.height,
                             method=interp_method)
 
-                ds_vdisp_u_mask[np.isnan(u0)] = False
-                ds_u_mask |= ds_vdisp_u_mask
-                ds_vdisp_v_mask[np.isnan(v0)] = False
-                ds_v_mask |= ds_vdisp_v_mask
-                ds_vdisp_l_mask[np.isnan(l0)] = False
-                ds_l_mask |= ds_vdisp_l_mask
+                update_mask(ds, "u", u0)
+                update_mask(ds, "v", v0)
+                update_mask(ds, "l", l0)
 
-                ds_u += np.nan_to_num(u0)
-                ds_v += np.nan_to_num(v0)
-                ds_l += np.nan_to_num(l0)
+                #save out maps in exr for tony
+                for axnum,ax in enumerate(do_xyz):
+                    update_mask(ds, ax,
+                        interpolate_pixel_cords(
+                        points_2d=vdisp_2d_arr,
+                        values_1d=vdisp_3d_arr[:,axnum],
+                        img_width=dsc.width,
+                        img_height=dsc.height,
+                        method="none")
+                    )
 
                 ds_3d.extend(vdisp_3d)
 
                 if self.visualize:
                     self.show_vdisp_points(arr, ds, u0, v0, vdisp)
 
-            #save the exr file, -1 means no data, not NaN
+            #comment describes exacltly how this exr was generated
             fn = '%s.%sexr' % (ds, "nointerp." if interp_method == "none" else "")
-            ds_u[~ds_u_mask] = -1
-            ds_v[~ds_v_mask] = -1
-            ds_l[~ds_l_mask] = -1
-
-            exrpath = decode_url(fn)
 
             comment = '%s created from %s' % (fn, ", ".join(self.filenames))
             if self.smoothed is not None:
@@ -310,11 +326,25 @@ class Calibrator:
             comment += '. Interpolation method %s' % interp_method
             rospy.loginfo(comment)
 
+            #in our shader convention -1 means no data, not NaN
+            fill_masked_exr(ds, "u", -1)
+            fill_masked_exr(ds, "v", -1)
+            fill_masked_exr(ds, "l", -1)
 
+            exrpath = decode_url(fn)
             exr.save_exr(
                     exrpath,
-                    r=ds_u, g=ds_v, b=ds_l if do_luminance else np.zeros_like(ds_u),
+                    r=exrs[ds]["u"]["exr"],
+                    g=exrs[ds]["v"]["exr"],
+                    b=exrs[ds]["l"]["exr"] if do_luminance else np.zeros_like(exrs[ds]["u"]["exr"]),
                     comments=comment)
+
+            if do_xyz:
+                exr.save_exr(
+                        decode_url("%s.xyz.exr" % ds),
+                        r=exrs[ds]["x"]["exr"],
+                        g=exrs[ds]["y"]["exr"],
+                        b=exrs[ds]["z"]["exr"])
 
             #save the resulting geometry to the parameter server
             if self.update_parameter_server:
@@ -324,17 +354,17 @@ class Calibrator:
 
             if self.visualize:
                 plt.figure()
-                plt.imshow(ds_u)
+                plt.imshow(exrs[ds]["u"]["exr"])
                 plt.colorbar()
                 plt.title('%s U' % ds)
 
                 plt.figure()
-                plt.imshow(ds_v)
+                plt.imshow(exrs[ds]["v"]["exr"])
                 plt.colorbar()
                 plt.title('%s V' % ds)
 
                 plt.figure()
-                plt.imshow(ds_l)
+                plt.imshow(exrs[ds]["l"]["exr"])
                 plt.colorbar()
                 plt.title('%s L' % ds)
 
