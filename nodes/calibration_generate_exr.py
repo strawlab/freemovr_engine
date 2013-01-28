@@ -295,7 +295,7 @@ class Calibrator:
                     self.show_vdisp_points(arr, ds, u0, v0, vdisp)
 
             #save the exr file, -1 means no data, not NaN
-            fn = '%s.exr' % ds
+            fn = '%s.%sexr' % (ds, "nointerp." if interp_method == "none" else "")
             ds_u[~ds_u_mask] = -1
             ds_v[~ds_v_mask] = -1
             ds_l[~ds_l_mask] = -1
@@ -373,7 +373,7 @@ if __name__ == "__main__":
         '--smooth', type=float, help=\
         "amount to smooth by, see pcl.filter_msl")
     parser.add_argument(
-        '--interpolation', type=str, default="linear", choices=["nearest", "linear","cubic"], help=\
+        '--interpolation', type=str, default="linear", choices=["nearest","linear","cubic","none"], help=\
         "interpolation method in (see scipy.interpolate.griddata)")
     parser.add_argument(
         '--no-wait-display-server', action='store_true', default=False, help=\
