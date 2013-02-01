@@ -14,6 +14,9 @@ import numpy as np
 # globals
 rospack = rospkg.RosPack()
 re_ros_path = re.compile(r'\$\(find (.*)\)')
+re_array = re.compile(r'(.+)\[(\d*)\]$')
+
+BASIC_TYPES = ['float64','float32','string','uint32','uint8','bool']
 
 def _findrepl(matchobj):
     ros_pkg_name = matchobj.group(1)
@@ -30,7 +33,10 @@ def rosmsg2dict(msg):
     else:
         assert isinstance(msg, roslib.message.Message)
         for varname, vartype in zip(msg.__slots__, msg._slot_types):
-            if vartype in ['float64','float32','string','uint32','uint8','bool']:
+
+            matchobj = re_array.search(vartype)
+
+            if vartype in BASIC_TYPES:
                 plain_dict[varname] = getattr(msg,varname)
             elif vartype == 'Header':
                 h = getattr(msg,varname)
@@ -41,6 +47,9 @@ def rosmsg2dict(msg):
             elif vartype == 'uint8[]':
                 # since ROS message keys have to be valid Python identifiers, we can put metadata here
                 plain_dict[varname + ' (base64)'] = base64.b64encode( getattr(msg,varname))
+            elif matchobj and matchobj.group(1) in BASIC_TYPES:
+                # this must follow 'uint8[]' special case above
+                plain_dict[varname] = getattr(msg,varname)
             elif vartype == 'time':
                 plain_dict[varname] = rosmsg2dict(getattr(msg,varname))
             elif vartype == 'flyvr/ROSPath':
@@ -49,6 +58,9 @@ def rosmsg2dict(msg):
                 v = getattr(msg,varname)
                 plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
             elif vartype == 'geometry_msgs/Quaternion':
+                v = getattr(msg,varname)
+                plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
+            elif vartype == 'geometry_msgs/Vector3':
                 v = getattr(msg,varname)
                 plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
             else:
