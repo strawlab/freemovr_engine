@@ -8,7 +8,7 @@
 #include <osg/ref_ptr>
 #include <osg/Texture2D>
 
-#include "DisplaySurfaceGeometry.h"
+#include "DisplaySurfaceGeometry.hpp"
 #include "flyvr/ResourceLoader.hpp"
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {

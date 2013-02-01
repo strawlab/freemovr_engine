@@ -45,7 +45,7 @@
 #include <jansson.h>
 
 #include "util.h"
-#include "DisplaySurfaceGeometry.h"
+#include "DisplaySurfaceGeometry.hpp"
 #include "ProjectCubemapToGeometryPass.h"
 #include "TexturedGeometryToCameraImagePass.h"
 #include "CameraImageToDisplayImagePass.h"
