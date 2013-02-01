@@ -25,6 +25,9 @@ def _findrepl(matchobj):
 def fixup_path( orig_path ):
     return re_ros_path.sub( _findrepl, orig_path )
 
+def convert_attrs( v ):
+    return dict( (attr,getattr(v,attr)) for attr in v.__slots__)
+
 def rosmsg2dict(msg):
     plain_dict = {}
     if isinstance(msg, roslib.rostime.Time):
@@ -54,15 +57,13 @@ def rosmsg2dict(msg):
                 plain_dict[varname] = rosmsg2dict(getattr(msg,varname))
             elif vartype == 'flyvr/ROSPath':
                 plain_dict[varname] = fixup_path(getattr(msg,varname).data)
-            elif vartype == 'geometry_msgs/Point':
+            elif vartype in ['geometry_msgs/Point',
+                             'geometry_msgs/Quaternion',
+                             'geometry_msgs/Vector3',
+                             'sensor_msgs/RegionOfInterest',
+                             ]:
                 v = getattr(msg,varname)
-                plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
-            elif vartype == 'geometry_msgs/Quaternion':
-                v = getattr(msg,varname)
-                plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
-            elif vartype == 'geometry_msgs/Vector3':
-                v = getattr(msg,varname)
-                plain_dict[varname] = dict( (attr,getattr(v,attr)) for attr in v.__slots__)
+                plain_dict[varname] = convert_attrs(v)
             else:
                 raise ValueError('unknown msg slot type: %s'%vartype)
     return plain_dict
