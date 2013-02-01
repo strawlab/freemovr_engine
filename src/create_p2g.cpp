@@ -5,7 +5,7 @@
 
 #include "util.h"
 #include "exrutil.h"
-#include "DisplaySurfaceGeometry.h"
+#include "DisplaySurfaceGeometry.hpp"
 #include "camera_model.h"
 
 #include "TexturedGeometryToCameraImagePass.h"
