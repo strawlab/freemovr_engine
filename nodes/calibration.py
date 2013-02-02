@@ -548,7 +548,7 @@ class Calib:
                 if dist > self.laser_expected_detect_hist:
                     rospy.logwarn("misdetected laser location expected:%s got:%s (dist:%.1f) " % (
                         expected,actual,dist))
-                    row = col = None
+                    row = col = luminance = None
             elif thresh == self.visible_thresh:
                 msg = msgprefix + "PTC visible"
             else:
