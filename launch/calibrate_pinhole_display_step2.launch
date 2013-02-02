@@ -3,7 +3,7 @@
   <node name="ds" pkg="flyvr" type="display_server" args="--mode=vr_display">
   </node>
 
-  <node type="drive_extrinsic_display_calibration" pkg="flyvr" name="drive" args="$(find flyvr)/data/sample/pinhole-intrinsics.yaml arg2" />
+  <node type="drive_extrinsic_display_calibration" pkg="flyvr" name="drive" args="$(find flyvr)/data/sample/pinhole-intrinsics.yaml $(find flyvr)/data/sample/geom.json" />
 
   <node type="joypose" pkg="flyvr" name="joypose" />
 
