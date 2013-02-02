@@ -76,3 +76,19 @@ std::string parse_string(json_t* root) {
 
     return json_string_value(data_json);
 }
+
+std::vector<double> parse_vector_double(json_t* root) {
+   json_t *data_json;
+   std::vector<double> result;
+
+   flyvr_assert(json_is_array(root));
+
+   for (size_t i=0; i<json_array_size(root); i++) {
+     data_json = json_array_get( root, i );
+     flyvr_assert(json_is_real(data_json));
+     double val = json_real_value(data_json);
+     result.push_back(val);
+   }
+
+   return result;
+}

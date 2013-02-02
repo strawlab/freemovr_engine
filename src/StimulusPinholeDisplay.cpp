@@ -4,10 +4,13 @@
 #include "base64.h"
 
 #include "Poco/ClassLibrary.h"
+#include "Poco/Path.h"
 
 #include <sstream>
 
 #include <osg/TextureRectangle>
+#include <osg/AutoTransform>
+#include <osgText/Text>
 
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
@@ -18,6 +21,58 @@
 #include <jansson.h>
 
 #include "flyvr/flyvr_assert.h"
+#include "json2osg.hpp"
+#include "DisplaySurfaceGeometry.hpp"
+
+// this function from http://stackoverflow.com/a/8098080
+std::string string_format(const std::string &fmt, ...) {
+    int size=100;
+    std::string str;
+    va_list ap;
+    while (1) {
+        str.resize(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.c_str(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size) {
+            str.resize(n);
+            return str;
+        }
+        if (n > -1)
+            size=n+1;
+        else
+            size*=2;
+    }
+}
+
+osg::Node* show_point( const osg::Vec3 position, const std::string& message ){
+	float characterSize=12;
+	float minScale=0.0;
+	float maxScale=FLT_MAX;
+
+    std::string timesFont("fonts/arial.ttf");
+
+    osgText::Text* text = new osgText::Text;
+    text->setCharacterSize(characterSize);
+    text->setText(message);
+    text->setFont(timesFont);
+    text->setAlignment(osgText::Text::CENTER_CENTER);
+
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(text);
+    geode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+
+    osg::AutoTransform* at = new osg::AutoTransform;
+    at->addChild(geode);
+
+    at->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
+    at->setAutoScaleToScreen(true);
+    at->setMinimumScale(minScale);
+    at->setMaximumScale(maxScale);
+    at->setPosition(position);
+
+    return at;
+}
 
 osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int height) {
 	osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
@@ -50,8 +105,8 @@ osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int hei
 class StimulusPinholeDisplay: public StimulusInterface
 {
 public:
-	StimulusPinholeDisplay() {
-	}
+StimulusPinholeDisplay() {
+}
 
 std::string name() const {
   return "StimulusPinholeDisplay";
@@ -77,6 +132,7 @@ void create_HUD_group(unsigned int width, unsigned int height, osg::Texture* tex
 }
 
 virtual void post_init(void) {
+
     osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle();
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
     texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
@@ -84,6 +140,9 @@ virtual void post_init(void) {
     texture->setFilter(osg::Texture::MAG_FILTER,osg::Texture::LINEAR);
 
 	create_HUD_group(512, 512, texture); // Initial guess for width and height will be fixed upon call to resize().
+
+    _geom_group = new osg::Group;
+    _group->addChild( _geom_group );
 
     osg::StateSet* state = _group->getOrCreateStateSet();
     state->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
@@ -130,72 +189,141 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
 
 std::vector<std::string> get_topic_names() const {
 	std::vector<std::string> result;
-	result.push_back( std::string("blit_images") );
+	result.push_back( std::string("/pinhole_cal/camera_info") );
+	result.push_back( std::string("/pinhole_cal/geometry_filename") );
+	result.push_back( std::string("/pinhole_cal/tf") );
 	return result;
 }
 
 std::string get_message_type(const std::string& topic_name) const {
-	flyvr_assert(topic_name=="blit_images");
-	return "flyvr.msg.FlyVRCompressedImage";
+    std::string result;
+    if (topic_name=="/pinhole_cal/camera_info") {
+        result = "sensor_msgs/CameraInfo";
+    } else if (topic_name=="/pinhole_cal/geometry_filename") {
+        result = "std_msgs/String";
+    } else if (topic_name=="/pinhole_cal/tf") {
+        result = "geometry_msgs/Transform";
+    } else {
+        std::ostringstream os;
+        os << "Unknown topic_name: " << topic_name;
+        throw std::runtime_error(os.str());
+    }
+    return result;
 }
 
 void receive_json_message(const std::string& topic_name, const std::string& json_message) {
-	flyvr_assert(topic_name=="blit_images");
-
     json_t *root;
     json_error_t error;
 
     root = json_loads(json_message.c_str(), 0, &error);
-
     if(!root) {
-		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
-		throw std::runtime_error("error in json file");
+        throw std::runtime_error(string_format(
+          "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__,
+          error.line, error.text));
     }
 
-    json_t *image_data_base64_json = json_object_get(root, "data (base64)");
-    if(!json_is_string(image_data_base64_json)){
-		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw std::runtime_error("error in json file");
-    }
-
-    json_t *image_format_json = json_object_get(root, "format");
-    if(!json_is_string(image_format_json)){
-		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw std::runtime_error("error in json file");
-    }
-
-    std::string image_data_base64( json_string_value( image_data_base64_json ) );
-    std::string image_format( json_string_value( image_format_json ));
-
-    std::string image_data = base64_decode( image_data_base64 );
-
-    json_decref(root);
-    std::istringstream iss(image_data);
-
-    osg::ref_ptr<osg::Image> image;
-	if (image_format.at(0)=='.') {
-		image_format = image_format.substr(1);
-	}
-    osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
-    if (rw) {
-		osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
-		if ( rr.success() ) {
-			image = rr.takeImage();
-			osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
-			osg::ref_ptr<osg::StateSet> ss = _group->getOrCreateStateSet();
-			ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-			return; // success
-		}
+    if (topic_name=="/pinhole_cal/camera_info") {
+        load_intrinsic_camera_parameters( root );
+    } else if (topic_name=="/pinhole_cal/geometry_filename") {
+        std::string geometry_filename = parse_string(root);
+        load_geometry_filename( geometry_filename );
+    } else if (topic_name=="/pinhole_cal/tf") {
+        load_extrinsic_camera_parameters( root );
     } else {
-		fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-		flyvr_assert(false);
-	}
-	fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-	flyvr_assert(false);
+        std::ostringstream os;
+        os << "Unknown topic_name: " << topic_name;
+        throw std::runtime_error(os.str());
+    }
 }
+
+void load_intrinsic_camera_parameters( json_t * root) {
+    json_t *data_json;
+
+    data_json = json_object_get(root, "distortion_model");
+    flyvr_assert(json_is_string(data_json));
+    std::string distortion_model = json_string_value(data_json);
+    flyvr_assert( distortion_model=="plumb_bob");
+
+    data_json = json_object_get(root, "D");
+    std::vector<double> distortion_coeffs = parse_vector_double(data_json);
+    flyvr_assert( distortion_coeffs.size() == 5 );
+
+    data_json = json_object_get(root, "K");
+    std::vector<double> intrinsic_coeffs = parse_vector_double(data_json);
+    flyvr_assert( intrinsic_coeffs.size() == 9 );
+
+    // FIXME: not done - need to set projection matrix and nonlinear warping
+
+}
+
+void load_extrinsic_camera_parameters( json_t * root) {
+    json_t *data_json;
+
+    data_json = json_object_get(root, "translation");
+    osg::Vec3 translation = parse_vec3(data_json);
+
+    data_json = json_object_get(root, "rotation");
+    osg::Quat rotation = parse_quat(data_json);
+
+    // FIXME: not done - need to set modelview matrix
+
+}
+
+void load_geometry_filename( std::string geometry_filename ) {
+    Poco::Path path = Poco::Path(geometry_filename);
+
+    if (path.getExtension() == std::string("json")) {
+        load_geometry_json( geometry_filename );
+    } else if (path.getExtension() == std::string("osg")) {
+        load_geometry_osg( geometry_filename );
+    } else {
+        std::ostringstream os;
+        os << "Unsupported geometry_filename: " << geometry_filename;
+        throw std::runtime_error(os.str());
+    }
+}
+
+void load_geometry_osg( std::string geometry_filename) {
+    osg::Node* node = osgDB::readNodeFile(geometry_filename);
+    if (node!=NULL) {
+        _group->removeChild( _geom_group );
+        _geom_group = new osg::Group;
+        _geom_group->addChild( node );
+        _group->addChild( _geom_group );
+    } else {
+        std::ostringstream os;
+        os << "OSG could not read node file: " << geometry_filename;
+        throw std::runtime_error(os.str());
+    }
+}
+
+void load_geometry_json( std::string geometry_filename ) {
+    json_error_t error;
+    json_t *json_geom;
+
+    json_geom = json_load_file(geometry_filename.c_str(), 0, &error);
+    if(!json_geom) {
+        throw std::runtime_error(string_format(
+          "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__,
+          error.line, error.text));
+    }
+
+    DisplaySurfaceGeometry* geom = new DisplaySurfaceGeometry( json_geom );
+    KeyPointMap kpm = geom->get_key_points();
+    _group->removeChild( _geom_group );
+
+    _geom_group = new osg::Group;
+    for (KeyPointMap::const_iterator ki=kpm.begin(); ki!=kpm.end(); ++ki) {
+        _geom_group->addChild( show_point( ki->second, ki->first ) );
+    }
+    _group->addChild( _geom_group );
+
+}
+
 
 private:
   osg::ref_ptr<osg::Group> _group;
+  osg::ref_ptr<osg::Group> _geom_group;
   osg::ref_ptr<osg::Geode> _geode;
   osg::Uniform* modelview, *projection;
 };
