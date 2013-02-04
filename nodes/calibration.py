@@ -519,7 +519,7 @@ class Calib:
             if features:
                 rospy.logdebug("detect: %s: %s" % (cam,repr(features)))
                 #take the first point
-                row,col = features[0]
+                row,col,lum = features[0]
                 #numpy returns int64 here, which is not serializable, and also not needed. Just
                 #convert to simple int
                 #
@@ -539,14 +539,14 @@ class Calib:
         img = imgs[self.laser_camera][:,:,0]
         features = self.laser_detector.detect(
                         img,
-                        thresh)
+                        thresh,
+                        exact_luminance=thresh != self.laser_thresh)
 
         if thresh == self.laser_thresh:
             self.laser_detector.clear_mask()
 
         if features:
-            row,col = features[0]
-            luminance = img[row,col]
+            row,col,luminance = features[0]
             if thresh == self.laser_thresh:
                 msg = msgprefix + "PTC laser"
                 expected = np.array(self.laser_expected_detect_location)
