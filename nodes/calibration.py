@@ -19,7 +19,6 @@ import numpy.linalg
 import scipy.ndimage
 import scipy.misc
 import cv,cv2
-import pprint
 import random
 
 # ROS imports
@@ -830,7 +829,8 @@ class Calib:
 
                             #we have a rough estimate, refine it                            
                             tries = 40
-                            print "ROUGH n%d" % tries,expdist,expected - np.array((col,row))
+                            if self.debug_control:
+                                rospy.loginfo("ROUGH n%d %r %r" % (tries,expdist,expected - np.array((col,row))))
                             
                             while (tries > 0):
                                 diffcol,diffrow = expected - np.array((col,row))
@@ -845,10 +845,12 @@ class Calib:
                                     col = oldcol
                                     row = oldrow
                                     tries -= 1
-                                    print "ROUGH LOST"
+                                    if self.debug_control:
+                                        rospy.loginfo("ROUGH LOST")
                                 else:
                                     fine_dist = numpy.linalg.norm(expected - np.array((col,row)))
-                                    print "FINE n%d" % tries,fine_dist,expected - np.array((col,row))
+                                    if self.debug_control:
+                                        rospy.loginfo("FINE n%d %r %r" % (tries,fine_dist,expected - np.array((col,row))))
                                     if fine_dist < 3:
                                         tries = 0
                                         found = True
@@ -856,7 +858,8 @@ class Calib:
                                         tries -= 1
                                         
                             if not found and (fine_dist < 80):
-                                print "AVERAGE DIST", fine_dist
+                                if self.debug_control:
+                                    rospy.loginfo("AVERAGE DIST %s" % fine_dist)
                                 found = True
                                         
                             break
@@ -1044,7 +1047,11 @@ class Calib:
 #                                        laser_handle,
 #                                        self._laser_handles[laser_handle])
 
-                        rospy.loginfo("FOUND CORRESPONDENCE")
+                        rospy.loginfo("FOUND CORRESPONDENCE: %s:%s@(%s,%s) -> %r" % (
+                                ds,self._vdispinfo["id"],
+                                self._vdispinfo["projcol"], self._vdispinfo["projrow"],
+                                self._vdispinfo["currxyz"]))
+
                         self.data.add_mapping(
                                 points=self._vdispinfo["currpts"],
                                 display_server=ds,
