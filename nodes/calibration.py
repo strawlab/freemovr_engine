@@ -246,10 +246,12 @@ class Calib:
         laser_camera = config["laser_camera"]
         trigger = config["trigger"]
         laser = config["laser"]
-        self.projector_sleep = config["projector_sleep"]
-        self.display_servers = config["display_servers"]
+
+        self.debug_control = "control" in debug
 
         #FIXME: make __getattr__ look into config for locals starting with cfg_
+        self.projector_sleep = config["projector_sleep"]
+        self.display_servers = config["display_servers"]
         self.mask_dir = decode_url(config["mask_dir"])
         self.ptsize = int(config["projector_point_size_px"])
         self.laser_range_pan = config["laser_range_pan"]
@@ -350,10 +352,13 @@ class Calib:
             fd = DotBGFeatureDetector(
                     cam,
                     method="med",
-                    show=show_type if (show_cameras[0] == "all" or cam in show_cameras) else "",
-                    debug=debug>1)
+                    show=show_type if (show_cameras[0] == "all" or cam in show_cameras) else "")
+            if "detection" in debug:
+                fd.enable_debug_detection()
+            if "saveimages" in debug:
+                fd.enable_debug_images("/mnt/ssd/CALIB/")
             self.tracking_cameras[cam] = fd
-            cam_handlers.append(CameraHandler(cam,debug=debug>0))
+            cam_handlers.append(CameraHandler(cam,debug="acquisition" in debug))
             rospy.loginfo("Calibrating %s" % cam)
             self._set_bg_mask(cam, fd)
         self.runner = SimultainousCameraRunner(cam_handlers)
@@ -363,10 +368,13 @@ class Calib:
         fd = DotBGFeatureDetector(
                     laser_camera,
                     method="med",
-                    show=show_type if (show_cameras[0] == "all" or laser_camera in show_cameras) else "",
-                    debug=debug>1)
+                    show=show_type if (show_cameras[0] == "all" or laser_camera in show_cameras) else "")
+        if "detection" in debug:
+            fd.enable_debug_detection()
+        if "saveimages" in debug:
+            fd.enable_debug_images("/mnt/ssd/CALIB/")
         self.laser_runner = SequentialCameraRunner(
-                                (CameraHandler(laser_camera,debug=debug>0),),
+                                (CameraHandler(laser_camera,"acquisition" in debug),),
                                 queue_depth=1)
         self.laser_detector = fd
         self.laser_mask = load_mask_image(decode_url(config["laser_camera_mask"]))
@@ -1120,8 +1128,9 @@ if __name__ == '__main__':
         help='show display servers with the given names (or "all") calibration in process',
         metavar="display_serverN", nargs='*')
     parser.add_argument(
-        '--debug', type=int, default=0,
-        help='print image debugging >0=acquisition, >1=bgdiff')
+        '--debug', type=str, default='',
+        help='comma separated list of debug domains. '
+             '[acquisition,detection,saveimages,control]')
     parser.add_argument(
         '--enable-mouse-click', action="store_true",
         help='enable mouse click point selection (CAUSES HANGS, UNSTABLE)')
@@ -1150,6 +1159,6 @@ if __name__ == '__main__':
               outdir=outdir,
               continue_calibration=args.continue_calibration,
               enable_mouse_click=args.enable_mouse_click,
-              debug=args.debug)
+              debug=args.debug.split(","))
     c.run()
 
