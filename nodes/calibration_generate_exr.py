@@ -205,7 +205,7 @@ class Calibrator:
             publish_now=True, latch=True)
 
 
-    def do_exr(self, interp_method, do_luminance, do_xyz=False):
+    def do_exr(self, interp_method, do_luminance, do_xyz):
         exrs = {ds:{} for ds in self.data}
 
         if do_xyz is True:
@@ -351,6 +351,7 @@ class Calibrator:
                 geom = self.geom.to_geom_dict()
                 dsc.set_geometry(geom)
                 dsc.set_binary_exr(exrpath)
+                rospy.loginfo("updating parameter server")
 
             if self.visualize:
                 plt.figure()
@@ -389,6 +390,9 @@ if __name__ == "__main__":
     parser.add_argument(
         '--visualize', action='store_true', default=False, help=\
         "show plots")
+    parser.add_argument(
+        '--xyz', action='store_true', default=False, help=\
+        "also generate uninterpolated exr files with xyz coordinates")
     parser.add_argument(
         '--luminance', action='store_true', default=False, help=\
         "also blen luminance")
@@ -444,7 +448,7 @@ if __name__ == "__main__":
     if args.smooth:
         cal.smooth(args.smooth)
 
-    cal.do_exr(args.interpolation, args.luminance)
+    cal.do_exr(args.interpolation, args.luminance, args.xyz)
 
     if cal.visualize:
         plt.show()
