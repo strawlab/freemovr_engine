@@ -261,7 +261,7 @@ class Calib:
         self.visible_thresh = int(config["bg_thresh_visible"])
         self.laser_thresh = int(config["bg_thresh_laser"])
         self.laser_search_size = config["laser_search_size"]
-        self.laser_need_n_points = config["laser_need_n_points"]
+        self.laser_per_point_repeat_n_times = int(config["laser_per_point_repeat_n_times"])
         
         self.flydra = flydra.reconstruct.Reconstructor(
                         cal_source=decode_url(config["tracking_calibration"]))
@@ -889,7 +889,7 @@ class Calib:
                     self._vdispinfo["width"] = self.display_servers[ds]["width"]
                     self._vdispinfo["height"] = self.display_servers[ds]["height"]
 
-                    self._vdispinfo["pointsneeded"] = int(self.laser_need_n_points)
+                    self._vdispinfo["pointsneeded"] = self.laser_per_point_repeat_n_times
                     
                     self._vdispinfo["homeattempt"] = 30
 
