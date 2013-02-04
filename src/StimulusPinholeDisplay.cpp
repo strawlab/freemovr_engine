@@ -177,6 +177,11 @@ void resized(int width,int height) {
 	_geode->removeDrawables(0,1);
 	osg::ref_ptr<osg::Geometry> this_geom = create_HUD_geom(width, height);
 	_geode->addDrawable(this_geom);
+
+    _width = width;
+    _height = height;
+
+    _reset_intrinsics();
 }
 
 osg::ref_ptr<osg::Group> get_3d_world() {
@@ -248,25 +253,71 @@ void load_intrinsic_camera_parameters( json_t * root) {
     std::vector<double> distortion_coeffs = parse_vector_double(data_json);
     flyvr_assert( distortion_coeffs.size() == 5 );
 
-    data_json = json_object_get(root, "K");
-    std::vector<double> intrinsic_coeffs = parse_vector_double(data_json);
-    flyvr_assert( intrinsic_coeffs.size() == 9 );
+    data_json = json_object_get(root, "P");
+    intrinsic_coeffs = parse_vector_double(data_json);
+    flyvr_assert( intrinsic_coeffs.size() == 12 );
 
-    // FIXME: not done - need to set projection matrix and nonlinear warping
+    _reset_intrinsics();
+}
 
+void _reset_intrinsics() {
+    // FIXME: not done - need to deal with nonlinear warping
+
+    if (intrinsic_coeffs.size() != 12) {
+        // Don't have intrinsic parameters yet.
+        return;
+    }
+
+    double K00 = intrinsic_coeffs.at(0);
+    double K01 = intrinsic_coeffs.at(1);
+    double K02 = intrinsic_coeffs.at(2);
+  //double K03 = intrinsic_coeffs.at(3);
+
+  //double K10 = intrinsic_coeffs.at(4);
+    double K11 = intrinsic_coeffs.at(5);
+    double K12 = intrinsic_coeffs.at(6);
+  //double K13 = intrinsic_coeffs.at(7);
+
+  //double K20 = intrinsic_coeffs.at(8);
+  //double K21 = intrinsic_coeffs.at(9);
+  //double K22 = intrinsic_coeffs.at(10);
+  //double K23 = intrinsic_coeffs.at(11);
+
+    double x0 = 0;
+    double y0 = 0;
+
+    double width = _width;
+    double height = _height;
+
+    // FIXME: these are hacks:
+    double znear = 1e-3;
+    double zfar = 1e3;
+
+    // See http://strawlab.org/2011/11/05/augmented-reality-with-OpenGL/
+
+    osg::Matrix P = osg::Matrix( 2*K00/width,  -2*K01/width,   (width - 2*K02 + 2*x0)/width,                            0,
+                                           0, -2*K11/height, (height - 2*K12 + 2*y0)/height,                            0,
+                                           0,             0, (-zfar - znear)/(zfar - znear), -2*zfar*znear/(zfar - znear),
+                                           0,             0,                             -1,                            0);
+
+    projection->set( P );
+    std::cout << "set projection uniform" << std::endl;
 }
 
 void load_extrinsic_camera_parameters( json_t * root) {
     json_t *data_json;
 
     data_json = json_object_get(root, "translation");
-    osg::Vec3 translation = parse_vec3(data_json);
+    osg::Vec3 t = parse_vec3(data_json);
 
     data_json = json_object_get(root, "rotation");
     osg::Quat rotation = parse_quat(data_json);
 
-    // FIXME: not done - need to set modelview matrix
-
+    osg::Matrix mv = osg::Matrix::rotate(rotation);
+    mv.postMult( osg::Matrix::translate(t) );
+    //mv.preMult( osg::Matrix::translate(t) );
+    modelview->set( mv );
+    std::cout << "set modelview uniform" << std::endl;
 }
 
 void load_geometry_filename( std::string geometry_filename ) {
@@ -325,6 +376,8 @@ private:
   osg::ref_ptr<osg::Group> _group;
   osg::ref_ptr<osg::Group> _geom_group;
   osg::ref_ptr<osg::Geode> _geode;
+  int _width, _height;
+  std::vector<double> intrinsic_coeffs;
   osg::Uniform* modelview, *projection;
 };
 
