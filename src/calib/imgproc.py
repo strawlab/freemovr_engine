@@ -24,8 +24,9 @@ class DotBGFeatureDetector:
         self._method = method
         self._show = show
         self._thresh = diff_thresh
-        self._debug = debug
+        self._debug = False
         self._benchmark = False
+        self._save_fmt = None
         self._handles = {}
         for s in show:
             if s in self.WIN_TYPES:
@@ -36,6 +37,7 @@ class DotBGFeatureDetector:
         self._imgsize = None
         self._shape = (-1,-1)
         self._mask = None
+        self._n = 0
 
     @property
     def img_shape(self):
@@ -48,16 +50,16 @@ class DotBGFeatureDetector:
         return self._shape[0]   #swap from matrix semantics (row/col) to image coords
 
     def _show_img(self, arr, win_type):
+        img = arr
         if win_type in self._handles:
             if self._mask != None:
                 img = arr * self._mask
-            else:
-                img = arr
             cv2.imshow(self._handles[win_type], img)
 
-    def _show_features_and_diff(self, diff, dmax, features, sz=-1, scalediff=False,
-                                                                   scalediffonlyfeatures=False,
-                                                                   showdmax=True):
+        if self._save_fmt is not None:
+            scipy.misc.imsave(self._save_fmt % (self._n, win_type), arr)
+
+    def _show_features_and_diff(self, diff, dmax, features, sz=-1, scalediff=False, scalediffonlyfeatures=False, showdmax=True):
         if "F" in self._handles:
             if scalediff:
                 if not scalediffonlyfeatures or (scaldiffonlyfeatures and features):
@@ -84,8 +86,22 @@ class DotBGFeatureDetector:
 
             cv2.imshow(self._handles["F"], img)
 
+            if self._save_fmt is not None:
+                scipy.misc.imsave(self._save_fmt % (self._n, "F"), img)
+        else:
+            if self._save_fmt is not None:
+                scipy.misc.imsave(self._save_fmt % (self._n, "F"), diff)
+
+
+
     def _argmax(self, arr):
         return np.unravel_index(arr.argmax(), arr.shape)
+
+    def enable_debug_detection(self):
+        self._debug = True
+
+    def enable_debug_saveimages(self, basepath):
+        self._save_fmt = basepath + "/%d_" + self._name.replace('/','') + "_%s.png"
 
     def set_mask(self, arr, copy=True):
         if copy:
