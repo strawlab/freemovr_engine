@@ -11,6 +11,8 @@
 #include <osg/TextureRectangle>
 #include <osg/AutoTransform>
 #include <osgText/Text>
+#include <osg/ShapeDrawable>
+#include <osg/PolygonMode>
 
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
@@ -46,6 +48,7 @@ std::string string_format(const std::string &fmt, ...) {
 }
 
 osg::Node* show_point( const osg::Vec3 position, const std::string& message ){
+    /*
 	float characterSize=12;
 	float minScale=0.0;
 	float maxScale=FLT_MAX;
@@ -72,6 +75,20 @@ osg::Node* show_point( const osg::Vec3 position, const std::string& message ){
     at->setPosition(position);
 
     return at;
+    */
+
+    osg::Geode* geode_1 = new osg::Geode;
+
+    double radius = 0.1;
+    osg::ref_ptr<osg::TessellationHints> hints = new osg::TessellationHints;
+    hints->setDetailRatio(1.0f);
+    osg::ref_ptr<osg::ShapeDrawable> shape;
+
+    shape = new osg::ShapeDrawable(new osg::Sphere(position, radius), hints.get());
+    shape->setColor(osg::Vec4(0.6f, 0.8f, 0.8f, 1.0f));
+    geode_1->addDrawable(shape.get());
+
+    return geode_1;
 }
 
 osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int height) {
@@ -367,6 +384,16 @@ void load_geometry_json( std::string geometry_filename ) {
     for (KeyPointMap::const_iterator ki=kpm.begin(); ki!=kpm.end(); ++ki) {
         _geom_group->addChild( show_point( ki->second, ki->first ) );
     }
+
+    osg::StateSet *state = _geom_group->getOrCreateStateSet();
+    osg::PolygonMode *polyModeObj;
+    polyModeObj = dynamic_cast< osg::PolygonMode* >
+        ( state->getAttribute( osg::StateAttribute::POLYGONMODE ));
+    if ( !polyModeObj ) {
+        polyModeObj = new osg::PolygonMode;
+        state->setAttribute( polyModeObj );
+    }
+    polyModeObj->setMode(  osg::PolygonMode::FRONT_AND_BACK, osg::PolygonMode::POINT );
     _group->addChild( _geom_group );
 
 }
