@@ -120,10 +120,19 @@ class DotBGFeatureDetector:
         self._bg = np.min(bgarr,2)
         self._show_img(self._bg, "B")
 
-    def detect(self, imarr, thresh=None):
+    def detect(self, imarr, thresh=None, exact_luminance=False):
         """
         returns in matrix coordinates: [row, col], dmax
         """
+        def get_luminance_and_point(_diff, _thresh):
+            _row, _col = self._argmax(_diff)
+            if exact_luminance:
+                return _row,_col,imarr[_diff > _thresh].mean()
+            else:
+                return _row,_col,imarr[_row,_col]
+
+        self._n += 1
+
         if not thresh:
             thresh = self._thresh
 
@@ -164,7 +173,7 @@ class DotBGFeatureDetector:
         elif self._method == "med":
             scipy.ndimage.median_filter(diff,3,output=diff)
             feature_detector_vis_diff = diff
-            features = [self._argmax(diff)]
+            features = [get_luminance_and_point(diff, thresh)]
         else:
             raise Exception("Not Supported")
 
