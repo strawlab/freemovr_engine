@@ -59,17 +59,11 @@ class DotBGFeatureDetector:
         if self._save_fmt is not None:
             scipy.misc.imsave(self._save_fmt % (self._n, win_type), arr)
 
-    def _show_features_and_diff(self, diff, dmax, features, sz=-1, scalediff=False, scalediffonlyfeatures=False, showdmax=True):
+    def _show_features_and_diff(self, diff, dmax, features, sz=-1):
         if "F" in self._handles:
-            if scalediff:
-                if not scalediffonlyfeatures or (scaldiffonlyfeatures and features):
-                    if dmax < 255:
-                        diff /= (dmax / 255.0)
-            
             b = np.zeros(diff.shape,dtype=np.uint8)
             g = np.zeros(diff.shape,dtype=np.uint8)
             rgb = np.dstack((b,g,diff))
-
             #dstack doesnt copy the memory in such a way that it works with
             #opencv.... sigh.
             img = rgb.copy()
@@ -81,9 +75,7 @@ class DotBGFeatureDetector:
                         row=rf, col=cf,
                         sz=sz, fill=255, chan=1)
 
-            if showdmax:
-                cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
-
+            cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
             cv2.imshow(self._handles["F"], img)
 
             if self._save_fmt is not None:
