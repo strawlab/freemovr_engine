@@ -38,6 +38,7 @@ class DisplayServerProxy(object):
         if wait:
             rospy.loginfo('waiting for display server: %s' % self._server_node_name)
             rospy.wait_for_service(self.get_fullname('set_display_server_mode'))
+            _ = self.get_display_info(nocache=True) # fill our cache
 
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
                                                                 flyvr.srv.SetDisplayServerMode)
