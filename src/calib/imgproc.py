@@ -18,12 +18,12 @@ class DotBGFeatureDetector:
         "medbinary":"median filter, binarise, argmax",
         "morphbinary":"binarize, morphological filter, argmax"
     }
-    def __init__(self, name, method="medbinary", show="DF", benchmark=False, diff_thresh=70, debug=False):
+    def __init__(self, name, method="med", show="DF"):
         assert method in self.DETECT_METHODS
         self._name = name
         self._method = method
         self._show = show
-        self._thresh = diff_thresh
+        self._thresh = None
         self._debug = False
         self._benchmark = False
         self._save_fmt = None
@@ -99,6 +99,9 @@ class DotBGFeatureDetector:
 
     def enable_debug_detection(self):
         self._debug = True
+
+    def enable_benchmark(self):
+        self._benchmark = True
 
     def enable_debug_saveimages(self, basepath):
         self._save_fmt = basepath + "/%d_" + self._name.replace('/','') + "_%s.png"

@@ -357,6 +357,8 @@ class Calib:
                 fd.enable_debug_detection()
             if "saveimages" in debug:
                 fd.enable_debug_images("/mnt/ssd/CALIB/")
+            if "benchmark" in debug:
+                fd.enable_benchmark()
             self.tracking_cameras[cam] = fd
             cam_handlers.append(CameraHandler(cam,debug="acquisition" in debug))
             rospy.loginfo("Calibrating %s" % cam)
@@ -373,6 +375,8 @@ class Calib:
             fd.enable_debug_detection()
         if "saveimages" in debug:
             fd.enable_debug_images("/mnt/ssd/CALIB/")
+        if "benchmark" in debug:
+            fd.enable_benchmark()
         self.laser_runner = SequentialCameraRunner(
                                 (CameraHandler(laser_camera,"acquisition" in debug),),
                                 queue_depth=1)
@@ -1130,7 +1134,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--debug', type=str, default='',
         help='comma separated list of debug domains. '
-             '[acquisition,detection,saveimages,control]')
+             '[acquisition,detection,saveimages,control,benchmark]')
     parser.add_argument(
         '--enable-mouse-click', action="store_true",
         help='enable mouse click point selection (CAUSES HANGS, UNSTABLE)')
