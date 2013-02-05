@@ -410,9 +410,10 @@ cdef class MyNode:
         # this is called in some callback thread by ROS
         plugin = self.dsosg.get_current_stimulus_plugin_name().c_str()
 
-        #change to image blit mode
-        with self._mode_lock:
-            self._mode_change = 'Stimulus2DBlit'
+        if plugin != b'Stimulus2DBlit':
+            #change to image blit mode
+            with self._mode_lock:
+                self._mode_change = 'Stimulus2DBlit'
 
         # put on command queue for main thread.
         image = request.image
