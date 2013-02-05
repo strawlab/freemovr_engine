@@ -7,34 +7,138 @@ import rospy
 
 import tf.transformations
 from sensor_msgs.msg import CameraInfo
+import sensor_msgs.msg
 import std_msgs.msg
 from geometry_msgs.msg import Pose, Transform
+import geometry_msgs.msg
+import tf.broadcaster
+import tf.msg
 
 import display_client
 import camera_model
 
-class MyApp:
-    def __init__(self, cam, geometry_filename):
-        display_client.DisplayServerProxy.set_stimulus_mode(
-            'StimulusPinholeDisplay')
-        intr_pub = rospy.Publisher('/pinhole_cal/camera_info',
-                                   CameraInfo, latch=True)
-        intr_pub.publish( cam.get_intrinsics_as_msg() )
 
-        geom_pub = rospy.Publisher('/pinhole_cal/geometry_filename',
+def get_body_frame_to_camera_frame_quat():
+    origin, xaxis, yaxis, zaxis = (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    q1 = tf.transformations.quaternion_about_axis(-np.pi/2, zaxis)
+    q2 = tf.transformations.quaternion_about_axis(-np.pi/2, xaxis)
+    q = tf.transformations.quaternion_multiply(q1, q2)
+    return q
+
+BF2CF = get_body_frame_to_camera_frame_quat()
+
+def body_frame_to_camera_frame(in_rotation):
+    """Convert body frame to camera frame.
+
+    In our body frame coordinate system, observer looks at +X with +Y
+    left and +Z up. The the camera frame, the look direction is +Z
+    with +X right and +Y down.
+    """
+    out_rotation = tf.transformations.quaternion_multiply( BF2CF, in_rotation )
+    return out_rotation
+
+class MyApp:
+    def __init__(self, ds, viewport, cam, geometry_filename):
+
+        self.dsc = display_client.DisplayServerProxy(ds,wait=True)
+        self.dsc.enter_2dblit_mode()
+
+        if viewport:
+            self.mask = self.dsc.get_virtual_display_mask(viewport)
+        else:
+            self.mask = None
+
+        self.name = 'pinhole_cal'
+        self.cam = cam
+        # display_client.DisplayServerProxy.set_stimulus_mode(
+        #     'StimulusPinholeDisplay')
+        self.intr_pub = rospy.Publisher(self.name+'/camera_info',
+                                        CameraInfo, latch=True)
+        self.intrinsic_msg = cam.get_intrinsics_as_msg()
+        now = rospy.Time.now()
+        self.intrinsic_msg.header.stamp = now
+        self.intrinsic_msg.header.frame_id = self.get_frame_id()
+        self.intr_pub.publish( self.intrinsic_msg )
+
+        self.im_pub = rospy.Publisher(self.name+'/image',
+                                      sensor_msgs.msg.Image)
+
+        geom_pub = rospy.Publisher(self.name+'/geometry_filename',
                                    std_msgs.msg.String, latch=True)
         geom_pub.publish( geometry_filename )
 
-        self.tf_pub = rospy.Publisher('/pinhole_cal/tf', Transform, latch=True)
+        self.tf_b = tf.broadcaster.TransformBroadcaster()
 
         rospy.Subscriber("pose", Pose, self.on_pose)
+        rospy.Timer(rospy.Duration(1.0), self.on_timer) # every second
+
+    def get_frame_id(self):
+        return '/'+self.name
+
+    def on_timer(self, _):
+        now = rospy.Time.now()
+        self.intrinsic_msg.header.stamp = now
+        self.intr_pub.publish( self.intrinsic_msg )
 
     def on_pose(self, pose_msg):
-        tf_msg = Transform()
-        for attr in ('x','y','z'):
-            setattr(tf_msg.translation,attr, getattr( pose_msg.position, attr))
-        tf_msg.rotation = pose_msg.orientation
-        self.tf_pub.publish( tf_msg )
+        translation = []
+        for attr in 'xyz':
+            translation.append(getattr( pose_msg.position, attr))
+        rotation = []
+        for attr in 'xyzw':
+            rotation.append( getattr( pose_msg.orientation, attr ) )
+
+        rotation = body_frame_to_camera_frame(rotation)
+
+        if 1:
+            newcam = camera_model.CameraModel( translation=translation,
+                                               rotation=rotation,
+                                               intrinsics=self.cam.get_intrinsics_as_msg(),
+                                               name=self.cam.name )
+            self.cam = newcam
+
+        now = rospy.Time.now()
+        future = now + rospy.Duration(0.005) # 5 msec in future
+
+        self.tf_b.sendTransform( translation,
+                                 rotation,
+                                 future,
+                                 self.get_frame_id(),
+                                 '/map',
+                                 )
+        self.send_image()
+
+    def send_image(self):
+        arr = np.zeros( (self.cam.height, self.cam.width), dtype=np.uint8)
+        arr[10:20, 100:300] = 255
+
+        if 1:
+            # send image to RViz
+            now = rospy.Time.now()
+            msg = sensor_msgs.msg.Image()
+            msg.header.frame_id = self.get_frame_id()
+            msg.header.stamp = now
+
+            msg.width = self.cam.width
+            msg.height = self.cam.height
+            msg.encoding = 'mono8'
+            msg.is_bigendian = 0
+            msg.step = self.cam.width
+
+            msg.data = arr.ravel().tolist()
+
+            self.im_pub.publish(msg)
+
+        if 1:
+            # send image to display server
+            if arr.shape!=(self.dsc.height,self.dsc.width):
+                arr = arr[0:min(self.dsc.height,arr.shape[0]),0:min(self.dsc.width,arr.shape[1]),:]
+            if self.mask != None:
+                masks = np.dstack([self.mask for i in range(0,arr.shape[-1])])
+                if arr.shape != masks.shape:
+                    arr = np.resize(arr, masks.shape)
+                arr *= masks
+            self.dsc.show_pixels(arr)
 
     def run(self):
         rospy.spin()
@@ -43,20 +147,26 @@ if __name__ == '__main__':
     rospy.init_node('drive_extrinsic_display_calibration')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('intrinsic_fname', type=str,
+
+    parser.add_argument('--intrinsic_fname', type=str, required=True,
                         help='filename  (.bag or .yaml) intrinsic parameters')
-    parser.add_argument('geom_fname', type=str,
+
+    parser.add_argument('--geom_fname', type=str, required=True,
                         help='filename  (.json or .osg) specifying display geometry')
+
+    parser.add_argument('--display_server', type=str,
+                        required=True,
+                        help='the path of the display server to configure')
+
+    parser.add_argument('--viewport', type=str,
+                        help='only show on this viewport')
 
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    print 'args',args
-    print args.intrinsic_fname
-    print args.geom_fname
-
-
     cam = camera_model.load_camera_from_file( args.intrinsic_fname,
                                               extrinsics_required=False )
-    app = MyApp(cam, args.geom_fname)
+    app = MyApp(args.display_server,
+                args.viewport,
+                cam, args.geom_fname)
     app.run()
