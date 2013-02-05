@@ -92,10 +92,20 @@ class DotBGFeatureDetector:
             if self._save_fmt is not None:
                 scipy.misc.imsave(self._save_fmt % (self._n, "F"), diff)
 
+    def _detect_blobs_and_luminance(self, imarr, diff, thresh, exact_luminance=False, use_argmax=True):
+        features = []
 
+        if use_argmax:
+            row, col = np.unravel_index(diff.argmax(), diff.shape)
+            if exact_luminance:
+                #return the mean of all pixels above the threshold
+                features.append( (row,col,imarr[diff > thresh].mean()) )
+            else:
+                features.append( (row,col,imarr[row,col]) )
+        else:
+            raise NotImplementedError
 
-    def _argmax(self, arr):
-        return np.unravel_index(arr.argmax(), arr.shape)
+        return features
 
     def enable_debug_detection(self):
         self._debug = True
@@ -123,21 +133,11 @@ class DotBGFeatureDetector:
         self._bg = np.min(bgarr,2)
         self._show_img(self._bg, "B")
 
-    def detect(self, imarr, thresh=None, exact_luminance=False):
+    def detect(self, imarr, thresh, exact_luminance=False):
         """
         returns in matrix coordinates: [row, col], dmax
         """
-        def get_luminance_and_point(_diff, _thresh):
-            _row, _col = self._argmax(_diff)
-            if exact_luminance:
-                return _row,_col,imarr[_diff > _thresh].mean()
-            else:
-                return _row,_col,imarr[_row,_col]
-
         self._n += 1
-
-        if not thresh:
-            thresh = self._thresh
 
         self._show_img(imarr, "I")
 
@@ -167,16 +167,16 @@ class DotBGFeatureDetector:
             scipy.ndimage.median_filter(diff,3,output=diff)
             binary = np.where(diff > thresh, 255, 0).astype(np.uint8)
             feature_detector_vis_diff = binary
-            features = [self._argmax(binary)]
+            features = self._detect_blobs_and_luminance(imarr, binary, thresh, exact_luminance)
         elif self._method == "morphbinary":
             binary = np.where(diff > thresh, 255, 0)
             scipy.ndimage.binary_opening(binary, output=binary)
             feature_detector_vis_diff = (binary*255).astype(np.uint8)
-            features = [self._argmax(binary)]
+            features = self._detect_blobs_and_luminance(imarr, binary, thresh, exact_luminance)
         elif self._method == "med":
             scipy.ndimage.median_filter(diff,3,output=diff)
             feature_detector_vis_diff = diff
-            features = [get_luminance_and_point(diff, thresh)]
+            features = self._detect_blobs_and_luminance(imarr, diff, thresh, exact_luminance)
         else:
             raise Exception("Not Supported")
 
