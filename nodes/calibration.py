@@ -564,7 +564,7 @@ class Calib:
                 msg = msgprefix + "PTC visible"
             else:
                 msg = msgprefix + "PTC (unknown threshold)"
-            rospy.loginfo("detect 2D %s: col:%s row:%s val:%s" % (msg,col,row,luminance))
+            rospy.loginfo("detect 2D %s: col:%s row:%s lum:%s" % (msg,col,row,luminance))
             return col,row,luminance
 
         return None,None,None
