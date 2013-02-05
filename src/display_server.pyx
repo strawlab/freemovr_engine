@@ -383,8 +383,14 @@ cdef class MyNode:
                   'width':self.dsosg.getXSize(),
                   'height':self.dsosg.getYSize(),
                   'framerate':self.dsosg.getFrameRate(),
-                  'virtualDisplays':rospy.get_param('~display/virtualDisplays')
                   }
+
+        try:
+            virtualDisplays = rospy.get_param('~display/virtualDisplays')
+        except KeyError:
+            pass
+        else:
+            result['virtualDisplays'] = virtualDisplays
 
         response = flyvr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
