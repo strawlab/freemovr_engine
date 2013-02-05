@@ -521,6 +521,9 @@ class Calib:
                 continue
             features = self.tracking_cameras[cam].detect(imgs[cam][:,:,0], thresh)
             if features:
+                if len(features) > 1:
+                    rospy.logerr("multiple features not supported, taking the first one")
+
                 rospy.logdebug("detect: %s: %s" % (cam,repr(features)))
                 #take the first point
                 row,col,lum = features[0]
@@ -550,6 +553,8 @@ class Calib:
             self.laser_detector.clear_mask()
 
         if features:
+            if len(features) > 1:
+                rospy.logerr("multiple features not supported, taking the first one")
             row,col,luminance = features[0]
             if thresh == self.laser_thresh:
                 msg = msgprefix + "PTC laser"

@@ -105,17 +105,17 @@ class DotBGFeatureDetector:
             #ndimage.label treats non-zero as valid, so set all pixels below
             #the thresh (invalid) to zero
             diff[~validmask] = 0
-            lbls,n = scipy.ndimage.measurements.label(diff)
+            lbls,maxlabel = scipy.ndimage.measurements.label(diff)
+            slcs = scipy.ndimage.measurements.find_objects(lbls)
 
-            if n > 0:
-
-                if n > 1:
-                    print "ERROR---------------------------", n
-
-                row,col = map(int,scipy.ndimage.measurements.center_of_mass(lbls))
+            #according to the implementation, the second return argument is actually
+            #the maximum label(integer), and not necessarily the number of returned
+            #labelled objects, although for that is assumed by other parts of the
+            #ndimage code.
+            for n in range(1,maxlabel+1): #0 is code for unlabelled
+                row,col = map(int,scipy.ndimage.measurements.center_of_mass(diff,lbls,n))
                 if exact_luminance:
-                    slc = scipy.ndimage.measurements.find_objects(lbls)
-                    blob = imarr[slc[0]]
+                    blob = imarr[slcs[n-1]]
                     lum = blob.sum()/np.count_nonzero(blob)
                 else:
                     lum = imarr[row,col]
