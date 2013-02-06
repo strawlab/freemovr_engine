@@ -42,6 +42,9 @@ class ModelBase:
     def to_geom_dict(self):
         raise NotImplementedError
 
+    def get_center(self):
+        return self.center_arr
+
 class Cylinder(ModelBase):
     def __init__(self, base=None, axis=None, radius=None):
         self.base = point_dict_to_vec(base)
@@ -60,6 +63,10 @@ class Cylinder(ModelBase):
         self._matrix = np.eye(3) # currently we're forcing vertical cylinder, so this is OK
         self._height = self.axis.z - self.base.z
         self._base = np.expand_dims(np.array( (self.base.x, self.base.y, self.base.z) ),1)
+        self.center_arr = self._base[:,0] + np.array(0,0,self._height*0.5)
+
+    def __repr__(self):
+        return 'Cylinder( base=%r, axis=%r, radius=%r )'%(self._base[:,0].tolist(), self.axis, self.radius )
 
     def to_geom_dict(self):
         return dict(
@@ -184,6 +191,10 @@ class Sphere(ModelBase):
         # keep in sync with DisplaySurfaceGeometry.cpp
         self._radius = radius
         self._center = np.expand_dims(np.array( (self.center.x, self.center.y, self.center.z) ),1)
+        self.center_arr = self._center[:,0]
+
+    def __repr__(self):
+        return 'Sphere( center=%r, radius=%r )'%(self._center[:,0].tolist(), self.radius )
 
     def to_geom_dict(self):
         return dict(
