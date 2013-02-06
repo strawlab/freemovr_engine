@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
-import json
+import json, yaml
 import threading
+import os
 
 import roslib; roslib.load_manifest('flyvr')
 import rospy
@@ -20,6 +21,8 @@ import simple_geom
 import display_client
 import camera_model
 from flyvr.coord_system import body_frame_to_camera_frame
+import flyvr.srv
+import exr
 
 def _float_to_uint8_plane( farr ):
     maxval = np.nanmax( farr )
@@ -53,12 +56,17 @@ class MyApp:
 
         self.dsc.set_mode('Stimulus2DBlit')
 
+        with open(geometry_filename,mode='r') as fd:
+            self._geom_dict = yaml.load( fd )
         self.geom = simple_geom.Geometry(filename=geometry_filename)
 
-        if viewport:
+        self.viewport = viewport
+        if self.viewport:
             self.mask = self.dsc.get_virtual_display_mask(viewport)
         else:
             self.mask = None
+
+        self.save_data = None
 
         self.name = 'pinhole_cal'
         self.cam = cam
@@ -73,7 +81,6 @@ class MyApp:
         self.im_pub = rospy.Publisher(self.name+'/image',
                                       sensor_msgs.msg.Image)
 
-
         self.tf_b = tf.broadcaster.TransformBroadcaster()
 
         self._new_image = False
@@ -82,6 +89,49 @@ class MyApp:
         rospy.Subscriber("pose", Pose, self.on_pose)
         rospy.Timer(rospy.Duration(1.0), self.on_timer1) # every second
         rospy.Timer(rospy.Duration(1/20.0), self.send_image) # try for 20 fps
+
+        rospy.Service('~save_exr',
+                      flyvr.srv.SaveEXR,
+                      self.handle_save_exr)
+
+    def handle_save_exr(self,request):
+        fname = request.exr_filename
+        response = flyvr.srv.SaveEXRResponse()
+
+        if self.save_data is None:
+            rospy.warn('No EXR calibration successful yet. Cannot save data')
+            response.success = False
+            return
+
+        farr = self.save_data['image_data']
+        send_cam = self.save_data['camera']
+
+        r = farr[:,:,0]
+        g = farr[:,:,1]
+        b = farr[:,:,2]
+
+        e_msg = send_cam.get_extrinsics_as_msg()
+        e_dict = yaml.load(roslib.message.strify_message(e_msg))
+        i_msg = send_cam.get_intrinsics_as_msg()
+        i_dict = yaml.load(roslib.message.strify_message(i_msg))
+        save_dict = {'pinhole/transform':e_dict,
+                     'pinhole/camera_info':i_dict,
+                     'geom':self._geom_dict,
+                     }
+        if self.viewport is not None:
+            save_dict['viewport'] = self.viewport
+
+        comments = yaml.dump( save_dict )
+        print '-'*80
+        print comments
+        print '-'*80
+
+        exr.save_exr( fname, r=r, g=g, b=b, comments=comments )
+
+        response.success = True
+        response.fullpath = os.path.abspath( fname )
+        assert os.path.exists(response.fullpath)
+        return response
 
     def get_frame_id(self):
         return '/'+self.name
@@ -103,10 +153,11 @@ class MyApp:
         rotation_cam = body_frame_to_camera_frame(rotation)
 
         # now load new camera with this pose
+        old_cam = self.cam
         self.cam = camera_model.load_from_ROS_tf( translation=translation,
                                                   rotation=rotation_cam,
-                                                  intrinsics=self.cam.get_intrinsics_as_msg(),
-                                                  name=self.cam.name )
+                                                  intrinsics=old_cam.get_intrinsics_as_msg(),
+                                                  name=old_cam.name )
 
 
         now = rospy.Time.now()
@@ -135,7 +186,10 @@ class MyApp:
         with self.send_lock:
             center = np.array([self.geom.model.get_center()])
 
-            farr = self.geom.compute_for_camera_view( self.cam )
+            send_cam = self.cam
+            farr = self.geom.compute_for_camera_view( send_cam )
+            self.save_data = {'image_data':farr,
+                              'camera':send_cam}
             arr = float_to_uint8(farr)
 
             if 1:
@@ -145,14 +199,14 @@ class MyApp:
                 msg.header.frame_id = self.get_frame_id()
                 msg.header.stamp = now
 
-                msg.width = self.cam.width
-                msg.height = self.cam.height
+                msg.width = send_cam.width
+                msg.height = send_cam.height
                 if arr.ndim==2:
                     msg.encoding = 'mono8'
                 else:
                     msg.encoding = 'rgb8'
                 msg.is_bigendian = 0
-                msg.step = self.cam.width
+                msg.step = send_cam.width
 
                 msg.data = arr.ravel().tolist()
 
