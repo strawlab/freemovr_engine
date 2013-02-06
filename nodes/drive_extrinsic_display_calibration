@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
+import json
+import threading
 
 import roslib; roslib.load_manifest('flyvr')
 import rospy
@@ -14,34 +16,44 @@ import geometry_msgs.msg
 import tf.broadcaster
 import tf.msg
 
+import simple_geom
 import display_client
 import camera_model
+from flyvr.coord_system import body_frame_to_camera_frame
 
+def _float_to_uint8_plane( farr ):
+    maxval = np.nanmax( farr )
+    if np.isnan(maxval):
+        # all nans
+        return np.zeros( farr.shape, dtype=np.uint8 )
+    minval = np.nanmin( farr )
+    farr[ np.isnan(farr) ] = minval
 
-def get_body_frame_to_camera_frame_quat():
-    origin, xaxis, yaxis, zaxis = (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)
-    q1 = tf.transformations.quaternion_about_axis(-np.pi/2, zaxis)
-    q2 = tf.transformations.quaternion_about_axis(-np.pi/2, xaxis)
-    q = tf.transformations.quaternion_multiply(q1, q2)
-    return q
+    range = maxval-minval
+    scale = 255.0/range
 
-BF2CF = get_body_frame_to_camera_frame_quat()
+    zeroed = farr-minval
+    scaled = zeroed*scale
+    return scaled.astype( np.uint8 )
 
-def body_frame_to_camera_frame(in_rotation):
-    """Convert body frame to camera frame.
-
-    In our body frame coordinate system, observer looks at +X with +Y
-    left and +Z up. The the camera frame, the look direction is +Z
-    with +X right and +Y down.
-    """
-    out_rotation = tf.transformations.quaternion_multiply( BF2CF, in_rotation )
-    return out_rotation
+def float_to_uint8(farr):
+    arr = np.empty( farr.shape, dtype=np.uint8 )
+    if farr.ndim==2:
+        arr[:,:] = _float_to_uint8_plane( farr )
+    elif farr.ndim==3:
+        for i in range( farr.shape[2] ):
+            arr[:,:,i] = _float_to_uint8_plane( farr[:,:,i] )
+    else:
+        raise ValueError('cannot convert array')
+    return arr
 
 class MyApp:
     def __init__(self, ds, viewport, cam, geometry_filename):
 
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
         self.dsc.enter_2dblit_mode()
+
+        self.geom = simple_geom.Geometry(filename=geometry_filename)
 
         if viewport:
             self.mask = self.dsc.get_virtual_display_mask(viewport)
@@ -63,19 +75,20 @@ class MyApp:
         self.im_pub = rospy.Publisher(self.name+'/image',
                                       sensor_msgs.msg.Image)
 
-        geom_pub = rospy.Publisher(self.name+'/geometry_filename',
-                                   std_msgs.msg.String, latch=True)
-        geom_pub.publish( geometry_filename )
 
         self.tf_b = tf.broadcaster.TransformBroadcaster()
 
+        self._new_image = False
+        self.send_lock = threading.Lock()
+
         rospy.Subscriber("pose", Pose, self.on_pose)
-        rospy.Timer(rospy.Duration(1.0), self.on_timer) # every second
+        rospy.Timer(rospy.Duration(1.0), self.on_timer1) # every second
+        rospy.Timer(rospy.Duration(1/20.0), self.send_image) # try for 20 fps
 
     def get_frame_id(self):
         return '/'+self.name
 
-    def on_timer(self, _):
+    def on_timer1(self, _):
         now = rospy.Time.now()
         self.intrinsic_msg.header.stamp = now
         self.intr_pub.publish( self.intrinsic_msg )
@@ -88,57 +101,76 @@ class MyApp:
         for attr in 'xyzw':
             rotation.append( getattr( pose_msg.orientation, attr ) )
 
-        rotation = body_frame_to_camera_frame(rotation)
+        rotation_cam = body_frame_to_camera_frame(rotation)
 
         if 1:
-            newcam = camera_model.CameraModel( translation=translation,
-                                               rotation=rotation,
-                                               intrinsics=self.cam.get_intrinsics_as_msg(),
-                                               name=self.cam.name )
+            newcam = camera_model.load_from_ROS_tf( translation=translation,
+                                                    rotation=rotation_cam,
+                                                    intrinsics=self.cam.get_intrinsics_as_msg(),
+                                                    name=self.cam.name )
             self.cam = newcam
+            c,la,up = self.cam.get_view()
+
 
         now = rospy.Time.now()
-        future = now + rospy.Duration(0.005) # 5 msec in future
-
-        self.tf_b.sendTransform( translation,
-                                 rotation,
-                                 future,
-                                 self.get_frame_id(),
-                                 '/map',
-                                 )
-        self.send_image()
-
-    def send_image(self):
-        arr = np.zeros( (self.cam.height, self.cam.width), dtype=np.uint8)
-        arr[10:20, 100:300] = 255
+        future = now + rospy.Duration(0.010) # 10 msec in future
 
         if 1:
-            # send image to RViz
-            now = rospy.Time.now()
-            msg = sensor_msgs.msg.Image()
-            msg.header.frame_id = self.get_frame_id()
-            msg.header.stamp = now
+            self.tf_b.sendTransform( translation,
+                                     rotation_cam,
+                                     future,
+                                     self.get_frame_id(),
+                                     '/map',
+                                     )
+        if 0:
+            self.tf_b.sendTransform( translation,
+                                     rotation,
+                                     future,
+                                     self.get_frame_id()+'_body',
+                                     '/map',
+                                     )
+        self._new_image = True
 
-            msg.width = self.cam.width
-            msg.height = self.cam.height
-            msg.encoding = 'mono8'
-            msg.is_bigendian = 0
-            msg.step = self.cam.width
+    def send_image(self,_):
+        if not self._new_image:
+            return
 
-            msg.data = arr.ravel().tolist()
+        with self.send_lock:
+            center = np.array([self.geom.model.get_center()])
 
-            self.im_pub.publish(msg)
+            farr = self.geom.compute_for_camera_view( self.cam )
+            arr = float_to_uint8(farr)
 
-        if 1:
-            # send image to display server
-            if arr.shape!=(self.dsc.height,self.dsc.width):
-                arr = arr[0:min(self.dsc.height,arr.shape[0]),0:min(self.dsc.width,arr.shape[1]),:]
-            if self.mask != None:
-                masks = np.dstack([self.mask for i in range(0,arr.shape[-1])])
-                if arr.shape != masks.shape:
-                    arr = np.resize(arr, masks.shape)
-                arr *= masks
-            self.dsc.show_pixels(arr)
+            if 1:
+                # send image to RViz
+                now = rospy.Time.now()
+                msg = sensor_msgs.msg.Image()
+                msg.header.frame_id = self.get_frame_id()
+                msg.header.stamp = now
+
+                msg.width = self.cam.width
+                msg.height = self.cam.height
+                if arr.ndim==2:
+                    msg.encoding = 'mono8'
+                else:
+                    msg.encoding = 'rgb8'
+                msg.is_bigendian = 0
+                msg.step = self.cam.width
+
+                msg.data = arr.ravel().tolist()
+
+                self.im_pub.publish(msg)
+
+            if 1:
+                # send image to display server
+                if arr.shape!=(self.dsc.height,self.dsc.width):
+                    arr = arr[0:min(self.dsc.height,arr.shape[0]),0:min(self.dsc.width,arr.shape[1]),:]
+                if self.mask != None:
+                    masks = np.dstack([self.mask for i in range(0,arr.shape[-1])])
+                    if arr.shape != masks.shape:
+                        arr = np.resize(arr, masks.shape)
+                    arr *= masks
+                self.dsc.show_pixels(arr)
 
     def run(self):
         rospy.spin()
@@ -152,7 +184,7 @@ if __name__ == '__main__':
                         help='filename  (.bag or .yaml) intrinsic parameters')
 
     parser.add_argument('--geom_fname', type=str, required=True,
-                        help='filename  (.json or .osg) specifying display geometry')
+                        help='filename  (.json) specifying display geometry')
 
     parser.add_argument('--display_server', type=str,
                         required=True,
