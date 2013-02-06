@@ -19,7 +19,6 @@ import numpy.linalg
 import scipy.ndimage
 import scipy.misc
 import cv,cv2
-import pprint
 import random
 
 # ROS imports
@@ -247,10 +246,12 @@ class Calib:
         laser_camera = config["laser_camera"]
         trigger = config["trigger"]
         laser = config["laser"]
-        self.projector_sleep = config["projector_sleep"]
-        self.display_servers = config["display_servers"]
+
+        self.debug_control = "control" in debug
 
         #FIXME: make __getattr__ look into config for locals starting with cfg_
+        self.projector_sleep = config["projector_sleep"]
+        self.display_servers = config["display_servers"]
         self.mask_dir = decode_url(config["mask_dir"])
         self.ptsize = int(config["projector_point_size_px"])
         self.laser_range_pan = config["laser_range_pan"]
@@ -260,7 +261,7 @@ class Calib:
         self.visible_thresh = int(config["bg_thresh_visible"])
         self.laser_thresh = int(config["bg_thresh_laser"])
         self.laser_search_size = config["laser_search_size"]
-        self.laser_need_n_points = config["laser_need_n_points"]
+        self.laser_per_point_repeat_n_times = int(config["laser_per_point_repeat_n_times"])
         
         self.flydra = flydra.reconstruct.Reconstructor(
                         cal_source=decode_url(config["tracking_calibration"]))
@@ -351,10 +352,15 @@ class Calib:
             fd = DotBGFeatureDetector(
                     cam,
                     method="med",
-                    show=show_type if (show_cameras[0] == "all" or cam in show_cameras) else "",
-                    debug=debug>1)
+                    show=show_type if (show_cameras[0] == "all" or cam in show_cameras) else "")
+            if "detection" in debug:
+                fd.enable_debug_detection()
+            if "saveimages" in debug:
+                fd.enable_debug_images("/mnt/ssd/CALIB/")
+            if "benchmark" in debug:
+                fd.enable_benchmark()
             self.tracking_cameras[cam] = fd
-            cam_handlers.append(CameraHandler(cam,debug=debug>0))
+            cam_handlers.append(CameraHandler(cam,debug="acquisition" in debug))
             rospy.loginfo("Calibrating %s" % cam)
             self._set_bg_mask(cam, fd)
         self.runner = SimultainousCameraRunner(cam_handlers)
@@ -364,10 +370,15 @@ class Calib:
         fd = DotBGFeatureDetector(
                     laser_camera,
                     method="med",
-                    show=show_type if (show_cameras[0] == "all" or laser_camera in show_cameras) else "",
-                    debug=debug>1)
+                    show=show_type if (show_cameras[0] == "all" or laser_camera in show_cameras) else "")
+        if "detection" in debug:
+            fd.enable_debug_detection()
+        if "saveimages" in debug:
+            fd.enable_debug_images("/mnt/ssd/CALIB/")
+        if "benchmark" in debug:
+            fd.enable_benchmark()
         self.laser_runner = SequentialCameraRunner(
-                                (CameraHandler(laser_camera,debug=debug>0),),
+                                (CameraHandler(laser_camera,"acquisition" in debug),),
                                 queue_depth=1)
         self.laser_detector = fd
         self.laser_mask = load_mask_image(decode_url(config["laser_camera_mask"]))
@@ -510,9 +521,12 @@ class Calib:
                 continue
             features = self.tracking_cameras[cam].detect(imgs[cam][:,:,0], thresh)
             if features:
+                if len(features) > 1:
+                    rospy.logerr("multiple features not supported, taking the first one")
+
                 rospy.logdebug("detect: %s: %s" % (cam,repr(features)))
                 #take the first point
-                row,col = features[0]
+                row,col,lum = features[0]
                 #numpy returns int64 here, which is not serializable, and also not needed. Just
                 #convert to simple int
                 #
@@ -532,14 +546,16 @@ class Calib:
         img = imgs[self.laser_camera][:,:,0]
         features = self.laser_detector.detect(
                         img,
-                        thresh)
+                        thresh,
+                        exact_luminance=thresh != self.laser_thresh)
 
         if thresh == self.laser_thresh:
             self.laser_detector.clear_mask()
 
         if features:
-            row,col = features[0]
-            luminance = img[row,col]
+            if len(features) > 1:
+                rospy.logerr("multiple features not supported, taking the first one")
+            row,col,luminance = features[0]
             if thresh == self.laser_thresh:
                 msg = msgprefix + "PTC laser"
                 expected = np.array(self.laser_expected_detect_location)
@@ -548,12 +564,12 @@ class Calib:
                 if dist > self.laser_expected_detect_hist:
                     rospy.logwarn("misdetected laser location expected:%s got:%s (dist:%.1f) " % (
                         expected,actual,dist))
-                    row = col = None
+                    row = col = luminance = None
             elif thresh == self.visible_thresh:
                 msg = msgprefix + "PTC visible"
             else:
                 msg = msgprefix + "PTC (unknown threshold)"
-            rospy.loginfo("detect 2D %s: col:%s row:%s val:%s" % (msg,col,row,luminance))
+            rospy.loginfo("detect 2D %s: col:%s row:%s lum:%s" % (msg,col,row,luminance))
             return col,row,luminance
 
         return None,None,None
@@ -830,7 +846,8 @@ class Calib:
 
                             #we have a rough estimate, refine it                            
                             tries = 40
-                            print "ROUGH n%d" % tries,expdist,expected - np.array((col,row))
+                            if self.debug_control:
+                                rospy.loginfo("ROUGH n%d %r %r" % (tries,expdist,expected - np.array((col,row))))
                             
                             while (tries > 0):
                                 diffcol,diffrow = expected - np.array((col,row))
@@ -845,10 +862,12 @@ class Calib:
                                     col = oldcol
                                     row = oldrow
                                     tries -= 1
-                                    print "ROUGH LOST"
+                                    if self.debug_control:
+                                        rospy.loginfo("ROUGH LOST")
                                 else:
                                     fine_dist = numpy.linalg.norm(expected - np.array((col,row)))
-                                    print "FINE n%d" % tries,fine_dist,expected - np.array((col,row))
+                                    if self.debug_control:
+                                        rospy.loginfo("FINE n%d %r %r" % (tries,fine_dist,expected - np.array((col,row))))
                                     if fine_dist < 3:
                                         tries = 0
                                         found = True
@@ -856,7 +875,8 @@ class Calib:
                                         tries -= 1
                                         
                             if not found and (fine_dist < 80):
-                                print "AVERAGE DIST", fine_dist
+                                if self.debug_control:
+                                    rospy.loginfo("AVERAGE DIST %s" % fine_dist)
                                 found = True
                                         
                             break
@@ -878,7 +898,7 @@ class Calib:
                     self._vdispinfo["width"] = self.display_servers[ds]["width"]
                     self._vdispinfo["height"] = self.display_servers[ds]["height"]
 
-                    self._vdispinfo["pointsneeded"] = int(self.laser_need_n_points)
+                    self._vdispinfo["pointsneeded"] = self.laser_per_point_repeat_n_times
                     
                     self._vdispinfo["homeattempt"] = 30
 
@@ -1044,7 +1064,11 @@ class Calib:
 #                                        laser_handle,
 #                                        self._laser_handles[laser_handle])
 
-                        rospy.loginfo("FOUND CORRESPONDENCE")
+                        rospy.loginfo("FOUND CORRESPONDENCE: %s:%s@(%s,%s) -> %r" % (
+                                ds,self._vdispinfo["id"],
+                                self._vdispinfo["projcol"], self._vdispinfo["projrow"],
+                                self._vdispinfo["currxyz"]))
+
                         self.data.add_mapping(
                                 points=self._vdispinfo["currpts"],
                                 display_server=ds,
@@ -1113,8 +1137,9 @@ if __name__ == '__main__':
         help='show display servers with the given names (or "all") calibration in process',
         metavar="display_serverN", nargs='*')
     parser.add_argument(
-        '--debug', type=int, default=0,
-        help='print image debugging >0=acquisition, >1=bgdiff')
+        '--debug', type=str, default='',
+        help='comma separated list of debug domains. '
+             '[acquisition,detection,saveimages,control,benchmark]')
     parser.add_argument(
         '--enable-mouse-click', action="store_true",
         help='enable mouse click point selection (CAUSES HANGS, UNSTABLE)')
@@ -1143,6 +1168,6 @@ if __name__ == '__main__':
               outdir=outdir,
               continue_calibration=args.continue_calibration,
               enable_mouse_click=args.enable_mouse_click,
-              debug=args.debug)
+              debug=args.debug.split(","))
     c.run()
 

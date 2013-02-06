@@ -14,18 +14,18 @@ class DotBGFeatureDetector:
         "F":"features"
     }
     DETECT_METHODS = {
-        "med":"median filter, peak fitting to sum per axis",
-        "medbinary":"median filter, binarise, argmax",
-        "morphbinary":"binarize, morphological filter, argmax"
+        "med":"median filter, blob detect",
+        "morphbinary":"binarize, morphological filter, blob detect"
     }
-    def __init__(self, name, method="medbinary", show="DF", benchmark=False, diff_thresh=70, debug=False):
+    def __init__(self, name, method="med", show="DF"):
         assert method in self.DETECT_METHODS
         self._name = name
         self._method = method
         self._show = show
-        self._thresh = diff_thresh
-        self._debug = debug
+        self._thresh = None
+        self._debug = False
         self._benchmark = False
+        self._save_fmt = None
         self._handles = {}
         for s in show:
             if s in self.WIN_TYPES:
@@ -36,6 +36,7 @@ class DotBGFeatureDetector:
         self._imgsize = None
         self._shape = (-1,-1)
         self._mask = None
+        self._n = 0
 
     @property
     def img_shape(self):
@@ -48,26 +49,20 @@ class DotBGFeatureDetector:
         return self._shape[0]   #swap from matrix semantics (row/col) to image coords
 
     def _show_img(self, arr, win_type):
+        img = arr
         if win_type in self._handles:
             if self._mask != None:
                 img = arr * self._mask
-            else:
-                img = arr
             cv2.imshow(self._handles[win_type], img)
 
-    def _show_features_and_diff(self, diff, dmax, features, sz=-1, scalediff=False,
-                                                                   scalediffonlyfeatures=False,
-                                                                   showdmax=True):
+        if self._save_fmt is not None:
+            scipy.misc.imsave(self._save_fmt % (self._n, win_type), arr)
+
+    def _show_features_and_diff(self, diff, dmax, features, sz=-1):
         if "F" in self._handles:
-            if scalediff:
-                if not scalediffonlyfeatures or (scaldiffonlyfeatures and features):
-                    if dmax < 255:
-                        diff /= (dmax / 255.0)
-            
             b = np.zeros(diff.shape,dtype=np.uint8)
             g = np.zeros(diff.shape,dtype=np.uint8)
             rgb = np.dstack((b,g,diff))
-
             #dstack doesnt copy the memory in such a way that it works with
             #opencv.... sigh.
             img = rgb.copy()
@@ -79,13 +74,64 @@ class DotBGFeatureDetector:
                         row=rf, col=cf,
                         sz=sz, fill=255, chan=1)
 
-            if showdmax:
-                cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
-
+            cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
             cv2.imshow(self._handles["F"], img)
 
-    def _argmax(self, arr):
-        return np.unravel_index(arr.argmax(), arr.shape)
+            if self._save_fmt is not None:
+                scipy.misc.imsave(self._save_fmt % (self._n, "F"), img)
+        else:
+            if self._save_fmt is not None:
+                scipy.misc.imsave(self._save_fmt % (self._n, "F"), diff)
+
+    def _detect_blobs_and_luminance(self, imarr, diff, validmask, exact_luminance=False, use_argmax=False):
+        #note: we modify diff in place here, but it has already been saved to
+        #disk and shown to the user, so no problem.
+
+        assert imarr.ndim == 2
+        assert imarr.shape == diff.shape
+        assert diff.shape == validmask.shape
+
+        features = []
+
+        if use_argmax:
+            row, col = np.unravel_index(diff.argmax(), diff.shape)
+            if exact_luminance:
+                #return the mean of all pixels above the threshold
+                lum = imarr[validmask].mean()
+            else:
+                lum = imarr[row,col]
+            features.append( (row,col,lum) )
+        else:
+            #ndimage.label treats non-zero as valid, so set all pixels below
+            #the thresh (invalid) to zero
+            diff[~validmask] = 0
+            lbls,maxlabel = scipy.ndimage.measurements.label(diff)
+            slcs = scipy.ndimage.measurements.find_objects(lbls)
+
+            #according to the implementation, the second return argument is actually
+            #the maximum label(integer), and not necessarily the number of returned
+            #labelled objects, although for that is assumed by other parts of the
+            #ndimage code.
+            for n in range(1,maxlabel+1): #0 is code for unlabelled
+                row,col = map(int,scipy.ndimage.measurements.center_of_mass(diff,lbls,n))
+                if exact_luminance:
+                    blob = imarr[slcs[n-1]]
+                    lum = blob.sum()/np.count_nonzero(blob)
+                else:
+                    lum = imarr[row,col]
+
+                features.append( (row,col,lum) )
+
+        return features
+
+    def enable_debug_detection(self):
+        self._debug = True
+
+    def enable_benchmark(self):
+        self._benchmark = True
+
+    def enable_debug_saveimages(self, basepath):
+        self._save_fmt = basepath + "/%d_" + self._name.replace('/','') + "_%s.png"
 
     def set_mask(self, arr, copy=True):
         if copy:
@@ -104,12 +150,11 @@ class DotBGFeatureDetector:
         self._bg = np.min(bgarr,2)
         self._show_img(self._bg, "B")
 
-    def detect(self, imarr, thresh=None):
+    def detect(self, imarr, thresh, exact_luminance=False):
         """
         returns in matrix coordinates: [row, col], dmax
         """
-        if not thresh:
-            thresh = self._thresh
+        self._n += 1
 
         self._show_img(imarr, "I")
 
@@ -135,20 +180,16 @@ class DotBGFeatureDetector:
         if dmax < thresh:
             features = []
             feature_detector_vis_diff = diff
-        elif self._method == "medbinary":
-            scipy.ndimage.median_filter(diff,3,output=diff)
-            binary = np.where(diff > thresh, 255, 0).astype(np.uint8)
-            feature_detector_vis_diff = binary
-            features = [self._argmax(binary)]
         elif self._method == "morphbinary":
-            binary = np.where(diff > thresh, 255, 0)
-            scipy.ndimage.binary_opening(binary, output=binary)
-            feature_detector_vis_diff = (binary*255).astype(np.uint8)
-            features = [self._argmax(binary)]
+            valid = diff > thresh
+            scipy.ndimage.binary_opening(valid, output=valid)
+            feature_detector_vis_diff = (valid*255).astype(np.uint8)
+            features = self._detect_blobs_and_luminance(imarr, valid, valid, exact_luminance)
         elif self._method == "med":
             scipy.ndimage.median_filter(diff,3,output=diff)
+            valid = diff > thresh
             feature_detector_vis_diff = diff
-            features = [self._argmax(diff)]
+            features = self._detect_blobs_and_luminance(imarr, diff, valid, exact_luminance)
         else:
             raise Exception("Not Supported")
 
