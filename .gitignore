@@ -5,5 +5,6 @@ cfg/*.cfgc
 cfg/cpp
 lib
 msg_gen
-src/flyvr
+src/flyvr/msg
+src/flyvr/srv
 srv_gen
