@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+"""filter ROS transform into simple Transform message"""
+import argparse
+
+import roslib; roslib.load_manifest('flyvr')
+import rospy
+import tf
+from tf.msg import tfMessage
+import geometry_msgs.msg
+
+class MyApp:
+    def __init__(self, parent, child, topic ):
+        # We don't use tf.listener because we just want to be updated
+        # whenever a new tf arrives, not to cycle at a given rate.
+        self.parent = parent
+        self.child = child
+        self.pub = rospy.Publisher( topic, geometry_msgs.msg.Transform )
+        self.tfx = tf.TransformListener()
+        rospy.Subscriber('/tf', tfMessage, self.transformlistener_callback)
+
+    def transformlistener_callback(self, data):
+        now = rospy.Time.now()
+        try:
+            translation,rotation = self.tfx.lookupTransform(self.parent,
+                                                            self.child,
+                                                            now)
+        except (tf.LookupException, tf.ExtrapolationException) as err:
+            return
+
+        msg = geometry_msgs.msg.Transform()
+        for i in range(3):
+            setattr(msg.translation, 'xyz'[i], translation[i] )
+        for i in range(3):
+            setattr(msg.rotation, 'xyzw'[i], rotation[i] )
+        self.pub.publish( msg )
+
+    def run(self):
+        rospy.spin()
+
+if __name__ == '__main__':
+    rospy.init_node('simple_tf_filter')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--parent_frame', type=str, default='/map',
+                        help='name of the parent frame')
+
+    parser.add_argument('--child_frame', type=str, required=True,
+                        help='name of the child frame')
+
+    parser.add_argument('--topic_name', type=str, required=True,
+                        help='name of the topic to publish transform on')
+
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    app = MyApp(args.parent_frame, args.child_frame, args.topic_name)
+    app.run()

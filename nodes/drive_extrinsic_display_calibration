@@ -48,10 +48,13 @@ def float_to_uint8(farr):
     return arr
 
 class MyApp:
-    def __init__(self, ds, viewport, cam, geometry_filename):
-
+    def __init__(self, ds, viewport, cam, geometry_filename, mode='StimulusPinholeDisplay'):
+        self.mode = mode
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
-        self.dsc.enter_2dblit_mode()
+
+        if self.mode not in ['Stimulus2DBlit','StimulusPinholeDisplay']:
+            raise ValueError('cannot operate in mode %r'%self.mode)
+        self.dsc.set_mode(self.mode)
 
         self.geom = simple_geom.Geometry(filename=geometry_filename)
 
@@ -62,8 +65,6 @@ class MyApp:
 
         self.name = 'pinhole_cal'
         self.cam = cam
-        # display_client.DisplayServerProxy.set_stimulus_mode(
-        #     'StimulusPinholeDisplay')
         self.intr_pub = rospy.Publisher(self.name+'/camera_info',
                                         CameraInfo, latch=True)
         self.intrinsic_msg = cam.get_intrinsics_as_msg()
@@ -101,27 +102,25 @@ class MyApp:
         for attr in 'xyzw':
             rotation.append( getattr( pose_msg.orientation, attr ) )
 
+        # convert body pose to camera pose
         rotation_cam = body_frame_to_camera_frame(rotation)
 
-        if 1:
-            newcam = camera_model.load_from_ROS_tf( translation=translation,
-                                                    rotation=rotation_cam,
-                                                    intrinsics=self.cam.get_intrinsics_as_msg(),
-                                                    name=self.cam.name )
-            self.cam = newcam
-            c,la,up = self.cam.get_view()
+        # now load new camera with this pose
+        self.cam = camera_model.load_from_ROS_tf( translation=translation,
+                                                  rotation=rotation_cam,
+                                                  intrinsics=self.cam.get_intrinsics_as_msg(),
+                                                  name=self.cam.name )
 
 
         now = rospy.Time.now()
         future = now + rospy.Duration(0.010) # 10 msec in future
 
-        if 1:
-            self.tf_b.sendTransform( translation,
-                                     rotation_cam,
-                                     future,
-                                     self.get_frame_id(),
-                                     '/map',
-                                     )
+        self.tf_b.sendTransform( translation,
+                                 rotation_cam,
+                                 future,
+                                 self.get_frame_id(),
+                                 '/map',
+                                 )
         if 0:
             self.tf_b.sendTransform( translation,
                                      rotation,
@@ -129,7 +128,9 @@ class MyApp:
                                      self.get_frame_id()+'_body',
                                      '/map',
                                      )
-        self._new_image = True
+
+        if self.mode == 'Stimulus2DBlit':
+            self._new_image = True
 
     def send_image(self,_):
         if not self._new_image:
