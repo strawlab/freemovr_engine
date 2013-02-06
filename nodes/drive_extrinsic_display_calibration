@@ -48,13 +48,10 @@ def float_to_uint8(farr):
     return arr
 
 class MyApp:
-    def __init__(self, ds, viewport, cam, geometry_filename, mode='StimulusPinholeDisplay'):
-        self.mode = mode
+    def __init__(self, ds, viewport, cam, geometry_filename):
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
 
-        if self.mode not in ['Stimulus2DBlit','StimulusPinholeDisplay']:
-            raise ValueError('cannot operate in mode %r'%self.mode)
-        self.dsc.set_mode(self.mode)
+        self.dsc.set_mode('Stimulus2DBlit')
 
         self.geom = simple_geom.Geometry(filename=geometry_filename)
 
@@ -129,8 +126,7 @@ class MyApp:
                                      '/map',
                                      )
 
-        if self.mode == 'Stimulus2DBlit':
-            self._new_image = True
+        self._new_image = True
 
     def send_image(self,_):
         if not self._new_image:
