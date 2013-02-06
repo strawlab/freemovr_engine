@@ -12,4 +12,6 @@
 
   <node type="joypose" pkg="flyvr" name="joypose" />
 
+  <node type="joy_node" pkg="joy" name="joy_node" />
+
 </launch>
