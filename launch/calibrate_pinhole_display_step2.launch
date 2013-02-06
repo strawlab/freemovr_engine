@@ -6,6 +6,8 @@
   <node type="drive_extrinsic_display_calibration" pkg="flyvr" name="drive"
   args="--intrinsic_fname=$(find flyvr)/data/sample/pinhole-intrinsics.yaml --geom_fname=$(find flyvr)/data/sample/geom.json --display_server=/ds" />
 
+  <node type="draw_rviz_frustum" pkg="flyvr" name="draw_rviz_frustum" />
+
   <node type="rviz" pkg="rviz" name="rviz" args="$(find flyvr)/data/pinhole_cal.vcg" />
 
   <node type="joypose" pkg="flyvr" name="joypose" />

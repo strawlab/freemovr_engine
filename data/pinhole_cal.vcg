@@ -6,7 +6,7 @@ Target\ Frame=/pinhole_cal
 Camera.Enabled=1
 Camera.Image\ Rendering=background & overlay
 Camera.Image\ Topic=/pinhole_cal/image
-Camera.Overlay\ Alpha=0.5
+Camera.Overlay\ Alpha=0.2
 Camera.Transport\ Hint=raw
 Camera.Zoom\ Factor=1
 Grid.Alpha=0.5
@@ -24,6 +24,8 @@ Grid.OffsetZ=0
 Grid.Plane=0
 Grid.Plane\ Cell\ Count=10
 Grid.Reference\ Frame=<Fixed Frame>
+MarkerArray.Enabled=1
+MarkerArray.Marker\ Array\ Topic=/pinhole_markers
 TF.All\ Enabled=1
 TF.Enabled=1
 TF.Frame\ Timeout=150
@@ -35,8 +37,8 @@ TF.Update\ Interval=0.05
 Tool\ 2D\ Nav\ GoalTopic=goal
 Tool\ 2D\ Pose\ EstimateTopic=initialpose
 Camera\ Type=rviz::OrbitViewController
-Camera\ Config=1.11279 1.59581 5.77958 -0.171212 -1.38512 -1.0595
-Property\ Grid\ State=selection=Camera.Enabled.Camera.Image Topic;expanded=.Global Options,TF.Enabled,TF./map/map,TF./pinhole_cal/pinhole_cal,TF.Enabled.TF.Tree,TF./mapTree/map,TF./pinhole_calTree/pinhole_cal,Grid.Enabled,Camera.Enabled;scrollpos=0,0;splitterpos=150,301;ispageselected=1
+Camera\ Config=1.11279 1.59581 6.65111 -0.171212 -1.38512 -1.0595
+Property\ Grid\ State=selection=MarkerArray.Enabled.MarkerArray.Marker Array Topic;expanded=.Global Options,TF./map/map,TF./pinhole_cal/pinhole_cal,TF./pinhole_cal_body/pinhole_cal_body,TF.Enabled.TF.Tree,TF./mapTree/map,TF./pinhole_calTree/pinhole_cal,TF./pinhole_cal_bodyTree/pinhole_cal_body,Camera.Enabled,MarkerArray.Enabled,MarkerArray.Enabled.MarkerArray.Namespaces;scrollpos=0,0;splitterpos=184,369;ispageselected=1
 [Display0]
 Name=TF
 Package=rviz
@@ -49,6 +51,11 @@ ClassName=rviz::GridDisplay
 Name=Camera
 Package=rviz
 ClassName=rviz::CameraDisplay
+[Display3]
+Name=MarkerArray
+Package=rviz
+ClassName=rviz::MarkerArrayDisplay
 [TF.]
 mapEnabled=1
 pinhole_calEnabled=1
+pinhole_cal_bodyEnabled=1
