@@ -196,8 +196,10 @@ def fixup_config( orig_config_dict ):
         plugin_dict['path'] = pp2
         return plugin_dict
     config_dict = orig_config_dict.copy()
-    config_dict['p2c'] = rosmsg2json.fixup_path( config_dict['p2c'] )
-    config_dict['p2g'] = rosmsg2json.fixup_path( config_dict['p2g'] )
+    if 'p2c' in config_dict:
+        config_dict['p2c'] = rosmsg2json.fixup_path( config_dict['p2c'] )
+    if 'p2g' in config_dict:
+        config_dict['p2g'] = rosmsg2json.fixup_path( config_dict['p2g'] )
 
     orig_plugins = config_dict.get('stimulus_plugins',[])
     plugins = [ fixup(p) for p in orig_plugins ]

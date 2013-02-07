@@ -11,6 +11,17 @@ import tf.transformations
 
 FPS=100.0
 
+# spacenav axes are:
+# x y z rx ry rz
+# where +x is right, +y is back towards you, +z is down into base
+RIGHT = 0
+BACKWARD = 1
+DOWN = 2
+
+PITCH = 3
+ROLL = 4
+YAW = 5
+
 def odeR2quat(Rmat,eps=1e-15):
     Rmat = np.array(Rmat); Rmat.shape = (3,3)
     R = np.eye(4); R[:3,:3]=Rmat
@@ -19,10 +30,11 @@ def odeR2quat(Rmat,eps=1e-15):
 
 class JoyPose:
     def __init__(self):
-        rospy.init_node('joypose')
+        rospy.init_node('spacenav_pose')
         self.pub = rospy.Publisher('pose', Pose)
         self.last_time = rospy.get_time()
-        self.pitch, self.yaw, self.roll, self.thrust = [0,0,0,0]
+        self.extra_gain = 10
+        self.axes = [0,0,0,0,0,0]
         self.world = ode.World()
         self.reset()
 
@@ -38,17 +50,13 @@ class JoyPose:
         body.setPosition( (0,0,0) )
 
     def on_joy(self,msg):
-        self.roll, self.pitch, _, self.thrust = msg.axes[:4]
-        self.yaw = 0
-        if len(msg.buttons) < 16:
-            return
-        # button assignments are for PS3 dual shock joystick
-        if msg.buttons[10]: # L1
-            self.yaw += 1
-        if msg.buttons[11]: # R1
-            self.yaw -= 1
-        if msg.buttons[15]: # pink square
+        self.axes = msg.axes
+        if msg.buttons[0]:
             self.reset()
+        if msg.buttons[1]:
+            self.extra_gain = 1000
+        else:
+            self.extra_gain = 10
 
     def gain_func(self, in_val):
         return 1e-2*in_val**3
@@ -63,9 +71,9 @@ class JoyPose:
         # update dynamic model
 
         # active turning term
-        torques = (self.gain_func(-self.roll),
-                   self.gain_func(self.pitch),
-                   self.gain_func(self.yaw) )
+        torques = (self.gain_func(self.axes[ROLL]),
+                   self.gain_func(self.axes[PITCH]),
+                   self.gain_func(self.axes[YAW]) )
         self.body.addRelTorque( torques )
 
         # rotational damping term
@@ -76,10 +84,12 @@ class JoyPose:
               rotation_damping_gain*v,
               rotation_damping_gain*w)
         self.body.addTorque( t2 )
-        #self.body.addRelTorque( t2 )
 
         # thrust
-        self.body.addRelForce( (  (self.thrust+1.0)**3,0.0,0.0) )
+        eg = self.extra_gain
+        self.body.addRelForce( (-eg*self.gain_func(-self.axes[BACKWARD]),
+                                -eg*self.gain_func(-self.axes[RIGHT]),
+                                -eg*self.gain_func(-self.axes[DOWN])))
         # drag
         x,y,z = self.body.getLinearVel()
         g = -10.0
