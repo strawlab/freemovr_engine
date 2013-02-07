@@ -1,0 +1,114 @@
+#!/usr/bin/env python
+import ode
+import numpy as np
+
+import roslib; roslib.load_manifest('flyvr')
+import rospy
+
+from geometry_msgs.msg import Pose
+from sensor_msgs.msg import Joy
+import tf.transformations
+
+FPS=100.0
+
+# spacenav axes are:
+# x y z rx ry rz
+# where +x is right, +y is back towards you, +z is down into base
+RIGHT = 0
+BACKWARD = 1
+DOWN = 2
+
+PITCH = 3
+ROLL = 4
+YAW = 5
+
+def odeR2quat(Rmat,eps=1e-15):
+    Rmat = np.array(Rmat); Rmat.shape = (3,3)
+    R = np.eye(4); R[:3,:3]=Rmat
+    quat = tf.transformations.quaternion_from_matrix(R)
+    return quat
+
+class JoyPose:
+    def __init__(self):
+        rospy.init_node('spacenav_pose')
+        self.pub = rospy.Publisher('pose', Pose)
+        self.last_time = rospy.get_time()
+        self.extra_gain = 10
+        self.axes = [0,0,0,0,0,0]
+        self.world = ode.World()
+        self.reset()
+
+        rospy.Subscriber("joy", Joy, self.on_joy)
+        rospy.Timer(rospy.Duration(1.0/FPS), self.on_timer)
+
+    def reset(self):
+        self.body = body = ode.Body(self.world)
+        M = ode.Mass()
+        M.setSphere(2500.0, 0.05)
+        M.mass = 1.0
+        body.setMass(M)
+        body.setPosition( (0,0,0) )
+
+    def on_joy(self,msg):
+        self.axes = msg.axes
+        if msg.buttons[0]:
+            self.reset()
+        if msg.buttons[1]:
+            self.extra_gain = 1000
+        else:
+            self.extra_gain = 10
+
+    def gain_func(self, in_val):
+        return 1e-2*in_val**3
+
+    def on_timer(self,_):
+        now = rospy.get_time()
+        dt = now-self.last_time
+        if dt<=0:
+            return
+        self.last_time = now
+
+        # update dynamic model
+
+        # active turning term
+        torques = (self.gain_func(self.axes[ROLL]),
+                   self.gain_func(self.axes[PITCH]),
+                   self.gain_func(self.axes[YAW]) )
+        self.body.addRelTorque( torques )
+
+        # rotational damping term
+        u,v,w = self.body.getAngularVel()
+        rotation_damping_gain = -1e-2
+
+        t2 = (rotation_damping_gain*u,
+              rotation_damping_gain*v,
+              rotation_damping_gain*w)
+        self.body.addTorque( t2 )
+
+        # thrust
+        eg = self.extra_gain
+        self.body.addRelForce( (-eg*self.gain_func(-self.axes[BACKWARD]),
+                                -eg*self.gain_func(-self.axes[RIGHT]),
+                                -eg*self.gain_func(-self.axes[DOWN])))
+        # drag
+        x,y,z = self.body.getLinearVel()
+        g = -10.0
+        self.body.addForce( (g*x, g*y, g*z) )
+
+        # integrate
+        self.world.step(dt)
+
+        msg = Pose()
+        quat = odeR2quat(self.body.getRotation())
+        for i in range(4):
+            setattr(msg.orientation,'xyzw'[i], quat[i])
+        x,y,z=self.body.getPosition()
+        msg.position.x=x
+        msg.position.y=y
+        msg.position.z=z
+
+        self.pub.publish(msg)
+
+if __name__=='__main__':
+    jp = JoyPose()
+    rospy.spin()
