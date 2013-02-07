@@ -40,6 +40,8 @@ class JoyPose:
     def on_joy(self,msg):
         self.roll, self.pitch, _, self.thrust = msg.axes[:4]
         self.yaw = 0
+        if len(msg.buttons) < 16:
+            return
         # button assignments are for PS3 dual shock joystick
         if msg.buttons[10]: # L1
             self.yaw += 1
