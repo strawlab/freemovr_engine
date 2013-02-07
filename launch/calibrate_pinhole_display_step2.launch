@@ -10,7 +10,7 @@
 
   <node type="rviz" pkg="rviz" name="rviz" args="$(find flyvr)/data/pinhole_cal.vcg" />
 
-  <node type="joypose" pkg="flyvr" name="joypose" />
+  <node type="spacenav_pose" pkg="flyvr" name="spacenav_pose" />
   <node type="simple_tf_filter" pkg="flyvr" name="tfilt" args="--child_frame=/pinhole_cal --topic_name=/pinhole_cal/tf"/>
 
   <node type="joy_node" pkg="joy" name="joy_node" />
