@@ -15,7 +15,7 @@ import display_client
 def show_image(ds,viewport,fname,white,black,pixel):
     rospy.init_node('show_image')
 
-    dsc = display_client.DisplayServerProxy(ds)
+    dsc = display_client.DisplayServerProxy(ds,wait=True)
     dsc.enter_2dblit_mode()
 
     if viewport:
