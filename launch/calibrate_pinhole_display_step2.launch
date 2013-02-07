@@ -1,10 +1,11 @@
 <launch>
   <!-- Spawn the display server. -->
   <node name="ds" pkg="flyvr" type="display_server" args="--mode=vr_display">
+    <rosparam command="load" file="$(find strawlab_tethered_experiments)/data/display_server_left.yaml" />
   </node>
 
   <node type="drive_extrinsic_display_calibration" pkg="flyvr" name="drive"
-  args="--intrinsic_fname=$(find flyvr)/data/sample/pinhole-intrinsics.yaml --geom_fname=$(find flyvr)/data/sample/geom.json --display_server=/ds" />
+  args="--intrinsic_fname=$(find flyvr)/data/sample/pinhole-intrinsics.yaml --geom_fname=$(find flyvr)/data/sample/geom.json --display_server=/ds --viewport center" />
 
   <node type="draw_rviz_frustum" pkg="flyvr" name="draw_rviz_frustum" />
 
