@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
+import os.path
+import argparse
+import yaml
+
+import roslib; roslib.load_manifest('flyvr')
+
+import rospy
+import std_msgs.msg
+
+import simple_geom
+import camera_model
+import display_client
+
+import rosgobject.wrappers
+from gi.repository import Gtk
+
+class UI:
+    def __init__(self, ds, cam, geometry_filename):
+        self.dsc = display_client.DisplayServerProxy(ds,wait=True)
+
+        self.dsc.set_mode('Stimulus2DBlit')
+
+        with open(geometry_filename,mode='r') as fd:
+            self._geom_dict = yaml.load( fd )
+        self.geom = simple_geom.Geometry(filename=geometry_filename)
+
+        me = os.path.dirname(os.path.abspath(__file__))
+        ui_fname = os.path.join(me,"extrinsic-wizard.ui")
+
+        self._ui = Gtk.Builder()
+        self._ui.add_from_file(ui_fname)
+
+        self._build_ui()
+
+        a1 = self._ui.get_object("assistant1")
+        #a1.set_default_size(600,400)
+        a1.connect("delete-event", rosgobject.main_quit)
+        a1.show_all()
+
+    def _build_ui(self):
+        cb1 = self._ui.get_object('selectviewport_combobox')
+
+        liststore = Gtk.ListStore(str)
+        di = self.dsc.get_display_info()
+
+        if 'virtualDisplays' in di:
+            for vdisp in di['virtualDisplays']:
+                print vdisp
+                liststore.append([vdisp])
+        else:
+            vdisp = None # full screen
+            liststore.append('default')
+
+
+        # rosgobject.wrappers.GtkEntryTopicWidget(
+        #             widget=self._ui.get_object("entry1"),
+        #             nodepath="/testnode/float",
+        #             msgclass=std_msgs.msg.Float32,
+        #             format_func=lambda x:"{0:5.1f} fps".format(x.data))
+        # rosgobject.wrappers.GtkEntryTopicWidget(
+        #             widget=self._ui.get_object("entry2"),
+        #             nodepath="/testnode/string",
+        #             msgclass=std_msgs.msg.String)
+
+
+if __name__ == "__main__":
+    #rospy.init_node("extrinsic_wizard",disable_signals=False)
+    rospy.init_node("extrinsic_wizard")
+    rosgobject.get_ros_thread() #ensure ros is spinning
+    rosgobject.add_console_logger()
+
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--intrinsic_fname', type=str, required=True,
+                        help='filename  (.bag or .yaml) intrinsic parameters')
+
+    parser.add_argument('--geom_fname', type=str, required=True,
+                        help='filename  (.json) specifying display geometry')
+
+    parser.add_argument('--display_server', type=str,
+                        required=True,
+                        help='the path of the display server to configure')
+
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    cam = camera_model.load_camera_from_file( args.intrinsic_fname,
+                                              extrinsics_required=False )
+
+    u = UI(args.display_server, cam, args.geom_fname)
+
+    Gtk.main()
