@@ -109,8 +109,15 @@ class MyApp:
         self.viewport = viewport
         if self.viewport:
             self.mask = self.dsc.get_virtual_display_mask(viewport)
+            mirror = self.dsc.get_virtual_display_mirror(viewport)
         else:
             self.mask = None
+            mirror = None
+
+        if mirror == 'leftright':
+            cam = cam.get_mirror_camera()
+        else:
+            assert mirror is None
 
         self.save_data = None
 
