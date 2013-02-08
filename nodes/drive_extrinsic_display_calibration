@@ -150,11 +150,17 @@ class MyApp:
             return
 
         farr = self.save_data['image_data']
+
         send_cam = self.save_data['camera']
+
+        farr[np.isnan(farr)] = -1
 
         r = farr[:,:,0]
         g = farr[:,:,1]
-        b = farr[:,:,2]
+        if farr.shape[2]>2:
+            b = farr[:,:,2]
+        else:
+            b = np.zeros_like(r)-1
 
         e_msg = send_cam.get_extrinsics_as_msg()
         e_dict = yaml.load(roslib.message.strify_message(e_msg))
@@ -262,7 +268,8 @@ class MyApp:
 
             if 1:
                 # send image to display server
-                if arr.shape!=(self.dsc.height,self.dsc.width):
+                if arr.shape[:2]!=(self.dsc.height,self.dsc.width):
+                    rospy.warn('generated image does not match display size')
                     arr = arr[0:min(self.dsc.height,arr.shape[0]),0:min(self.dsc.width,arr.shape[1]),:]
                 if self.mask != None:
                     masks = np.dstack([self.mask for i in range(0,arr.shape[-1])])
