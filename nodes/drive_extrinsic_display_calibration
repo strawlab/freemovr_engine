@@ -40,7 +40,13 @@ def _float_to_uint8_plane( farr ):
     return scaled.astype( np.uint8 )
 
 def float_to_uint8(farr):
-    arr = np.empty( farr.shape, dtype=np.uint8 )
+    if farr.ndim == 2:
+        newshape = farr.shape
+    elif farr.ndim == 3:
+        # add third channel if we only have two channels
+        assert farr.shape[2] in (2,3)
+        newshape = ( farr.shape[0], farr.shape[1], 3 )
+    arr = np.zeros( newshape, dtype=np.uint8 )
     if farr.ndim==2:
         arr[:,:] = _float_to_uint8_plane( farr )
     elif farr.ndim==3:
@@ -49,6 +55,46 @@ def float_to_uint8(farr):
     else:
         raise ValueError('cannot convert array')
     return arr
+
+def tcs_to_beachball(farr):
+    assert farr.ndim == 3
+    assert farr.shape[2] == 2
+    u = farr[:,:,0]
+    v = farr[:,:,1]
+
+    good = ~np.isnan( u )
+    assert np.allclose( good, ~np.isnan(v) )
+
+    assert np.all( u[good] >= 0 )
+    assert np.all( u[good] <= 1 )
+    assert np.all( v[good] >= 0 )
+    assert np.all( v[good] <= 1 )
+
+    hf = u*4 # horiz float
+    vf = v*2 # vert float
+
+    hi = np.floor( hf ) # horiz int (0,1,2,3)
+    hi[hi==4.0] = 3.0
+    vi = np.floor( vf ) # vert int  (0,1)
+    vi[vi==2.0] = 1.0
+
+    iif = hi + 4*vi + 1 # (1,2,3,4,5,6,7,8)
+    ii = iif.astype( np.uint8 ) # nan -> 0
+
+    colors = np.array( [ (0,0,0), # black
+
+                         (255,0,0), # red
+                         (0,255,0), # green
+                         (0, 0, 255), # blue
+                         (255, 0, 255),
+
+                         (255, 0, 255),
+                         (255,0,0), # red
+                         (0,255,0), # green
+                         (0, 0, 255), # blue
+                         ])
+    bbim = colors[ ii ]
+    return bbim
 
 class MyApp:
     def __init__(self, ds, viewport, cam, geometry_filename):
@@ -187,10 +233,12 @@ class MyApp:
             center = np.array([self.geom.model.get_center()])
 
             send_cam = self.cam
-            farr = self.geom.compute_for_camera_view( send_cam )
+            farr = self.geom.compute_for_camera_view( send_cam,
+                                                      what='texture_coords' )
             self.save_data = {'image_data':farr,
                               'camera':send_cam}
-            arr = float_to_uint8(farr)
+            #arr = float_to_uint8(farr)
+            arr = tcs_to_beachball(farr)
 
             if 1:
                 # send image to RViz
