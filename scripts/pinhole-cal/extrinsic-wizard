@@ -16,6 +16,10 @@ import display_client
 import rosgobject.wrappers
 from gi.repository import Gtk
 
+def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
+    float_in = model.get_value(iter, 0)
+    cell.set_property('text', '%g'%float_in )
+
 class UI:
     def __init__(self, ds, cam, geometry_filename):
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
@@ -34,25 +38,102 @@ class UI:
 
         self._build_ui()
 
-        a1 = self._ui.get_object("assistant1")
+        self.a1 = a1 = self._ui.get_object("assistant1")
         #a1.set_default_size(600,400)
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
 
     def _build_ui(self):
-        cb1 = self._ui.get_object('selectviewport_combobox')
 
+        # load select viewport combobox ----------------
         liststore = Gtk.ListStore(str)
         di = self.dsc.get_display_info()
 
         if 'virtualDisplays' in di:
-            for vdisp in di['virtualDisplays']:
-                print vdisp
-                liststore.append([vdisp])
+            for viewport_dict in di['virtualDisplays']:
+                liststore.append([viewport_dict['id']])
         else:
-            vdisp = None # full screen
-            liststore.append('default')
+            viewport_dict = None # full screen
+            liststore.append('<full screen>')
 
+        cb1 = self._ui.get_object('selectviewport_combobox')
+        cb1.set_model( liststore )
+        cb1.connect("changed", self.on_selectviewport_selected)
+
+        # create treeview --------------------------
+
+        self.liststore = Gtk.ListStore(float, float, float, float, bool, str)
+        self._add_pt_entry( 0.,   0.   )
+
+        treeview = self._ui.get_object('treeview1')
+        treeview.set_model( self.liststore )
+
+        renderer_text = Gtk.CellRendererText()
+        #renderer_text.set_property("editable", True)
+        #renderer_text.connect("edited", self.on_U_edited)
+        column_text = Gtk.TreeViewColumn("texture U", renderer_text, text=0)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=0)
+        treeview.append_column(column_text)
+
+        renderer_text = Gtk.CellRendererText()
+        #renderer_text.set_property("editable", True)
+        #renderer_text.connect("edited", self.on_V_edited)
+        column_text = Gtk.TreeViewColumn("texture V", renderer_text, text=1)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=1)
+        treeview.append_column(column_text)
+
+        renderer_text = Gtk.CellRendererText()
+        column_text = Gtk.TreeViewColumn("display X", renderer_text, text=2)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=2)
+        treeview.append_column(column_text)
+
+        renderer_text = Gtk.CellRendererText()
+        column_text = Gtk.TreeViewColumn("display Y", renderer_text, text=3)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=3)
+        treeview.append_column(column_text)
+
+        renderer_toggle = Gtk.CellRendererToggle()
+        renderer_toggle.connect("toggled", self.on_show_UV_pixel)
+        column_toggle = Gtk.TreeViewColumn("show", renderer_toggle, active=4)
+        treeview.append_column(column_toggle)
+
+        renderer_pixbuf = Gtk.CellRendererPixbuf()
+        column_pixbuf = Gtk.TreeViewColumn('Click to edit', renderer_pixbuf, stock_id=5)
+        treeview.append_column(column_pixbuf)
+
+        # connect treeview buttons
+
+        add_button = self._ui.get_object("UV_add_button")
+        add_button.connect("clicked", self.on_add_UV)
+
+        remove_button = self._ui.get_object("UV_remove_button")
+        remove_button.connect("clicked", self.on_remove_UV)
+
+    def on_add_UV(self, button):
+
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            print "OK button pressed"
+        elif response == Gtk.ResponseType.CANCEL:
+            print "Cancel button pressed"
+
+        dialog.destroy()
+
+    def _add_pt_entry(self, texU, texV,
+                      displayX=None, displayY=None,
+                      show_point=False, icon=Gtk.STOCK_EXECUTE):
+        self.liststore.append([texU, texV,
+                               displayX, displayY,
+                               show_point, icon])
+
+    def on_show_UV_pixel(self, widget, path):
+        print 'on show UV toggled'
+        self.liststore[path][4] = not self.liststore[path][4]
+
+    def on_selectviewport_selected(self, combobox):
+        sv = self._ui.get_object('selectviewport')
+        self.a1.set_page_complete(sv, True)
 
         # rosgobject.wrappers.GtkEntryTopicWidget(
         #             widget=self._ui.get_object("entry1"),
