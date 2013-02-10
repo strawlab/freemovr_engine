@@ -122,6 +122,9 @@ class UI:
     def on_do_point(self, widget, path):
         val = self.liststore[path]
         print 'doing point',val
+        dialog = self._ui.get_object("launch_joy_button")
+        response = dialog.run()
+        dialog.hide()
 
     def on_add_UV(self, button):
         dialog = self._ui.get_object("dialog1")
