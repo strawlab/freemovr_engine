@@ -3,6 +3,7 @@
 import os.path
 import argparse
 import yaml
+import numpy as np
 
 import roslib; roslib.load_manifest('flyvr')
 
@@ -17,7 +18,7 @@ import rosgobject.wrappers
 from gi.repository import Gtk
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
-    float_in = model.get_value(iter, 0)
+    float_in = model.get_value(iter, column)
     cell.set_property('text', '%g'%float_in )
 
 class UI:
@@ -33,6 +34,9 @@ class UI:
         me = os.path.dirname(os.path.abspath(__file__))
         ui_fname = os.path.join(me,"extrinsic-wizard.ui")
 
+        self.red_bg_provider = Gtk.CssProvider()
+        self.red_bg_provider.load_from_data('GtkEntry { background: red; }')
+
         self._ui = Gtk.Builder()
         self._ui.add_from_file(ui_fname)
 
@@ -46,18 +50,18 @@ class UI:
     def _build_ui(self):
 
         # load select viewport combobox ----------------
-        liststore = Gtk.ListStore(str)
+        viewportstore = Gtk.ListStore(str)
         di = self.dsc.get_display_info()
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                liststore.append([viewport_dict['id']])
+                viewportstore.append([viewport_dict['id']])
         else:
             viewport_dict = None # full screen
-            liststore.append('<full screen>')
+            viewportstore.append('<full screen>')
 
         cb1 = self._ui.get_object('selectviewport_combobox')
-        cb1.set_model( liststore )
+        cb1.set_model( viewportstore )
         cb1.connect("changed", self.on_selectviewport_selected)
 
         # create treeview --------------------------
@@ -66,6 +70,7 @@ class UI:
         self._add_pt_entry( 0.,   0.   )
 
         treeview = self._ui.get_object('treeview1')
+        #treeview.get_selection().set_mode( Gtk.SELECTION_SINGLE )
         treeview.set_model( self.liststore )
 
         renderer_text = Gtk.CellRendererText()
@@ -97,7 +102,12 @@ class UI:
         column_toggle = Gtk.TreeViewColumn("show", renderer_toggle, active=4)
         treeview.append_column(column_toggle)
 
-        renderer_pixbuf = Gtk.CellRendererPixbuf()
+        if 1:
+            # crappy toggle until we can do point
+            renderer_pixbuf = Gtk.CellRendererToggle()
+            renderer_pixbuf.connect("toggled", self.on_do_point)
+        else:
+            renderer_pixbuf = Gtk.CellRendererPixbuf()
         column_pixbuf = Gtk.TreeViewColumn('Click to edit', renderer_pixbuf, stock_id=5)
         treeview.append_column(column_pixbuf)
 
@@ -107,52 +117,79 @@ class UI:
         add_button.connect("clicked", self.on_add_UV)
 
         remove_button = self._ui.get_object("UV_remove_button")
-        #remove_button.connect("clicked", self.on_remove_UV)
+        remove_button.connect("clicked", self.on_remove_UV)
+
+    def on_do_point(self, widget, path):
+        val = self.liststore[path]
+        print 'doing point',val
 
     def on_add_UV(self, button):
         dialog = self._ui.get_object("dialog1")
         while 1:
             response = dialog.run()
-            print 'response',response
             if response == Gtk.ResponseType.OK:
-                print "OK button pressed"
+                all_OK = True
 
-                
+                entry = self._ui.get_object('texture_U_text_field')
+                style_context = entry.get_style_context()
+                val = entry.get_text()
+                try:
+                    valf = float(val)
+                    assert valf >= 0
+                    assert valf <= 1
+                except:
+                    style_context.add_provider(self.red_bg_provider,
+                                               Gtk.STYLE_PROVIDER_PRIORITY_USER)
+                    all_OK = False
+                else:
+                    style_context.remove_provider(self.red_bg_provider)
+                    U = valf
+
+                entry = self._ui.get_object('texture_V_text_field')
+                style_context = entry.get_style_context()
+                val = entry.get_text()
+                try:
+                    valf = float(val)
+                    assert valf >= 0
+                    assert valf <= 1
+                except:
+                    style_context.add_provider(self.red_bg_provider,
+                                               Gtk.STYLE_PROVIDER_PRIORITY_USER)
+                    all_OK = False
+                else:
+                    style_context.remove_provider(self.red_bg_provider)
+                    V = valf
+
                 # check all OK,
-                if not all_OK:
-                    add_stuff()
+                if all_OK:
+                    self._add_pt_entry( U, V )
                     break
             elif response == Gtk.ResponseType.CANCEL:
-                print "Cancel button pressed"
                 break
 
-        dialog.destroy()
+        dialog.hide()
+
+    def on_remove_UV(self,button):
+        treeview = self._ui.get_object('treeview1')
+        selection = treeview.get_selection()
+        sel = selection.get_selected()
+        if not sel[1] == None:
+            print 'sel[1]',sel[1]
+            self.liststore.remove( sel[1] )
 
     def _add_pt_entry(self, texU, texV,
-                      displayX=None, displayY=None,
+                      displayX=float(np.nan), displayY=float(np.nan),
                       show_point=False, icon=Gtk.STOCK_EXECUTE):
         self.liststore.append([texU, texV,
                                displayX, displayY,
                                show_point, icon])
 
     def on_show_UV_pixel(self, widget, path):
-        print 'on show UV toggled'
         self.liststore[path][4] = not self.liststore[path][4]
 
     def on_selectviewport_selected(self, combobox):
         sv = self._ui.get_object('selectviewport')
         self.a1.set_page_complete(sv, True)
-
-        # rosgobject.wrappers.GtkEntryTopicWidget(
-        #             widget=self._ui.get_object("entry1"),
-        #             nodepath="/testnode/float",
-        #             msgclass=std_msgs.msg.Float32,
-        #             format_func=lambda x:"{0:5.1f} fps".format(x.data))
-        # rosgobject.wrappers.GtkEntryTopicWidget(
-        #             widget=self._ui.get_object("entry2"),
-        #             nodepath="/testnode/string",
-        #             msgclass=std_msgs.msg.String)
-
 
 if __name__ == "__main__":
     #rospy.init_node("extrinsic_wizard",disable_signals=False)
