@@ -107,16 +107,24 @@ class UI:
         add_button.connect("clicked", self.on_add_UV)
 
         remove_button = self._ui.get_object("UV_remove_button")
-        remove_button.connect("clicked", self.on_remove_UV)
+        #remove_button.connect("clicked", self.on_remove_UV)
 
     def on_add_UV(self, button):
+        dialog = self._ui.get_object("dialog1")
+        while 1:
+            response = dialog.run()
+            print 'response',response
+            if response == Gtk.ResponseType.OK:
+                print "OK button pressed"
 
-        response = dialog.run()
-
-        if response == Gtk.ResponseType.OK:
-            print "OK button pressed"
-        elif response == Gtk.ResponseType.CANCEL:
-            print "Cancel button pressed"
+                
+                # check all OK,
+                if not all_OK:
+                    add_stuff()
+                    break
+            elif response == Gtk.ResponseType.CANCEL:
+                print "Cancel button pressed"
+                break
 
         dialog.destroy()
 
