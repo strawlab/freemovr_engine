@@ -118,9 +118,6 @@ IF(BUILD_WITH_ROS)
   rosbuild_add_library(StimulusStandby src/StimulusStandby.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(Stimulus2DSprite src/Stimulus2DSprite.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
-
   rosbuild_add_library(StimulusTemplate src/StimulusTemplate.cpp)
   TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
@@ -164,9 +161,6 @@ ELSE(BUILD_WITH_ROS)
 
   ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
-
-  ADD_LIBRARY(Stimulus2DSprite SHARED src/Stimulus2DSprite.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DSprite ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
   ADD_EXECUTABLE(display_server src/main.cpp ${DS_SOURCES})
