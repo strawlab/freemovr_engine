@@ -22,38 +22,38 @@
 #include "flyvr/flyvr_assert.h"
 
 osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int height) {
-	osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
+    osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
 
-	// make full screen textured quad
+    // make full screen textured quad
 
-	// TODO3: Drop this and use osg::createTexturedQuadGeometry() instead.
-	osg::Vec3Array* vertices = new osg::Vec3Array;
-	osg::Vec2Array* texcoords = new osg::Vec2Array;
+    // TODO3: Drop this and use osg::createTexturedQuadGeometry() instead.
+    osg::Vec3Array* vertices = new osg::Vec3Array;
+    osg::Vec2Array* texcoords = new osg::Vec2Array;
 
-	// fullscreen quad
-	vertices->push_back(  osg::Vec3(0.0,  0.0, -1.0 )); texcoords->push_back(osg::Vec2(0.0, 0.0));
-	vertices->push_back(  osg::Vec3(0.0, height, -1.0 )); texcoords->push_back(osg::Vec2(0.0, height));
-	vertices->push_back( osg::Vec3(width, height, -1.0 )); texcoords->push_back(osg::Vec2(width, height));
-	vertices->push_back( osg::Vec3(width,  0.0, -1.0 )); texcoords->push_back(osg::Vec2(width, 0.0));
+    // fullscreen quad
+    vertices->push_back(  osg::Vec3(0.0,  0.0, -1.0 )); texcoords->push_back(osg::Vec2(0.0, 0.0));
+    vertices->push_back(  osg::Vec3(0.0, height, -1.0 )); texcoords->push_back(osg::Vec2(0.0, height));
+    vertices->push_back( osg::Vec3(width, height, -1.0 )); texcoords->push_back(osg::Vec2(width, height));
+    vertices->push_back( osg::Vec3(width,  0.0, -1.0 )); texcoords->push_back(osg::Vec2(width, 0.0));
 
-	this_geom->setVertexArray(vertices);
-	this_geom->setTexCoordArray(0,texcoords);
+    this_geom->setVertexArray(vertices);
+    this_geom->setTexCoordArray(0,texcoords);
 
-	osg::Vec4Array* colors = new osg::Vec4Array;
-	colors->push_back(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
-	this_geom->setColorArray(colors);
-	this_geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+    osg::Vec4Array* colors = new osg::Vec4Array;
+    colors->push_back(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
+    this_geom->setColorArray(colors);
+    this_geom->setColorBinding(osg::Geometry::BIND_OVERALL);
 
-	this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
+    this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
 
-	return this_geom;
+    return this_geom;
 }
 
 class Stimulus2DBlit: public StimulusInterface
 {
 public:
 Stimulus2DBlit() : sprite_anchor("center") {
-	rootg = new osg::Group;
+    rootg = new osg::Group;
     sprite_pat = new osg::PositionAttitudeTransform;
     rootg->addChild(sprite_pat);
 }
@@ -63,23 +63,23 @@ std::string name() const {
 }
 
 void create_HUD_group(unsigned int width, unsigned int height, osg::Texture* texture ) {
-	_group = new osg::Group;
+    _group = new osg::Group;
     rootg->addChild(_group);
 
-	_group->addDescription("textured quad group");
+    _group->addDescription("textured quad group");
 
-	_geode = new osg::Geode();
-	{
+    _geode = new osg::Geode();
+    {
 
-		// Pixel-based texcoords used here require use of TextureRectangle
-		// (not Texture2D).
-		osg::ref_ptr<osg::Geometry> this_geom = create_HUD_geom(width, height);
-		_geode->addDrawable(this_geom);
-	}
+        // Pixel-based texcoords used here require use of TextureRectangle
+        // (not Texture2D).
+        osg::ref_ptr<osg::Geometry> this_geom = create_HUD_geom(width, height);
+        _geode->addDrawable(this_geom);
+    }
     _group->addChild(_geode);
-	osg::StateSet* ss = _group->getOrCreateStateSet();
-	ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-	ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+    osg::StateSet* ss = _group->getOrCreateStateSet();
+    ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+    ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 
 }
 
@@ -139,9 +139,9 @@ void _load_sprite_image(osg::Image* image) {
 void resized(int width,int height) {
     _height = height;
 
-	_geode->removeDrawables(0,1);
-	osg::ref_ptr<osg::Geometry> this_geom = create_HUD_geom(width, height);
-	_geode->addDrawable(this_geom);
+    _geode->removeDrawables(0,1);
+    osg::ref_ptr<osg::Geometry> this_geom = create_HUD_geom(width, height);
+    _geode->addDrawable(this_geom);
 }
 
 osg::ref_ptr<osg::Group> get_3d_world() {
@@ -153,11 +153,11 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
 }
 
 std::vector<std::string> get_topic_names() const {
-	std::vector<std::string> result;
-	result.push_back( std::string("blit_images") );
+    std::vector<std::string> result;
+    result.push_back( std::string("blit_images") );
     result.push_back( std::string("sprite_image") );
     result.push_back( std::string("sprite_pose") );
-	return result;
+    return result;
 }
 
 std::string get_message_type(const std::string& topic_name) const {
@@ -183,9 +183,9 @@ void receive_json_message(const std::string& topic_name, const std::string& json
     std::istringstream iss(image_data);
 
     osg::ref_ptr<osg::Image> image;
-	if (image_format.at(0)=='.') {
-		image_format = image_format.substr(1);
-	}
+    if (image_format.at(0)=='.') {
+        image_format = image_format.substr(1);
+    }
     osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
     flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
     osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
