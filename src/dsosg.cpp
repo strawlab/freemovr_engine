@@ -393,7 +393,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DShaderDemo");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DBlit");
 	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusStandby");
-	stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DSprite");
 
 	if (!Poco::File(_config_file_path).exists()) {
 		std::cerr << "configuration file " << _config_file_path.toString() << " does not exist." << std::endl;

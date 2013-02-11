@@ -16,9 +16,9 @@ class App:
     def __init__(self,button=0):
         rospy.init_node('joystick_cursor')
 
-        self.display_server = display_client.DisplayServerProxy()
+        self.display_server = display_client.DisplayServerProxy(wait=True)
         self.old_mode = self.display_server.get_mode()
-        self.display_server.set_mode('Stimulus2DSprite')
+        self.display_server.set_mode('Stimulus2DBlit')
 
         self.pub = rospy.Publisher('sprite_pose', Pose2D)
         self.pubclick = rospy.Publisher('joy_click_pose', Pose2D)

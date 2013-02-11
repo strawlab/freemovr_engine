@@ -1,6 +1,10 @@
 #include "json2osg.hpp"
 #include "flyvr/flyvr_assert.h"
 
+#include "base64.h"
+#include <stdexcept>
+#include <jansson.h>
+
 osg::Vec3 parse_vec3(json_t* root) {
     json_t *data_json;
     double x,y,z;
@@ -91,4 +95,37 @@ std::vector<double> parse_vector_double(json_t* root) {
    }
 
    return result;
+}
+
+void parse_json_image(const std::string& json_message,
+                      std::string& image_format,
+                      std::string& image_data) {
+
+    json_t *root;
+    json_error_t error;
+
+    root = json_loads(json_message.c_str(), 0, &error);
+
+    if(!root) {
+		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
+		throw std::runtime_error("error in json file");
+    }
+
+    json_t *image_data_base64_json = json_object_get(root, "data (base64)");
+    if(!json_is_string(image_data_base64_json)){
+		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
+		throw std::runtime_error("error in json file");
+    }
+
+    json_t *image_format_json = json_object_get(root, "format");
+    if(!json_is_string(image_format_json)){
+		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
+		throw std::runtime_error("error in json file");
+    }
+
+    std::string image_data_base64( json_string_value( image_data_base64_json ) );
+    image_format = std::string( json_string_value( image_format_json ));
+
+    image_data = std::string( base64_decode( image_data_base64 ));
+    json_decref(root);
 }
