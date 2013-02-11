@@ -57,21 +57,22 @@ class UI:
         a1.show_all()
 
     def _build_ui(self):
-
         # load select viewport combobox ----------------
-        viewportstore = Gtk.ListStore(str)
+        #self.viewportstore = Gtk.ListStore(str)
         di = self.dsc.get_display_info()
+        cb1 = self._ui.get_object('selectviewport_combobox1') # in dialog1
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                viewportstore.append([viewport_dict['id']])
+                #self.viewportstore.append([viewport_dict['id']])
+                cb1.append_text( viewport_dict['id'] )
         else:
             viewport_dict = None # full screen
-            viewportstore.append('<full screen>')
+            #self.viewportstore.append(
+            cb1.append( '<full screen>' )
 
-        cb1 = self._ui.get_object('selectviewport_combobox')
-        cb1.set_model( viewportstore )
-        cb1.connect("changed", self.on_selectviewport_selected)
+        #cb1.set_model( self.viewportstore )
+        #cb1.connect("changed", self.on_selectviewport_selected)
 
         # create treeview --------------------------
 
@@ -137,7 +138,8 @@ class UI:
         dialog.hide()
 
     def on_add_UV(self, button):
-        dialog = self._ui.get_object("dialog1")
+        dialog = self._ui.get_object('dialog1')
+
         while 1:
             response = dialog.run()
             if response == Gtk.ResponseType.OK:
@@ -175,6 +177,11 @@ class UI:
 
                 # check all OK,
                 if all_OK:
+                    cb1 = self._ui.get_object('selectviewport_combobox1')
+                    viewport = cb1.get_active_text()
+                    print 'viewport', viewport8
+
+                    
                     self._add_pt_entry( viewport, U, V )
                     break
             elif response == Gtk.ResponseType.CANCEL:
@@ -204,9 +211,9 @@ class UI:
     def update_bg_image(self):
         self.dsc.show_pixels(arr)
 
-    def on_selectviewport_selected(self, combobox):
-        sv = self._ui.get_object('selectviewport')
-        self.a1.set_page_complete(sv, True)
+    # def on_selectviewport_selected(self, combobox):
+    #     sv = self._ui.get_object('selectviewport')
+    #     self.a1.set_page_complete(sv, True)
 
 if __name__ == "__main__":
     #rospy.init_node("extrinsic_wizard",disable_signals=False)
