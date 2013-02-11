@@ -172,114 +172,85 @@ std::string get_message_type(const std::string& topic_name) const {
 }
 
 void receive_json_message(const std::string& topic_name, const std::string& json_message) {
-  if (topic_name=="blit_images") {
-    std::string image_format;
+    if (topic_name=="blit_images") {
+        std::string image_format;
 
-    std::string image_data;
-    parse_json_image(json_message,
-                     image_format,
-                     image_data);
+        std::string image_data;
+        parse_json_image(json_message,
+                         image_format,
+                         image_data);
 
-    std::istringstream iss(image_data);
+        std::istringstream iss(image_data);
 
-    osg::ref_ptr<osg::Image> image;
-    if (image_format.at(0)=='.') {
-        image_format = image_format.substr(1);
-    }
-    osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
-    flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
-    osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
-    flyvr_assert_msg( rr.success(), "bad image read");
-    image = rr.takeImage();
-    osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
-    osg::ref_ptr<osg::StateSet> ss = _group->getOrCreateStateSet();
-    ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
- } else {
-  json_t *root;
-  json_error_t error;
-
-  root = json_loads(json_message.c_str(), 0, &error);
-
-  if(!root) {
-      fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
-      throw std::runtime_error("error in json file");
-  }
-
-  if (topic_name=="sprite_image") {
-
-    json_t *image_data_base64_json = json_object_get(root, "data (base64)");
-    if(!json_is_string(image_data_base64_json)){
-        fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-        throw std::runtime_error("error in json file");
-    }
-
-    json_t *image_format_json = json_object_get(root, "format");
-    if(!json_is_string(image_format_json)){
-        fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-        throw std::runtime_error("error in json file");
-    }
-
-    std::string image_data_base64( json_string_value( image_data_base64_json ) );
-    std::string image_format( json_string_value( image_format_json ));
-
-    std::string image_data = base64_decode( image_data_base64 );
-
-    json_decref(root);
-    std::istringstream iss(image_data);
-
-    osg::ref_ptr<osg::Image> image;
-    if (image_format.at(0)=='.') {
-        image_format = image_format.substr(1);
-    }
-    osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
-    if (rw) {
-        osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
-        if ( rr.success() ) {
-            image = rr.takeImage();
-            _load_sprite_image(image);
-            return; // success
+        osg::ref_ptr<osg::Image> image;
+        if (image_format.at(0)=='.') {
+            image_format = image_format.substr(1);
         }
+        osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
+        flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
+        osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
+        flyvr_assert_msg( rr.success(), "bad image read");
+        image = rr.takeImage();
+        osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
+        osg::ref_ptr<osg::StateSet> ss = _group->getOrCreateStateSet();
+        ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+    } else if (topic_name=="sprite_image") {
+        std::string image_format;
+
+        std::string image_data;
+        parse_json_image(json_message,
+                         image_format,
+                         image_data);
+        std::istringstream iss(image_data);
+
+        osg::ref_ptr<osg::Image> image;
+        if (image_format.at(0)=='.') {
+            image_format = image_format.substr(1);
+        }
+        osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
+        flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
+        osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
+        flyvr_assert_msg( rr.success(), "bad image read");
+        image = rr.takeImage();
+        _load_sprite_image(image);
+    } else if (topic_name=="sprite_pose") {
+        json_t *root;
+        json_error_t error;
+
+        root = json_loads(json_message.c_str(), 0, &error);
+        flyvr_assert_msg(root!=NULL,"error in JSON");
+
+        json_t *data_json;
+
+        data_json = json_object_get(root, "x");
+        if(!json_is_number(data_json)){
+            fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
+            throw std::runtime_error("error in json");
+        }
+        double x = json_number_value( data_json );
+
+        data_json = json_object_get(root, "y");
+        if(!json_is_number(data_json)){
+            fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
+            throw std::runtime_error("error in json");
+        }
+        double y = json_number_value( data_json );
+
+        data_json = json_object_get(root, "theta");
+        if(!json_is_number(data_json)){
+            fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
+            throw std::runtime_error("error in json");
+        }
+        double theta = json_number_value( data_json );
+        if (theta!=0.0) {
+            throw std::runtime_error("theta != 0.0 not implemented.");
+        }
+
+        osg::Vec3 newpos = osg::Vec3( x, _height-y, 0.0); // convert to our coord system
+        sprite_pat->setPosition(newpos);
     } else {
-        fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-        flyvr_assert(false);
+        throw std::runtime_error("unknown topic_name");
     }
-    fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-    flyvr_assert(false);
-  } else if  (topic_name=="sprite_pose") {
-
-    json_t *data_json;
-
-    data_json = json_object_get(root, "x");
-    if(!json_is_number(data_json)){
-        fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-        throw std::runtime_error("error in json");
-    }
-    double x = json_number_value( data_json );
-
-    data_json = json_object_get(root, "y");
-    if(!json_is_number(data_json)){
-        fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-        throw std::runtime_error("error in json");
-    }
-    double y = json_number_value( data_json );
-
-    data_json = json_object_get(root, "theta");
-    if(!json_is_number(data_json)){
-        fprintf(stderr, "error: in %s(%d): expected number\n", __FILE__, __LINE__);
-        throw std::runtime_error("error in json");
-    }
-    double theta = json_number_value( data_json );
-    if (theta!=0.0) {
-        throw std::runtime_error("theta != 0.0 not implemented.");
-    }
-
-    osg::Vec3 newpos = osg::Vec3( x, _height-y, 0.0); // convert to our coord system
-    sprite_pat->setPosition(newpos);
-
-    return; // success
-  }
-  throw std::runtime_error("unknown topic_name");
- }
 }
 
 private:
