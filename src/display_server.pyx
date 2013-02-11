@@ -422,9 +422,9 @@ cdef class MyNode:
         json_image = rosmsg2json.rosmsg2json(image)
         with self._commands_lock:
             self._commands.put({'command':'send plugin message',
-                                                'plugin': plugin,
-                                                'topic_name': 'blit_images',
-                                                'msg_json': json_image})
+                                'plugin': plugin,
+                                'topic_name': 'blit_images',
+                                'msg_json': json_image})
         return flyvr.srv.BlitCompressedImageResponse()
 
     def handle_get_trackball_manipulator_state(self,request):
