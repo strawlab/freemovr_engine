@@ -15,6 +15,7 @@ import simple_geom
 import camera_model
 import display_client
 
+import rosgobject.core
 import rosgobject.wrappers
 from gi.repository import Gtk
 
@@ -36,9 +37,11 @@ class UI:
     def __init__(self, ds, cam, geometry_filename):
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
 
-        joy_sub = rospy.Subscriber('joy_click_pose', Pose2D, self.on_joy_callback)
+        rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
 
-        #self.dsc.set_mode('Stimulus2DBlit') # let joystick_cursor node set the mode
+        self.yamlfilter = Gtk.FileFilter()
+        self.yamlfilter.set_name("YAML Files")
+        self.yamlfilter.add_pattern("*.yaml")
 
         with open(geometry_filename,mode='r') as fd:
             self._geom_dict = yaml.load( fd )
@@ -53,27 +56,34 @@ class UI:
         self._build_ui()
 
         self.a1 = a1 = self._ui.get_object("assistant1")
-        #a1.set_default_size(600,400)
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
 
-    def on_joy_callback(self, msg):
-        # called in some ROS thread
-        print 'got click', msg
+    def on_joy_callback(self, widget, msg):
+        if not len(self.liststore):
+            return
+
+        for row in self.liststore:
+            if row[JOYLISTEN]:
+                break
+
+        if not row[JOYLISTEN]:
+            # no row selected
+            return
+
+        row[DISPLAYX] = msg.x
+        row[DISPLAYY] = msg.y
 
     def _build_ui(self):
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
-        #cb1 = self._ui.get_object('selectviewport_combobox1')
         self.vdisp_store = Gtk.ListStore(str)
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                #cb1.append_text( viewport_dict['id'] )
                 self.vdisp_store.append([viewport_dict['id']])
         else:
             viewport_dict = None # full screen
-            #cb1.append(FULLSCREEN)
             self.vdisp_store.append(FULLSCREEN)
 
         # create treeview --------------------------
@@ -81,38 +91,35 @@ class UI:
         self.liststore = Gtk.ListStore(str, float, float, float, float, bool, bool)
 
         treeview = self._ui.get_object('treeview1')
-        #treeview.get_selection().set_mode( Gtk.SELECTION_SINGLE )
         treeview.set_model( self.liststore )
 
-        renderer_text = Gtk.CellRendererCombo()
-        renderer_text.set_property("model", self.vdisp_store )
-        renderer_text.set_property("text-column", VDISP)
-        renderer_text.set_property("editable", True)
-        #renderer_text.connect("edited", self.on_U_edited)
+        renderer_text = Gtk.CellRendererCombo(model=self.vdisp_store,
+                                              text_column=VDISP,
+                                              editable=True)
+        renderer_text.connect("edited", self.on_edit_vdisp, VDISP)
         column_text = Gtk.TreeViewColumn("virtual display", renderer_text, text=VDISP)
-        #column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=TEXU)
         treeview.append_column(column_text)
 
-        renderer_text = Gtk.CellRendererText()
-        #renderer_text.set_property("editable", True)
-        #renderer_text.connect("edited", self.on_U_edited)
+        renderer_text = Gtk.CellRendererText(editable=True)
+        renderer_text.connect("edited", self.on_edit_cell, TEXU)
         column_text = Gtk.TreeViewColumn("texture U", renderer_text, text=TEXU)
         column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=TEXU)
         treeview.append_column(column_text)
 
-        renderer_text = Gtk.CellRendererText()
-        #renderer_text.set_property("editable", True)
-        #renderer_text.connect("edited", self.on_V_edited)
+        renderer_text = Gtk.CellRendererText(editable=True)
+        renderer_text.connect("edited", self.on_edit_cell, TEXV)
         column_text = Gtk.TreeViewColumn("texture V", renderer_text, text=TEXV)
         column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=TEXV)
         treeview.append_column(column_text)
 
-        renderer_text = Gtk.CellRendererText()
+        renderer_text = Gtk.CellRendererText(editable=True)
+        renderer_text.connect("edited", self.on_edit_cell, DISPLAYX)
         column_text = Gtk.TreeViewColumn("display X", renderer_text, text=DISPLAYX)
         column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=DISPLAYX)
         treeview.append_column(column_text)
 
-        renderer_text = Gtk.CellRendererText()
+        renderer_text = Gtk.CellRendererText(editable=True)
+        renderer_text.connect("edited", self.on_edit_cell, DISPLAYY)
         column_text = Gtk.TreeViewColumn("display Y", renderer_text, text=DISPLAYY)
         column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=DISPLAYY)
         treeview.append_column(column_text)
@@ -128,19 +135,27 @@ class UI:
         column_pixbuf = Gtk.TreeViewColumn('Joystick select', renderer_pixbuf, active=JOYLISTEN)
         treeview.append_column(column_pixbuf)
 
-        # connect treeview buttons
-        add_button = self._ui.get_object("UV_add_button")
-        add_button.connect("clicked", self.on_add_UV)
+        # connect treeview buttons ---------------------------
+        self._ui.get_object('UV_add_button').connect('clicked', self.on_add_UV)
+        self._ui.get_object('UV_remove_button').connect('clicked', self.on_remove_UV)
 
-        remove_button = self._ui.get_object("UV_remove_button")
-        remove_button.connect("clicked", self.on_remove_UV)
+        self._ui.get_object('save_points_button').connect('clicked', self.on_save_points_button)
+        self._ui.get_object('load_points_button').connect('clicked', self.on_load_points_button)
+
+    def on_edit_vdisp(self,widget,path,textval,colnum):
+        self.liststore[path][colnum] = textval
+        self.update_bg_image()
+
+    def on_edit_cell(self,widget,path,textval,colnum):
+        value = float(textval)
+        self.liststore[path][colnum] = value
+        self.update_bg_image()
 
     def on_do_point(self, widget, path):
         selected_path = Gtk.TreePath(path)
         # perform mutually-exclusive radio button setting
         for row in self.liststore:
             row[JOYLISTEN] = (row.path == selected_path)
-        val = self.liststore[path]
 
     def _get_default_vdisp(self):
         di = self.dsc.get_display_info()
@@ -150,9 +165,33 @@ class UI:
             val = FULLSCREEN
         return val
 
+    def liststore_to_list(self):
+        result = []
+        for row in self.liststore:
+            rowdict = dict(
+                virtual_display = row[VDISP],
+                texture_u = row[TEXU],
+                texture_v = row[TEXV],
+                display_x = row[DISPLAYX],
+                display_y = row[DISPLAYY],
+                )
+            result.append( rowdict )
+        return result
+
+    def list_to_liststore(self,in_list):
+        for rowdict in in_list:
+            self._add_pt_entry( rowdict['virtual_display'],
+                                rowdict['texture_u'],
+                                rowdict['texture_v'],
+                                displayX=rowdict['display_x'],
+                                displayY=rowdict['display_y'],
+                                )
+        self.update_bg_image()
+
     def on_add_UV(self, button):
         vdisp = self._get_default_vdisp()
         self._add_pt_entry(vdisp, np.nan, np.nan )
+        self.update_bg_image()
 
     def on_remove_UV(self,button):
         treeview = self._ui.get_object('treeview1')
@@ -160,6 +199,44 @@ class UI:
         sel = selection.get_selected()
         if not sel[1] == None:
             self.liststore.remove( sel[1] )
+
+    def on_save_points_button(self, button):
+        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
+                                                  parent=None,
+                                                  action=Gtk.FileChooserAction.SAVE,
+                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
+        filechooserdialog.add_filter( self.yamlfilter )
+        filechooserdialog.set_do_overwrite_confirmation(True)
+
+        response = filechooserdialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            fname = filechooserdialog.get_filename()
+            obj = self.liststore_to_list()
+            buf = yaml.dump(obj)
+            with open(fname,mode='w') as fd:
+                fd.write(buf)
+
+        filechooserdialog.destroy()
+
+    def on_load_points_button(self, button):
+        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
+                                                  parent=None,
+                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
+
+        response = filechooserdialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            fname = filechooserdialog.get_filename()
+            with open(fname,mode='r') as fd:
+                buf = fd.read()
+
+            obj = yaml.load(buf)
+            self.list_to_liststore(obj)
+
+        filechooserdialog.destroy()
 
     def _add_pt_entry(self, vdisp, texU, texV,
                       displayX=float(np.nan), displayY=float(np.nan),
@@ -185,19 +262,13 @@ class UI:
             except ValueError:
                 # Likely cannot convert nan to integer.
                 continue
-            #did_it = False
             if 0 <= x and x < self.dsc.width:
                 if 0 <= y and y < self.dsc.height:
                     arr[y,x] = 255
-                    #did_it = True
                     showing.append( (x,y) )
-            # if not did_it:
-            #     print 'DEBUG: could not show point (out of range)',row
-        print 'showing',x,y
         self.dsc.show_pixels(arr)
 
 if __name__ == "__main__":
-    #rospy.init_node("extrinsic_wizard",disable_signals=False)
     rospy.init_node("extrinsic_wizard")
     rosgobject.get_ros_thread() #ensure ros is spinning
     rosgobject.add_console_logger()
