@@ -21,6 +21,15 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
     cell.set_property('text', '%g'%float_in )
 
+
+VDISP=0
+TEXU=1
+TEXV=2
+DISPLAYX=3
+DISPLAYY=4
+SHOWPT=5
+BUTTON=6
+
 class UI:
     def __init__(self, ds, cam, geometry_filename):
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
@@ -66,8 +75,8 @@ class UI:
 
         # create treeview --------------------------
 
-        self.liststore = Gtk.ListStore(float, float, float, float, bool, str)
-        self._add_pt_entry( 0.,   0.   )
+        self.liststore = Gtk.ListStore(str, float, float, float, float, bool, str)
+        #self._add_pt_entry( 0.,   0.   )
 
         treeview = self._ui.get_object('treeview1')
         #treeview.get_selection().set_mode( Gtk.SELECTION_SINGLE )
@@ -76,30 +85,30 @@ class UI:
         renderer_text = Gtk.CellRendererText()
         #renderer_text.set_property("editable", True)
         #renderer_text.connect("edited", self.on_U_edited)
-        column_text = Gtk.TreeViewColumn("texture U", renderer_text, text=0)
-        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=0)
+        column_text = Gtk.TreeViewColumn("texture U", renderer_text, text=TEXU)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=TEXU)
         treeview.append_column(column_text)
 
         renderer_text = Gtk.CellRendererText()
         #renderer_text.set_property("editable", True)
         #renderer_text.connect("edited", self.on_V_edited)
-        column_text = Gtk.TreeViewColumn("texture V", renderer_text, text=1)
-        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=1)
+        column_text = Gtk.TreeViewColumn("texture V", renderer_text, text=TEXV)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=TEXV)
         treeview.append_column(column_text)
 
         renderer_text = Gtk.CellRendererText()
-        column_text = Gtk.TreeViewColumn("display X", renderer_text, text=2)
-        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=2)
+        column_text = Gtk.TreeViewColumn("display X", renderer_text, text=DISPLAYX)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=DISPLAYX)
         treeview.append_column(column_text)
 
         renderer_text = Gtk.CellRendererText()
-        column_text = Gtk.TreeViewColumn("display Y", renderer_text, text=3)
-        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=3)
+        column_text = Gtk.TreeViewColumn("display Y", renderer_text, text=DISPLAYY)
+        column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=DISPLAYY)
         treeview.append_column(column_text)
 
         renderer_toggle = Gtk.CellRendererToggle()
         renderer_toggle.connect("toggled", self.on_show_UV_pixel)
-        column_toggle = Gtk.TreeViewColumn("show", renderer_toggle, active=4)
+        column_toggle = Gtk.TreeViewColumn("show", renderer_toggle, active=SHOWPT)
         treeview.append_column(column_toggle)
 
         if 1:
@@ -108,7 +117,7 @@ class UI:
             renderer_pixbuf.connect("toggled", self.on_do_point)
         else:
             renderer_pixbuf = Gtk.CellRendererPixbuf()
-        column_pixbuf = Gtk.TreeViewColumn('Click to edit', renderer_pixbuf, stock_id=5)
+        column_pixbuf = Gtk.TreeViewColumn('Click to edit', renderer_pixbuf, stock_id=BUTTON)
         treeview.append_column(column_pixbuf)
 
         # connect treeview buttons
@@ -124,6 +133,7 @@ class UI:
         print 'doing point',val
         dialog = self._ui.get_object('edit_coord_correspond_dialog')
         response = dialog.run()
+        print 'FIXME: implement do point',val
         dialog.hide()
 
     def on_add_UV(self, button):
@@ -165,7 +175,7 @@ class UI:
 
                 # check all OK,
                 if all_OK:
-                    self._add_pt_entry( U, V )
+                    self._add_pt_entry( viewport, U, V )
                     break
             elif response == Gtk.ResponseType.CANCEL:
                 break
@@ -180,15 +190,19 @@ class UI:
             print 'sel[1]',sel[1]
             self.liststore.remove( sel[1] )
 
-    def _add_pt_entry(self, texU, texV,
+    def _add_pt_entry(self, vdisp, texU, texV,
                       displayX=float(np.nan), displayY=float(np.nan),
                       show_point=False, icon=Gtk.STOCK_EXECUTE):
-        self.liststore.append([texU, texV,
+        self.liststore.append([vdisp, texU, texV,
                                displayX, displayY,
                                show_point, icon])
 
     def on_show_UV_pixel(self, widget, path):
         self.liststore[path][4] = not self.liststore[path][4]
+        self.update_bg_image()
+
+    def update_bg_image(self):
+        self.dsc.show_pixels(arr)
 
     def on_selectviewport_selected(self, combobox):
         sv = self._ui.get_object('selectviewport')
