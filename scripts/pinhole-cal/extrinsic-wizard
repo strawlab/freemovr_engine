@@ -57,27 +57,20 @@ class UI:
         a1.show_all()
 
     def _build_ui(self):
-        # load select viewport combobox ----------------
-        #self.viewportstore = Gtk.ListStore(str)
+        # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
         cb1 = self._ui.get_object('selectviewport_combobox1') # in dialog1
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                #self.viewportstore.append([viewport_dict['id']])
                 cb1.append_text( viewport_dict['id'] )
         else:
             viewport_dict = None # full screen
-            #self.viewportstore.append(
             cb1.append( '<full screen>' )
-
-        #cb1.set_model( self.viewportstore )
-        #cb1.connect("changed", self.on_selectviewport_selected)
 
         # create treeview --------------------------
 
         self.liststore = Gtk.ListStore(str, float, float, float, float, bool, str)
-        #self._add_pt_entry( 0.,   0.   )
 
         treeview = self._ui.get_object('treeview1')
         #treeview.get_selection().set_mode( Gtk.SELECTION_SINGLE )
@@ -108,7 +101,7 @@ class UI:
         treeview.append_column(column_text)
 
         renderer_toggle = Gtk.CellRendererToggle()
-        renderer_toggle.connect("toggled", self.on_show_UV_pixel)
+        renderer_toggle.connect("toggled", self.on_toggle_point_show)
         column_toggle = Gtk.TreeViewColumn("show", renderer_toggle, active=SHOWPT)
         treeview.append_column(column_toggle)
 
@@ -122,7 +115,6 @@ class UI:
         treeview.append_column(column_pixbuf)
 
         # connect treeview buttons
-
         add_button = self._ui.get_object("UV_add_button")
         add_button.connect("clicked", self.on_add_UV)
 
@@ -179,14 +171,10 @@ class UI:
                 if all_OK:
                     cb1 = self._ui.get_object('selectviewport_combobox1')
                     viewport = cb1.get_active_text()
-                    print 'viewport', viewport8
-
-                    
                     self._add_pt_entry( viewport, U, V )
                     break
             elif response == Gtk.ResponseType.CANCEL:
                 break
-
         dialog.hide()
 
     def on_remove_UV(self,button):
@@ -194,7 +182,6 @@ class UI:
         selection = treeview.get_selection()
         sel = selection.get_selected()
         if not sel[1] == None:
-            print 'sel[1]',sel[1]
             self.liststore.remove( sel[1] )
 
     def _add_pt_entry(self, vdisp, texU, texV,
@@ -204,16 +191,27 @@ class UI:
                                displayX, displayY,
                                show_point, icon])
 
-    def on_show_UV_pixel(self, widget, path):
-        self.liststore[path][4] = not self.liststore[path][4]
+    def on_toggle_point_show(self, widget, path):
+        self.liststore[path][SHOWPT] = not self.liststore[path][SHOWPT]
         self.update_bg_image()
 
     def update_bg_image(self):
+        arr = np.zeros( (self.dsc.height,self.dsc.width), dtype=np.uint8 )
+        for row in self.liststore:
+            if not row[SHOWPT]:
+                continue
+            xf,yf = row[DISPLAYX], row[DISPLAYY]
+            x = int(np.round(xf))
+            y = int(np.round(yf))
+            did_it = False
+            if 0 <= x and x < self.dsc.width:
+                if 0 <= y and y < self.dsc.height:
+                    arr[y,x] = 255
+                    did_it = True
+            if not did_it:
+                print 'DEBUG: could not show point',row
+        #self.liststore[path][SHOWPT]
         self.dsc.show_pixels(arr)
-
-    # def on_selectviewport_selected(self, combobox):
-    #     sv = self._ui.get_object('selectviewport')
-    #     self.a1.set_page_complete(sv, True)
 
 if __name__ == "__main__":
     #rospy.init_node("extrinsic_wizard",disable_signals=False)
