@@ -9,6 +9,7 @@ import roslib; roslib.load_manifest('flyvr')
 
 import rospy
 import std_msgs.msg
+from geometry_msgs.msg import Pose2D
 
 import simple_geom
 import camera_model
@@ -29,13 +30,15 @@ TEXV=2
 DISPLAYX=3
 DISPLAYY=4
 SHOWPT=5
-BUTTON=6
+JOYLISTEN=6
 
 class UI:
     def __init__(self, ds, cam, geometry_filename):
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
 
-        self.dsc.set_mode('Stimulus2DBlit')
+        joy_sub = rospy.Subscriber('joy_click_pose', Pose2D, self.on_joy_callback)
+
+        #self.dsc.set_mode('Stimulus2DBlit') # let joystick_cursor node set the mode
 
         with open(geometry_filename,mode='r') as fd:
             self._geom_dict = yaml.load( fd )
@@ -43,9 +46,6 @@ class UI:
 
         me = os.path.dirname(os.path.abspath(__file__))
         ui_fname = os.path.join(me,"extrinsic-wizard.ui")
-
-        self.red_bg_provider = Gtk.CssProvider()
-        self.red_bg_provider.load_from_data('GtkEntry { background: red; }')
 
         self._ui = Gtk.Builder()
         self._ui.add_from_file(ui_fname)
@@ -57,24 +57,28 @@ class UI:
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
 
+    def on_joy_callback(self, msg):
+        # called in some ROS thread
+        print 'got click', msg
+
     def _build_ui(self):
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
-        cb1 = self._ui.get_object('selectviewport_combobox1') # in dialog1
+        #cb1 = self._ui.get_object('selectviewport_combobox1')
         self.vdisp_store = Gtk.ListStore(str)
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                cb1.append_text( viewport_dict['id'] )
+                #cb1.append_text( viewport_dict['id'] )
                 self.vdisp_store.append([viewport_dict['id']])
         else:
             viewport_dict = None # full screen
-            cb1.append(FULLSCREEN)
+            #cb1.append(FULLSCREEN)
             self.vdisp_store.append(FULLSCREEN)
 
         # create treeview --------------------------
 
-        self.liststore = Gtk.ListStore(str, float, float, float, float, bool, str)
+        self.liststore = Gtk.ListStore(str, float, float, float, float, bool, bool)
 
         treeview = self._ui.get_object('treeview1')
         #treeview.get_selection().set_mode( Gtk.SELECTION_SINGLE )
@@ -118,13 +122,10 @@ class UI:
         column_toggle = Gtk.TreeViewColumn("show", renderer_toggle, active=SHOWPT)
         treeview.append_column(column_toggle)
 
-        if 1:
-            # crappy toggle until we can do point
-            renderer_pixbuf = Gtk.CellRendererToggle()
-            renderer_pixbuf.connect("toggled", self.on_do_point)
-        else:
-            renderer_pixbuf = Gtk.CellRendererPixbuf()
-        column_pixbuf = Gtk.TreeViewColumn('Click to edit', renderer_pixbuf, stock_id=BUTTON)
+        renderer_pixbuf = Gtk.CellRendererToggle()
+        renderer_pixbuf.set_radio(True)
+        renderer_pixbuf.connect("toggled", self.on_do_point)
+        column_pixbuf = Gtk.TreeViewColumn('Joystick select', renderer_pixbuf, active=JOYLISTEN)
         treeview.append_column(column_pixbuf)
 
         # connect treeview buttons
@@ -135,60 +136,23 @@ class UI:
         remove_button.connect("clicked", self.on_remove_UV)
 
     def on_do_point(self, widget, path):
+        selected_path = Gtk.TreePath(path)
+        # perform mutually-exclusive radio button setting
+        for row in self.liststore:
+            row[JOYLISTEN] = (row.path == selected_path)
         val = self.liststore[path]
-        print 'doing point',val
-        dialog = self._ui.get_object('edit_coord_correspond_dialog')
-        response = dialog.run()
-        print 'FIXME: implement do point',val
-        dialog.hide()
+
+    def _get_default_vdisp(self):
+        di = self.dsc.get_display_info()
+        if 'virtualDisplays' in di:
+            val = di['virtualDisplays'][0]['id']
+        else:
+            val = FULLSCREEN
+        return val
 
     def on_add_UV(self, button):
-        dialog = self._ui.get_object('dialog1')
-
-        while 1:
-            response = dialog.run()
-            if response == Gtk.ResponseType.OK:
-                all_OK = True
-
-                entry = self._ui.get_object('texture_U_text_field')
-                style_context = entry.get_style_context()
-                val = entry.get_text()
-                try:
-                    valf = float(val)
-                    assert valf >= 0
-                    assert valf <= 1
-                except:
-                    style_context.add_provider(self.red_bg_provider,
-                                               Gtk.STYLE_PROVIDER_PRIORITY_USER)
-                    all_OK = False
-                else:
-                    style_context.remove_provider(self.red_bg_provider)
-                    U = valf
-
-                entry = self._ui.get_object('texture_V_text_field')
-                style_context = entry.get_style_context()
-                val = entry.get_text()
-                try:
-                    valf = float(val)
-                    assert valf >= 0
-                    assert valf <= 1
-                except:
-                    style_context.add_provider(self.red_bg_provider,
-                                               Gtk.STYLE_PROVIDER_PRIORITY_USER)
-                    all_OK = False
-                else:
-                    style_context.remove_provider(self.red_bg_provider)
-                    V = valf
-
-                # check all OK,
-                if all_OK:
-                    cb1 = self._ui.get_object('selectviewport_combobox1')
-                    viewport = cb1.get_active_text()
-                    self._add_pt_entry( viewport, U, V )
-                    break
-            elif response == Gtk.ResponseType.CANCEL:
-                break
-        dialog.hide()
+        vdisp = self._get_default_vdisp()
+        self._add_pt_entry(vdisp, np.nan, np.nan )
 
     def on_remove_UV(self,button):
         treeview = self._ui.get_object('treeview1')
@@ -199,10 +163,10 @@ class UI:
 
     def _add_pt_entry(self, vdisp, texU, texV,
                       displayX=float(np.nan), displayY=float(np.nan),
-                      show_point=False, icon=Gtk.STOCK_EXECUTE):
+                      show_point=False, joy_listen=False):
         self.liststore.append([vdisp, texU, texV,
                                displayX, displayY,
-                               show_point, icon])
+                               show_point, joy_listen])
 
     def on_toggle_point_show(self, widget, path):
         self.liststore[path][SHOWPT] = not self.liststore[path][SHOWPT]
@@ -210,20 +174,26 @@ class UI:
 
     def update_bg_image(self):
         arr = np.zeros( (self.dsc.height,self.dsc.width), dtype=np.uint8 )
+        showing = []
         for row in self.liststore:
             if not row[SHOWPT]:
                 continue
             xf,yf = row[DISPLAYX], row[DISPLAYY]
-            x = int(np.round(xf))
-            y = int(np.round(yf))
-            did_it = False
+            try:
+                x = int(np.round(xf))
+                y = int(np.round(yf))
+            except ValueError:
+                # Likely cannot convert nan to integer.
+                continue
+            #did_it = False
             if 0 <= x and x < self.dsc.width:
                 if 0 <= y and y < self.dsc.height:
                     arr[y,x] = 255
-                    did_it = True
-            if not did_it:
-                print 'DEBUG: could not show point',row
-        #self.liststore[path][SHOWPT]
+                    #did_it = True
+                    showing.append( (x,y) )
+            # if not did_it:
+            #     print 'DEBUG: could not show point (out of range)',row
+        print 'showing',x,y
         self.dsc.show_pixels(arr)
 
 if __name__ == "__main__":
