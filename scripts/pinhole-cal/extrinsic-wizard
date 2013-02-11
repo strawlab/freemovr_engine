@@ -21,6 +21,7 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
     cell.set_property('text', '%g'%float_in )
 
+FULLSCREEN='<full screen>'
 
 VDISP=0
 TEXU=1
@@ -60,13 +61,16 @@ class UI:
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
         cb1 = self._ui.get_object('selectviewport_combobox1') # in dialog1
+        self.vdisp_store = Gtk.ListStore(str)
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
                 cb1.append_text( viewport_dict['id'] )
+                self.vdisp_store.append([viewport_dict['id']])
         else:
             viewport_dict = None # full screen
-            cb1.append( '<full screen>' )
+            cb1.append(FULLSCREEN)
+            self.vdisp_store.append(FULLSCREEN)
 
         # create treeview --------------------------
 
@@ -75,6 +79,15 @@ class UI:
         treeview = self._ui.get_object('treeview1')
         #treeview.get_selection().set_mode( Gtk.SELECTION_SINGLE )
         treeview.set_model( self.liststore )
+
+        renderer_text = Gtk.CellRendererCombo()
+        renderer_text.set_property("model", self.vdisp_store )
+        renderer_text.set_property("text-column", VDISP)
+        renderer_text.set_property("editable", True)
+        #renderer_text.connect("edited", self.on_U_edited)
+        column_text = Gtk.TreeViewColumn("virtual display", renderer_text, text=VDISP)
+        #column_text.set_cell_data_func(renderer_text, nice_float_fmt, func_data=TEXU)
+        treeview.append_column(column_text)
 
         renderer_text = Gtk.CellRendererText()
         #renderer_text.set_property("editable", True)
