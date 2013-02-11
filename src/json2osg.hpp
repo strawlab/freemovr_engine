@@ -10,3 +10,7 @@ float parse_float(json_t* root);
 std::string parse_string(json_t* root);
 int parse_int(json_t* root);
 std::vector<double> parse_vector_double(json_t* root);
+
+void parse_json_image(const std::string& json_message,
+                      std::string& image_format,
+                      std::string& image_data);

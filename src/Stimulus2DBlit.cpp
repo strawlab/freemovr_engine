@@ -1,7 +1,7 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 #include "flyvr/StimulusInterface.hpp"
 #include "util.h"
-#include "base64.h"
+#include "json2osg.hpp"
 
 #include "Poco/ClassLibrary.h"
 
@@ -120,35 +120,13 @@ std::string get_message_type(const std::string& topic_name) const {
 
 void receive_json_message(const std::string& topic_name, const std::string& json_message) {
 	flyvr_assert(topic_name=="blit_images");
+    std::string image_format;
 
-    json_t *root;
-    json_error_t error;
+    std::string image_data;
+    parse_json_image(json_message,
+                     image_format,
+                     image_data);
 
-    root = json_loads(json_message.c_str(), 0, &error);
-
-    if(!root) {
-		fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
-		throw std::runtime_error("error in json file");
-    }
-
-    json_t *image_data_base64_json = json_object_get(root, "data (base64)");
-    if(!json_is_string(image_data_base64_json)){
-		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw std::runtime_error("error in json file");
-    }
-
-    json_t *image_format_json = json_object_get(root, "format");
-    if(!json_is_string(image_format_json)){
-		fprintf(stderr, "error: in %s(%d): expected string\n", __FILE__, __LINE__);
-		throw std::runtime_error("error in json file");
-    }
-
-    std::string image_data_base64( json_string_value( image_data_base64_json ) );
-    std::string image_format( json_string_value( image_format_json ));
-
-    std::string image_data = base64_decode( image_data_base64 );
-
-    json_decref(root);
     std::istringstream iss(image_data);
 
     osg::ref_ptr<osg::Image> image;
@@ -156,21 +134,14 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 		image_format = image_format.substr(1);
 	}
     osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
-    if (rw) {
-		osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
-		if ( rr.success() ) {
-			image = rr.takeImage();
-			osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
-			osg::ref_ptr<osg::StateSet> ss = _group->getOrCreateStateSet();
-			ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-			return; // success
-		}
-    } else {
-		fprintf(stderr, "error: in %s(%d): no rw for '%s'\n", __FILE__, __LINE__,image_format.c_str());
-		flyvr_assert(false);
-	}
-	fprintf(stderr, "error: in %s(%d): bad image read\n", __FILE__, __LINE__);
-	flyvr_assert(false);
+    flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
+    osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
+    flyvr_assert_msg( rr.success(), "bad image read");
+    image = rr.takeImage();
+    osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
+    osg::ref_ptr<osg::StateSet> ss = _group->getOrCreateStateSet();
+    ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
+
 }
 
 private:

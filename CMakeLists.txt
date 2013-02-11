@@ -109,7 +109,7 @@ IF(BUILD_WITH_ROS)
   rosbuild_add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/base64.cpp)
+  rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   rosbuild_add_library(StimulusPinholeDisplay src/StimulusPinholeDisplay.cpp src/base64.cpp)
@@ -156,7 +156,7 @@ ELSE(BUILD_WITH_ROS)
   ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/base64.cpp)
+  ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(StimulusPinholeDisplay SHARED src/StimulusPinholeDisplay.cpp src/base64.cpp)
