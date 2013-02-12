@@ -4,6 +4,7 @@ import os.path
 import argparse
 import yaml
 import numpy as np
+from collections import defaultdict
 
 import roslib; roslib.load_manifest('flyvr')
 
@@ -77,16 +78,31 @@ class UI:
     def _build_ui(self):
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
-        self.vdisp_store = Gtk.ListStore(str)
+        self.vdisp_store = Gtk.ListStore(str,int)
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                self.vdisp_store.append([viewport_dict['id']])
+                self.vdisp_store.append([viewport_dict['id'],0])
         else:
             viewport_dict = None # full screen
-            self.vdisp_store.append(FULLSCREEN)
+            self.vdisp_store.append([FULLSCREEN,0])
 
-        # create treeview --------------------------
+        # create vdisp treeview -----------------------
+
+        treeview = self._ui.get_object('vdisp_treeview')
+        treeview.set_model( self.vdisp_store )
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("virtual display", renderer, text=0)
+        column.set_sort_column_id(0)
+        treeview.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("count", renderer, text=1)
+        column.set_sort_column_id(1)
+        treeview.append_column(column)
+
+        # create point treeview -----------------------
 
         self.liststore = Gtk.ListStore(str, float, float, float, float, bool, bool)
 
@@ -141,12 +157,25 @@ class UI:
         column = Gtk.TreeViewColumn('Joystick select', renderer_pixbuf, active=JOYLISTEN)
         treeview.append_column(column)
 
+        self.liststore.connect("row-changed",  self.on_points_updated)
+        self.liststore.connect("row-inserted", self.on_points_updated)
+        self.liststore.connect("row-deleted",  self.on_points_updated)
+
         # connect treeview buttons ---------------------------
         self._ui.get_object('UV_add_button').connect('clicked', self.on_add_UV)
         self._ui.get_object('UV_remove_button').connect('clicked', self.on_remove_UV)
 
         self._ui.get_object('save_points_button').connect('clicked', self.on_save_points_button)
         self._ui.get_object('load_points_button').connect('clicked', self.on_load_points_button)
+
+    def on_points_updated(self, *args):
+        vdisps = defaultdict(int)
+        for row in self.liststore:
+            vdisps[ row[VDISP] ] += 1
+
+        for row in self.vdisp_store:
+            vdisp = row[0]
+            row[1] = vdisps[ vdisp ]
 
     def on_edit_vdisp(self,widget,path,textval,colnum):
         self.liststore[path][colnum] = textval
