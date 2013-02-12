@@ -78,14 +78,14 @@ class UI:
     def _build_ui(self):
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
-        self.vdisp_store = Gtk.ListStore(str,int)
+        self.vdisp_store = Gtk.ListStore(str,int, bool)
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                self.vdisp_store.append([viewport_dict['id'],0])
+                self.vdisp_store.append([viewport_dict['id'],0,0])
         else:
             viewport_dict = None # full screen
-            self.vdisp_store.append([FULLSCREEN,0])
+            self.vdisp_store.append([FULLSCREEN,0,0])
 
         # create vdisp treeview -----------------------
 
@@ -100,6 +100,11 @@ class UI:
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("count", renderer, text=1)
         column.set_sort_column_id(1)
+        treeview.append_column(column)
+
+        renderer = Gtk.CellRendererToggle()
+        renderer.connect("toggled", self.on_trigger_cal)
+        column = Gtk.TreeViewColumn("calibrate", renderer, active=2)
         treeview.append_column(column)
 
         # create point treeview -----------------------
@@ -283,6 +288,10 @@ class UI:
     def on_toggle_point_show(self, widget, path):
         self.liststore[path][SHOWPT] = not self.liststore[path][SHOWPT]
         self.update_bg_image()
+
+    def on_trigger_cal(self, widget, path):
+        vdisp = self.vdisp_store[path][0]
+        print 'calibrating %s (NOT IMPLEMENTED!)'%vdisp
 
     def update_bg_image(self):
         arr = np.zeros( (self.dsc.height,self.dsc.width), dtype=np.uint8 )
