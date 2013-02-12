@@ -173,6 +173,15 @@ class UI:
         self._ui.get_object('save_points_button').connect('clicked', self.on_save_points_button)
         self._ui.get_object('load_points_button').connect('clicked', self.on_load_points_button)
 
+        self._ui.get_object('show_all_button').connect('clicked', self.on_show_all_button, True)
+        self._ui.get_object('show_none_button').connect('clicked', self.on_show_all_button, False)
+
+    def on_show_all_button(self,*args):
+        val = args[-1]
+        for row in self.liststore:
+            row[SHOWPT] = val
+        self.update_bg_image()
+
     def on_points_updated(self, *args):
         vdisps = defaultdict(int)
         for row in self.liststore:
