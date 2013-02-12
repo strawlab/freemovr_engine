@@ -916,6 +916,13 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		throw std::invalid_argument("unknown mode");
 	}
 
+    // If the window frame is on, show the mouse cursor.
+    if (traits->windowDecoration) {
+        setCursorVisible(true);
+    } else {
+        setCursorVisible(false);
+    }
+
     setWindowName(viewer_window_name);
 	resized(width, height); // notify listeners that we have a new size
 
