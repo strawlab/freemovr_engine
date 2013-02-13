@@ -302,6 +302,20 @@ class UI:
         vdisp = self.vdisp_store[path][0]
         print 'calibrating %s (NOT IMPLEMENTED!)'%vdisp
 
+        method = self._ui.get_object('cal_method_cbtext').get_active_text()
+        self.launch_calibration( method, vdisp )
+
+    def launch_calibration(self, method, vdisp ):
+        orig_data = []
+        for row in self.liststore:
+            if row[VDISP]==vdisp:
+                orig_data.append( [ row[TEXU], row[TEXV], row[DISPLAYX], row[DISPLAYY] ] )
+        orig_data = np.array(orig_data)
+        print repr(orig_data)
+        print method
+        if method=='DLT':
+            1/0
+
     def update_bg_image(self):
         arr = np.zeros( (self.dsc.height,self.dsc.width), dtype=np.uint8 )
         showing = []
