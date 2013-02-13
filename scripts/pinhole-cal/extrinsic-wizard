@@ -5,6 +5,7 @@ import argparse
 import yaml
 import numpy as np
 from collections import defaultdict
+from pprint import pprint
 
 import roslib; roslib.load_manifest('flyvr')
 
@@ -14,6 +15,7 @@ from geometry_msgs.msg import Pose2D
 
 import simple_geom
 import camera_model
+import dlt
 import display_client
 
 import rosgobject.core
@@ -26,6 +28,7 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
 
 FULLSCREEN='<full screen>'
 
+# columns in self.liststore
 VDISP=0
 TEXU=1
 TEXV=2
@@ -33,6 +36,12 @@ DISPLAYX=3
 DISPLAYY=4
 SHOWPT=5
 JOYLISTEN=6
+
+# columns in self.vdisp_store
+VS_VDISP = 0
+VS_COUNT = 1
+VS_CAL_BUTTON = 2
+VS_MRE = 3
 
 class UI:
     def __init__(self, ds, cam, geometry_filename):
@@ -78,14 +87,14 @@ class UI:
     def _build_ui(self):
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
-        self.vdisp_store = Gtk.ListStore(str,int, bool)
+        self.vdisp_store = Gtk.ListStore(str,int,bool,float)
 
         if 'virtualDisplays' in di:
             for viewport_dict in di['virtualDisplays']:
-                self.vdisp_store.append([viewport_dict['id'],0,0])
+                self.vdisp_store.append([viewport_dict['id'],0,0,np.nan])
         else:
             viewport_dict = None # full screen
-            self.vdisp_store.append([FULLSCREEN,0,0])
+            self.vdisp_store.append([FULLSCREEN,0,0,np.nan])
 
         # create vdisp treeview -----------------------
 
@@ -93,18 +102,24 @@ class UI:
         treeview.set_model( self.vdisp_store )
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("virtual display", renderer, text=0)
-        column.set_sort_column_id(0)
+        column = Gtk.TreeViewColumn("virtual display", renderer, text=VS_VDISP)
+        column.set_sort_column_id(VS_VDISP)
         treeview.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("count", renderer, text=1)
-        column.set_sort_column_id(1)
+        column = Gtk.TreeViewColumn("count", renderer, text=VS_COUNT)
+        column.set_sort_column_id(VS_COUNT)
         treeview.append_column(column)
 
         renderer = Gtk.CellRendererToggle()
         renderer.connect("toggled", self.on_trigger_cal)
-        column = Gtk.TreeViewColumn("calibrate", renderer, active=2)
+        column = Gtk.TreeViewColumn("calibrate", renderer, active=VS_CAL_BUTTON)
+        treeview.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("mean reprojection error", renderer,
+                                    text=VS_MRE)
+        column.set_sort_column_id(VS_MRE)
         treeview.append_column(column)
 
         # create point treeview -----------------------
@@ -300,7 +315,6 @@ class UI:
 
     def on_trigger_cal(self, widget, path):
         vdisp = self.vdisp_store[path][0]
-        print 'calibrating %s (NOT IMPLEMENTED!)'%vdisp
 
         method = self._ui.get_object('cal_method_cbtext').get_active_text()
         self.launch_calibration( method, vdisp )
@@ -311,10 +325,22 @@ class UI:
             if row[VDISP]==vdisp:
                 orig_data.append( [ row[TEXU], row[TEXV], row[DISPLAYX], row[DISPLAYY] ] )
         orig_data = np.array(orig_data)
-        print repr(orig_data)
-        print method
-        if method=='DLT':
-            1/0
+        uv = orig_data[:,:2]
+        XYZ = self.geom.model.texcoord2worldcoord(uv)
+        xy = orig_data[:,2:4]
+
+        if method in ('DLT','RANSAC DLT'):
+            ransac = method.startswith('RANSAC')
+            results = dlt.dlt(XYZ, xy, ransac=ransac)
+            camera = camera_model.load_camera_from_pmat( results['pmat'],
+                                                         width=self.dsc.width,
+                                                         height=self.dsc.height,
+                                                         )
+            results['camera'] = camera
+        pprint(results)
+        for row in self.vdisp_store:
+            if row[VS_VDISP]==vdisp:
+                row[VS_MRE] = results['mean_reprojection_error']
 
     def update_bg_image(self):
         arr = np.zeros( (self.dsc.height,self.dsc.width), dtype=np.uint8 )
