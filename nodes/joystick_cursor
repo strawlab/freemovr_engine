@@ -20,6 +20,9 @@ class App:
         self.old_mode = self.display_server.get_mode()
         self.display_server.set_mode('Stimulus2DBlit')
 
+        arr=self.display_server.new_image(self.display_server.IMAGE_COLOR_BLACK)
+        self.display_server.show_pixels(arr)
+
         self.pub = rospy.Publisher('sprite_pose', Pose2D)
         self.pubclick = rospy.Publisher('joy_click_pose', Pose2D)
         joy_sub = rospy.Subscriber('joy', Joy, self.joy_callback)
