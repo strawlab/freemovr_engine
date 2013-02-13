@@ -89,10 +89,10 @@ def center(P):
     return C_
 
 def ransac_dlt(X3d, x2d,
-               n = 6,    # six is minimum
-               k = 200,  # do it 200 times
+               n = 6,     # six is minimum
+               k = 200,   # do it 200 times
                t = 15.0,  # mean reprojection error should be less than 15
-               d = 20,   # 20 points and we're doing well
+               d = 8,
                ):
     """perform the DLT in RANSAC
 
