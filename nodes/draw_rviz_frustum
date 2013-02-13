@@ -22,11 +22,6 @@ import simple_geom
 import display_client
 import camera_model
 
-def v3(arr):
-    assert arr.ndim==1
-    assert arr.shape[0]==3
-    return Point(x=arr[0],y=arr[1],z=arr[2])
-
 class MyApp:
     def __init__(self,name):
         self.name = name
@@ -79,69 +74,8 @@ class MyApp:
         self.draw()
 
     def draw(self,scale=1.0):
-        cam = self.cam
-        uv_raw = np.array([[0,0],
-                           [0,cam.height],
-                           [cam.width, cam.height],
-                           [cam.width, 0],
-                           [0,0]])
-        pts3d_near = cam.project_pixel_to_3d_ray( uv_raw, distorted=True, distance=0.1*scale)
-        pts3d_far = cam.project_pixel_to_3d_ray( uv_raw, distorted=True, distance=scale)
-
-        frame_id = '/map'
-
-        markers = []
-
-        # ring at near depth
-        NEAR_RING=0
-        near_ring = marker = Marker()
-        marker.header.frame_id = frame_id
-        marker.id = NEAR_RING
-        marker.type = Marker.LINE_STRIP
-        marker.action = Marker.ADD
-        marker.scale.x = 0.01; #line width
-        marker.color.a = 1.0;
-        marker.color.r = 0.6;
-        marker.color.g = 1.0;
-        marker.color.b = 0.6;
-        marker.points = [v3(pts3d_near[i]) for i in range( pts3d_near.shape[0] ) ]
-        markers.append(marker)
-
-        # ring at far depth
-        FAR_RING = 1
-        far_ring = marker = Marker()
-        marker.header.frame_id = frame_id
-        marker.id = FAR_RING
-        marker.type = Marker.LINE_STRIP
-        marker.action = Marker.ADD
-        marker.scale.x = 0.01; #line width
-        marker.color.a = 1.0;
-        marker.color.r = 0.6;
-        marker.color.g = 1.0;
-        marker.color.b = 0.6;
-        marker.points = [v3(pts3d_far[i]) for i in range( pts3d_far.shape[0] ) ]
-        markers.append(marker)
-
-        # connectors
-        for i in range(len(pts3d_near)-1):
-            ID = 2+i
-            pts3d = np.vstack((pts3d_near[i,:],pts3d_far[i,:]))
-
-            marker = Marker()
-            marker.header.frame_id = frame_id
-            marker.id = ID
-            marker.type = Marker.LINE_STRIP
-            marker.action = Marker.ADD
-            marker.scale.x = 0.01; #line width
-            marker.color.a = 1.0;
-            marker.color.r = 0.6;
-            marker.color.g = 1.0;
-            marker.color.b = 0.6;
-            marker.points = [v3(pts3d[i]) for i in range( pts3d.shape[0] ) ]
-            markers.append(marker)
-
-        marray = MarkerArray(markers)
-        self.publisher.publish(marray)
+        r = flyvr.rviz_utils.get_frustum_markers( self.cam, scale=scale )
+        self.publisher.publish(r['markers'])
 
     def run(self):
         rospy.spin()
