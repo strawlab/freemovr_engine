@@ -56,46 +56,6 @@ def float_to_uint8(farr):
         raise ValueError('cannot convert array')
     return arr
 
-def tcs_to_beachball(farr):
-    assert farr.ndim == 3
-    assert farr.shape[2] == 2
-    u = farr[:,:,0]
-    v = farr[:,:,1]
-
-    good = ~np.isnan( u )
-    assert np.allclose( good, ~np.isnan(v) )
-
-    assert np.all( u[good] >= 0 )
-    assert np.all( u[good] <= 1 )
-    assert np.all( v[good] >= 0 )
-    assert np.all( v[good] <= 1 )
-
-    hf = u*4 # horiz float
-    vf = v*2 # vert float
-
-    hi = np.floor( hf ) # horiz int (0,1,2,3)
-    hi[hi==4.0] = 3.0
-    vi = np.floor( vf ) # vert int  (0,1)
-    vi[vi==2.0] = 1.0
-
-    iif = hi + 4*vi + 1 # (1,2,3,4,5,6,7,8)
-    ii = iif.astype( np.uint8 ) # nan -> 0
-
-    colors = np.array( [ (0,0,0), # black
-
-                         (255,0,0), # red
-                         (0,255,0), # green
-                         (0, 0, 255), # blue
-                         (255, 0, 255),
-
-                         (255, 0, 255),
-                         (255,0,0), # red
-                         (0,255,0), # green
-                         (0, 0, 255), # blue
-                         ])
-    bbim = colors[ ii ]
-    return bbim
-
 class MyApp:
     def __init__(self, ds, viewport, cam, geometry_filename):
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
@@ -251,7 +211,7 @@ class MyApp:
             self.save_data = {'image_data':farr,
                               'camera':send_cam}
             #arr = float_to_uint8(farr)
-            arr = tcs_to_beachball(farr)
+            arr = simple_geom.tcs_to_beachball(farr)
 
             if 1:
                 # send image to RViz
