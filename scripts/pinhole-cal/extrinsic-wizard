@@ -8,10 +8,16 @@ from collections import defaultdict
 from pprint import pprint
 
 import roslib; roslib.load_manifest('flyvr')
+roslib.load_manifest('visualization_msgs')
 
 import rospy
+
+import flyvr.rviz_utils
 import std_msgs.msg
 from geometry_msgs.msg import Pose2D
+from sensor_msgs.msg import CameraInfo
+import tf.broadcaster
+from visualization_msgs.msg import MarkerArray
 
 import simple_geom
 import camera_model
@@ -20,7 +26,7 @@ import display_client
 
 import rosgobject.core
 import rosgobject.wrappers
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -42,6 +48,9 @@ VS_VDISP = 0
 VS_COUNT = 1
 VS_CAL_BUTTON = 2
 VS_MRE = 3
+VS_SHOW_BEACHBALL = 4
+VS_CAMERA_OBJECT = 5
+VS_PUBLISH_RVIZ = 6
 
 class UI:
     def __init__(self, ds, cam, geometry_filename):
@@ -63,11 +72,16 @@ class UI:
         self._ui = Gtk.Builder()
         self._ui.add_from_file(ui_fname)
 
+        self.intr_pub = {}
+        self.frustum_pub = {}
         self._build_ui()
 
         self.a1 = a1 = self._ui.get_object("assistant1")
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
+
+        self.tf_b = tf.broadcaster.TransformBroadcaster()
+        GObject.timeout_add(100, self.on_timer)
 
     def on_joy_callback(self, widget, msg):
         if not len(self.liststore):
@@ -87,14 +101,19 @@ class UI:
     def _build_ui(self):
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
-        self.vdisp_store = Gtk.ListStore(str,int,bool,float)
+        self.vdisp_store = Gtk.ListStore(str,int,bool,float,bool,object,bool)
 
         if 'virtualDisplays' in di:
-            for viewport_dict in di['virtualDisplays']:
-                self.vdisp_store.append([viewport_dict['id'],0,0,np.nan])
+            vdisps = [d['id'] for d in di['virtualDisplays']]
         else:
-            viewport_dict = None # full screen
-            self.vdisp_store.append([FULLSCREEN,0,0,np.nan])
+            vdisps = [FULLSCREEN]
+
+        for vdisp in vdisps:
+            self.vdisp_store.append([vdisp,0,0,np.nan,0,None,0])
+            self.intr_pub[vdisp] = rospy.Publisher(vdisp+'/camera_info',
+                                                   CameraInfo, latch=True)
+            self.frustum_pub[vdisp] = rospy.Publisher(vdisp+'/frustum',
+                                                       MarkerArray)
 
         # create vdisp treeview -----------------------
 
@@ -117,9 +136,19 @@ class UI:
         treeview.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("mean reprojection error", renderer,
+        column = Gtk.TreeViewColumn("mean reproj. error", renderer,
                                     text=VS_MRE)
         column.set_sort_column_id(VS_MRE)
+        treeview.append_column(column)
+
+        renderer = Gtk.CellRendererToggle()
+        renderer.connect("toggled", self.on_toggle_show_beachball)
+        column = Gtk.TreeViewColumn("show beachball", renderer, active=VS_SHOW_BEACHBALL)
+        treeview.append_column(column)
+
+        renderer = Gtk.CellRendererToggle()
+        renderer.connect("toggled", self.on_toggle_publish_rviz)
+        column = Gtk.TreeViewColumn("publish RViz cam", renderer, active=VS_PUBLISH_RVIZ)
         treeview.append_column(column)
 
         # create point treeview -----------------------
@@ -203,8 +232,8 @@ class UI:
             vdisps[ row[VDISP] ] += 1
 
         for row in self.vdisp_store:
-            vdisp = row[0]
-            row[1] = vdisps[ vdisp ]
+            vdisp = row[VS_VDISP]
+            row[VS_COUNT] = vdisps[ vdisp ]
 
     def on_edit_vdisp(self,widget,path,textval,colnum):
         self.liststore[path][colnum] = textval
@@ -313,6 +342,49 @@ class UI:
         self.liststore[path][SHOWPT] = not self.liststore[path][SHOWPT]
         self.update_bg_image()
 
+    def on_toggle_show_beachball(self, widget, path):
+        self.vdisp_store[path][VS_SHOW_BEACHBALL] = not self.vdisp_store[path][VS_SHOW_BEACHBALL]
+        self.update_bg_image()
+
+    def on_toggle_publish_rviz(self, widget, path):
+        self.vdisp_store[path][VS_PUBLISH_RVIZ] = not self.vdisp_store[path][VS_PUBLISH_RVIZ]
+        self.publish_rviz()
+
+    def on_timer(self):
+        self.publish_rviz()
+        return True
+
+    def publish_rviz(self):
+        now = rospy.Time.now()
+        future = now + rospy.Duration(0.010) # 10 msec in future
+
+        #all_cam_id_base = 100300
+        all_cam_id_base = 0
+        for enum,row in enumerate(self.vdisp_store):
+            vdisp = row[VS_VDISP]
+
+            frame_id = '/'+vdisp
+
+            cam = row[VS_CAMERA_OBJECT]
+            cam_id_base = enum*100 + all_cam_id_base
+            if cam is not None and row[VS_PUBLISH_RVIZ]:
+
+                intrinsic_msg = cam.get_intrinsics_as_msg()
+                intrinsic_msg.header.stamp = now
+                intrinsic_msg.header.frame_id = frame_id
+                self.intr_pub[vdisp].publish( intrinsic_msg )
+
+                translation, rotation = cam.get_ROS_tf()
+                self.tf_b.sendTransform( translation,
+                                         rotation,
+                                         future,
+                                         frame_id,
+                                         '/map',
+                                         )
+
+                r = flyvr.rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
+                self.frustum_pub[vdisp].publish(r['markers'])
+
     def on_trigger_cal(self, widget, path):
         vdisp = self.vdisp_store[path][0]
 
@@ -343,9 +415,39 @@ class UI:
         for row in self.vdisp_store:
             if row[VS_VDISP]==vdisp:
                 row[VS_MRE] = results['mean_reprojection_error']
+                row[VS_CAMERA_OBJECT] = results['camera']
+        self.update_bg_image()
 
     def update_bg_image(self):
-        arr = np.zeros( (self.dsc.height,self.dsc.width), dtype=np.uint8 )
+        arr = np.zeros( (self.dsc.height,self.dsc.width,3), dtype=np.uint8 )
+
+        # draw beachballs ----------------------
+
+        # FIXME: add masks
+
+        for row in self.vdisp_store:
+            if not row[VS_SHOW_BEACHBALL]:
+                continue
+            cam = row[VS_CAMERA_OBJECT]
+            if cam is None:
+                continue
+
+            farr = self.geom.compute_for_camera_view( cam,
+                                                      what='texture_coords' )
+
+            u = farr[:,:,0]
+            good = ~np.isnan( u )
+            print 'showing beachball for %r'%row[VS_VDISP]
+            print '  npix0',np.sum( np.nonzero( good ) )
+
+            arr2 = simple_geom.tcs_to_beachball(farr)
+            print '  npix1',np.sum(np.nonzero(arr2))
+            arr = arr+arr2 # FIXME: hacky OR operation assumes pixels are either 0 or final value
+
+            print '  npix2',np.sum(np.nonzero(arr))
+
+        # draw individual points ---------------
+
         showing = []
         for row in self.liststore:
             if not row[SHOWPT]:
