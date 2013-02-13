@@ -403,7 +403,7 @@ class UI:
 
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
-            results = dlt.dlt(XYZ, xy, ransac=ransac)
+            results = dlt.dlt(XYZ, xy, ransac=ransac, flip=True)
             camera = camera_model.load_camera_from_pmat( results['pmat'],
                                                          width=self.dsc.width,
                                                          height=self.dsc.height,
