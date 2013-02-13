@@ -88,19 +88,24 @@ def center(P):
     C_ = np.array( [[ X/T, Y/T, Z/T ]] ).T
     return C_
 
-def ransac_dlt(X3d, x2d):
+def ransac_dlt(X3d, x2d,
+               n = 6,    # six is minimum
+               k = 200,  # do it 200 times
+               t = 15.0,  # mean reprojection error should be less than 15
+               d = 20,   # 20 points and we're doing well
+               ):
+    """perform the DLT in RANSAC
+
+    Params
+    ------
+    n: the minimum number of data values required to fit the model
+    k: the maximum number of iterations allowed in the algorithm
+    t: a threshold value for determining when a data point fits a model
+    d: the number of close data values required to assert that a model fits well to data
+    """
     model = DltRansacModel(X3d,x2d)
     data = np.arange( len(X3d) )
 
-    # n - the minimum number of data values required to fit the model
-    # k - the maximum number of iterations allowed in the algorithm
-    # t - a threshold value for determining when a data point fits a model
-    # d - the number of close data values required to assert that a model fits well to data
-
-    n = 6    # six is minimum
-    k = 200  # do it 200 times
-    t = 15.0  # mean reprojection error should be less than 15
-    d = 20   # 20 points and we're doing well
 
     return ransac.ransac(data,model,n,k,t,d,debug=True,return_all=True)
 
