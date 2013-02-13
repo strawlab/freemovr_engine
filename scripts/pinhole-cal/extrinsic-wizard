@@ -337,6 +337,8 @@ class UI:
                                                          height=self.dsc.height,
                                                          )
             results['camera'] = camera
+        else:
+            raise ValueError('unknown calibration method %r'%method)
         pprint(results)
         for row in self.vdisp_store:
             if row[VS_VDISP]==vdisp:
