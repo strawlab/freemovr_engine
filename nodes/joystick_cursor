@@ -46,6 +46,9 @@ class App:
         self.cur_joy_x = msg.axes[0]
         self.cur_joy_y = msg.axes[1]
 
+        if len(msg.buttons) <= self.button_idx:
+            return # this joystick doesn't have enough buttons
+
         cur_state = msg.buttons[self.button_idx]
         if cur_state != self.button_state:
             self.button_state = cur_state
