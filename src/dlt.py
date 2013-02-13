@@ -22,12 +22,11 @@ class DltRansacModel:
     needed by the ransac() function.
 
     """
-    def __init__(self,X3d,x2d,debug=False,flip=False):
+    def __init__(self,X3d,x2d,debug=False):
         self.X3dht = np.hstack((X3d, np.ones( (len(X3d),1)))).T
         self.x2dt = x2d.T
         self.fullB,self.fullc = build_Bc(X3d,x2d)
         self.debug = debug
-        self.flip = flip
     def fit(self, data):
         # calculate the DLT given a set of data
 
@@ -41,8 +40,6 @@ class DltRansacModel:
 
         DLT_avec_results = np.linalg.lstsq(B,c)
         a_vec,residuals = DLT_avec_results[:2]
-        if flip:
-            a_vec = -a_vec
         Mhat = np.array(list(a_vec)+[1])
         Mhat.shape=(3,4)
         return Mhat
@@ -119,7 +116,6 @@ def ransac_dlt(X3d, x2d,
                k = 200,   # do it 200 times
                t = 15.0,  # mean reprojection error should be less than 15
                d = 8,
-               flip = False,
                ):
     """perform the DLT in RANSAC
 
@@ -130,35 +126,25 @@ def ransac_dlt(X3d, x2d,
     t: a threshold value for determining when a data point fits a model
     d: the number of close data values required to assert that a model fits well to data
     """
-    model = DltRansacModel(X3d,x2d, flip=flip)
+    model = DltRansacModel(X3d,x2d)
     data = np.arange( len(X3d) )
 
 
     return ransac.ransac(data,model,n,k,t,d,debug=True,return_all=True)
 
-def simple_dlt(X3d, x2d, flip=False):
-    # np.set_printoptions(precision=6, linewidth=150, suppress=True)
-
-    normalize = False
-    #normalize = True
+def simple_dlt2(X3d, x2d):
+    normalize = True
     if normalize:
         # normalize so that SVD has better numerical properties
         mx = np.mean(x2d[:,0])
         my = np.mean(x2d[:,1])
-        s = 1.0/np.sqrt(mx**2 + my**2) # scale resulting values to approximately 1.0
+        s = 1.0/((mx+my)*0.5)
         N = np.array( [[ s, 0, -s*mx],
                        [ 0, s, -s*my],
                        [ 0, 0,  1]])
 
         x2dhT = np.hstack( (x2d, np.ones_like( x2d[:,np.newaxis,0] )) ).T
-        print 'x2d'
-        print x2d
-        #print 'x2dh'
-        #print x2dh
         xt = np.dot(N,x2dhT)
-        print 'xt'
-        print xt
-
         x2dN = xt[:2].T
 
         use_2d = x2dN
@@ -167,48 +153,38 @@ def simple_dlt(X3d, x2d, flip=False):
     M = build_M(X3d,use_2d)
     U,s,V = np.linalg.svd(M, full_matrices=False)
 
-    # print 'U'
-    # print U
-    # print 's'
-    # print s
-    # print 'V'
-    # print V.shape
-    # print V
-
     a = V[-1]
-    if flip:
-        a = -a # equivalent
 
     assert a.shape == (13,)
     Mhat = a[:12]
     Mhat.shape=(3,4)
 
+    Ninv = np.linalg.pinv(N)
     if normalize:
-        1/0
+        Mhat = np.dot( Ninv, Mhat )
+        assert Mhat.shape==(3,4)
     results = dict(#center = center(Mhat).T[0],
                    pmat = Mhat,
                    )
     return results
 
-def simple_dlt2(X3d, x2d, flip=False):
+def simple_dlt(X3d, x2d):
     B,c = build_Bc(X3d,x2d)
     DLT_avec_results = np.linalg.lstsq(B,c)
     a_vec,residuals = DLT_avec_results[:2]
     Mhat = np.array(list(a_vec)+[1])
     Mhat.shape=(3,4)
-    if flip:
-        Mhat = -Mhat
 
     results = dict(#center = center(Mhat).T[0],
                    pmat = Mhat,
                    )
     return results
 
-def dlt(X3d, x2d, ransac=True, flip=False):
+def dlt(X3d, x2d, ransac=True):
     X3d = np.array(X3d)
     x2d = np.array(x2d)
     if ransac:
-        pmat,rd = ransac_dlt(X3d, x2d, flip=flip)
+        pmat,rd = ransac_dlt(X3d, x2d)
         result = dict(#center = center(pmat).T[0],
                       pmat = pmat,
                       )
@@ -217,7 +193,7 @@ def dlt(X3d, x2d, ransac=True, flip=False):
         result['x2d'] = x2d[idxs]
 
     else:
-        result = simple_dlt(X3d, x2d, flip=flip)
+        result = simple_dlt(X3d, x2d)
         result['X3d'] = X3d
         result['x2d'] = x2d
     err = calc_reprojection_error( result['pmat'], result['X3d'], result['x2d'] )

@@ -5,7 +5,6 @@ import argparse
 import yaml
 import numpy as np
 from collections import defaultdict
-from pprint import pprint
 
 import roslib; roslib.load_manifest('flyvr')
 roslib.load_manifest('visualization_msgs')
@@ -403,19 +402,47 @@ class UI:
 
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
-            results = dlt.dlt(XYZ, xy, ransac=ransac, flip=True)
-            camera = camera_model.load_camera_from_pmat( results['pmat'],
-                                                         width=self.dsc.width,
-                                                         height=self.dsc.height,
-                                                         )
-            results['camera'] = camera
+            r = dlt.dlt(XYZ, xy, ransac=ransac )
+            c1 = camera_model.load_camera_from_pmat( r['pmat'],
+                                                     width=self.dsc.width,
+                                                     height=self.dsc.height,
+                                                     )
+
+            if 0:
+                c2 = c1.get_flipped_camera()
+
+                # slightly hacky way to find best camera direction
+                obj = self.geom.model.get_center()
+
+                d1 = np.sqrt( np.sum( (c1.get_lookat() - obj)**2 ))
+                d2 = np.sqrt( np.sum( (c2.get_lookat() - obj)**2 ))
+                if d1 < d2:
+                    #print 'using normal camera'
+                    camera = c1
+                else:
+                    print 'using flipped camera'
+                    camera = c2
+            elif 1:
+                farr = self.geom.compute_for_camera_view( c1,
+                                                          what='texture_coords' )
+
+                u = farr[:,:,0]
+                good = ~np.isnan( u )
+                npix=np.sum( np.nonzero( good ) )
+                if npix==0:
+                    print 'using flipped camera, otherwise npix = 0'
+                    camera = c1.get_flipped_camera()
+                else:
+                    camera = c1
+            else:
+                camera = c1
         else:
             raise ValueError('unknown calibration method %r'%method)
-        pprint(results)
+
         for row in self.vdisp_store:
             if row[VS_VDISP]==vdisp:
-                row[VS_MRE] = results['mean_reprojection_error']
-                row[VS_CAMERA_OBJECT] = results['camera']
+                #row[VS_MRE] = results['mean_reprojection_error']
+                row[VS_CAMERA_OBJECT] = camera
         self.update_bg_image()
 
     def update_bg_image(self):

@@ -4,6 +4,7 @@ import numpy as np
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import dlt
+import camera_model
 
 # some sample data -----------------------
 
@@ -60,6 +61,12 @@ def test_basic_dlt():
     print results2['mean_reprojection_error']
     assert results2['mean_reprojection_error'] < 6.0
 
+    #assert not np.allclose(results['pmat'], results2['pmat'])
+
+    c1 = camera_model.load_camera_from_pmat(  results['pmat']  )
+    c2 = camera_model.load_camera_from_pmat( results2['pmat'] )
+    print 'c1.get_lookat(), c2.get_lookat()',c1.get_lookat(), c2.get_lookat()
+    assert not np.allclose( c1.get_lookat(), c2.get_lookat() )
     assert not np.allclose(results['pmat'], results2['pmat'])
 
 def xtest_ransac_dlt():
