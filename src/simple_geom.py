@@ -430,3 +430,43 @@ def angle_between_vectors(v1, v2):
     if len_a == 0 or len_b == 0:
         return 0
     return np.arccos(dot / (len_a * len_b))
+
+def tcs_to_beachball(farr):
+    assert farr.ndim == 3
+    assert farr.shape[2] == 2
+    u = farr[:,:,0]
+    v = farr[:,:,1]
+
+    good = ~np.isnan( u )
+    assert np.allclose( good, ~np.isnan(v) )
+
+    assert np.all( u[good] >= 0 )
+    assert np.all( u[good] <= 1 )
+    assert np.all( v[good] >= 0 )
+    assert np.all( v[good] <= 1 )
+
+    hf = u*4 # horiz float
+    vf = v*2 # vert float
+
+    hi = np.floor( hf ) # horiz int (0,1,2,3)
+    hi[hi==4.0] = 3.0
+    vi = np.floor( vf ) # vert int  (0,1)
+    vi[vi==2.0] = 1.0
+
+    iif = hi + 4*vi + 1 # (1,2,3,4,5,6,7,8)
+    ii = iif.astype( np.uint8 ) # nan -> 0
+
+    colors = np.array( [ (0,0,0), # black
+
+                         (255,0,0), # red
+                         (0,255,0), # green
+                         (0, 0, 255), # blue
+                         (255, 0, 255),
+
+                         (255, 0, 255),
+                         (255,0,0), # red
+                         (0,255,0), # green
+                         (0, 0, 255), # blue
+                         ])
+    bbim = colors[ ii ]
+    return bbim
