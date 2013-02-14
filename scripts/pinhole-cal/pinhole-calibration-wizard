@@ -34,7 +34,7 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
 
 FULLSCREEN='<full screen>'
 
-# columns in self.liststore
+# columns in self.point_store
 VDISP=0
 TEXU=1
 TEXV=2
@@ -85,10 +85,10 @@ class UI:
         GObject.timeout_add(100, self.on_timer)
 
     def on_joy_callback(self, widget, msg):
-        if not len(self.liststore):
+        if not len(self.point_store):
             return
 
-        for row in self.liststore:
+        for row in self.point_store:
             if row[JOYLISTEN]:
                 break
 
@@ -155,10 +155,10 @@ class UI:
 
         # create point treeview -----------------------
 
-        self.liststore = Gtk.ListStore(str, float, float, float, float, bool, bool)
+        self.point_store = Gtk.ListStore(str, float, float, float, float, bool, bool)
 
         treeview = self._ui.get_object('treeview1')
-        treeview.set_model( self.liststore )
+        treeview.set_model( self.point_store )
 
         renderer_text = Gtk.CellRendererCombo(model=self.vdisp_store,
                                               text_column=VDISP,
@@ -208,9 +208,9 @@ class UI:
         column = Gtk.TreeViewColumn('Joystick select', renderer_pixbuf, active=JOYLISTEN)
         treeview.append_column(column)
 
-        self.liststore.connect("row-changed",  self.on_points_updated)
-        self.liststore.connect("row-inserted", self.on_points_updated)
-        self.liststore.connect("row-deleted",  self.on_points_updated)
+        self.point_store.connect("row-changed",  self.on_points_updated)
+        self.point_store.connect("row-inserted", self.on_points_updated)
+        self.point_store.connect("row-deleted",  self.on_points_updated)
 
         # connect treeview buttons ---------------------------
         self._ui.get_object('UV_add_button').connect('clicked', self.on_add_UV)
@@ -233,13 +233,13 @@ class UI:
 
     def on_show_all_button(self,*args):
         val = args[-1]
-        for row in self.liststore:
+        for row in self.point_store:
             row[SHOWPT] = val
         self.update_bg_image()
 
     def on_points_updated(self, *args):
         vdisps = defaultdict(int)
-        for row in self.liststore:
+        for row in self.point_store:
             vdisps[ row[VDISP] ] += 1
 
         for row in self.vdisp_store:
@@ -247,18 +247,18 @@ class UI:
             row[VS_COUNT] = vdisps[ vdisp ]
 
     def on_edit_vdisp(self,widget,path,textval,colnum):
-        self.liststore[path][colnum] = textval
+        self.point_store[path][colnum] = textval
         self.update_bg_image()
 
     def on_edit_cell(self,widget,path,textval,colnum):
         value = float(textval)
-        self.liststore[path][colnum] = value
+        self.point_store[path][colnum] = value
         self.update_bg_image()
 
     def on_do_point(self, widget, path):
         selected_path = Gtk.TreePath(path)
         # perform mutually-exclusive radio button setting
-        for row in self.liststore:
+        for row in self.point_store:
             row[JOYLISTEN] = (row.path == selected_path)
 
     def _get_default_vdisp(self):
@@ -271,7 +271,7 @@ class UI:
 
     def liststore_to_list(self):
         result = []
-        for row in self.liststore:
+        for row in self.point_store:
             rowdict = dict(
                 virtual_display = row[VDISP],
                 texture_u = row[TEXU],
@@ -302,7 +302,7 @@ class UI:
         selection = treeview.get_selection()
         sel = selection.get_selected()
         if not sel[1] == None:
-            self.liststore.remove( sel[1] )
+            self.point_store.remove( sel[1] )
 
     def on_save_points_button(self, button):
         filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
@@ -317,7 +317,7 @@ class UI:
 
         if response == Gtk.ResponseType.OK:
             fname = filechooserdialog.get_filename()
-            obj = self.liststore_to_list()
+            obj = self.point_store_to_list()
             buf = yaml.dump(obj)
             with open(fname,mode='w') as fd:
                 fd.write(buf)
@@ -345,12 +345,12 @@ class UI:
     def _add_pt_entry(self, vdisp, texU, texV,
                       displayX=float(np.nan), displayY=float(np.nan),
                       show_point=False, joy_listen=False):
-        self.liststore.append([vdisp, texU, texV,
+        self.point_store.append([vdisp, texU, texV,
                                displayX, displayY,
                                show_point, joy_listen])
 
     def on_toggle_point_show(self, widget, path):
-        self.liststore[path][SHOWPT] = not self.liststore[path][SHOWPT]
+        self.point_store[path][SHOWPT] = not self.point_store[path][SHOWPT]
         self.update_bg_image()
 
     def on_toggle_show_beachball(self, widget, path):
@@ -404,7 +404,7 @@ class UI:
 
     def launch_calibration(self, method, vdisp ):
         orig_data = []
-        for row in self.liststore:
+        for row in self.point_store:
             if row[VDISP]==vdisp:
                 orig_data.append( [ row[TEXU], row[TEXV], row[DISPLAYX], row[DISPLAYY] ] )
         orig_data = np.array(orig_data)
@@ -497,7 +497,7 @@ class UI:
         # draw individual points ---------------
 
         showing = []
-        for row in self.liststore:
+        for row in self.point_store:
             if not row[SHOWPT]:
                 continue
             xf,yf = row[DISPLAYX], row[DISPLAYY]
