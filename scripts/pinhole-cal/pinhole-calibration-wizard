@@ -68,7 +68,7 @@ class UI:
         self.geom = simple_geom.Geometry(filename=geometry_filename)
 
         me = os.path.dirname(os.path.abspath(__file__))
-        ui_fname = os.path.join(me,"extrinsic-wizard.ui")
+        ui_fname = os.path.join(me,"pinhole-calibration-wizard.ui")
 
         self._ui = Gtk.Builder()
         self._ui.add_from_file(ui_fname)
