@@ -26,6 +26,7 @@ import display_client
 import rosgobject.core
 import rosgobject.wrappers
 from gi.repository import Gtk, GObject
+from fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -52,7 +53,8 @@ VS_CAMERA_OBJECT = 5
 VS_PUBLISH_RVIZ = 6
 
 class UI:
-    def __init__(self, ds, cam, geometry_filename):
+    def __init__(self, ds, display_intrinsic_cam, geometry_filename):
+        self.display_intrinsic_cam = display_intrinsic_cam
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
 
         rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
@@ -222,9 +224,12 @@ class UI:
 
         # setup ComboBoxText
         cal_method_cbtext = self._ui.get_object('cal_method_cbtext')
+
+        cal_method_cbtext.append('extrinsic only','extrinsic only')
         cal_method_cbtext.append('DLT','DLT')
         cal_method_cbtext.append('RANSAC DLT','RANSAC DLT')
-        cal_method_cbtext.set_active_id('DLT')
+        #cal_method_cbtext.set_active_id('DLT')
+        cal_method_cbtext.set_active_id('extrinsic only')
 
     def on_show_all_button(self,*args):
         val = args[-1]
@@ -443,6 +448,11 @@ class UI:
                     camera = c1
             else:
                 camera = c1
+        elif method=='extrinsic only':
+            cami = self.display_intrinsic_cam
+            result = fit_extrinsics(cami,XYZ,xy)
+            camera = result['cam']
+            del result
         else:
             raise ValueError('unknown calibration method %r'%method)
 
