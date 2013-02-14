@@ -96,6 +96,7 @@ class UI:
 
         row[DISPLAYX] = msg.x
         row[DISPLAYY] = msg.y
+        self.update_bg_image()
 
     def _build_ui(self):
         # setup vdisp combobox ----------------
@@ -218,6 +219,12 @@ class UI:
 
         self._ui.get_object('show_all_button').connect('clicked', self.on_show_all_button, True)
         self._ui.get_object('show_none_button').connect('clicked', self.on_show_all_button, False)
+
+        # setup ComboBoxText
+        cal_method_cbtext = self._ui.get_object('cal_method_cbtext')
+        cal_method_cbtext.append('DLT','DLT')
+        cal_method_cbtext.append('RANSAC DLT','RANSAC DLT')
+        cal_method_cbtext.set_active_id('DLT')
 
     def on_show_all_button(self,*args):
         val = args[-1]
@@ -439,9 +446,13 @@ class UI:
         else:
             raise ValueError('unknown calibration method %r'%method)
 
+        projected_points = camera.project_3d_to_pixel( XYZ )
+        reproj_error = np.sum( (projected_points - xy)**2, axis=1)
+        mre = np.mean(reproj_error)
+
         for row in self.vdisp_store:
             if row[VS_VDISP]==vdisp:
-                #row[VS_MRE] = results['mean_reprojection_error']
+                row[VS_MRE] = mre
                 row[VS_CAMERA_OBJECT] = camera
         self.update_bg_image()
 
