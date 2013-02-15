@@ -303,11 +303,11 @@ class Calibrator:
                 for axnum,ax in enumerate(do_xyz):
                     update_mask(ds, ax,
                         interpolate_pixel_cords(
-                        points_2d=vdisp_2d_arr,
-                        values_1d=vdisp_3d_arr[:,axnum],
-                        img_width=dsc.width,
-                        img_height=dsc.height,
-                        method="none")
+                            points_2d=vdisp_2d_arr,
+                            values_1d=vdisp_3d_arr[:,axnum],
+                            img_width=dsc.width,
+                            img_height=dsc.height,
+                            method="none")
                     )
 
                 ds_3d.extend(vdisp_3d)
