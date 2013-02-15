@@ -5,6 +5,7 @@ import argparse
 import yaml
 import numpy as np
 from collections import defaultdict
+import datetime
 
 import roslib; roslib.load_manifest('flyvr')
 roslib.load_manifest('visualization_msgs')
@@ -163,6 +164,11 @@ class UI:
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("size", renderer)
         column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='size')
+        treeview.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("time", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='date_string')
         treeview.append_column(column)
 
         self._ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
@@ -394,11 +400,10 @@ class UI:
         self.checkerboard_store.clear()
         for rowdict in in_list:
             self.checkerboard_store.append( [rowdict] )
-        self.update_bg_image()
 
     def render_checkerboard_row(self, treeviewcolumn, cell, model, iter, attr):
         rowdict = model.get_value(iter,0)
-        cell.set_property('text', rowdict[attr] )
+        cell.set_property('text', str(rowdict[attr] ))
 
     def on_CK_add(self, *args):
         self.joy_mode='do CK'
@@ -416,6 +421,8 @@ class UI:
                 e = self._ui.get_object('CK_size_entry')
                 size = float( e.get_text())
                 self._current_checkerboard['size'] = size
+                nowstr = datetime.datetime.now().isoformat(' ')
+                self._current_checkerboard['date_string'] = nowstr
                 self.checkerboard_store.append( [self._current_checkerboard] )
             self.joy_mode=None
             self._current_checkerboard = None # delete current checkerboard
