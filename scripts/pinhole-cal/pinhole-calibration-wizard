@@ -85,7 +85,7 @@ class UI:
         self.frustum_pub = {}
         self._build_ui()
 
-        a1 = self._ui.get_object("assistant1")
+        a1 = self._ui.get_object('main_window')
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
 
@@ -117,12 +117,23 @@ class UI:
             self.update_bg_image()
 
     def _build_ui(self):
-        # build main assistant ----------------------
+        # build main window ----------------------
 
-        a1 = self._ui.get_object("assistant1")
-        a1.add( self._ui.get_object('checkerboard_grid') )
-        a1.add( self._ui.get_object('corresponding_points_grid') )
+        window = self._ui.get_object('main_box')
 
+        nb = Gtk.Notebook()
+        window.add(nb)
+
+        nb.append_page(self._ui.get_object('checkerboard_grid'),
+                       Gtk.Label(label='intrinsics'))
+
+        nb.append_page(Gtk.VBox(),
+                       Gtk.Label(label='virtual displays'))
+
+        nb.append_page(self._ui.get_object('corresponding_points_grid'),
+                       Gtk.Label(label='extrinsics'))
+
+        print 'make NB'
         # setup checkerboard treeview ----------------
 
         self.checkerboard_store = Gtk.ListStore(int,int,float,object)
