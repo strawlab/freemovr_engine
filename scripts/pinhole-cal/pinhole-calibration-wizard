@@ -34,12 +34,6 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
 
 FULLSCREEN='<full screen>'
 
-# columns in self.checkerboard_store
-CK_N_ROWS=0
-CK_N_COLS=1
-CK_SIZE=2
-CK_DATA=3
-
 # columns in self.point_store
 VDISP=0
 TEXU=1
@@ -151,31 +145,28 @@ class UI:
 
         # setup checkerboard treeview ----------------
 
-        self.checkerboard_store = Gtk.ListStore(int,int,float,object)
+        self.checkerboard_store = Gtk.ListStore(object)
 
         treeview = self._ui.get_object('checkerboard_treeview')
         treeview.set_model( self.checkerboard_store )
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("N rows", renderer, text=CK_N_ROWS)
-        column.set_sort_column_id(CK_N_ROWS)
+        column = Gtk.TreeViewColumn("N rows", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='rows')
         treeview.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("N columns", renderer, text=CK_N_COLS)
-        column.set_sort_column_id(CK_N_COLS)
+        column = Gtk.TreeViewColumn("N columns", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='columns')
         treeview.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("size", renderer, text=CK_SIZE)
-        column.set_sort_column_id(CK_SIZE)
+        column = Gtk.TreeViewColumn("size", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='size')
         treeview.append_column(column)
 
         self._ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
         self._ui.get_object('CK_remove_button').connect('clicked', self.on_CK_remove)
-
-        # self._ui.get_object('CK_save_button').connect('clicked', self.on_save_to_yaml,
-        #                                               self.checkerboard_store_to_list)
 
         # setup checkerboard dialog ----------------
 
@@ -392,22 +383,20 @@ class UI:
 
     # ---------------- Checkerboard & intrinsics -------------
 
-    def _add_ck_entry(self,data):
-        # now fill our liststore
-        self.checkerboard_store.append([ data['rows'], data['columns'], data['size'], data] )
-
     def checkerboard_store_to_list(self):
-        result = []
-        for row in self.checkerboard_store:
-            result.append( row[CK_DATA] )
+        result = [row[0] for row in self.checkerboard_store]
         return {'checkerboards':result}
 
     def load_checkerboards(self,indict):
         in_list = indict.get('checkerboards',[])
         self.checkerboard_store.clear()
         for rowdict in in_list:
-            self._add_ck_entry(rowdict)
+            self.checkerboard_store.append( [rowdict] )
         self.update_bg_image()
+
+    def render_checkerboard_row(self, treeviewcolumn, cell, model, iter, attr):
+        rowdict = model.get_value(iter,0)
+        cell.set_property('text', rowdict[attr] )
 
     def on_CK_add(self, *args):
         self.joy_mode='do CK'
@@ -425,8 +414,7 @@ class UI:
                 e = self._ui.get_object('CK_size_entry')
                 size = float( e.get_text())
                 self._current_checkerboard['size'] = size
-                self._add_ck_entry(self._current_checkerboard)
-
+                self.checkerboard_store.append( [self._current_checkerboard] )
             self.joy_mode=None
             self._current_checkerboard = None # delete current checkerboard
         finally:
