@@ -67,6 +67,42 @@ def pretty_intrinsics_str(cam):
 distortion: %s"""%args
     return result
 
+def get_camera_for_boards(rows,width=0,height=0):
+    info_dict = {}
+    for row in rows:
+        r = row[0]
+        info_str = '%d %d %f'%(r['rows'], r['columns'], r['size'])
+        if info_str not in info_dict:
+            # create entry
+            info = camera_calibration.calibrator.ChessboardInfo()
+            info.dim = r['size']
+            info.n_cols = r['columns']
+            info.n_rows = r['rows']
+            info_dict[info_str] = {'info':info,
+                                   'corners':[]}
+        this_list = info_dict[info_str]['corners']
+        this_corners = r['points']
+        assert len(this_corners)==r['rows']*r['columns']
+        this_list.append( this_corners )
+
+    boards = []
+    goodcorners = []
+    for k in info_dict:
+        info = info_dict[k]['info']
+        for xys in info_dict[k]['corners']:
+            goodcorners.append( (xys,info) )
+
+    cal = camera_calibration.calibrator.MonoCalibrator(boards)
+    cal.size = (width,height)
+    r = cal.cal_fromcorners(goodcorners)
+    msg = cal.as_message()
+
+    buf = roslib.message.strify_message(msg)
+    obj = yaml.load(buf)
+    cam = camera_model.load_camera_from_dict(obj,
+                                             extrinsics_required=False)
+    return cam
+
 class UI:
     def __init__(self, dsc, geom):
         self.display_intrinsic_cam = None
@@ -453,42 +489,26 @@ class UI:
             self.checkerboard_store.remove( sel[1] )
 
     def on_compute_intrinsics(self,*args):
-        info_dict = {}
-        for row in self.checkerboard_store:
-            r = row[0]
-            info_str = '%d %d %f'%(r['rows'], r['columns'], r['size'])
-            if info_str not in info_dict:
-                # create entry
-                info = camera_calibration.calibrator.ChessboardInfo()
-                info.dim = r['size']
-                info.n_cols = r['columns']
-                info.n_rows = r['rows']
-                info_dict[info_str] = {'info':info,
-                                       'corners':[]}
-            this_list = info_dict[info_str]['corners']
-            this_corners = r['points']
-            assert len(this_corners)==r['rows']*r['columns']
-            this_list.append( this_corners )
-
-        boards = []
-        goodcorners = []
-        for k in info_dict:
-            info = info_dict[k]['info']
-            for xys in info_dict[k]['corners']:
-                goodcorners.append( (xys,info) )
-
-        cal = camera_calibration.calibrator.MonoCalibrator(boards)
-        cal.size = (self.dsc.width,self.dsc.height)
-        r = cal.cal_fromcorners(goodcorners)
-        msg = cal.as_message()
-
-        buf = roslib.message.strify_message(msg)
-        obj = yaml.load(buf)
-        cam = camera_model.load_camera_from_dict(obj,
-                                                 extrinsics_required=False)
-
+        rows = [r for r in self.checkerboard_store]
+        cam = get_camera_for_boards( rows,
+                                     width=self.dsc.width,
+                                     height=self.dsc.height )
         self.display_intrinsic_cam = cam
         self._ui.get_object('intrinsic_status_label').set_text(pretty_intrinsics_str(cam))
+
+        # if 1:
+        #     print 'all ------------------'
+        #     print pretty_intrinsics_str(cam)
+
+        #     for i in range(len(rows)):
+        #         r2 = [r for (j,r) in enumerate(rows) if j!=i]
+
+        #         cam2 = get_camera_for_boards( r2,
+        #                                       width=self.dsc.width,
+        #                                       height=self.dsc.height )
+
+        #         print 'not %d (%s) ------------------'%(i, rows[i][0]['date_string'])
+        #         print pretty_intrinsics_str(cam2)
 
     # ---------------- Point correspondence & extrinsics -------------
 
