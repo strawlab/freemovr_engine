@@ -760,6 +760,7 @@ class UI:
                     arr[y,x] = 255
                     showing.append( (x,y) )
         self.dsc.show_pixels(arr)
+        return arr
 
 if __name__ == "__main__":
     rospy.init_node("extrinsic_wizard")
