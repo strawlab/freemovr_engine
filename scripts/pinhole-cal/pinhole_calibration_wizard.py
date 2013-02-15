@@ -676,7 +676,25 @@ class UI:
                 camera = c1
         elif method in ['extrinsic only','iterative extrinsic only']:
             assert self.display_intrinsic_cam is not None, 'need intrinsic calibration'
-            cami = self.display_intrinsic_cam
+
+            di = self.dsc.get_display_info()
+
+            mirror = None
+            if 'virtualDisplays' in di:
+                found = False
+                for d in di['virtualDisplays']:
+                    if d['id'] == vdisp:
+                        found = True
+                        mirror = d.get('mirror',None)
+                        break
+                assert found
+
+
+            if mirror is not None:
+                cami = self.display_intrinsic_cam.get_mirror_camera(axis=mirror)
+            else:
+                cami = self.display_intrinsic_cam
+
             if method == 'iterative extrinsic only':
                 result = fit_extrinsics_iterative(cami,XYZ,xy)
             else:
