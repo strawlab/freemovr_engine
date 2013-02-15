@@ -239,6 +239,21 @@
     <child>
       <placeholder/>
     </child>
+    <child>
+      <object class="GtkButton" id="compute_intrinsics">
+        <property name="label" translatable="yes">Compute intrinsics</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="receives_default">True</property>
+        <property name="halign">center</property>
+      </object>
+      <packing>
+        <property name="left_attach">0</property>
+        <property name="top_attach">4</property>
+        <property name="width">1</property>
+        <property name="height">1</property>
+      </packing>
+    </child>
   </object>
   <object class="GtkBox" id="corresponding_points_grid">
     <property name="visible">True</property>

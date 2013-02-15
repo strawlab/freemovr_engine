@@ -168,6 +168,8 @@ class UI:
         self._ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
         self._ui.get_object('CK_remove_button').connect('clicked', self.on_CK_remove)
 
+        self._ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
+
         # setup checkerboard dialog ----------------
 
         self.add_CK_dialog = Gtk.Dialog(title="Add checkerboard",
@@ -429,6 +431,9 @@ class UI:
         sel = selection.get_selected()
         if not sel[1] == None:
             self.checkerboard_store.remove( sel[1] )
+
+    def on_compute_intrinsics(self,*args):
+        1
 
     # ---------------- Point correspondence & extrinsics -------------
 
