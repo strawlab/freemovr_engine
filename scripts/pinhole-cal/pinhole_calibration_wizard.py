@@ -570,7 +570,7 @@ class UI:
 
     def _add_pt_entry(self, vdisp, texU, texV,
                       displayX=float(np.nan), displayY=float(np.nan),
-                      show_point=False, joy_listen=False):
+                      show_point=True, joy_listen=False):
         self.point_store.append([vdisp, texU, texV,
                                displayX, displayY,
                                show_point, joy_listen])
