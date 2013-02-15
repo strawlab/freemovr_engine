@@ -35,7 +35,7 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
     cell.set_property('text', '%g'%float_in )
 
-FULLSCREEN='<full screen>'
+FULLSCREEN='FULL_SCREEN'
 
 # columns in self.point_store
 VDISP=0
@@ -68,9 +68,9 @@ distortion: %s"""%args
     return result
 
 class UI:
-    def __init__(self, ds, geometry_filename):
+    def __init__(self, dsc, geom):
         self.display_intrinsic_cam = None
-        self.dsc = display_client.DisplayServerProxy(ds,wait=True)
+        self.dsc = dsc
 
         rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
 
@@ -79,9 +79,7 @@ class UI:
         self.yamlfilter.set_name("YAML Files")
         self.yamlfilter.add_pattern("*.yaml")
 
-        with open(geometry_filename,mode='r') as fd:
-            self._geom_dict = yaml.safe_load( fd )
-        self.geom = simple_geom.Geometry(filename=geometry_filename)
+        self.geom = geom
 
         me = os.path.dirname(os.path.abspath(__file__))
         ui_fname = os.path.join(me,"pinhole-calibration-wizard.ui")
@@ -331,6 +329,7 @@ class UI:
         # setup ComboBoxText
         cal_method_cbtext = self._ui.get_object('cal_method_cbtext')
 
+        cal_method_cbtext.append('iterative extrinsic only','iterative extrinsic only')
         cal_method_cbtext.append('extrinsic only','extrinsic only')
         cal_method_cbtext.append('DLT','DLT')
         cal_method_cbtext.append('RANSAC DLT','RANSAC DLT')
@@ -373,7 +372,7 @@ class UI:
         if self.data_filename is None:
             return self.on_save_as(*args)
         self._save_to_file( self.data_filename )
-    
+
     def on_save_as(self, *args):
         d1 = self.checkerboard_store_to_list()
         d2 = self.point_store_to_list()
@@ -675,9 +674,13 @@ class UI:
                     camera = c1
             else:
                 camera = c1
-        elif method=='extrinsic only':
+        elif method in ['extrinsic only','iterative extrinsic only']:
+            assert self.display_intrinsic_cam is not None, 'need intrinsic calibration'
             cami = self.display_intrinsic_cam
-            result = fit_extrinsics(cami,XYZ,xy)
+            if method == 'iterative extrinsic only':
+                result = fit_extrinsics_iterative(cami,XYZ,xy)
+            else:
+                result = fit_extrinsics(cami,XYZ,xy)
             camera = result['cam']
             del result
         else:
@@ -761,6 +764,11 @@ if __name__ == "__main__":
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    u = UI(args.display_server, args.geom_fname)
+    dsc = display_client.DisplayServerProxy(args.display_server,
+                                            wait=True)
+
+    geom = simple_geom.Geometry(filename=args.geom_fname)
+
+    u = UI(dsc, geom)
 
     Gtk.main()
