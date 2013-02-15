@@ -719,7 +719,22 @@ class UI:
                 result = fit_extrinsics_iterative(cami,XYZ,xy)
             else:
                 result = fit_extrinsics(cami,XYZ,xy)
-            camera = result['cam']
+
+            c1 = result['cam']
+            if 1:
+                farr = self.geom.compute_for_camera_view( c1,
+                                                          what='texture_coords' )
+
+                u = farr[:,:,0]
+                good = ~np.isnan( u )
+                npix=np.sum( np.nonzero( good ) )
+                if npix==0:
+                    print 'using flipped camera, otherwise npix = 0'
+                    camera = c1.get_flipped_camera()
+                else:
+                    camera = c1
+            else:
+                camera = c1
             del result
         else:
             raise ValueError('unknown calibration method %r'%method)
