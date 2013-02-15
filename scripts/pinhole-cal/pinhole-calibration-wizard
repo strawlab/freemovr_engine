@@ -65,6 +65,7 @@ class UI:
 
         rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
 
+        self.data_filename = None
         self.yamlfilter = Gtk.FileFilter()
         self.yamlfilter.set_name("YAML Files")
         self.yamlfilter.add_pattern("*.yaml")
@@ -133,7 +134,21 @@ class UI:
         nb.append_page(self._ui.get_object('corresponding_points_grid'),
                        Gtk.Label(label='extrinsics'))
 
-        print 'make NB'
+        self._ui.get_object('file_open_menu_item').connect(
+            'activate', self.on_open)
+
+        self._ui.get_object('file_save_menu_item').connect(
+            'activate', self.on_save)
+
+        self._ui.get_object('file_saveas_menu_item').connect(
+            'activate', self.on_save_as)
+
+        self._ui.get_object('file_quit_menu_item').connect(
+            'activate', rosgobject.main_quit)
+
+        self._ui.get_object('help_about_menu_item').connect(
+            'activate', self.on_help_about)
+
         # setup checkerboard treeview ----------------
 
         self.checkerboard_store = Gtk.ListStore(int,int,float,object)
@@ -159,9 +174,8 @@ class UI:
         self._ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
         self._ui.get_object('CK_remove_button').connect('clicked', self.on_CK_remove)
 
-        self._ui.get_object('CK_save_button').connect('clicked', self.on_save_to_yaml,
-                                                      self.checkerboard_store_to_list)
-        self._ui.get_object('CK_load_button').connect('clicked', self.on_CK_load_button)
+        # self._ui.get_object('CK_save_button').connect('clicked', self.on_save_to_yaml,
+        #                                               self.checkerboard_store_to_list)
 
         # setup checkerboard dialog ----------------
 
@@ -170,6 +184,14 @@ class UI:
                             buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
                                      Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
         self.add_CK_dialog.get_content_area().add(self._ui.get_object('add_CK_dialog_grid'))
+
+        # setup help->about dialog -----------------
+        self.help_about_dialog = Gtk.Dialog(title='About',
+                                            parent=None,
+                                            buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        self.help_about_dialog.get_content_area().add(self._ui.get_object('help_about_dialog_grid'))
+        version_str = getattr(flyvr,'__version__','0.0')
+        self._ui.get_object('version_label').set_text(version_str)
 
         # setup vdisp combobox ----------------
         di = self.dsc.get_display_info()
@@ -286,9 +308,9 @@ class UI:
         self._ui.get_object('UV_add_button').connect('clicked', self.on_add_UV)
         self._ui.get_object('UV_remove_button').connect('clicked', self.on_remove_UV)
 
-        self._ui.get_object('save_points_button').connect('clicked', self.on_save_to_yaml,
-                                                          self.point_store_to_list)
-        self._ui.get_object('load_points_button').connect('clicked', self.on_load_points_button)
+        # self._ui.get_object('save_points_button').connect('clicked', self.on_save_to_yaml,
+        #                                                   self.point_store_to_list)
+        # self._ui.get_object('load_points_button').connect('clicked', self.on_load_points_button)
 
         self._ui.get_object('show_all_button').connect('clicked', self.on_show_all_button, True)
         self._ui.get_object('show_none_button').connect('clicked', self.on_show_all_button, False)
@@ -301,10 +323,78 @@ class UI:
         cal_method_cbtext.append('RANSAC DLT','RANSAC DLT')
         cal_method_cbtext.set_active_id('extrinsic only')
 
+    # File menu ----------------------------------------------------
+    def _load_from_file( self, fname ):
+        with open(fname,mode='r') as fd:
+            buf = fd.read()
+
+        obj = yaml.safe_load(buf)
+        self.load_corresponding_points(obj)
+        self.load_checkerboards(obj)
+        self.data_filename = fname
+
+    def _save_to_file( self, fname ):
+        obj = self.checkerboard_store_to_list()
+        d2 = self.point_store_to_list()
+        obj.update( d2 )
+
+        buf = yaml.dump(obj)
+        with open(fname,mode='w') as fd:
+            fd.write(buf)
+        self.data_filename = fname
+
+    def on_open(self, button):
+        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
+                                                  parent=None,
+                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
+
+        try:
+            response = filechooserdialog.run()
+            if response == Gtk.ResponseType.OK:
+                self._load_from_file( filechooserdialog.get_filename() )
+        finally:
+            filechooserdialog.destroy()
+
+    def on_save(self, *args):
+        if self.data_filename is None:
+            return self.on_save_as(*args)
+        self._save_to_file( self.data_filename )
+    
+    def on_save_as(self, *args):
+        d1 = self.checkerboard_store_to_list()
+        d2 = self.point_store_to_list()
+        d1.update( d2 )
+
+        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
+                                                  parent=None,
+                                                  action=Gtk.FileChooserAction.SAVE,
+                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
+        filechooserdialog.add_filter( self.yamlfilter )
+        filechooserdialog.set_do_overwrite_confirmation(True)
+
+        try:
+            response = filechooserdialog.run()
+
+            if response == Gtk.ResponseType.OK:
+                fname = filechooserdialog.get_filename()
+                self._save_to_file( fname )
+        finally:
+            filechooserdialog.destroy()
+
+    # ---------------- Help menu -----------------------------
+    def on_help_about(self,*args):
+        try:
+            self.help_about_dialog.run()
+        finally:
+            self.help_about_dialog.hide()
+
     # ---------------- Checkerboard & intrinsics -------------
 
     def _add_ck_entry(self,data):
-        self.checkerboard_store.append([ 8, 6, 0.015, data] )
+        # now fill our liststore
+        self.checkerboard_store.append([ data['rows'], data['columns'], data['size'], data] )
 
     def checkerboard_store_to_list(self):
         result = []
@@ -312,26 +402,35 @@ class UI:
             result.append( row[CK_DATA] )
         return {'checkerboards':result}
 
+    def load_checkerboards(self,indict):
+        in_list = indict.get('checkerboards',[])
+        self.checkerboard_store.clear()
+        for rowdict in in_list:
+            self._add_ck_entry(rowdict)
+        self.update_bg_image()
+
     def on_CK_add(self, *args):
         self.joy_mode='do CK'
         self._current_checkerboard = {'points':[]}
-        response = self.add_CK_dialog.run()
+        try:
+            response = self.add_CK_dialog.run()
 
-        if response == Gtk.ResponseType.OK:
-            m = self._ui.get_object('CK_n_rows_adjustment')
-            self._current_checkerboard['rows'] = int(m.get_value())
+            if response == Gtk.ResponseType.OK:
+                m = self._ui.get_object('CK_n_rows_adjustment')
+                self._current_checkerboard['rows'] = int(m.get_value())
 
-            m = self._ui.get_object('CK_n_cols_adjustment')
-            self._current_checkerboard['columns'] = int(m.get_value())
+                m = self._ui.get_object('CK_n_cols_adjustment')
+                self._current_checkerboard['columns'] = int(m.get_value())
 
-            e = self._ui.get_object('CK_size_entry')
-            size = float( e.get_text())
-            self._current_checkerboard['size'] = size
-            self._add_ck_entry(self._current_checkerboard)
+                e = self._ui.get_object('CK_size_entry')
+                size = float( e.get_text())
+                self._current_checkerboard['size'] = size
+                self._add_ck_entry(self._current_checkerboard)
 
-        self.joy_mode=None
-        self._current_checkerboard = None # delete current checkerboard
-        self.add_CK_dialog.hide()
+            self.joy_mode=None
+            self._current_checkerboard = None # delete current checkerboard
+        finally:
+            self.add_CK_dialog.hide()
 
         label = self._ui.get_object('N_CKB_points_label')
         label.set_text('')
@@ -342,31 +441,6 @@ class UI:
         sel = selection.get_selected()
         if not sel[1] == None:
             self.checkerboard_store.remove( sel[1] )
-
-    def on_save_to_yaml(self, *args):
-        func2yaml = args[-1]
-
-        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
-                                                  parent=None,
-                                                  action=Gtk.FileChooserAction.SAVE,
-                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
-                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
-        filechooserdialog.add_filter( self.yamlfilter )
-        filechooserdialog.set_do_overwrite_confirmation(True)
-
-        response = filechooserdialog.run()
-
-        if response == Gtk.ResponseType.OK:
-            fname = filechooserdialog.get_filename()
-            obj = func2yaml()
-            buf = yaml.dump(obj)
-            with open(fname,mode='w') as fd:
-                fd.write(buf)
-
-        filechooserdialog.destroy()
-
-    def on_CK_load_button(self, *args):
-        pass
 
     # ---------------- Point correspondence & extrinsics -------------
 
@@ -422,8 +496,9 @@ class UI:
         r = {'uv_display_points':result}
         return r
 
-    def list_to_liststore(self,input):
-        in_list = input.get('uv_display_points',[])
+    def load_corresponding_points(self,indict):
+        in_list = indict.get('uv_display_points',[])
+        self.point_store.clear()
         for rowdict in in_list:
             self._add_pt_entry( rowdict['virtual_display'],
                                 rowdict['texture_u'],
@@ -444,24 +519,6 @@ class UI:
         sel = selection.get_selected()
         if not sel[1] == None:
             self.point_store.remove( sel[1] )
-
-    def on_load_points_button(self, button):
-        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
-                                                  parent=None,
-                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
-                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
-
-        response = filechooserdialog.run()
-
-        if response == Gtk.ResponseType.OK:
-            fname = filechooserdialog.get_filename()
-            with open(fname,mode='r') as fd:
-                buf = fd.read()
-
-            obj = yaml.safe_load(buf)
-            self.list_to_liststore(obj)
-
-        filechooserdialog.destroy()
 
     def _add_pt_entry(self, vdisp, texU, texV,
                       displayX=float(np.nan), displayY=float(np.nan),
