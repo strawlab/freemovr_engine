@@ -12,7 +12,7 @@ import scipy.misc
 import flyvr.srv
 import display_client
 
-def show_image(ds,viewport,fname,white,black,pixel):
+def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize):
     rospy.init_node('show_image')
 
     dsc = display_client.DisplayServerProxy(ds,wait=True)
@@ -23,7 +23,9 @@ def show_image(ds,viewport,fname,white,black,pixel):
     else:
         mask = None
 
-    if white:
+    if rgb != (-1,-1,-1):
+        arr = dsc.new_image(rgb, mask)
+    elif white:
         arr = dsc.new_image(dsc.IMAGE_COLOR_WHITE, mask)
     elif black:
         arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK, mask)
@@ -37,12 +39,20 @@ def show_image(ds,viewport,fname,white,black,pixel):
                 arr = np.resize(arr, masks.shape)
             arr *= masks
 
-    if pixel and (white or black):
-        ptsize = 2
+    if pixel and (white or black or (rgb != (-1,-1,-1))):
         col,row = map(int,pixel.split(','))
-        arr[row-ptsize:row+ptsize,col-ptsize:col+ptsize,:3] =\
-            dsc.IMAGE_COLOR_BLACK if white else dsc.IMAGE_COLOR_WHITE
-        print col
+
+        if white:
+            arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK, mask)
+            rgb = (dsc.IMAGE_COLOR_WHITE, dsc.IMAGE_COLOR_WHITE, dsc.IMAGE_COLOR_WHITE)
+        elif black:
+            arr = dsc.new_image(dsc.IMAGE_COLOR_WHITE, mask)
+            rgb = (dsc.IMAGE_COLOR_BLACK, dsc.IMAGE_COLOR_BLACK, dsc.IMAGE_COLOR_BLACK)
+        else:
+            arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK, mask)
+
+        for i,c in enumerate(rgb):
+            arr[row-ptsize:row+ptsize,col-ptsize:col+ptsize,i] = c
 
     dsc.show_pixels(arr)
 
@@ -52,6 +62,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('fname',nargs='?',default=default_fname)
+    parser.add_argument('--rgb', help='RGB value r,g,b', default="-1,-1,-1")    
     parser.add_argument('--white', action='store_true', help='show a white screen')
     parser.add_argument('--black', action='store_true', help='show a black screen')
     parser.add_argument('--viewport', type=str, help='only show on this viewport')
@@ -59,11 +70,18 @@ def main():
         '--display-server', type=str, metavar='/display_server', required=True, help=\
         'the path of the display server to configure')
     parser.add_argument('--pixel', type=str, help='light this pixel', metavar='x,y')
+    parser.add_argument('--pxsize', type=int, default=2)
     
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    show_image(args.display_server, args.viewport, args.fname, args.white, args.black, args.pixel)
+    show_image(args.display_server, args.viewport, args.fname,
+            args.white,
+            args.black,
+            tuple(map(int,args.rgb.split(','))),
+            args.pixel,
+            args.pxsize
+    )
 
 if __name__=='__main__':
     main()

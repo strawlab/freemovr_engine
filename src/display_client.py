@@ -181,7 +181,12 @@ class DisplayServerProxy(object):
         if nchan == None:
             nchan = self.IMAGE_NCHAN
         arr = np.zeros((self.height,self.width,nchan),dtype=dtype)
-        arr.fill(color)
+        if type(color) in (tuple, list):
+            assert len(color) == self.IMAGE_NCHAN
+            for i,c in enumerate(color):
+                arr[:,:,i] = c
+        else:
+            arr.fill(color)
         if mask != None:
             arr *= mask
         return arr
