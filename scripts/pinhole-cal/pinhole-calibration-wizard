@@ -9,6 +9,8 @@ import datetime
 
 import roslib; roslib.load_manifest('flyvr')
 roslib.load_manifest('visualization_msgs')
+roslib.load_manifest('camera_calibration')
+import camera_calibration.calibrator
 
 import rospy
 
@@ -53,9 +55,21 @@ VS_SHOW_BEACHBALL = 4
 VS_CAMERA_OBJECT = 5
 VS_PUBLISH_RVIZ = 6
 
+def pretty_intrinsics_str(cam):
+    K = cam.K
+    d = cam.distortion
+    dstr = ' '.join(['% 3g'%di for di in d[:,0]])
+    args = tuple(list(K.ravel()) + [dstr])#str(d[:,0])])
+    result = \
+"""K: % 10g % 10g % 10g
+   % 10g % 10g % 10g
+   % 10g % 10g % 10g
+distortion: %s"""%args
+    return result
+
 class UI:
-    def __init__(self, ds, display_intrinsic_cam, geometry_filename):
-        self.display_intrinsic_cam = display_intrinsic_cam
+    def __init__(self, ds, geometry_filename):
+        self.display_intrinsic_cam = None
         self.dsc = display_client.DisplayServerProxy(ds,wait=True)
 
         rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
@@ -440,7 +454,42 @@ class UI:
             self.checkerboard_store.remove( sel[1] )
 
     def on_compute_intrinsics(self,*args):
-        1
+        info_dict = {}
+        for row in self.checkerboard_store:
+            r = row[0]
+            info_str = '%d %d %f'%(r['rows'], r['columns'], r['size'])
+            if info_str not in info_dict:
+                # create entry
+                info = camera_calibration.calibrator.ChessboardInfo()
+                info.dim = r['size']
+                info.n_cols = r['columns']
+                info.n_rows = r['rows']
+                info_dict[info_str] = {'info':info,
+                                       'corners':[]}
+            this_list = info_dict[info_str]['corners']
+            this_corners = r['points']
+            assert len(this_corners)==r['rows']*r['columns']
+            this_list.append( this_corners )
+
+        boards = []
+        goodcorners = []
+        for k in info_dict:
+            info = info_dict[k]['info']
+            for xys in info_dict[k]['corners']:
+                goodcorners.append( (xys,info) )
+
+        cal = camera_calibration.calibrator.MonoCalibrator(boards)
+        cal.size = (self.dsc.width,self.dsc.height)
+        r = cal.cal_fromcorners(goodcorners)
+        msg = cal.as_message()
+
+        buf = roslib.message.strify_message(msg)
+        obj = yaml.load(buf)
+        cam = camera_model.load_camera_from_dict(obj,
+                                                 extrinsics_required=False)
+
+        self.display_intrinsic_cam = cam
+        self._ui.get_object('intrinsic_status_label').set_text(pretty_intrinsics_str(cam))
 
     # ---------------- Point correspondence & extrinsics -------------
 
@@ -699,8 +748,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--intrinsic_fname', type=str, required=True,
-                        help='filename  (.bag or .yaml) intrinsic parameters')
+    # parser.add_argument('--intrinsic_fname', type=str, required=True,
+    #                     help='filename  (.bag or .yaml) intrinsic parameters')
 
     parser.add_argument('--geom_fname', type=str, required=True,
                         help='filename  (.json) specifying display geometry')
@@ -712,9 +761,6 @@ if __name__ == "__main__":
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    cam = camera_model.load_camera_from_file( args.intrinsic_fname,
-                                              extrinsics_required=False )
-
-    u = UI(args.display_server, cam, args.geom_fname)
+    u = UI(args.display_server, args.geom_fname)
 
     Gtk.main()
