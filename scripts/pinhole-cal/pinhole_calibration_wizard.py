@@ -103,6 +103,61 @@ def get_camera_for_boards(rows,width=0,height=0):
                                              extrinsics_required=False)
     return cam
 
+class CheckerboardPlotWidget(Gtk.DrawingArea):
+    def __init__(self):
+        super(CheckerboardPlotWidget,self).__init__()
+        self.set_size_request(100,80)
+        self.connect('draw', self._on_draw_event)
+        self.connect('configure-event', self._on_configure_event)
+        self._surface = None
+        print 'CheckerboardPlotWidget.__init__'
+
+    def _on_draw_event(self, widget, cr):
+        print 'draw event!'
+        cr.set_source_surface(self._surface, 0.0, 0.0)
+        cr.paint()
+        if 1:
+            return
+
+        vec,pts = self.get_vec_and_points()
+
+        if vec is not None:
+            cr.set_source_rgb (1, 0, 0)
+            cr.set_line_width (1)
+            cr.move_to(vec.p.x,vec.p.y)
+            cr.line_to(vec.p2.x,vec.p2.y)
+            cr.stroke()
+
+        for pt,rgb in pts:
+            if pt is not None:
+                cr.set_source_rgb (*rgb)
+                cr.move_to(pt.x, pt.y)
+                cr.arc(pt.x, pt.y, 2, 0, 2.0 * math.pi)
+                cr.fill()
+
+    def _on_configure_event(self, widget, event):
+        print 'CheckerboardPlotWidget.config'
+
+        allocation = self.get_allocation()
+        self._surface = self.get_window().create_similar_surface(
+                                            cairo.CONTENT_COLOR,
+                                            allocation.width,
+                                            allocation.height)
+
+        self._draw_background()
+
+    def _draw_background(self):
+        print 'CheckerboardPlotWidget.bg'
+        cr = cairo.Context(self._surface)
+        cr.set_source_rgb(1, 1, 0)
+        cr.paint()
+
+        # cr.set_source_rgb (0, 0, 0)
+        # cr.set_line_width (1)
+        # cx,cy = self._xy_to_pxpy(0,0)
+        # cr.arc(cx, cy, self._r_px, 0, 2.0 * math.pi)
+        # cr.stroke()
+
 class UI:
     def __init__(self, dsc, geom):
         self.display_intrinsic_cam = None
@@ -230,7 +285,21 @@ class UI:
                             parent=None,
                             buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
                                      Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
-        self.add_CK_dialog.get_content_area().add(self._ui.get_object('add_CK_dialog_grid'))
+        grid = self._ui.get_object('add_CK_dialog_grid')
+        if 1:
+            grid.attach(  Gtk.Label(label='in grid2'),
+                          0, 5, 1, 1)
+            #grid.add(  Gtk.Label(label='in grid2'))
+            self.add_CK_dialog.get_content_area().add(grid)
+        if 0:
+
+            box = self._ui.get_object('checkerboard_plot_box')
+            box.add( Gtk.Label(label='before'))
+            box.add( CheckerboardPlotWidget())
+            box.add( Gtk.Label(label='after'))
+            print 'build plot widget'
+
+            #self._ui.get_object('add_CK_dialog_grid').add(  Gtk.Label(label='in grid'))
 
         # setup help->about dialog -----------------
         self.help_about_dialog = Gtk.Dialog(title='About',
