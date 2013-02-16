@@ -887,8 +887,16 @@ if __name__ == "__main__":
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    dsc = display_client.DisplayServerProxy(args.display_server,
-                                            wait=True)
+    if 0:
+        dsc = display_client.DisplayServerProxy(args.display_server,
+                                                wait=True)
+    else:
+        import hack_pinhole
+        import yaml
+        yaml_fname = 'andrew4k.yaml'
+        data = yaml.load( open(yaml_fname).read() )
+
+        dsc = hack_pinhole.MockDisplayClient(data['display'])
 
     geom = simple_geom.Geometry(filename=args.geom_fname)
 
