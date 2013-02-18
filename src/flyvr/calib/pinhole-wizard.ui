@@ -133,16 +133,7 @@
         <property name="hexpand">True</property>
         <property name="vexpand">True</property>
         <child>
-          <object class="GtkLabel" id="label2">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">pre-before</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
+          <placeholder/>
         </child>
       </object>
       <packing>
@@ -164,11 +155,9 @@
         <child>
           <object class="GtkButton" id="CK_add_button">
             <property name="label" translatable="yes">Add...</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -179,11 +168,9 @@
         <child>
           <object class="GtkButton" id="CK_remove_button">
             <property name="label" translatable="yes">Remove</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -205,12 +192,10 @@
         <child>
           <object class="GtkButton" id="CK_show_all_button">
             <property name="label" translatable="yes">show all</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -221,12 +206,10 @@
         <child>
           <object class="GtkButton" id="CK_show_none_button">
             <property name="label" translatable="yes">show none</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -270,12 +253,10 @@
     <child>
       <object class="GtkButton" id="compute_intrinsics">
         <property name="label" translatable="yes">Compute intrinsics</property>
-        <property name="use_action_appearance">False</property>
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="receives_default">True</property>
         <property name="halign">center</property>
-        <property name="use_action_appearance">False</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -348,11 +329,9 @@
         <child>
           <object class="GtkButton" id="UV_add_button">
             <property name="label" translatable="yes">Add</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -363,11 +342,9 @@
         <child>
           <object class="GtkButton" id="UV_remove_button">
             <property name="label" translatable="yes">Remove</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -389,11 +366,9 @@
         <child>
           <object class="GtkButton" id="show_all_button">
             <property name="label" translatable="yes">show all</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -404,11 +379,9 @@
         <child>
           <object class="GtkButton" id="show_none_button">
             <property name="label" translatable="yes">show none</property>
-            <property name="use_action_appearance">False</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="use_action_appearance">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -579,7 +552,6 @@ the Straw Lab
             <property name="can_focus">False</property>
             <child>
               <object class="GtkMenuItem" id="menuitem1">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_File</property>
@@ -591,7 +563,6 @@ the Straw Lab
                     <child>
                       <object class="GtkImageMenuItem" id="file_open_menu_item">
                         <property name="label">gtk-open</property>
-                        <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
@@ -601,7 +572,6 @@ the Straw Lab
                     <child>
                       <object class="GtkImageMenuItem" id="file_save_menu_item">
                         <property name="label">gtk-save</property>
-                        <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
@@ -611,7 +581,6 @@ the Straw Lab
                     <child>
                       <object class="GtkImageMenuItem" id="file_saveas_menu_item">
                         <property name="label">gtk-save-as</property>
-                        <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
@@ -627,7 +596,6 @@ the Straw Lab
                     <child>
                       <object class="GtkImageMenuItem" id="file_quit_menu_item">
                         <property name="label">gtk-quit</property>
-                        <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
@@ -640,7 +608,6 @@ the Straw Lab
             </child>
             <child>
               <object class="GtkMenuItem" id="menuitem2">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_View</property>
@@ -652,7 +619,6 @@ the Straw Lab
                     <child>
                       <object class="GtkImageMenuItem" id="view_point_size_item">
                         <property name="label">set display point size</property>
-                        <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
@@ -665,7 +631,6 @@ the Straw Lab
             </child>
             <child>
               <object class="GtkMenuItem" id="menuitem4">
-                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">_Help</property>
@@ -677,7 +642,6 @@ the Straw Lab
                     <child>
                       <object class="GtkImageMenuItem" id="help_about_menu_item">
                         <property name="label">gtk-about</property>
-                        <property name="use_action_appearance">False</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>

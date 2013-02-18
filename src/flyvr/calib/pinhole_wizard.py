@@ -29,6 +29,7 @@ import display_client
 
 import rosgobject.core
 import rosgobject.wrappers
+import cairo
 from gi.repository import Gtk, GObject
 from fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
 
@@ -310,12 +311,8 @@ class UI:
         if 1:
 
             box = self._ui.get_object('checkerboard_plot_box')
-            box.add( Gtk.Label(label='before'))
-            box.add( CheckerboardPlotWidget())
-            box.add( Gtk.Label(label='after'))
-            print 'build plot widget'
-
-            #self._ui.get_object('add_CK_dialog_grid').add(  Gtk.Label(label='in grid'))
+            box.pack_start( CheckerboardPlotWidget(), True, True, 0)
+            box.show_all()
 
         # setup help->about dialog -----------------
         self.help_about_dialog = Gtk.Dialog(title='About',
