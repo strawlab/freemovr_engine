@@ -911,6 +911,5 @@ if __name__ == "__main__":
 
     geom = simple_geom.Geometry(filename=args.geom_fname)
 
-    u = UI(dsc, geom)
-
+    UI(dsc, geom)
     Gtk.main()
