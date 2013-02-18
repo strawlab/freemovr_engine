@@ -874,9 +874,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument('--intrinsic_fname', type=str, required=True,
-    #                     help='filename  (.bag or .yaml) intrinsic parameters')
-
     parser.add_argument('--geom_fname', type=str, required=True,
                         help='filename  (.json) specifying display geometry')
 
