@@ -6,6 +6,7 @@ import yaml
 import numpy as np
 from collections import defaultdict
 import datetime
+import pkgutil
 
 import roslib; roslib.load_manifest('flyvr')
 roslib.load_manifest('visualization_msgs')
@@ -182,11 +183,10 @@ class UI:
 
         self.geom = geom
 
-        me = os.path.dirname(os.path.abspath(__file__))
-        ui_fname = os.path.join(me,"pinhole-calibration-wizard.ui")
+        ui_file_contents = pkgutil.get_data('flyvr.calib','pinhole-wizard.ui')
 
         self._ui = Gtk.Builder()
-        self._ui.add_from_file(ui_fname)
+        self._ui.add_from_string( ui_file_contents )
 
         self.joy_mode=None
 
