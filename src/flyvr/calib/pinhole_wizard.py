@@ -234,8 +234,11 @@ class UI:
         nb.append_page(self._ui.get_object('checkerboard_grid'),
                        Gtk.Label(label='intrinsics'))
 
-        nb.append_page(Gtk.VBox(),
+        nb.append_page(self._ui.get_object('virtual_display_layout_grid'),
                        Gtk.Label(label='virtual displays'))
+
+        nb.append_page(self._ui.get_object('geom_grid'),
+                       Gtk.Label(label='display geometry'))
 
         nb.append_page(self._ui.get_object('corresponding_points_grid'),
                        Gtk.Label(label='extrinsics'))
