@@ -170,9 +170,8 @@ class MockDisplayClient:
         1
 
 class UI:
-    def __init__(self, dsc):
+    def __init__(self):
         self.display_intrinsic_cam = None
-        self.dsc = dsc
 
         rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
 
@@ -321,20 +320,7 @@ class UI:
         self._ui.get_object('version_label').set_text(version_str)
 
         # setup vdisp combobox ----------------
-        di = self.dsc.get_display_info()
         self.vdisp_store = Gtk.ListStore(str,int,bool,float,bool,object,bool)
-
-        if 'virtualDisplays' in di:
-            vdisps = [d['id'] for d in di['virtualDisplays']]
-        else:
-            vdisps = [FULLSCREEN]
-
-        for vdisp in vdisps:
-            self.vdisp_store.append([vdisp,0,0,np.nan,0,None,0])
-            self.intr_pub[vdisp] = rospy.Publisher(vdisp+'/camera_info',
-                                                   CameraInfo, latch=True)
-            self.frustum_pub[vdisp] = rospy.Publisher(vdisp+'/frustum',
-                                                       MarkerArray)
 
         # create vdisp treeview -----------------------
 
@@ -451,17 +437,46 @@ class UI:
         cal_method_cbtext.append('RANSAC DLT','RANSAC DLT')
         cal_method_cbtext.set_active_id('extrinsic only')
 
+    def load_display(self,obj):
+        display_dict = obj['display']
+
+        self.dsc = MockDisplayClient( display_dict )
+        self._ui.get_object('virtual_display_yaml').get_buffer().set_text(
+            yaml.dump(display_dict) )
+
+        self.vdisp_store.clear()
+
+        di = self.dsc.get_display_info()
+
+        if 'virtualDisplays' in di:
+            vdisps = [d['id'] for d in di['virtualDisplays']]
+        else:
+            vdisps = [FULLSCREEN]
+
+        for vdisp in vdisps:
+            self.vdisp_store.append([vdisp,0,0,np.nan,0,None,0])
+            self.intr_pub[vdisp] = rospy.Publisher(vdisp+'/camera_info',
+                                                   CameraInfo, latch=True)
+            self.frustum_pub[vdisp] = rospy.Publisher(vdisp+'/frustum',
+                                                       MarkerArray)
+
     # File menu ----------------------------------------------------
     def _load_from_file( self, fname ):
         with open(fname,mode='r') as fd:
             buf = fd.read()
 
         obj = yaml.safe_load(buf)
+
+        self.load_display(obj)
         self.load_corresponding_points(obj)
         self.load_checkerboards(obj)
         self.data_filename = fname
 
-        self.geom = simple_geom.Geometry(geom_dict=obj['geom'])
+        geom_dict = obj['geom']
+        self._ui.get_object('geometry_entry').get_buffer().set_text(
+            yaml.dump(geom_dict) )
+
+        self.geom = simple_geom.Geometry(geom_dict=geom_dict)
 
     def _save_to_file( self, fname ):
         obj = self.checkerboard_store_to_list()
@@ -893,17 +908,7 @@ if __name__ == "__main__":
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    if args.just_use_this_data is None:
-        dsc = display_client.DisplayServerProxy(wait=True)
-    else:
-        import yaml
-        yaml_fname = args.just_use_this_data
-        buf = open(yaml_fname).read()
-        data = yaml.load( buf )
-
-        dsc = MockDisplayClient(data['display'])
-
-    ui = UI(dsc)
+    ui = UI()
     if args.just_use_this_data:
         ui._load_from_file(args.just_use_this_data)
     Gtk.main()

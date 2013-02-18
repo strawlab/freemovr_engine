@@ -18,11 +18,7 @@ def test_pinhole_wizard():
     buf = open(data_fname).read()
     data = yaml.load( buf )
 
-    dsc = pw.MockDisplayClient(data['display'])
-
-    print data['geom']
-
-    ui = pw.UI(dsc)
+    ui = pw.UI()
 
     ui._load_from_file(data_fname)
     ui.on_compute_intrinsics()
