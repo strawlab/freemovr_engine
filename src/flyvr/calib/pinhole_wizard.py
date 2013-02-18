@@ -170,7 +170,7 @@ class MockDisplayClient:
         1
 
 class UI:
-    def __init__(self, dsc, geom):
+    def __init__(self, dsc):
         self.display_intrinsic_cam = None
         self.dsc = dsc
 
@@ -180,8 +180,6 @@ class UI:
         self.yamlfilter = Gtk.FileFilter()
         self.yamlfilter.set_name("YAML Files")
         self.yamlfilter.add_pattern("*.yaml")
-
-        self.geom = geom
 
         ui_file_contents = pkgutil.get_data('flyvr.calib','pinhole-wizard.ui')
 
@@ -459,6 +457,8 @@ class UI:
         self.load_corresponding_points(obj)
         self.load_checkerboards(obj)
         self.data_filename = fname
+
+        self.geom = simple_geom.Geometry(geom_dict=obj['geom'])
 
     def _save_to_file( self, fname ):
         obj = self.checkerboard_store_to_list()
@@ -881,15 +881,7 @@ if __name__ == "__main__":
     rosgobject.get_ros_thread() #ensure ros is spinning
     rosgobject.add_console_logger()
 
-
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('--geom_fname', type=str, required=True,
-                        help='filename  (.json) specifying display geometry')
-
-    parser.add_argument('--display_server', type=str,
-                        required=True,
-                        help='the path of the display server to configure')
 
     parser.add_argument('--just-use-this-data', type=str, default=None,
                         help="If specified, .yaml file with data "
@@ -899,8 +891,7 @@ if __name__ == "__main__":
     args = parser.parse_args(argv[1:])
 
     if args.just_use_this_data is None:
-        dsc = display_client.DisplayServerProxy(args.display_server,
-                                                wait=True)
+        dsc = display_client.DisplayServerProxy(wait=True)
     else:
         import yaml
         yaml_fname = args.just_use_this_data
@@ -909,7 +900,7 @@ if __name__ == "__main__":
 
         dsc = MockDisplayClient(data['display'])
 
-    geom = simple_geom.Geometry(filename=args.geom_fname)
-
-    UI(dsc, geom)
+    ui = UI(dsc)
+    if args.just_use_this_data:
+        ui._load_from_file(args.just_use_this_data)
     Gtk.main()

@@ -22,8 +22,7 @@ def test_pinhole_wizard():
 
     print data['geom']
 
-    geom = simple_geom.Geometry(geom_dict=data['geom'])
-    ui = pw.UI(dsc, geom)
+    ui = pw.UI(dsc)
 
     ui._load_from_file(data_fname)
     ui.on_compute_intrinsics()
