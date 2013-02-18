@@ -873,7 +873,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		flyvr_assert(gc.valid());
+		flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
 		_viewer->getCamera()->setGraphicsContext(gc.get());
         _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.5f, 0.0f)); // clear blue
 
@@ -900,7 +900,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-		flyvr_assert(gc.valid());
+		flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
 		_viewer->getCamera()->setGraphicsContext(gc.get());
 		_viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
 		GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
