@@ -36,6 +36,12 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
     cell.set_property('text', '%g'%float_in )
 
+EXTRINSIC_CALIBRATION_METHODS = [
+    'extrinsic only',
+    'iterative extrinsic only',
+    'DLT',
+    'RANSAC DLT',
+    ]
 FULLSCREEN='FULL_SCREEN'
 
 # columns in self.point_store
@@ -431,34 +437,9 @@ class UI:
         # setup ComboBoxText
         cal_method_cbtext = self._ui.get_object('cal_method_cbtext')
 
-        cal_method_cbtext.append('iterative extrinsic only','iterative extrinsic only')
-        cal_method_cbtext.append('extrinsic only','extrinsic only')
-        cal_method_cbtext.append('DLT','DLT')
-        cal_method_cbtext.append('RANSAC DLT','RANSAC DLT')
-        cal_method_cbtext.set_active_id('extrinsic only')
-
-    def load_display(self,obj):
-        display_dict = obj['display']
-
-        self.dsc = MockDisplayClient( display_dict )
-        self._ui.get_object('virtual_display_yaml').get_buffer().set_text(
-            yaml.dump(display_dict) )
-
-        self.vdisp_store.clear()
-
-        di = self.dsc.get_display_info()
-
-        if 'virtualDisplays' in di:
-            vdisps = [d['id'] for d in di['virtualDisplays']]
-        else:
-            vdisps = [FULLSCREEN]
-
-        for vdisp in vdisps:
-            self.vdisp_store.append([vdisp,0,0,np.nan,0,None,0])
-            self.intr_pub[vdisp] = rospy.Publisher(vdisp+'/camera_info',
-                                                   CameraInfo, latch=True)
-            self.frustum_pub[vdisp] = rospy.Publisher(vdisp+'/frustum',
-                                                       MarkerArray)
+        for method in EXTRINSIC_CALIBRATION_METHODS:
+            cal_method_cbtext.append(method,method)
+        cal_method_cbtext.set_active_id(EXTRINSIC_CALIBRATION_METHODS[0])
 
     # File menu ----------------------------------------------------
     def _load_from_file( self, fname ):
@@ -470,23 +451,30 @@ class UI:
         self.load_display(obj)
         self.load_corresponding_points(obj)
         self.load_checkerboards(obj)
+        self.load_geom(obj)
         self.data_filename = fname
 
-        geom_dict = obj['geom']
-        self._ui.get_object('geometry_entry').get_buffer().set_text(
-            yaml.dump(geom_dict) )
+    def _save_to_file( self, file ):
+        do_close = False
+        if hasattr(file,'write'):
+            fd = file
+            self.data_filename = None # clear the cached value
+        else:
+            fd = open(file,mode='w')
+            do_close = True
+            self.data_filename = file
 
-        self.geom = simple_geom.Geometry(geom_dict=geom_dict)
-
-    def _save_to_file( self, fname ):
         obj = self.checkerboard_store_to_list()
         d2 = self.point_store_to_list()
         obj.update( d2 )
 
+        obj.update( self.display_to_list() )
+        obj.update( self.geom_to_list() )
+
         buf = yaml.dump(obj)
-        with open(fname,mode='w') as fd:
-            fd.write(buf)
-        self.data_filename = fname
+        fd.write(buf)
+        if do_close:
+            fd.close()
 
     def on_open(self, button):
         filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
@@ -606,6 +594,71 @@ class UI:
 
         #         print 'not %d (%s) ------------------'%(i, rows[i][0]['date_string'])
         #         print pretty_intrinsics_str(cam2)
+
+    # Virtual displays ----------------------------------------------
+
+    def display_to_list(self):
+        result = dict(width = self.dsc.width,
+                      height = self.dsc.height,
+                      )
+        di = self.dsc.get_display_info()
+
+        if 'virtualDisplays' in di:
+            vdisps = [d['id'] for d in di['virtualDisplays']]
+            result['virtualDisplays'] = []
+        else:
+            vdisps = []#FULLSCREEN]
+
+        for vdisp in vdisps:
+            count = 0
+            for d in di['virtualDisplays']:
+                if d['id'] != vdisp:
+                    continue
+
+                this_vdisp = dict(id = vdisp,
+                                  viewport = d['viewport'],
+                                  )
+                if 'mirror' in d:
+                    this_vdisp['mirror'] = d['mirror']
+                result['virtualDisplays'].append( this_vdisp )
+                count += 1
+            assert count == 1
+        return {'display':result}
+
+    def load_display(self,obj):
+        display_dict = obj['display']
+
+        self.dsc = MockDisplayClient( display_dict )
+        self._ui.get_object('virtual_display_yaml').get_buffer().set_text(
+            yaml.dump(display_dict) )
+
+        self.vdisp_store.clear()
+
+        di = self.dsc.get_display_info()
+
+        if 'virtualDisplays' in di:
+            vdisps = [d['id'] for d in di['virtualDisplays']]
+        else:
+            vdisps = [FULLSCREEN]
+
+        for vdisp in vdisps:
+            self.vdisp_store.append([vdisp,0,0,np.nan,0,None,0])
+            self.intr_pub[vdisp] = rospy.Publisher(vdisp+'/camera_info',
+                                                   CameraInfo, latch=True)
+            self.frustum_pub[vdisp] = rospy.Publisher(vdisp+'/frustum',
+                                                       MarkerArray)
+
+    # Display geometry ----------------------------------------------
+
+    def geom_to_list(self):
+        return {'geom':self._geom_dict}
+
+    def load_geom(self,obj):
+        self._geom_dict = obj['geom']
+        self._ui.get_object('geometry_entry').get_buffer().set_text(
+            yaml.dump(self._geom_dict) )
+
+        self.geom = simple_geom.Geometry(geom_dict=self._geom_dict)
 
     # ---------------- Point correspondence & extrinsics -------------
 
@@ -754,6 +807,8 @@ class UI:
         uv = orig_data[:,:2]
         XYZ = self.geom.model.texcoord2worldcoord(uv)
         xy = orig_data[:,2:4]
+
+        assert method in EXTRINSIC_CALIBRATION_METHODS
 
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
