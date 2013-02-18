@@ -158,6 +158,16 @@ class CheckerboardPlotWidget(Gtk.DrawingArea):
         # cr.arc(cx, cy, self._r_px, 0, 2.0 * math.pi)
         # cr.stroke()
 
+class MockDisplayClient:
+    def __init__(self,di):
+        self.di = di
+        self.width = di['width']
+        self.height = di['height']
+    def get_display_info(self):
+        return self.di
+    def show_pixels(self,arr):
+        1
+
 class UI:
     def __init__(self, dsc, geom):
         self.display_intrinsic_cam = None
@@ -881,19 +891,23 @@ if __name__ == "__main__":
                         required=True,
                         help='the path of the display server to configure')
 
+    parser.add_argument('--just-use-this-data', type=str, default=None,
+                        help="If specified, .yaml file with data "
+                        "to run non-interactively.")
+
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
-    if 0:
+    if args.just_use_this_data is None:
         dsc = display_client.DisplayServerProxy(args.display_server,
                                                 wait=True)
     else:
-        import hack_pinhole
         import yaml
-        yaml_fname = 'andrew4k.yaml'
-        data = yaml.load( open(yaml_fname).read() )
+        yaml_fname = args.just_use_this_data
+        buf = open(yaml_fname).read()
+        data = yaml.load( buf )
 
-        dsc = hack_pinhole.MockDisplayClient(data['display'])
+        dsc = MockDisplayClient(data['display'])
 
     geom = simple_geom.Geometry(filename=args.geom_fname)
 
