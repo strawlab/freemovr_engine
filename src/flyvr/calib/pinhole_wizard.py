@@ -307,7 +307,7 @@ class UI:
                           0, 5, 1, 1)
             #grid.add(  Gtk.Label(label='in grid2'))
             self.add_CK_dialog.get_content_area().add(grid)
-        if 0:
+        if 1:
 
             box = self._ui.get_object('checkerboard_plot_box')
             box.add( Gtk.Label(label='before'))
@@ -543,6 +543,8 @@ class UI:
         self.joy_mode='do CK'
         self._current_checkerboard = {'points':[]}
         try:
+            print 'should see check plot now!'
+
             response = self.add_CK_dialog.run()
 
             if response == Gtk.ResponseType.OK:
