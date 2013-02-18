@@ -40,7 +40,7 @@ EXTRINSIC_CALIBRATION_METHODS = [
     'extrinsic only',
     'iterative extrinsic only',
     'DLT',
-    'RANSAC DLT',
+    #'RANSAC DLT',
     ]
 FULLSCREEN='FULL_SCREEN'
 
