@@ -462,6 +462,16 @@ class UI:
         self.load_geom(obj)
         self.data_filename = fname
 
+    def _get_state_as_dict( self ):
+        obj = self.checkerboard_store_to_list()
+        d2 = self.point_store_to_list()
+        obj.update( d2 )
+
+        obj.update( self.display_to_list() )
+        obj.update( self.geom_to_list() )
+        return obj
+
+
     def _save_to_file( self, file ):
         do_close = False
         if hasattr(file,'write'):
@@ -472,14 +482,9 @@ class UI:
             do_close = True
             self.data_filename = file
 
-        obj = self.checkerboard_store_to_list()
-        d2 = self.point_store_to_list()
-        obj.update( d2 )
-
-        obj.update( self.display_to_list() )
-        obj.update( self.geom_to_list() )
-
+        obj = self._get_state_as_dict()
         buf = yaml.dump(obj)
+
         fd.write(buf)
         if do_close:
             fd.close()
