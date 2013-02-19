@@ -187,6 +187,8 @@ class UI:
         self.yamlfilter.set_name("YAML Files")
         self.yamlfilter.add_pattern("*.yaml")
 
+        self._real_dsc = None
+
         ui_file_contents = pkgutil.get_data('flyvr.calib','pinhole-wizard.ui')
 
         self._ui = Gtk.Builder()
@@ -230,6 +232,15 @@ class UI:
             self.update_bg_image()
 
     def _build_ui(self):
+        # connection status ----------------------
+        button = self._ui.get_object('connect_to_display_server_button')
+        button.connect('clicked', self.on_connect_to_display_server)
+
+        button = self._ui.get_object('disconnect_from_display_server_button')
+        button.connect('clicked', self.on_disconnect_from_display_server)
+
+        self._update_display_server_status()
+
         # build main window ----------------------
 
         window = self._ui.get_object('main_box')
@@ -519,6 +530,31 @@ class UI:
             self.help_about_dialog.run()
         finally:
             self.help_about_dialog.hide()
+
+    # ---------------- Connect to display server ------------
+
+    def _update_display_server_status(self):
+        label = self._ui.get_object('ds_connection_status_label')
+        if self._real_dsc is None:
+            label.set_text('not connected')
+        else:
+            label.set_text('connected')
+
+    def on_connect_to_display_server(self,*args):
+        e = self._ui.get_object('display_server_name_entry')
+        ds_name = e.get_text()
+
+        dsc = display_client.DisplayServerProxy(ds_name)#,wait=True)
+        self._real_dsc  = dsc
+        e.set_sensitive(False) # disable new connection
+        self._update_display_server_status()
+
+    def on_disconnect_from_display_server(self,*args):
+        e = self._ui.get_object('display_server_name_entry')
+
+        self._real_dsc  = None
+        e.set_sensitive(True) # enable new connection
+        self._update_display_server_status()
 
     # ---------------- Checkerboard & intrinsics -------------
 
@@ -946,6 +982,8 @@ class UI:
                     arr[y,x] = 255
                     showing.append( (x,y) )
         self.dsc.show_pixels(arr)
+        if self._real_dsc is not None:
+            self._real_dsc.show_pixels(arr)
         return arr
 
 if __name__ == "__main__":
