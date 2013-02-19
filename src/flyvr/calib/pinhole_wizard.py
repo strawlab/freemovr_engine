@@ -106,7 +106,7 @@ def get_camera_for_boards(rows,width=0,height=0):
     msg = cal.as_message()
 
     buf = roslib.message.strify_message(msg)
-    obj = yaml.load(buf)
+    obj = yaml.safe_load(buf)
     cam = camera_model.load_camera_from_dict(obj,
                                              extrinsics_required=False)
     return cam
