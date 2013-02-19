@@ -64,3 +64,14 @@ def check_data_roundtrip(to_buf=False):
     assert data1 == data2
     if not to_buf:
         os.unlink( unlink_fd )
+
+def test_save_exr():
+    ui = pw.UI()
+
+    ui._load_from_file(data_fname)
+    ui.on_compute_intrinsics()
+
+    method = pw.EXTRINSIC_CALIBRATION_METHODS[0]
+
+    ui.calibrate_all_vdisps(method)
+    ui.save_calibration_exr('/tmp/pinhole.exr')

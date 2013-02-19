@@ -26,6 +26,8 @@ import simple_geom
 import camera_model
 import dlt
 import display_client
+import fill_polygon
+from exr import save_exr
 
 import rosgobject.core
 import rosgobject.wrappers
@@ -187,6 +189,10 @@ class UI:
         self.yamlfilter.set_name("YAML Files")
         self.yamlfilter.add_pattern("*.yaml")
 
+        self.exr_filter = Gtk.FileFilter()
+        self.exr_filter.set_name("EXR Files")
+        self.exr_filter.add_pattern("*.exr")
+
         self._real_dsc = None
 
         ui_file_contents = pkgutil.get_data('flyvr.calib','pinhole-wizard.ui')
@@ -240,6 +246,10 @@ class UI:
         button.connect('clicked', self.on_disconnect_from_display_server)
 
         self._update_display_server_status()
+
+        # save calibration EXR button -----------
+        button = self._ui.get_object('save_calibration_exr_button')
+        button.connect('clicked', self.on_save_calibration_exr)
 
         # build main window ----------------------
 
@@ -558,6 +568,68 @@ class UI:
         e.set_sensitive(True) # enable new connection
         self._update_display_server_status()
 
+
+    # ---------------- Save calibration EXR file -------------
+    def save_calibration_exr(self,fname):
+        state_dict = self._get_state_as_dict()
+        obj = {'pinhole_wizard_input':state_dict}
+        comments = yaml.dump(obj)
+
+        tcs = np.zeros( (self.dsc.height,self.dsc.width,2))-1
+        allmask = np.zeros((self.dsc.height,self.dsc.width))
+
+        di = self.dsc.get_display_info()
+
+        for row in self.vdisp_store:
+            vdisp = row[VS_VDISP]
+
+            for d in di['virtualDisplays']:
+                if d['id'] != vdisp:
+                    continue
+                else:
+                    break
+
+            assert d['id'] == vdisp
+
+            polygon_verts = d['viewport']
+            maskarr = np.zeros( allmask.shape, dtype=np.uint8 )
+            fill_polygon.fill_polygon(polygon_verts, maskarr)
+            if np.max(maskarr)==0: # no mask
+                maskarr += 1
+
+            allmask += maskarr
+            mask = np.nonzero(maskarr)
+
+            camera = row[VS_CAMERA_OBJECT]
+            assert camera is not None
+
+            this_tcs = self.geom.compute_for_camera_view( camera,
+                                                          what='texture_coords' )
+            this_tcs[ np.isnan(this_tcs) ] = -1.0 # nan -> -1
+            tcs[mask] = this_tcs[mask] # copy the important parts to the full display image
+        r=tcs[:,:,0]
+        g=tcs[:,:,1]
+        b=np.zeros_like(tcs[:,:,1])
+        save_exr( fname, r=r, g=g, b=b)
+
+    def on_save_calibration_exr(self,*args):
+        filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
+                                                  parent=None,
+                                                  action=Gtk.FileChooserAction.SAVE,
+                                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
+        filechooserdialog.add_filter( self.exr_filter )
+        filechooserdialog.set_do_overwrite_confirmation(True)
+
+        try:
+            response = filechooserdialog.run()
+
+            if response == Gtk.ResponseType.OK:
+                fname = filechooserdialog.get_filename()
+                self.save_calibration_exr(fname)
+        finally:
+            filechooserdialog.destroy()
+
     # ---------------- Checkerboard & intrinsics -------------
 
     def checkerboard_store_to_list(self):
@@ -714,6 +786,7 @@ class UI:
             vdisp = row[VS_VDISP]
             row[VS_COUNT] = vdisps[ vdisp ]
 
+
     def on_edit_vdisp(self,widget,path,textval,colnum):
         self.point_store[path][colnum] = textval
         self.update_bg_image()
@@ -834,6 +907,11 @@ class UI:
 
         method = self._ui.get_object('cal_method_cbtext').get_active_text()
         self.launch_calibration( method, vdisp )
+
+    def calibrate_all_vdisps(self,method):
+        for row in self.vdisp_store:
+            vdisp = row[VS_VDISP]
+            self.launch_calibration( method, vdisp )
 
     def launch_calibration(self, method, vdisp ):
         orig_data = []
