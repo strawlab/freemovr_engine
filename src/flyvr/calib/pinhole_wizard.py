@@ -549,6 +549,7 @@ class UI:
         self._real_dsc  = dsc
         e.set_sensitive(False) # disable new connection
         self._update_display_server_status()
+        self.update_bg_image() # send current image over
 
     def on_disconnect_from_display_server(self,*args):
         e = self._ui.get_object('display_server_name_entry')
