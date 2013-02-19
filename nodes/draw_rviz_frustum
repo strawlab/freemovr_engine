@@ -81,7 +81,7 @@ class MyApp:
         rospy.spin()
 
 if __name__ == '__main__':
-    rospy.init_node('draw_camera')
+    rospy.init_node('draw_rviz_frustum')
 
     parser = argparse.ArgumentParser()
 
