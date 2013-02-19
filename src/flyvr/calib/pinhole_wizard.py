@@ -503,10 +503,6 @@ class UI:
         self._save_to_file( self.data_filename )
 
     def on_save_as(self, *args):
-        d1 = self.checkerboard_store_to_list()
-        d2 = self.point_store_to_list()
-        d1.update( d2 )
-
         filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
                                                   parent=None,
                                                   action=Gtk.FileChooserAction.SAVE,
