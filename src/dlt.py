@@ -54,7 +54,30 @@ class DltRansacModel:
         reproj_error = np.sum((found-orig)**2, axis=0) # L2 norm
         return reproj_error
 
+def build_M(X3d,x2d):
+    M = []
+
+    assert len(X3d)==len(x2d)
+    assert len(X3d) >= 6 # 2 equations and 11 unknowns means we need 6 points.
+
+    for i in range(len(X3d)):
+        X = X3d[i,0]
+        Y = X3d[i,1]
+        Z = X3d[i,2]
+        x = x2d[i,0]
+        y = x2d[i,1]
+
+        M.append( [X, Y, Z, 1, 0, 0, 0, 0, 0, 0, 0, 0, -x] )
+        M.append( [0, 0, 0, 0, X, Y, Z, 1, 0, 0, 0, 0, -y] )
+        M.append( [0, 0, 0, 0, 0, 0, 0, 0, X, Y, Z, 1, -1] )
+    return np.array(M)
+
 def build_Bc(X3d,x2d):
+    """Build matrix B and vector c to solve
+
+    We want an equation of the form Bx = c where x is a vector of
+    unknowns corresponding to the solution to the camera calibration.
+    """
     B = []
     c = []
 
@@ -75,18 +98,18 @@ def build_Bc(X3d,x2d):
         c.append( y )
     return np.array(B), np.array(c)
 
-def center(P):
-    orig_determinant = np.linalg.det
-    def determinant( A ):
-        return orig_determinant( np.asarray( A ) )
-    # camera center
-    X = determinant( [ P[:,1], P[:,2], P[:,3] ] )
-    Y = -determinant( [ P[:,0], P[:,2], P[:,3] ] )
-    Z = determinant( [ P[:,0], P[:,1], P[:,3] ] )
-    T = -determinant( [ P[:,0], P[:,1], P[:,2] ] )
+# def center(P):
+#     orig_determinant = np.linalg.det
+#     def determinant( A ):
+#         return orig_determinant( np.asarray( A ) )
+#     # camera center
+#     X = determinant( [ P[:,1], P[:,2], P[:,3] ] )
+#     Y = -determinant( [ P[:,0], P[:,2], P[:,3] ] )
+#     Z = determinant( [ P[:,0], P[:,1], P[:,3] ] )
+#     T = -determinant( [ P[:,0], P[:,1], P[:,2] ] )
 
-    C_ = np.array( [[ X/T, Y/T, Z/T ]] ).T
-    return C_
+#     C_ = np.array( [[ X/T, Y/T, Z/T ]] ).T
+#     return C_
 
 def ransac_dlt(X3d, x2d,
                n = 6,     # six is minimum
@@ -109,15 +132,51 @@ def ransac_dlt(X3d, x2d,
 
     return ransac.ransac(data,model,n,k,t,d,debug=True,return_all=True)
 
+def simple_dlt2(X3d, x2d):
+    normalize = True
+    if normalize:
+        # normalize so that SVD has better numerical properties
+        mx = np.mean(x2d[:,0])
+        my = np.mean(x2d[:,1])
+        s = 1.0/((mx+my)*0.5)
+        N = np.array( [[ s, 0, -s*mx],
+                       [ 0, s, -s*my],
+                       [ 0, 0,  1]])
+
+        x2dhT = np.hstack( (x2d, np.ones_like( x2d[:,np.newaxis,0] )) ).T
+        xt = np.dot(N,x2dhT)
+        x2dN = xt[:2].T
+
+        use_2d = x2dN
+    else:
+        use_2d = x2d
+    M = build_M(X3d,use_2d)
+    U,s,V = np.linalg.svd(M, full_matrices=False)
+
+    a = V[-1]
+
+    assert a.shape == (13,)
+    Mhat = a[:12]
+    Mhat.shape=(3,4)
+
+    Ninv = np.linalg.pinv(N)
+    if normalize:
+        Mhat = np.dot( Ninv, Mhat )
+        assert Mhat.shape==(3,4)
+    results = dict(#center = center(Mhat).T[0],
+                   pmat = Mhat,
+                   )
+    return results
+
 def simple_dlt(X3d, x2d):
     B,c = build_Bc(X3d,x2d)
     DLT_avec_results = np.linalg.lstsq(B,c)
     a_vec,residuals = DLT_avec_results[:2]
     Mhat = np.array(list(a_vec)+[1])
     Mhat.shape=(3,4)
-    results = dict(center = center(Mhat).T[0],
+
+    results = dict(#center = center(Mhat).T[0],
                    pmat = Mhat,
-                   #residuals=residuals[0],
                    )
     return results
 
@@ -126,7 +185,7 @@ def dlt(X3d, x2d, ransac=True):
     x2d = np.array(x2d)
     if ransac:
         pmat,rd = ransac_dlt(X3d, x2d)
-        result = dict(center = center(pmat).T[0],
+        result = dict(#center = center(pmat).T[0],
                       pmat = pmat,
                       )
         idxs = rd['inliers']
@@ -154,7 +213,7 @@ def print_summary(results):
             test2d = camera.project_3d_to_pixel(testpts, distorted=True)
             for i in range(len(testpts)):
                 print '%s -> %s (expect %s, err %.1f)'%(testpts[i], test2d[i], results['x2d'][i], results['reprojection_error'][i])
-        print '%d inliers, camera center: %s'%(len(results['x2d']), results['center'])
+        #print '%d inliers, camera center: %s'%(len(results['x2d']), results['center'])
         print 'mean err: %.1f'%(results['mean_reprojection_error'],)
 
     finally:

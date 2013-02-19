@@ -5,11 +5,14 @@ import scipy.optimize
 import camera_model
 import simple_geom
 import numpy as np
+import os
 import cv
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from plot_utils import get_3d_verts, plot_camera
+PLOT=int(os.environ.get('PLOT',0))
+if PLOT:
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    from plot_utils import get_3d_verts, plot_camera
 
 import roslib; roslib.load_manifest('flyvr')
 from tf.transformations import quaternion_from_matrix, \
@@ -106,7 +109,7 @@ class ObjectiveFunction:
             self.debug = True
         else:
             self.debug = False
-        if self.debug:
+        if PLOT and self.debug:
             plt.ion()
             self.fig = plt.figure()
             self.ax3d = self.fig.add_subplot(211, projection='3d')
@@ -185,7 +188,7 @@ class ObjectiveFunction:
             print 'mean reproj error: ',me
             print
 
-        if self.debug:
+        if PLOT and self.debug:
             assert len(each_err)==len(self.x2d)
             self.ax3d.cla()
             verts = self.plot_verts
