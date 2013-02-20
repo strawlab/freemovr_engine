@@ -156,10 +156,12 @@ class Cylinder(ModelBase):
         sz = bz-az
         r = self.radius
 
+        old_settings = np.seterr(invalid='ignore') # we expect some nans below
         # Solve for the intersections between line and circle (see sympy_line_circle.py for math)
         t0 = (-ax*sx - ay*sy + (-ax**2*sy**2 + 2*ax*ay*sx*sy - ay**2*sx**2 + r**2*sx**2 + r**2*sy**2)**(0.5))/(sx**2 + sy**2)
         t1 = (ax*sx + ay*sy + (-ax**2*sy**2 + 2*ax*ay*sx*sy - ay**2*sx**2 + r**2*sx**2 + r**2*sy**2)**(0.5))/(-sx**2 - sy**2)
         tt = np.vstack((t0,t1))
+        np.seterr(**old_settings)
 
         # We want t to be > 0 (in direction from camera center to
         # point) but the closest one, so the smallest value meeting
@@ -288,8 +290,11 @@ class Sphere(ModelBase):
         sz = bz-az
         r = self.radius
 
+
+        old_settings = np.seterr(invalid='ignore') # we expect some nans below
         # Solve for the intersections between line and sphere (see sympy_line_sphere.py for math)
         t0,t1 = [(ax*sx + ay*sy + az*sz + (-ax**2*sy**2 - ax**2*sz**2 + 2*ax*ay*sx*sy + 2*ax*az*sx*sz - ay**2*sx**2 - ay**2*sz**2 + 2*ay*az*sy*sz - az**2*sx**2 - az**2*sy**2 + r**2*sx**2 + r**2*sy**2 + r**2*sz**2)**(0.5))/(-sx**2 - sy**2 - sz**2), (-ax*sx - ay*sy - az*sz + (-ax**2*sy**2 - ax**2*sz**2 + 2*ax*ay*sx*sy + 2*ax*az*sx*sz - ay**2*sx**2 - ay**2*sz**2 + 2*ay*az*sy*sz - az**2*sx**2 - az**2*sy**2 + r**2*sx**2 + r**2*sy**2 + r**2*sz**2)**(0.5))/(sx**2 + sy**2 + sz**2)]
+        np.seterr(**old_settings)
 
         tt = np.vstack((t0,t1))
 
