@@ -1,4 +1,4 @@
-# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 
 ROS_PACKAGE_NAME = 'flyvr'
 import roslib
