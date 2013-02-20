@@ -36,9 +36,13 @@ def gen_vert_snake(w,h,sw,sh=None,linspace=False,startw=0,starth=0):
                 yield ww,hh
             reverse = 1
 
-def gen_spiral_snake(w, h, startw=0, starth=0):
+def gen_spiral_snake(w, h, sw, sh=None, startw=0, starth=0):
+    sh = sw if sh == None else sh
     x,y = 0,0   
     dx, dy = 0, -1
+
+    w *= int((1.0/sw))
+    h *= int((1.0/sh))
 
     for dumb in xrange(w*h):
         if abs(x) == abs(y) and [dx,dy] != [1,0] or x>0 and y == 1-x:  
@@ -48,7 +52,7 @@ def gen_spiral_snake(w, h, startw=0, starth=0):
             dx, dy = -dy, dx            # change direction
             x, y = -y+dx, x+dy          # jump
 
-        yield x+startw, y+starth
+        yield (x*sw)+startw, (y*sh)+starth
         x, y = x+dx, y+dy
 
 if __name__ == "__main__":
@@ -62,15 +66,19 @@ if __name__ == "__main__":
             y.append(_y)
         print len(x)
         plt.plot(x,y)
-        plt.xlim(-5,20)
-        plt.ylim(-5,20)
+        #plt.xlim(-180,180)
+        #plt.ylim(-50,50)
 
     do_plt(gen_horiz_snake(15,10,3,2))
     do_plt(gen_horiz_snake(15,10,1,1,startw=-2,starth=-4))
     do_plt(gen_horiz_snake(15,10,3,2,linspace=True))
     do_plt(gen_vert_snake(15,10,3))
-    do_plt(gen_spiral_snake(12,5))
-    do_plt(gen_spiral_snake(5,5,startw=5,starth=5))
-    do_plt(gen_spiral_snake(6,6,startw=4,starth=4))
+    do_plt(gen_spiral_snake(12,5,1))
+    do_plt(gen_spiral_snake(5,5,1,startw=5,starth=5))
+    do_plt(gen_spiral_snake(3,3,0.5,startw=0,starth=0))
+    do_plt(gen_spiral_snake(3,3,0.5,startw=-2,starth=2))
+    do_plt(gen_spiral_snake(3,3,0.5,startw=-2,starth=-2))
+    do_plt(gen_spiral_snake(6,6,1,startw=-86.755104064941406,starth=-39.857143402099609))
+    do_plt(gen_spiral_snake(6,6,0.5,startw=-86.755104064941406,starth=-39.857143402099609))
 
     plt.show()
