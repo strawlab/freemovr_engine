@@ -264,7 +264,7 @@ class MultiCamSelfCal(_Calibrator):
     LOG = logging.getLogger('mcsc')
     INPUT = ("camera_order.txt","IdMat.dat","points.dat","Res.dat","multicamselfcal.cfg")
 
-    def __init__(self, out_dirname, basename='cam', use_nth_frame=1, mcscdir='/opt/MultiCamSelfCal/MultiCamSelfCal/'):
+    def __init__(self, out_dirname, basename='cam', use_nth_frame=1, mcscdir='/opt/multicamselfcal/MultiCamSelfCal/'):
         _Calibrator.__init__(self, out_dirname)
         self.mcscdir = mcscdir
         self.basename = basename
