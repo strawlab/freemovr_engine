@@ -85,7 +85,6 @@ if __name__ == '__main__':
     parser.add_argument(
         '--calib-config', type=str, default='package://flycave/conf/calib-all.yaml',
         help='path to calibration configuration yaml file')
-    parser.add_argument('--all-cams', action='store_true', help='also generate masks for tracking cams')
 
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
@@ -107,13 +106,8 @@ if __name__ == '__main__':
     display_servers = config["display_servers"]
 
     all_cams = []
-    for d,cams in display_servers.items():
-        for cam in cams:
-            all_cams.append(cam)
-
-    if args.all_cams:
-        for cam in config["tracking_cameras"]:
-            all_cams.append(cam)
+    for cam in config["tracking_cameras"]:
+        all_cams.append(cam)
 
     c = GenMasks(display_servers=display_servers,
                  cams=all_cams,
