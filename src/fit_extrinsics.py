@@ -204,7 +204,7 @@ class ObjectiveFunction:
 
 
             plt.draw()
-        if 1:
+        if 0:
             df = found[1:]-found[:-1]
             #print 'found'
             #print found
