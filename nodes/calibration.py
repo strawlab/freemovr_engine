@@ -160,10 +160,18 @@ class DataIO:
         self._bag.close()
         rospy.loginfo("Saved to %s" % self._dest)
 
-    def load(self, name, vis_callback_2d=None):
+    def load(self, name, calibration_except=None, vis_callback_2d=None):
+        if calibration_except is None:
+            calibration_except = set()
         with rosbag.Bag(name, 'r') as bag:
             for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
+
+                viewport_desc = "%s/%s" % (msg.display_server,msg.vdisp)
+                if viewport_desc in calibration_except:
+                    continue
+
                 self._add_mapping(msg)
+
                 if vis_callback_2d:
                     vis_callback_2d(ds=msg.display_server, 
                                     col=msg.pixel_projector.x,
@@ -247,7 +255,7 @@ laser_handle = "pantilt"
 
 class Calib:
 
-    def __init__(self, config, show_cameras, show_display_servers, show_type, outdir, continue_calibration, enable_mouse_click, debug):
+    def __init__(self, config, show_cameras, show_display_servers, show_type, outdir, continue_calibration, calibration_except, enable_mouse_click, debug):
         tracking_cameras = config["tracking_cameras"]
         laser_camera = config["laser_camera"]
         trigger = config["trigger"]
@@ -402,7 +410,7 @@ class Calib:
         if continue_calibration:
             path = decode_url(continue_calibration)
             if os.path.exists(path):
-                self._load_previous_calibration(path)
+                self._load_previous_calibration(path, calibration_except)
             else:
                 rospy.logerr("could not find requested calibration to load")
 
@@ -621,8 +629,8 @@ class Calib:
 
         return xyz,pts,nvisible,reproj
 
-    def _load_previous_calibration(self, path):
-        self.data.load(path, vis_callback_2d=self._show_correspondence)
+    def _load_previous_calibration(self, path, calibration_except=None):
+        self.data.load(path, calibration_except, vis_callback_2d=self._show_correspondence)
 #        for ds in self.show_display_servers:
 #            cv2.imshow(
 #                    self.show_display_servers[ds]["handle"],
@@ -1112,7 +1120,7 @@ class Calib:
                             self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)
 
             elif mode == CALIB_MODE_RESTORE:
-                self._load_previous_calibration(self.outdir)
+                self._load_previous_calibration(self.outdir, None)
                 self.change_mode(CALIB_MODE_SLEEP)
 
             #publish state
@@ -1150,6 +1158,9 @@ if __name__ == '__main__':
         '--continue-calibration', type=str,
         help='path to previous calibration bag file')
     parser.add_argument(
+        '--continue-calibration-except', type=str, default=("",), nargs='*',
+        help='viewport strings describing parts of a calibration not to load')
+    parser.add_argument(
         '--show-display-servers', type=str, default=("",),
         help='show display servers with the given names (or "all") calibration in process',
         metavar="display_serverN", nargs='*')
@@ -1184,6 +1195,7 @@ if __name__ == '__main__':
               show_type=set(args.show_type),
               outdir=outdir,
               continue_calibration=args.continue_calibration,
+              calibration_except=args.continue_calibration_except,
               enable_mouse_click=args.enable_mouse_click,
               debug=args.debug.split(","))
     c.run()
