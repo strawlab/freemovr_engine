@@ -112,9 +112,6 @@ IF(BUILD_WITH_ROS)
   rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
-  rosbuild_add_library(StimulusPinholeDisplay src/StimulusPinholeDisplay.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(StimulusPinholeDisplay ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
-
   rosbuild_add_library(StimulusStandby src/StimulusStandby.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
@@ -155,9 +152,6 @@ ELSE(BUILD_WITH_ROS)
 
   ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
-
-  ADD_LIBRARY(StimulusPinholeDisplay SHARED src/StimulusPinholeDisplay.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(StimulusPinholeDisplay ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)

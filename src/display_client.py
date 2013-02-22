@@ -162,6 +162,11 @@ class DisplayServerProxy(object):
             image |= self.get_virtual_display_mask(vdisp["id"])
         return image
 
+    def get_virtual_display_mirror(self,vdisp_name):
+        viewport_idx = self._get_viewport_index(vdisp_name)
+        virtual_display = self.get_display_info()['virtualDisplays'][viewport_idx]
+        return virtual_display.get('mirror',None)
+
     def show_image(self, fname, unlink=False):
         try:
             image = flyvr.msg.FlyVRCompressedImage()

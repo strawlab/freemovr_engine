@@ -1,4 +1,4 @@
-# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil; indent-offset: 4 -*-
+# -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
@@ -156,10 +156,12 @@ class Cylinder(ModelBase):
         sz = bz-az
         r = self.radius
 
+        old_settings = np.seterr(invalid='ignore') # we expect some nans below
         # Solve for the intersections between line and circle (see sympy_line_circle.py for math)
         t0 = (-ax*sx - ay*sy + (-ax**2*sy**2 + 2*ax*ay*sx*sy - ay**2*sx**2 + r**2*sx**2 + r**2*sy**2)**(0.5))/(sx**2 + sy**2)
         t1 = (ax*sx + ay*sy + (-ax**2*sy**2 + 2*ax*ay*sx*sy - ay**2*sx**2 + r**2*sx**2 + r**2*sy**2)**(0.5))/(-sx**2 - sy**2)
         tt = np.vstack((t0,t1))
+        np.seterr(**old_settings)
 
         # We want t to be > 0 (in direction from camera center to
         # point) but the closest one, so the smallest value meeting
@@ -288,8 +290,11 @@ class Sphere(ModelBase):
         sz = bz-az
         r = self.radius
 
+
+        old_settings = np.seterr(invalid='ignore') # we expect some nans below
         # Solve for the intersections between line and sphere (see sympy_line_sphere.py for math)
         t0,t1 = [(ax*sx + ay*sy + az*sz + (-ax**2*sy**2 - ax**2*sz**2 + 2*ax*ay*sx*sy + 2*ax*az*sx*sz - ay**2*sx**2 - ay**2*sz**2 + 2*ay*az*sy*sz - az**2*sx**2 - az**2*sy**2 + r**2*sx**2 + r**2*sy**2 + r**2*sz**2)**(0.5))/(-sx**2 - sy**2 - sz**2), (-ax*sx - ay*sy - az*sz + (-ax**2*sy**2 - ax**2*sz**2 + 2*ax*ay*sx*sy + 2*ax*az*sx*sz - ay**2*sx**2 - ay**2*sz**2 + 2*ay*az*sy*sz - az**2*sx**2 - az**2*sy**2 + r**2*sx**2 + r**2*sy**2 + r**2*sz**2)**(0.5))/(sx**2 + sy**2 + sz**2)]
+        np.seterr(**old_settings)
 
         tt = np.vstack((t0,t1))
 
@@ -430,3 +435,43 @@ def angle_between_vectors(v1, v2):
     if len_a == 0 or len_b == 0:
         return 0
     return np.arccos(dot / (len_a * len_b))
+
+def tcs_to_beachball(farr):
+    assert farr.ndim == 3
+    assert farr.shape[2] == 2
+    u = farr[:,:,0]
+    v = farr[:,:,1]
+
+    good = ~np.isnan( u )
+    assert np.allclose( good, ~np.isnan(v) )
+
+    assert np.all( u[good] >= 0 )
+    assert np.all( u[good] <= 1 )
+    assert np.all( v[good] >= 0 )
+    assert np.all( v[good] <= 1 )
+
+    hf = u*4 # horiz float
+    vf = v*2 # vert float
+
+    hi = np.floor( hf ) # horiz int (0,1,2,3)
+    hi[hi==4.0] = 3.0
+    vi = np.floor( vf ) # vert int  (0,1)
+    vi[vi==2.0] = 1.0
+
+    iif = hi + 4*vi + 1 # (1,2,3,4,5,6,7,8)
+    ii = iif.astype( np.uint8 ) # nan -> 0
+
+    colors = np.array( [ (0,0,0), # black
+
+                         (255,0,0), # red
+                         (0,255,0), # green
+                         (0, 0, 255), # blue
+                         (255, 0, 255),
+
+                         (255, 0, 255),
+                         (255,0,0), # red
+                         (0,255,0), # green
+                         (0, 0, 255), # blue
+                         ])
+    bbim = colors[ ii ]
+    return bbim
