@@ -46,7 +46,7 @@ import calib.kdtree
 from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
 from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
-from calib.sampling import gen_horiz_snake, gen_vert_snake
+from calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
 from calib.calibrationconstants import *
 
 from rosutils.io import decode_url
@@ -960,24 +960,31 @@ class Calib:
                 if col != None:
                     self.laser_proxy_power(False)
                     
-                    #generate N random points about the start - and include the
-                    #start point several times. This sampling could be better done as a grid...
+                    #generate N points about the start - and include the
+                    #start point several times
                     #
                     #this is the maximum number of points we will test, so be generous
                     #because this loop is exited when we have collected enough points,
-                    #not when this list is empty (so we will not necessarily take this long)
+                    #not when this list is empty (so we will not necessarily take this long,
+                    #but we will take this long if we can't get a reconstruction)
                     #
-                    #also, try each point twice in case the PTC was still moving
-                    reps = 2
                     #start with current location
                     p = self._vdispinfo["panmid"]
                     t = self._vdispinfo["tiltmid"]
-                    self._vdispinfo["currattempt3d"] = [(p,t) for r in range(2*reps)]
-                    #random locatons
-                    for i in range(30):
-                        p = self._vdispinfo["panmid"]  + random.randint(*self.laser_search_size)
-                        t = self._vdispinfo["tiltmid"] + random.randint(*self.laser_search_size)
-                        self._vdispinfo["currattempt3d"].extend( (p,t) for i in range(reps) )
+                    #twice for reliability
+                    currattempt3d = [(p,t),(p,t)]
+                    #locatons spiraling out from the start
+                    currattempt3d.extend(
+                        (p,t) for p,t in gen_spiral_snake(
+                                            self.laser_search_size,self.laser_search_size,
+                                            0.5,
+                                            startw=p,
+                                            starth=t
+                                         )
+                    )
+                    #we pop from this list, so reverse it
+                    currattempt3d.reverse()
+                    self._vdispinfo["currattempt3d"] = currattempt3d
 
                     self.change_mode(CALIB_MODE_DISPLAY_SERVER_LASER)
 
