@@ -303,6 +303,8 @@ class Calib:
         self.laser_proxy_power(False)
         self.laser_proxy_pan(self._laser_currpan)
         self.laser_proxy_tilt(self._laser_currtilt)
+        rospy.loginfo("Moving laser home to p:%s t:%s" % (self._laser_currpan, self._laser_currtilt))
+        rospy.loginfo("Laser range p:%r -> t:%r" % (self.laser_range_pan, self.laser_range_tilt))
 
         self.pub_mode = rospy.Publisher('~mode', String)
         
@@ -375,7 +377,7 @@ class Calib:
                 fd.enable_benchmark()
             self.tracking_cameras[cam] = fd
             cam_handlers.append(CameraHandler(cam,debug="acquisition" in debug))
-            rospy.loginfo("Calibrating %s" % cam)
+            rospy.loginfo("Connecting to cam %s" % cam)
             self._set_bg_mask(cam, fd)
         self.runner = SimultainousCameraRunner(cam_handlers)
         
@@ -394,6 +396,7 @@ class Calib:
         self.laser_runner = SequentialCameraRunner(
                                 (CameraHandler(laser_camera,"acquisition" in debug),),
                                 queue_depth=1)
+        rospy.loginfo("Connecting to cam %s" % laser_camera)
         self.laser_detector = fd
         self.laser_mask = load_mask_image(decode_url(config["laser_camera_mask"]))
 
@@ -979,6 +982,7 @@ class Calib:
                     pan,tilt = self._light_laser_pixel(pan, tilt, power=True)
                     self._vdispinfo["currpan"] = pan
                     self._vdispinfo["currtilt"] = tilt
+                    rospy.loginfo("laser making candidate 3D point at p:%s t:%s (%d remain)" % (pan,tilt,len(self._vdispinfo["currattempt3d"])))
                 except IndexError:
                     rospy.logwarn("giving up, could not get a 3D reconstruction")
                     self.change_mode(CALIB_MODE_DISPLAY_SERVER_VDISP)                    
@@ -1026,6 +1030,8 @@ class Calib:
                 col,row,lum = self._detect_laser_camera_2d_point(
                                     self.visible_thresh,
                                     msgprefix="attempt %d " % self._vdispinfo["currattempt"])
+
+                #FIXME: We get stuck looping here still
 
                 #missed the projector pixel. try again (we are safe from looping
                 #because of the currattempt test)
