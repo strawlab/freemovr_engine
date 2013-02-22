@@ -45,13 +45,33 @@
   </object>
   <object class="GtkAdjustment" id="dt_adjustment">
     <property name="upper">2</property>
-    <property name="value">0.5</property>
+    <property name="value">0.10000000000000001</property>
     <property name="step_increment">0.01</property>
     <property name="page_increment">0.10000000000000001</property>
     <signal name="value-changed" handler="on_dt_changed" swapped="no"/>
   </object>
+  <object class="GtkAdjustment" id="ks_adjustment">
+    <property name="lower">-1</property>
+    <property name="upper">1000</property>
+    <property name="value">10</property>
+    <property name="step_increment">10</property>
+    <property name="page_increment">100</property>
+    <signal name="value-changed" handler="on_ks_changed" swapped="no"/>
+  </object>
+  <object class="GtkAdjustment" id="maxr_adjustment">
+    <property name="upper">100</property>
+    <property name="step_increment">0.20000000000000001</property>
+    <property name="page_increment">2</property>
+    <signal name="value-changed" handler="on_maxr_changed" swapped="no"/>
+  </object>
+  <object class="GtkAdjustment" id="minr_adjustment">
+    <property name="upper">100</property>
+    <property name="step_increment">0.20000000000000001</property>
+    <property name="page_increment">2</property>
+    <signal name="value-changed" handler="on_minr_changed" swapped="no"/>
+  </object>
   <object class="GtkAdjustment" id="nd_adjustment">
-    <property name="upper">2</property>
+    <property name="upper">1</property>
     <property name="value">0.01</property>
     <property name="step_increment">0.01</property>
     <property name="page_increment">0.10000000000000001</property>
@@ -65,10 +85,11 @@
     <signal name="value-changed" handler="on_r_changed" swapped="no"/>
   </object>
   <object class="GtkAdjustment" id="sr_adjustment">
-    <property name="upper">2</property>
-    <property name="value">0.20000000000000001</property>
-    <property name="step_increment">0.01</property>
-    <property name="page_increment">0.10000000000000001</property>
+    <property name="lower">-1</property>
+    <property name="upper">10</property>
+    <property name="value">-1</property>
+    <property name="step_increment">0.10000000000000001</property>
+    <property name="page_increment">1</property>
     <signal name="value-changed" handler="on_sr_changed" swapped="no"/>
   </object>
   <object class="GtkWindow" id="window1">
@@ -77,18 +98,20 @@
       <object class="GtkGrid" id="grid1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="column_homogeneous">True</property>
+        <property name="border_width">5</property>
+        <property name="row_spacing">2</property>
+        <property name="column_spacing">5</property>
         <child>
           <object class="GtkSpinButton" id="sr_sp">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="invisible_char">●</property>
             <property name="adjustment">sr_adjustment</property>
-            <property name="digits">2</property>
+            <property name="digits">3</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
+            <property name="top_attach">2</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -99,11 +122,11 @@
             <property name="can_focus">True</property>
             <property name="invisible_char">●</property>
             <property name="adjustment">nd_adjustment</property>
-            <property name="digits">2</property>
+            <property name="digits">3</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">1</property>
+            <property name="top_attach">4</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -114,11 +137,11 @@
             <property name="can_focus">True</property>
             <property name="invisible_char">●</property>
             <property name="adjustment">dt_adjustment</property>
-            <property name="digits">2</property>
+            <property name="digits">3</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">5</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -127,33 +150,8 @@
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Search Radius </property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-            <property name="width">1</property>
-            <property name="height">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="label2">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Normal Distance</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
-            <property name="width">1</property>
-            <property name="height">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="label3">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Distance Threshold</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Normal est. Search Radius</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -163,23 +161,11 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label4">
+          <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">ax</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
-            <property name="width">1</property>
-            <property name="height">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="label5">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">ay</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Normal Distance</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -189,14 +175,57 @@
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label6">
+          <object class="GtkLabel" id="label3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">az</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Distance Threshold</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
             <property name="top_attach">5</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label4">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">ax</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">6</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label5">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">ay</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">7</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label6">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">az</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">8</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -211,7 +240,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">6</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -226,7 +255,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">7</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -241,7 +270,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">5</property>
+            <property name="top_attach">8</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -250,11 +279,12 @@
           <object class="GtkLabel" id="label7">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="xalign">0</property>
             <property name="label" translatable="yes">Inliers</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">11</property>
+            <property name="top_attach">13</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -268,7 +298,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">11</property>
+            <property name="top_attach">13</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -277,11 +307,12 @@
           <object class="GtkLabel" id="label8">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="xalign">0</property>
             <property name="label" translatable="yes">cx</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">6</property>
+            <property name="top_attach">9</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -290,11 +321,12 @@
           <object class="GtkLabel" id="label9">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="xalign">0</property>
             <property name="label" translatable="yes">cy</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">7</property>
+            <property name="top_attach">10</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -303,11 +335,12 @@
           <object class="GtkLabel" id="label10">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="xalign">0</property>
             <property name="label" translatable="yes">cz</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">8</property>
+            <property name="top_attach">11</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -322,7 +355,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">6</property>
+            <property name="top_attach">9</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -337,7 +370,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">7</property>
+            <property name="top_attach">10</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -352,7 +385,7 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">8</property>
+            <property name="top_attach">11</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -361,11 +394,12 @@
           <object class="GtkLabel" id="label11">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="xalign">0</property>
             <property name="label" translatable="yes">radius</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">9</property>
+            <property name="top_attach">12</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
@@ -380,10 +414,241 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">9</property>
+            <property name="top_attach">12</property>
             <property name="width">1</property>
             <property name="height">1</property>
           </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="execute_btn">
+            <property name="label">gtk-execute</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">14</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label12">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Minimum Radius</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">0</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label13">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Maximum Radius</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinButton" id="spinbutton8">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="invisible_char">•</property>
+            <property name="adjustment">minr_adjustment</property>
+            <property name="digits">1</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">0</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinButton" id="spinbutton9">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="invisible_char">•</property>
+            <property name="adjustment">maxr_adjustment</property>
+            <property name="digits">1</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">1</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="image1">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">Minimum allowable cylinder radius (m).</property>
+            <property name="halign">start</property>
+            <property name="xpad">8</property>
+            <property name="stock">gtk-info</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">0</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="image2">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">Maximum allowable cylinder radius (m).</property>
+            <property name="halign">start</property>
+            <property name="xpad">8</property>
+            <property name="stock">gtk-info</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">1</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="image5">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">How close a point must be to the model in order to be considered an inlier (m).</property>
+            <property name="halign">start</property>
+            <property name="xpad">8</property>
+            <property name="stock">gtk-info</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">5</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label14">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Normal est. K-search</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">3</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinButton" id="spinbutton10">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="invisible_char">•</property>
+            <property name="adjustment">ks_adjustment</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">3</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="image4">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="tooltip_text" translatable="yes">Set the relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal. 0 disables.</property>
+            <property name="halign">start</property>
+            <property name="xpad">8</property>
+            <property name="stock">gtk-info</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">4</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLinkButton" id="linkbutton1">
+            <property name="label">gtk-info</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="has_tooltip">True</property>
+            <property name="tooltip_text" translatable="yes">The sphere radius that is to be used for determining the nearest neighbors used for the feature estimation. </property>
+            <property name="halign">start</property>
+            <property name="relief">none</property>
+            <property name="use_stock">True</property>
+            <property name="xalign">0</property>
+            <property name="uri">http://www.pointclouds.org/documentation/tutorials/normal_estimation.php#normal-estimation</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">2</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLinkButton" id="linkbutton2">
+            <property name="label">gtk-info</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="has_tooltip">True</property>
+            <property name="tooltip_text" translatable="yes">The number of k nearest neighbors to use for the feature estimation.</property>
+            <property name="halign">start</property>
+            <property name="relief">none</property>
+            <property name="use_stock">True</property>
+            <property name="xalign">0</property>
+            <property name="uri">http://www.pointclouds.org/documentation/tutorials/normal_estimation.php#normal-estimation</property>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">3</property>
+            <property name="width">1</property>
+            <property name="height">1</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>

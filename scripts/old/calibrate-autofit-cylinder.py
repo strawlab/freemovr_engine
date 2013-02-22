@@ -19,6 +19,9 @@ class Autofitter:
         self.orig_XCR_e = MultiCalSelfCam.read_calibration_result( orig_flydra_R )
 
         self.out_flydra_R = orig_flydra_R + '.aligned'
+
+        print self.out_flydra_R
+
         assert not os.path.exists(self.out_flydra_R)
 
         pcd = pcl.PointCloud()
@@ -96,7 +99,7 @@ class Autofitter:
             alignedR.save_to_files_in_new_directory(self.out_flydra_R)
 
             xe, ce, re = self.orig_XCR_e
-            transform_and_save( xe, ce, re, self.out_flydra_R, recon_opt )
+            MultiCalSelfCam.transform_and_save( xe, ce, re, self.out_flydra_R, recon_opt )
 
 
     def get_recon_from_param_vec(self,p):
