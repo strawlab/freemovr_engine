@@ -9,8 +9,6 @@
 #include <osgViewer/Viewer>
 #include <osgGA/TrackballManipulator>
 
-#include <jansson.h>
-
 #include "Poco/ClassLoader.h"
 #include "Poco/Manifest.h"
 #include "Poco/Path.h"
