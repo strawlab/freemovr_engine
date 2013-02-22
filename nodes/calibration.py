@@ -325,9 +325,6 @@ class Calib:
             self._laser_handles[handle] = np.zeros((sizetilt+1,sizepan+1,3),dtype=np.uint8)
             cv2.imshow(handle, self._laser_handles[handle])
 
-#        display_client.DisplayServerProxy.set_stimulus_mode("Stimulus2DBlit")
-
-        self._light_proj_cache = tuple()
         self._click_queue = {} #display_server:[(col, row), ...]
         for d in self.display_servers:
             dsc = display_client.DisplayServerProxy(d,wait=True)
@@ -359,6 +356,9 @@ class Calib:
                         visualizeimg=img)
                 cv2.imshow(d, img)
 
+        #ensure all the projectors are black
+        self._light_proj_cache = {d:() for d in self.display_servers}
+        for d in self._light_proj_cache:
             self._black_projector(d)
             
         #tracking (flydra) cameras and acquisition
@@ -506,13 +506,18 @@ class Calib:
     def _black_projector(self, ds):
         self._light_proj_pixel(ds, None, None)
 
-    def _light_proj_pixel(self, ds, row, col):
+    def _light_proj_pixel(self, ds, row, col, black_others=True):
         row = math.floor(row) if row != None else None
         col = math.floor(col) if col != None else None
 
-        target = (ds, col, row)
-        if self._light_proj_cache == target:
-            rospy.logdebug("not lighting projector %s col:%s row:%s (already lit)" % target)
+        if black_others:
+            for ods in self._light_proj_cache:
+                if ods != ds:
+                    self._light_proj_pixel(ods, None, None, False)
+
+        target = (col, row)
+        if self._light_proj_cache[ds] == target:
+            rospy.logdebug("not lighting projector %s col:%s row:%s" % (ds,col,row))
             return
 
         dsc = self.display_servers[ds]["display_client"]
@@ -534,8 +539,8 @@ class Calib:
                 add_crosshairs_to_nparr(arr=img, row=row, col=col, sz=-1, fill=255, chan=1)
             cv2.imshow(handle, img)
 
-        rospy.logdebug("lighting projector %s col:%s row:%s" % target)
-        self._light_proj_cache = target
+        rospy.logdebug("lighting projector %s col:%s row:%s" % (ds,col,row))
+        self._light_proj_cache[ds] = target
 
         rospy.sleep(0.5)
 
