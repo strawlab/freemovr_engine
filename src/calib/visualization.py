@@ -37,12 +37,13 @@ def create_point_cloud(points, frame_id='/'):
     return create_cloud_xyz32(header, points)    
 
 def create_point_cloud_message_publisher(points, topic_name=None, publish_now=False, latch=False, frame_id='/'):
-    pc = create_point_cloud(points, frame_id)
     publisher = rospy.Publisher(topic_name, PointCloud2, latch=latch)
     if publish_now:
+        pc = create_point_cloud(points, frame_id)
         publisher.publish(pc)
-    else:
         return publisher, pc
+    else:
+        return publisher
 
 def create_camera_pose_message_publisher(ce, re, names, topic_name=None, publish_now=False, latch=False, frame_id='/'):
     #ported from MultiSelfCamCalib drawscene.m (MATLAB) and adjusted to be more pythonic...
@@ -110,17 +111,19 @@ def create_cylinder(cx,cy,cz,ax,ay,az,radius, frame_id='/', obj_id=0, length=1, 
     cyl.scale.x = 2*radius
     cyl.scale.y = 2*radius
     cyl.scale.z = length
+
     cyl.color = ColorRGBA(*color)
 
     return cyl
 
 def create_cylinder_publisher(cx,cy,cz,ax,ay,az,radius,topic_name=None, publish_now=False, latch=False, frame_id='/', obj_id=0, length=1, color=(0,1,0,0.3)):
     publisher = rospy.Publisher(topic_name, Marker, latch=latch)
-    cyl = create_cylinder(cx,cy,cz,ax,ay,az,radius, frame_id, obj_id, length, color)
     if publish_now:
+        cyl = create_cylinder(cx,cy,cz,ax,ay,az,radius, frame_id, obj_id, length, color)
         publisher.publish(cyl)
-    else:
         return publisher, cyl
+    else:
+        return publisher
 
 def create_point(cx,cy,cz,r,frame_id='/',obj_id=0, color=(1,0,0,0.8)):
 
@@ -139,11 +142,12 @@ def create_point(cx,cy,cz,r,frame_id='/',obj_id=0, color=(1,0,0,0.8)):
 
 def create_point_publisher(cx,cy,cz,r,topic_name=None, publish_now=False, latch=False, frame_id='/', obj_id=0, color=(1,0,0,0.8)):
     publisher = rospy.Publisher(topic_name, Marker, latch=latch)
-    pt = create_point(cx,cy,cz,r,frame_id,obj_id,color)
     if publish_now:
+        pt = create_point(cx,cy,cz,r,frame_id,obj_id,color)
         publisher.publish(pt)
-    else:
         return publisher, pt
+    else:
+        return publisher
 
 def create_pcd_file_from_points(fname, points, npts=None):
     HEADER = \

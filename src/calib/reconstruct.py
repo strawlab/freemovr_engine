@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate
 
-import calib.visualization
 import simple_geom
 
 class PointCloudTransformer(object):
