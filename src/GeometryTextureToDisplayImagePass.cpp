@@ -98,7 +98,9 @@ osg::ref_ptr<osg::Group> GeometryTextureToDisplayImagePass::create_input_geometr
     _state_set->addUniform(new osg::Uniform("inputGeometryTexture", UNIT_GEOM));
     _state_set->addUniform(new osg::Uniform("p2g", UNIT_P2G));
     _state_set->addUniform(new osg::Uniform("show_geom_coords", _show_geom_coords));
-	_state_set->addUniform(new osg::Uniform("display_gamma", _display_gamma));
+
+    _display_gamma_uniform = new osg::Uniform("display_gamma", _display_gamma);
+	_state_set->addUniform(_display_gamma_uniform);
 	
 	top_group->addChild(geode.get());
 	return top_group;

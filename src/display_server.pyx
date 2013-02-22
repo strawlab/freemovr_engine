@@ -120,6 +120,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         float getFrameRate() nogil except +
         setCursorVisible(int visible) nogil except +
         void setCaptureFilename(std_string name) nogil except +
+        void setGamma(float gamma) nogil except +
 
         TrackballManipulatorState getTrackballManipulatorState() nogil except +
         void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
@@ -233,6 +234,7 @@ cdef class MyNode:
     cdef object _subscription_mode
     cdef int _throttle
     cdef object _timer
+    cdef object _gamma
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -303,10 +305,15 @@ cdef class MyNode:
         rospy.loginfo("config_file = %s" % config_file)
 
         tethered_mode = config_dict.get('tethered_mode',True)
-        rospy.loginfo('tethered_mode: %s'%tethered_mode)
+        rospy.loginfo("tethered_mode: %s" % tethered_mode)
+
+        self._gamma = config_dict.get('gamma', 0.0)
+        rospy.loginfo("gamma correction: %s" % self._gamma)
 
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+
+        rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
 
         if args.stimulus is None:
             #if the user did not specify a mode on the command line then
@@ -335,7 +342,7 @@ cdef class MyNode:
                                tethered_mode,
                                )
         #these subscribers access self.dsosg
-        rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_cb)
+        rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_callback)
         rospy.Subscriber("~trackball_manipulator_state",
                          flyvr.msg.TrackballManipulatorState,
                          self.manipulator_callback)
@@ -455,7 +462,10 @@ cdef class MyNode:
             self._pose_position = new_position
             self._pose_orientation = new_orientation
 
-    def capture_cb(self, msg):
+    def gamma_callback(self, msg):
+        self._gamma = msg.data
+
+    def capture_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
         rospy.loginfo("will capture next frame to filename: %r"%fname)
@@ -549,6 +559,10 @@ cdef class MyNode:
             with self._pose_lock:
                 now = rospy.get_time()
                 self.dsosg.update( now, deref(self._pose_position), deref(self._pose_orientation))
+
+            if self._gamma is not None:
+                self.dsosg.setGamma(self._gamma)
+                self._gamma = None
 
             with nogil:
                 self.dsosg.frame()

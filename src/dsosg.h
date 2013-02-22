@@ -18,6 +18,7 @@
 #include "flyvr/StimulusInterface.hpp"
 
 #include "WindowCaptureCallback.h"
+#include "GeometryTextureToDisplayImagePass.h"
 
 namespace dsosg{
 
@@ -67,6 +68,7 @@ namespace dsosg{
 		float getFrameRate();
 		void setCursorVisible(bool visible);
 		void setWindowName(std::string name);
+		void setGamma(float gamma);
 
 		void setCaptureFilename(std::string name);
 
@@ -99,6 +101,7 @@ namespace dsosg{
 		int _height;
 		osg::ref_ptr<osgGA::TrackballManipulator> _cameraManipulator;
 		WindowCaptureCallback* _wcc;
+        GeometryTextureToDisplayImagePass *_g2di;
 	};
 
 }

@@ -341,7 +341,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     _current_stimulus(NULL), _mode(mode),
     _flyvr_basepath(flyvr_basepath),
     _config_file_path(config_fname),
-    _tethered_mode(tethered_mode), _wcc(NULL)
+    _tethered_mode(tethered_mode), _wcc(NULL), _g2di(NULL)
 
 {
     json_error_t json_error;
@@ -631,11 +631,11 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                     Poco::Path(json_string_value(p2g_json)));
             std::string p2g_filename = p2g_path.toString();
             std::cerr << "p2g file: " << p2g_filename << "\n";
-            GeometryTextureToDisplayImagePass *g2di = new GeometryTextureToDisplayImagePass(shader_dir,
-                                                                                            pctcp->get_output_texture(),
-                                                                                            p2g_filename,
-                                                                                            show_geom_coords);
-            root->addChild(g2di->get_top().get());
+            _g2di = new GeometryTextureToDisplayImagePass(shader_dir,
+                                                          pctcp->get_output_texture(),
+                                                          p2g_filename,
+                                                          show_geom_coords);
+            root->addChild(_g2di->get_top().get());
             {
                 bool show_hud = false;
                 float w,h;
@@ -648,9 +648,9 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                     show_hud=true;
                 }
                 if (show_hud) {
-                    osg::Group* g = make_textured_quad(g2di->get_output_texture(),
+                    osg::Group* g = make_textured_quad(_g2di->get_output_texture(),
                                                        -1.0,
-                                                       g2di->get_display_width(), g2di->get_display_height(),
+                                                       _g2di->get_display_width(), _g2di->get_display_height(),
                                                        0.0,0.0,w,h);
                     debug_hud_cam->addChild(g);
                 }
@@ -1017,6 +1017,11 @@ void DSOSG::setTrackballManipulatorState(TrackballManipulatorState s) {
     _cameraManipulator->setRotation(s.rotation);
     _cameraManipulator->setCenter(s.center);
     _cameraManipulator->setDistance(s.distance);
+}
+
+void DSOSG::setGamma(float gamma) {
+    if (_g2di)
+        _g2di->set_gamma(gamma);
 }
 
 }

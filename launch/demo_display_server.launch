@@ -2,7 +2,7 @@
 
   <node name="display_server_demo" pkg="flyvr" type="display_server" args="--mode overview --throttle">
     <rosparam command="load" file="$(find flyvr)/config/rosparamconfig.yaml" />
-    <param name="p2g" type="str" value="$(find flyvr)/config/p2g.new.exr" />
+    <param name="p2g" type="str" value="$(find flyvr)/config/p2g.exr" />
     <param name="display/windowDecoration" type="bool" value="true" />
   </node>
 
