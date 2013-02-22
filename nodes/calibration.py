@@ -149,6 +149,12 @@ class DataIO:
         rospy.loginfo("Saving to %s" % self._dest)
 
         self._pub_num_pts.publish(0)
+
+    def clear_kdtree(self, ds=None):
+        if ds is None:
+            self._display_tree = {}
+        elif ds in self._display_tree:
+            del self._display_tree[ds]
         
     def close(self):
         self._bag.close()
@@ -400,7 +406,8 @@ class Calib:
             else:
                 rospy.logerr("could not find requested calibration to load")
 
-        s = rospy.Service('~calib_change_mode', flyvr.srv.CalibMode, self._change_mode)
+        s = rospy.Service('~clear_kdtree', std_srvs.srv.Empty, self._on_clear_kdtree)
+        s = rospy.Service('~calib_change_mode', flyvr.srv.CalibMode, self._on_change_mode)
         self.change_mode(CALIB_MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
@@ -417,7 +424,17 @@ class Calib:
             rospy.loginfo("clearing queued points")
             self._click_queue[ds] = []
 
-    def _change_mode(self, req):
+    def _on_clear_kdtree(self, req):
+        self.data.clear_kdtree()
+        if show_laser_scatter:
+            handle = laser_handle
+            sizepan = self.laser_range_pan[1] - self.laser_range_pan[0]
+            sizetilt = self.laser_range_tilt[1] - self.laser_range_tilt[0]
+            self._laser_handles[handle] = np.zeros((sizetilt+1,sizepan+1,3),dtype=np.uint8)
+            cv2.imshow(handle, self._laser_handles[handle])
+        return std_srvs.srv.EmptyResponse()
+
+    def _on_change_mode(self, req):
         self.change_mode(req.mode, req.sa, req.fa, req.fb, req.fc)
         return flyvr.srv.CalibModeResponse()
 
