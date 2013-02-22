@@ -13,11 +13,14 @@ public:
 	GeometryTextureToDisplayImagePass(std::string shader_dir,
 									  osg::ref_ptr<osg::Texture2D> input_texture,
 									  std::string p2g_filename,
-									  bool show_geom_coords=false);
+									  bool show_geom_coords=false,
+									  float display_gamma=2.3);
+									  
 	osg::ref_ptr<osg::Group> get_top() { return _top; }
 	osg::ref_ptr<osg::TextureRectangle> get_output_texture() { return _out_texture; }
 	int get_display_width() {return _display_width; }
 	int get_display_height() {return _display_height; }
+	
 private:
 	void create_output_texture();
 	void setup_camera();
@@ -34,6 +37,7 @@ private:
 	int _display_width;
 	int _display_height;
 	bool _show_geom_coords;
+	float _display_gamma;
 };
 
 #endif

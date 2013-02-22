@@ -90,7 +90,7 @@ osg::ref_ptr<osg::Image> load_exr( std::string p2c_filename, int& width, int& he
 			Imf::Rgba &p = pixels[j][i];
 			proj_image_rgb[offset+0] = (float)(p.r)*scale_width;
 			proj_image_rgb[offset+1] = (float)(p.g)*scale_height;
-			proj_image_rgb[offset+2] = 0.0f; // B
+			proj_image_rgb[offset+2] = (float)(p.b)*scale_height;
 		}
 	}
 

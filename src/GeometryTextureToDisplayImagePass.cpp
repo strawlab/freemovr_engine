@@ -17,8 +17,9 @@
 GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(std::string shader_dir,
 																	 osg::ref_ptr<osg::Texture2D> input_texture,
 																	 std::string p2g_filename,
-																	 bool show_geom_coords) :
-	_input_texture(input_texture), _show_geom_coords(show_geom_coords)
+																	 bool show_geom_coords,
+																	 float display_gamma) :
+	_input_texture(input_texture), _show_geom_coords(show_geom_coords), _display_gamma(display_gamma)
 {
 	osg::ref_ptr<osg::Image> image = load_exr( p2g_filename, _display_width, _display_height);
 	_p2g_texture = new osg::TextureRectangle;
@@ -97,7 +98,8 @@ osg::ref_ptr<osg::Group> GeometryTextureToDisplayImagePass::create_input_geometr
     _state_set->addUniform(new osg::Uniform("inputGeometryTexture", UNIT_GEOM));
     _state_set->addUniform(new osg::Uniform("p2g", UNIT_P2G));
     _state_set->addUniform(new osg::Uniform("show_geom_coords", _show_geom_coords));
-
+	_state_set->addUniform(new osg::Uniform("display_gamma", _display_gamma));
+	
 	top_group->addChild(geode.get());
 	return top_group;
 }
