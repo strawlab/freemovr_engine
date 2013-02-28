@@ -12,6 +12,7 @@
 #include <Poco/Net/TCPServerConnectionFactory.h>
 #include <Poco/Timestamp.h>
 #include <Poco/Path.h>
+#include <Poco/Mutex.h>
 
 #include <jansson.h>
 
@@ -22,33 +23,69 @@
 
 class MyConnection : public Poco::Net::TCPServerConnection {
 private:
-    dsosg::DSOSG *_dsosg;
+    dsosg::DSOSG    *_dsosg;
+    osg::Vec3       &_observer_position;
+    osg::Quat       &_observer_orientation;
+    Poco::Mutex     &_mutex;
+
 public:
-    MyConnection(const Poco::Net::StreamSocket &socket, dsosg::DSOSG *dsosg)
-        : Poco::Net::TCPServerConnection(socket), _dsosg(dsosg) {}
+    MyConnection(const Poco::Net::StreamSocket &socket, dsosg::DSOSG *dsosg, osg::Vec3 &op, osg::Quat &oo, Poco::Mutex &m)
+        : Poco::Net::TCPServerConnection(socket),
+          _dsosg(dsosg),
+          _observer_position(op),
+          _observer_orientation(oo),
+          _mutex(m) {}
 
     virtual ~MyConnection() {}
 
     virtual void run()
     {
-        std::cerr << "RUNNING\n";
-        static const char message[] = "This is TCP server sample\n";
-        socket().sendBytes(message, sizeof(message) - 1);
+        char buf[4096];
+        int ret = socket().receiveBytes(buf, sizeof(buf)-1);
+        if (ret > 0) {
+            json_t *json;
+            json_error_t error;
+            Poco::Mutex::ScopedLock lock(_mutex);
+
+            buf[ret] = '\0';
+            json = json_loads(buf, 0, &error);
+            if (json) {
+                json_t *data_json = json_object_get(json, "position");
+                if (data_json) {
+		            _observer_position = parse_vec3(data_json);
+                }
+                //data_json = json_object_get(json, "orientation");
+                //if (data_json) {
+		        //    _observer_orientation = parse_quat(data_json);
+                //}
+
+            } else {
+                std::cerr << "JSON ERROR " << error.line << " " << error.text << "\n\n" << buf << "\n";
+            }
+        }
     }
 };
 
 class MyConnectionFactory : public Poco::Net::TCPServerConnectionFactory {
 private:
-    dsosg::DSOSG *_dsosg;
+    dsosg::DSOSG    *_dsosg;
+    osg::Vec3       &_observer_position;
+    osg::Quat       &_observer_orientation;
+    Poco::Mutex     &_mutex;
+
 public:
-    MyConnectionFactory(dsosg::DSOSG *dsosg) : _dsosg(dsosg) {}
+    MyConnectionFactory(dsosg::DSOSG *dsosg, osg::Vec3 &op, osg::Quat &oo, Poco::Mutex &m) :
+          _dsosg(dsosg),
+          _observer_position(op),
+          _observer_orientation(oo),
+          _mutex(m) {}
 
     virtual ~MyConnectionFactory() {}
 
     virtual Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket &socket)
     {
         std::cerr << "CONNNECTED\n";
-        return new MyConnection(socket, _dsosg);
+        return new MyConnection(socket, _dsosg, _observer_position, _observer_orientation, _mutex);
     }
 };
 
@@ -59,6 +96,7 @@ int main(int argc, char**argv) {
   json_t *conf;
   json_error_t error;
   std::string display = "{}";
+  Poco::Mutex mutex;
 
   static const Poco::UInt16 SERVER_PORT = 8888;
   Poco::Net::ServerSocket sock(SERVER_PORT);
@@ -109,7 +147,11 @@ int main(int argc, char**argv) {
   dsosg->set_stimulus_plugin("Stimulus3DDemo");
 
   sock.listen();
-  Poco::Net::TCPServer server(new MyConnectionFactory(dsosg), sock);
+  Poco::Net::TCPServer server(new MyConnectionFactory(
+                                    dsosg,
+                                    observer_position, observer_orientation,
+                                    mutex),
+                              sock);
   server.start();
 
   done = false;
