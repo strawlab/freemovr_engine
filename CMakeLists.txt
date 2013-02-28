@@ -141,6 +141,7 @@ ELSE(BUILD_WITH_ROS)
 
   FILE(COPY data DESTINATION ${PROJECT_BINARY_DIR})
   FILE(COPY src/shaders DESTINATION ${PROJECT_BINARY_DIR}/src/)
+  FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}    )
 
   # the flyvr library (for building stimulus plugins) --------------------
   ADD_LIBRARY(flyvr SHARED src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
