@@ -1003,7 +1003,7 @@ class Calib:
                     continue
                 
                 col,row,lum = self._detect_laser_camera_2d_point(self.laser_thresh)
-                if col != None:
+                if col is not None:
                     self.laser_proxy_power(False)
                     
                     #generate N points about the start - and include the
@@ -1057,7 +1057,7 @@ class Calib:
                     rospy.loginfo("no 3d point (visible in %d cams, reproj error: %f)" % (nvisible,reproj))
                     continue
 
-                if col != None:
+                if col is not None:
                     self._vdispinfo["targetcol"] = col
                     self._vdispinfo["targetrow"] = row
                     self._vdispinfo["currxyz"] = xyz
@@ -1066,7 +1066,7 @@ class Calib:
                     #view of the ptc camera
                     self._vdispinfo["projcol"] = self._vdispinfo["colmid"]
                     self._vdispinfo["projrow"] = self._vdispinfo["rowmid"]
-                    self._vdispinfo["currattempt"] = 30
+                    self._vdispinfo["currattempt"] = 40
                     self.laser_proxy_power(False)
                     self.change_mode(CALIB_MODE_DISPLAY_SERVER_PROJECTOR)
 
