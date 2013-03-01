@@ -686,14 +686,6 @@ class Calib:
 
     def _load_previous_calibration(self, path, calibration_except=None):
         self.data.load(path, calibration_except, vis_callback_2d=self._show_correspondence)
-#        for ds in self.show_display_servers:
-#            cv2.imshow(
-#                    self.show_display_servers[ds]["handle"],
-#                    self.show_display_servers[ds]["visualizeimg"])
-#        if show_laser_scatter:
-#            cv2.imshow(
-#                    laser_handle,
-#                    self._laser_handles[laser_handle])
 
     def _parse_ds_specified(self, args):
         try:
@@ -1092,11 +1084,15 @@ class Calib:
                         row=self._vdispinfo["projrow"],
                         col=self._vdispinfo["projcol"])
 
+                if self.debug_control:
+                    rospy.loginfo("CTRL:MPRJ:SHOW n%d pr:%s pc:%s" % (
+                                        self._vdispinfo["currattempt"],
+                                        self._vdispinfo["projrow"],
+                                        self._vdispinfo["projcol"]))
+
                 col,row,lum = self._detect_laser_camera_2d_point(
                                     self.visible_thresh,
                                     msgprefix="attempt %d " % self._vdispinfo["currattempt"])
-
-                #FIXME: We get stuck looping here still
 
                 #missed the projector pixel. try again (we are safe from looping
                 #because of the currattempt test)
@@ -1106,6 +1102,9 @@ class Calib:
                                                 self.visible_thresh, lum))
                     continue
                 else:
+                    if self.debug_control:
+                        rospy.loginfo("CTRL:MPRJ:DETE cr:%s cc:%s" %(row,col))
+
                     targetcol = self._vdispinfo["targetcol"]
                     targetrow = self._vdispinfo["targetrow"]
                     projcol = self._vdispinfo["projcol"]
@@ -1147,6 +1146,11 @@ class Calib:
                     self._vdispinfo["projrow"] = np.clip(projrow,0,self._vdispinfo["height"]-1)
 
                     if colfound and rowfound:
+                        if self.debug_control:
+                            rospy.loginfo("CTRL:MPRJ:FIN r:%s c:%s" %(
+                                                self._vdispinfo["projrow"],
+                                                self._vdispinfo["projcol"]))
+
                         if ds in self.show_display_servers or show_laser_scatter:
                             self._show_correspondence(
                                     ds=ds,
@@ -1154,14 +1158,6 @@ class Calib:
                                     row=self._vdispinfo["projrow"],
                                     pan=self._vdispinfo["currpan"],
                                     tilt=self._vdispinfo["currtilt"])
-#                            if ds in self.show_display_servers:
-#                                cv2.imshow(
-#                                        self.show_display_servers[ds]["handle"],
-#                                        self.show_display_servers[ds]["visualizeimg"])
-#                            if show_laser_scatter:
-#                                cv2.imshow(
-#                                        laser_handle,
-#                                        self._laser_handles[laser_handle])
 
                         rospy.loginfo("FOUND CORRESPONDENCE: %s:%s@(%s,%s) -> %r" % (
                                 ds,self._vdispinfo["id"],
