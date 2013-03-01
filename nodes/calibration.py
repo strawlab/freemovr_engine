@@ -880,8 +880,9 @@ class Calib:
                     centroid = get_centre_of_vdisp(vdmask)
                     
                 if not searchpath:
-                    #start search at current location (twice for reliability)
+                    #start search at current location (thrice for reliability)
                     searchpath = [(self._laser_currpan,self._laser_currtilt),
+                                  (self._laser_currpan,self._laser_currtilt),
                                   (self._laser_currpan,self._laser_currtilt)]
                     
                 rospy.loginfo("Calibrating %s:%s@%s" % (ds,vdisp,repr(centroid)))
