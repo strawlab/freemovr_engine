@@ -401,7 +401,7 @@ class Calib:
         self.laser_camera = laser_camera
         fd = DotBGFeatureDetector(
                     laser_camera,
-                    method="med",
+                    method="morphbinary",
                     show=show_type if (show_cameras[0] == "all" or laser_camera in show_cameras) else "")
         if "detection" in debug:
             fd.enable_debug_detection()
