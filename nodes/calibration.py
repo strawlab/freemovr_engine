@@ -624,9 +624,18 @@ class Calib:
             self.laser_detector.clear_mask()
 
         if features:
-            if len(features) > 1:
-                rospy.logerr("multiple features not supported, taking the first one")
             row,col,luminance = features[0]
+
+            if len(features) > 1:
+                rospy.logerr("multiple features not supported, taking the closest one")
+                dist = 1e6 #any big number
+                expected = np.array(self.laser_expected_detect_location)
+                for feat in features:
+                    _row,_col,_luminance = feat
+                    _dist = numpy.linalg.norm(expected - np.array((_col,_row)))
+                    if _dist < dist:
+                        row,col,liminance = _row,_col,_luminance
+
             if thresh == self.laser_thresh:
                 msg = msgprefix + "PTC laser"
                 expected = np.array(self.laser_expected_detect_location)
