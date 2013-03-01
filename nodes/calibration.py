@@ -266,6 +266,17 @@ class Calib:
         trigger = config["trigger"]
         laser = config["laser"]
 
+        if 0:
+            ####SAVE EVERY IMAGE FOR NICE MOVIE
+            basedir = "/mnt/ssd/CALIB_STEPS/"
+            self.__ds_fmt = basedir+"%(time)f_ds.png"
+            self.__l_fmt = basedir+"%(time)f_laser.png"
+            self.__ptc_fmt = basedir+"%(time)f_ptc%(imgtype)s.png"
+        else:
+            self.__ds_fmt = None
+            self.__l_fmt = None
+            self.__ptc_fmt = None
+
         self.debug_control = "control" in debug
 
         #FIXME: make __getattr__ look into config for locals starting with cfg_
@@ -409,6 +420,16 @@ class Calib:
         #being able to read the resoluions
         self._calculate_background()
 
+        #now we know the resolutions we can show a debug target in the blue channel
+        b = np.zeros((494, 659),dtype=np.uint8)
+        cv2.circle(b, 
+                tuple(self.laser_expected_detect_location),
+                self.laser_expected_detect_hist, (255,0,0))
+        self.laser_detector.add_debug_blue_channel(b)
+
+        if self.__ptc_fmt:
+            self.laser_detector.enable_debug_saveimages(self.__ptc_fmt)
+
         self._vdisptocalibrate = []            
         self._vdispinfo = {}
 
@@ -505,6 +526,8 @@ class Calib:
                         col=math.floor(pan)+(0-self.laser_range_pan[0]),
                         sz=-1,  fill=255, chan=1)
             cv2.imshow(handle, img)
+            if self.__l_fmt:
+                cv2.imwrite(self.__l_fmt%{"time":time.time()},img)
         
         return pan,tilt
 
@@ -543,6 +566,8 @@ class Calib:
             if col != None:
                 add_crosshairs_to_nparr(arr=img, row=row, col=col, sz=-1, fill=255, chan=1)
             cv2.imshow(handle, img)
+            if self.__ds_fmt:
+                cv2.imwrite(self.__ds_fmt%{"time":time.time()},img)
 
         rospy.logdebug("lighting projector %s col:%s row:%s" % (ds,col,row))
         self._light_proj_cache[ds] = target
@@ -685,6 +710,9 @@ class Calib:
                 col=col,
                 sz=1, fill=255, chan=0)
             cv2.imshow(handle, img)
+            if self.__ds_fmt:
+                cv2.imwrite(self.__ds_fmt%{"time":time.time()},img)
+
 
         if show_laser_scatter:
             handle = laser_handle
@@ -696,6 +724,8 @@ class Calib:
             except:
                 rospy.logerr("could not plot pan/tilt: tilt:%s pan:%s" % (tilt,pan))
             cv2.imshow(handle, img)
+            if self.__l_fmt:
+                cv2.imwrite(self.__l_fmt%{"time":time.time()},img)
 
     def run(self):
         while not rospy.is_shutdown():
