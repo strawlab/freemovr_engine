@@ -155,6 +155,9 @@ class DataIO:
             self._display_tree = {}
         elif ds in self._display_tree:
             del self._display_tree[ds]
+
+    def save(self):
+        self._bag.flush()
         
     def close(self):
         self._bag.close()
@@ -698,6 +701,7 @@ class Calib:
                 mode = self.mode
                 service_args = self.mode_args
             if mode == CALIB_MODE_FINISHED:
+                self.data.save()
                 break
 
             elif mode == CALIB_MODE_SLEEP:
