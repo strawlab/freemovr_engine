@@ -445,6 +445,8 @@ class Calib:
 
         s = rospy.Service('~clear_kdtree', std_srvs.srv.Empty, self._on_clear_kdtree)
         s = rospy.Service('~calib_change_mode', flyvr.srv.CalibMode, self._on_change_mode)
+        s = rospy.Service('~set_visual_threshold', flyvr.srv.CalibSetFloat, self._on_set_visual_threshold)
+
         self.change_mode(CALIB_MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
@@ -470,6 +472,12 @@ class Calib:
             self._laser_handles[handle] = np.zeros((sizetilt+1,sizepan+1,3),dtype=np.uint8)
             cv2.imshow(handle, self._laser_handles[handle])
         return std_srvs.srv.EmptyResponse()
+
+    def _on_set_visual_threshold(self, req):
+        old = self.visible_thresh
+        self.visible_thresh = int(req.data)
+        rospy.loginfo("updating visible thresh = %s (was %s)" % (self.visible_thresh, old))
+        return flyvr.srv.CalibSetFloatResponse()
 
     def _on_change_mode(self, req):
         self.change_mode(req.mode, req.sa, req.fa, req.fb, req.fc)
