@@ -1,5 +1,4 @@
 import time
-
 import math
 import numpy as np
 import scipy.ndimage
@@ -20,6 +19,7 @@ class DotBGFeatureDetector:
     def __init__(self, name, method="med", show="DF"):
         assert method in self.DETECT_METHODS
         self._name = name
+        self._safe_name = self._name.replace('/','')
         self._method = method
         self._show = show
         self._thresh = None
@@ -37,6 +37,7 @@ class DotBGFeatureDetector:
         self._shape = (-1,-1)
         self._mask = None
         self._n = 0
+        self._debug_b = None
 
     @property
     def img_shape(self):
@@ -48,6 +49,14 @@ class DotBGFeatureDetector:
     def img_height_px(self):
         return self._shape[0]   #swap from matrix semantics (row/col) to image coords
 
+    def _get_path(self, win_type):
+        return self._save_fmt % {
+                            "imgn":self._n,
+                            "imgtype":win_type,
+                            "name":self._safe_name,
+                            "time":time.time()
+        }
+
     def _show_img(self, arr, win_type):
         img = arr
         if win_type in self._handles:
@@ -56,7 +65,7 @@ class DotBGFeatureDetector:
             cv2.imshow(self._handles[win_type], img)
 
         if self._save_fmt is not None:
-            scipy.misc.imsave(self._save_fmt % (self._n, win_type), arr)
+            cv2.imwrite(self._get_path(win_type), arr)
 
     def _show_features_and_diff(self, diff, dmax, features, sz=-1):
         if "F" in self._handles:
@@ -78,10 +87,10 @@ class DotBGFeatureDetector:
             cv2.imshow(self._handles["F"], img)
 
             if self._save_fmt is not None:
-                scipy.misc.imsave(self._save_fmt % (self._n, "F"), img)
+                cv2.imwrite(self._get_path("F"), img)
         else:
             if self._save_fmt is not None:
-                scipy.misc.imsave(self._save_fmt % (self._n, "F"), diff)
+                cv2.imwrite(self._get_path("F"), diff)
 
     def _detect_blobs_and_luminance(self, imarr, diff, validmask, exact_luminance=False, use_argmax=False):
         #note: we modify diff in place here, but it has already been saved to
@@ -130,8 +139,8 @@ class DotBGFeatureDetector:
     def enable_benchmark(self):
         self._benchmark = True
 
-    def enable_debug_saveimages(self, basepath):
-        self._save_fmt = basepath + "/%d_" + self._name.replace('/','') + "_%s.png"
+    def enable_debug_saveimages(self, fmt="%(imgn)d_%(name)s_%(imgtype)s.png"):
+        self._save_fmt = fmt
 
     def set_mask(self, arr, copy=True):
         if copy:
