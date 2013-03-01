@@ -166,11 +166,13 @@ class DataIO:
     def load(self, name, calibration_except=None, vis_callback_2d=None):
         if calibration_except is None:
             calibration_except = set()
+
         with rosbag.Bag(name, 'r') as bag:
             for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
 
                 viewport_desc = "%s/%s" % (msg.display_server,msg.vdisp)
-                if viewport_desc in calibration_except:
+                viewport_desc_all = "%s/all" % msg.display_server
+                if (viewport_desc) in calibration_except or (viewport_desc_all in calibration_except):
                     continue
 
                 self._add_mapping(msg)
