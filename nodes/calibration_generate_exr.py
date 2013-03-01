@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import sys, glob
+import sys
+import glob
+import argparse
+import os.path
 
 import roslib
 roslib.load_manifest('flyvr')
@@ -17,9 +20,6 @@ from calib.reconstruct import interpolate_pixel_cords
 from calib.calibrationconstants import CALIB_MAPPING_TOPIC
 from rosutils.io import decode_url
 import flydra.reconstruct
-
-import argparse
-import os.path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -229,6 +229,8 @@ class Calibrator:
         def fill_masked_exr(ds, name, val):
             exrs[ds][name]["exr"][~exrs[ds][name]["dsmask"]] = val
 
+
+
         all_3d = []
         for ds in self.data:
             if self.visualize:
@@ -340,11 +342,15 @@ class Calibrator:
                     comments=comment)
 
             if do_xyz:
+                xyzfn = decode_url("%s.xyz.exr" % ds)
+                xyzcomment = (comment + ". XYZ data").replace(fn,os.path.basename(xyzfn))
                 exr.save_exr(
-                        decode_url("%s.xyz.exr" % ds),
+                        xyzfn,
                         r=exrs[ds]["x"]["exr"],
                         g=exrs[ds]["y"]["exr"],
-                        b=exrs[ds]["z"]["exr"])
+                        b=exrs[ds]["z"]["exr"],
+                        comments=xyzcomment)
+                rospy.loginfo(xyzcomment)
 
             #save the resulting geometry to the parameter server
             if self.update_parameter_server:
