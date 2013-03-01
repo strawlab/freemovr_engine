@@ -69,7 +69,11 @@ class DotBGFeatureDetector:
 
     def _show_features_and_diff(self, diff, dmax, features, sz=-1):
         if "F" in self._handles:
-            b = np.zeros(diff.shape,dtype=np.uint8)
+            if self._debug_b is not None:
+                b = self._debug_b
+            else:
+                b = np.zeros(diff.shape,dtype=np.uint8)
+
             g = np.zeros(diff.shape,dtype=np.uint8)
             rgb = np.dstack((b,g,diff))
             #dstack doesnt copy the memory in such a way that it works with
@@ -83,7 +87,7 @@ class DotBGFeatureDetector:
                         row=rf, col=cf,
                         sz=sz, fill=255, chan=1)
 
-            cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
+            cv2.putText(img, "%d" % dmax, (20,20), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255))
             cv2.imshow(self._handles["F"], img)
 
             if self._save_fmt is not None:
@@ -141,6 +145,10 @@ class DotBGFeatureDetector:
 
     def enable_debug_saveimages(self, fmt="%(imgn)d_%(name)s_%(imgtype)s.png"):
         self._save_fmt = fmt
+
+    def add_debug_blue_channel(self, img):
+        assert img.dtype == np.uint8
+        self._debug_b = img
 
     def set_mask(self, arr, copy=True):
         if copy:
