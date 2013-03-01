@@ -216,7 +216,7 @@ class DotBGFeatureDetector:
 
         self._show_features_and_diff(feature_detector_vis_diff, dmax, features)
 
-        return features
+        return features,dmax
 
 def load_mask_image(mask_image_fname):
     """

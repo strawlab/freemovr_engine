@@ -555,7 +555,7 @@ class Calib:
         for cam in imgs:
             if restrict and cam not in restrict:
                 continue
-            features = self.tracking_cameras[cam].detect(imgs[cam][:,:,0], thresh)
+            features,dmax = self.tracking_cameras[cam].detect(imgs[cam][:,:,0], thresh)
             if features:
                 if len(features) > 1:
                     rospy.logerr("multiple features not supported, taking the first one")
@@ -580,7 +580,7 @@ class Calib:
             self.laser_detector.set_mask(self.laser_mask, copy=False)
 
         img = imgs[self.laser_camera][:,:,0]
-        features = self.laser_detector.detect(
+        features,dmax = self.laser_detector.detect(
                         img,
                         thresh,
                         exact_luminance=thresh != self.laser_thresh)
@@ -608,7 +608,7 @@ class Calib:
             rospy.loginfo("detect 2D %s: col:%s row:%s lum:%s" % (msg,col,row,luminance))
             return col,row,luminance
 
-        return None,None,None
+        return None,None,dmax
 
     def _detect_3d_point(self, runner, thresh):
         restrict = self.tracking_cameras.keys()
@@ -1051,7 +1051,10 @@ class Calib:
 
                 #missed the projector pixel. try again (we are safe from looping
                 #because of the currattempt test)
-                if col == None:
+                if col is None:
+                    if self.debug_control:
+                        rospy.loginfo("CTRL:MPRJ:MISS no detect (thresh %f dmax %f)" % (
+                                                self.visible_thresh, lum))
                     continue
                 else:
                     targetcol = self._vdispinfo["targetcol"]
