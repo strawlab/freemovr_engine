@@ -1,4 +1,4 @@
-#include <string>
+#include <string.h>
 
 #include <osg/Vec3>
 #include <osg/Quat>
@@ -20,6 +20,16 @@
 #include "json2osg.hpp"
 
 #include <iostream>
+#include <queue>
+
+struct StimulusMessage
+{
+    std::string topic;
+    std::string json;
+    StimulusMessage(const char *t, const char *j) : topic(t), json(j) {}
+};
+
+typedef std::queue<StimulusMessage> StimulusQueue;
 
 class MyConnection : public Poco::Net::TCPServerConnection {
 private:
@@ -27,14 +37,16 @@ private:
     osg::Vec3       &_observer_position;
     osg::Quat       &_observer_orientation;
     Poco::Mutex     &_mutex;
+    StimulusQueue   &_msgs;
 
 public:
-    MyConnection(const Poco::Net::StreamSocket &socket, dsosg::DSOSG *dsosg, osg::Vec3 &op, osg::Quat &oo, Poco::Mutex &m)
+    MyConnection(const Poco::Net::StreamSocket &socket, dsosg::DSOSG *dsosg, osg::Vec3 &op, osg::Quat &oo, Poco::Mutex &m, StimulusQueue &msgs)
         : Poco::Net::TCPServerConnection(socket),
           _dsosg(dsosg),
           _observer_position(op),
           _observer_orientation(oo),
-          _mutex(m) {}
+          _mutex(m),
+          _msgs(msgs) {}
 
     virtual ~MyConnection() {}
 
@@ -50,15 +62,32 @@ public:
             buf[ret] = '\0';
             json = json_loads(buf, 0, &error);
             if (json) {
-                json_t *data_json = json_object_get(json, "position");
-                if (data_json) {
-		            _observer_position = parse_vec3(data_json);
-                }
-                //data_json = json_object_get(json, "orientation");
-                //if (data_json) {
-		        //    _observer_orientation = parse_quat(data_json);
-                //}
+                const char *key;
+                json_t *value;
+                void *iter = json_object_iter(json);
+                while(iter) {
+                    key = json_object_iter_key(iter);
+                    value = json_object_iter_value(iter);
 
+                    if (strcmp(key, "position") == 0) {
+                        json_t *data_json = json_object_get(json, "position");
+                        if (data_json) {
+		                    _observer_position = parse_vec3(data_json);
+                        }
+                    } else if (strcmp(key, "orientation") == 0) {
+                        //data_json = json_object_get(json, "orientation");
+                        //if (data_json) {
+		                //    _observer_orientation = parse_quat(data_json);
+                        //}
+                    } else {
+                        char *raw = json_dumps(value, 0);
+                        _msgs.push(StimulusMessage(key,raw));
+                        free(raw);
+                    }
+
+                    iter = json_object_iter_next(json, iter);
+                }
+                json_decref(json);
             } else {
                 std::cerr << "JSON ERROR " << error.line << " " << error.text << "\n\n" << buf << "\n";
             }
@@ -72,20 +101,21 @@ private:
     osg::Vec3       &_observer_position;
     osg::Quat       &_observer_orientation;
     Poco::Mutex     &_mutex;
+    StimulusQueue   &_msgs;
 
 public:
-    MyConnectionFactory(dsosg::DSOSG *dsosg, osg::Vec3 &op, osg::Quat &oo, Poco::Mutex &m) :
+    MyConnectionFactory(dsosg::DSOSG *dsosg, osg::Vec3 &op, osg::Quat &oo, Poco::Mutex &m, StimulusQueue   &msgs) :
           _dsosg(dsosg),
           _observer_position(op),
           _observer_orientation(oo),
-          _mutex(m) {}
+          _mutex(m),
+          _msgs(msgs) {}
 
     virtual ~MyConnectionFactory() {}
 
     virtual Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket &socket)
     {
-        std::cerr << "CONNNECTED\n";
-        return new MyConnection(socket, _dsosg, _observer_position, _observer_orientation, _mutex);
+        return new MyConnection(socket, _dsosg, _observer_position, _observer_orientation, _mutex, _msgs);
     }
 };
 
@@ -97,6 +127,7 @@ int main(int argc, char**argv) {
   json_error_t error;
   std::string display = "{}";
   Poco::Mutex mutex;
+  StimulusQueue topicmessages;
 
   static const Poco::UInt16 SERVER_PORT = 8888;
   Poco::Net::ServerSocket sock(SERVER_PORT);
@@ -150,19 +181,35 @@ int main(int argc, char**argv) {
   Poco::Net::TCPServer server(new MyConnectionFactory(
                                     dsosg,
                                     observer_position, observer_orientation,
-                                    mutex),
+                                    mutex,
+                                    topicmessages),
                               sock);
   server.start();
 
   done = false;
   while (!done) {
-    float now;
+    {
+        Poco::Mutex::ScopedLock lock(mutex);
+        float now;
+        time.update();
+        now = time.epochMicroseconds() * 1e6; /* microseconds to seconds */
+        osg::Vec3 pos = observer_position;
+        osg::Quat orr = observer_orientation;
 
-    time.update();
-    now = time.epochMicroseconds() * 1e6; /* microseconds to seconds */
+        while (!topicmessages.empty()) {
+            StimulusMessage &s = topicmessages.front();
 
-    dsosg->update(now, observer_position, observer_orientation);
+            std::cerr << s.topic << " " << s.json << "\n";
+            //dsosg->stimulus_receive_json_message(/*get plugin name from map*/, s.topic, s.json)
+
+            topicmessages.pop();
+        }
+
+        dsosg->update(now, pos, orr);
+    }
+ 
     dsosg->frame();
+
     done = dsosg->done();
   }
 
