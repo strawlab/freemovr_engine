@@ -901,72 +901,90 @@ class Calib:
                                         startw=minpan,starth=mintilt,
                                         sw=npan,sh=ntilt,
                                         linspace=True) )
-#
-#HACK FOR DS3 WHILE I DO NOT WRAP THE PTC PROPER
-#                searchpath.extend( reversed(list(gen_vert_snake(
-#                                        w=maxpan,h=maxtilt,
-#                                        startw=minpan,starth=mintilt,
-#                                        sw=npan,sh=ntilt,
-#                                        linspace=True) )))
-
 
                 found = False
                 for pan,tilt in searchpath:
+                    if found:
+                        break
                     #so it doesnt look like we are hung
                     self.pub_mode.publish(self.mode)
-
+                    #ensure the laser is off
                     pan,tilt = self._light_laser_pixel(pan=pan,tilt=tilt,power=False)
                     col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
-                    if col:
+                    #we can see the projector pixel, somewhere
+                    if col is not None:
                         expected = np.array(self.laser_expected_detect_location)
                         expdist = numpy.linalg.norm(expected - np.array((col,row)))
                         fine_dist = expdist
+                        oldpan,oldtilt      = pan,tilt
+                        foundpan,foundtilt  = pan,tilt
+                        newpan,newtilt      = pan,tilt
                         if expdist < 150:
-
-                            #we have a rough estimate, refine it                            
+                            #we have a rough estimate, refine it
                             tries = 40
                             if self.debug_control:
-                                rospy.loginfo("ROUGH n%d %r %r" % (tries,expdist,expected - np.array((col,row))))
+                                rospy.loginfo("CTRL:MPTC:DETE rough n%d %r %r" % (tries,expdist,expected - np.array((col,row))))
                             
                             while (tries > 0):
-                                diffcol,diffrow = expected - np.array((col,row))
-                                newpan  = pan  + (np.sign(diffcol) * self._vdispinfo["p_laser_col"])
-                                newtilt = tilt + (np.sign(diffrow) * self._vdispinfo["p_laser_row"])
+                                #use the returned pan,tilt because of mechanical limits
+                                #or future wrap-around
                                 pan,tilt = self._light_laser_pixel(pan=newpan,tilt=newtilt,power=False)
-                                oldcol = col
-                                oldrow = row
-                                col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
-                                #we lost the pixel
-                                if not col:
-                                    col = oldcol
-                                    row = oldrow
+                                if self.debug_control:
+                                    rospy.loginfo("CTRL:MPTC:SHOW n%d p:%s t:%s (was p%s t%s)" % (
+                                                                tries,
+                                                                newpan,newtilt,
+                                                                oldpan,oldtilt))
+
+                                _col,_row,_lum = self._detect_laser_camera_2d_point(self.visible_thresh)
+                                if _col is None:
+                                    #we lost the pixel
                                     tries -= 1
                                     if self.debug_control:
-                                        rospy.loginfo("ROUGH LOST")
+                                        rospy.loginfo("CTRL:MPTC:MISS rough lost (thresh %f dmax %f)" % (
+                                                                self.visible_thresh,_lum))
+
                                 else:
+                                    #we found the pixel
+                                    col,row = _col, _row
+                                    foundpan,foundtilt = pan,tilt
                                     fine_dist = numpy.linalg.norm(expected - np.array((col,row)))
                                     if self.debug_control:
-                                        rospy.loginfo("FINE n%d %r %r" % (tries,fine_dist,expected - np.array((col,row))))
+                                        rospy.loginfo("CTRL:MPTC:DETE fine dist=%f (%r)" % (
+                                                                fine_dist,
+                                                                expected - np.array((col,row))))
+
+                                    #already close enough
                                     if fine_dist < 3:
-                                        tries = 0
-                                        found = True
+                                        tries = 0       #tries = 0 breaks from inner loop
+                                        found = True    #break from outer loop
+                                        if self.debug_control:
+                                            rospy.loginfo("CTRL:MPTC:FIN rough dist=%r" % fine_dist)
+
+                                    #control to get it closer
                                     else:
                                         tries -= 1
+                                        diffcol,diffrow = expected - np.array((col,row))
+                                        oldpan,oldtilt = pan,tilt
+                                        newpan  = pan  + (np.sign(diffcol) * self._vdispinfo["p_laser_col"])
+                                        newtilt = tilt + (np.sign(diffrow) * self._vdispinfo["p_laser_row"])
+
                                         
                             if not found and (fine_dist < 80):
-                                if self.debug_control:
-                                    rospy.loginfo("AVERAGE DIST %s" % fine_dist)
                                 found = True
-                                        
-                            break
+                                if self.debug_control:
+                                    rospy.loginfo("CTRL:MPTC:FIN rough dist=%r" % fine_dist)
+
+
+                            #FIXME: there was a break here, I think that is superceded by using 
+                            #foundpan and foundtilt
                         else:
                             rospy.loginfo("2D pixel too far from start location (dist:%.1f)" % (expdist))
 
                 if found:
                     rospy.loginfo("found starting pixel: col:%s row:%s pan:%s tilt:%s (dist:%.1f)" % (
-                                    colmid,rowmid,pan,tilt,fine_dist))
-                    self._vdispinfo["panmid"] = pan
-                    self._vdispinfo["tiltmid"] = tilt
+                                    colmid,rowmid,foundpan,foundtilt,fine_dist))
+                    self._vdispinfo["panmid"] = foundpan
+                    self._vdispinfo["tiltmid"] = foundtilt
 
                     self._vdispinfo["colmid"] = int(colmid)
                     self._vdispinfo["rowmid"] = int(rowmid)
