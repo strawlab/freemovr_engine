@@ -12,7 +12,7 @@ import scipy.misc
 import flyvr.srv
 import display_client
 
-def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize):
+def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     rospy.init_node('show_image')
 
     dsc = display_client.DisplayServerProxy(ds,wait=True)
@@ -54,6 +54,22 @@ def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize):
         for i,c in enumerate(rgb):
             arr[row-ptsize:row+ptsize,col-ptsize:col+ptsize,i] = c
 
+    if scale:
+        assert arr.ndim==3
+        orig_aspect = arr.shape[1]/float(arr.shape[0]) # w/h
+        native_aspect = dsc.width/float(dsc.height)
+        if native_aspect >= orig_aspect:
+            # display is wider than image
+            new_shape_height_h = int(dsc.width/float(orig_aspect))
+            new_shape_full = new_shape_height_h, dsc.width
+
+        else:
+            # display is taller than image
+
+            new_shape_wide_w = int(orig_aspect*dsc.height)
+            new_shape_full = dsc.height, new_shape_wide_w
+        new_image = scipy.misc.imresize( arr, new_shape_full )
+        arr = new_image[:dsc.height, :dsc.width]
     dsc.show_pixels(arr)
 
 def main():
@@ -70,6 +86,7 @@ def main():
         '--display-server', type=str, metavar='/display_server', required=True, help=\
         'the path of the display server to configure')
     parser.add_argument('--pixel', type=str, help='light this pixel', metavar='x,y')
+    parser.add_argument('--scale', action='store_true', help='scale the image to fullscreen')
     parser.add_argument('--pxsize', type=int, default=2)
     
     argv = rospy.myargv()
@@ -80,7 +97,8 @@ def main():
             args.black,
             tuple(map(int,args.rgb.split(','))),
             args.pixel,
-            args.pxsize
+            args.pxsize,
+            scale = args.scale,   
     )
 
 if __name__=='__main__':
