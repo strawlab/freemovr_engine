@@ -55,7 +55,6 @@ def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
             arr[row-ptsize:row+ptsize,col-ptsize:col+ptsize,i] = c
 
     if scale:
-        assert arr.ndim==3
         orig_aspect = arr.shape[1]/float(arr.shape[0]) # w/h
         native_aspect = dsc.width/float(dsc.height)
         if native_aspect >= orig_aspect:
