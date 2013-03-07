@@ -235,6 +235,83 @@ private:
 	unsigned int _n_el;
 };
 
+class PlanarRectangleModel : public GeomModel {
+public:
+    PlanarRectangleModel(osg::Vec3 left_lower_corner, osg::Vec3 left_upper_corner, osg::Vec3 right_lower_corner) :
+        _left_lower_corner(left_lower_corner),
+        _left_upper_corner(left_upper_corner),
+        _right_lower_corner(right_lower_corner)
+    {
+        _dir_u = _right_lower_corner - _left_lower_corner;
+        _dir_v = _left_upper_corner - _left_lower_corner;
+        _normal = _dir_u ^ _dir_v;
+    }
+
+    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) {
+        // keep in sync with simple_geom.py
+
+        return _left_lower_corner + _dir_u * tc.x() + _dir_v * tc.y();
+    }
+
+    osg::Vec3 texcoord2normal( osg::Vec2 tc ) {
+        return _normal;
+    }
+
+    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+        osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
+
+            osg::Vec3Array* vertices = new osg::Vec3Array;
+            osg::Vec3Array* normals = new osg::Vec3Array;
+            osg::Vec2Array* tc = new osg::Vec2Array; // texture  coordinates
+            osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+            int idx=0;
+            osg::Vec2 tci;
+
+            osg::DrawElementsUInt* quad_strip =
+                    new osg::DrawElementsUInt(osg::PrimitiveSet::QUAD_STRIP, 0);
+
+            for (tci[0]=0; tci[0]<=1.0; tci[0]++) {
+                for (tci[1]=0; tci[1]<=1.0; tci[1]++) {
+            vertices->push_back( texcoord2worldcoord(tci) );
+            normals->push_back( texcoord2normal(tci) );
+            tc->push_back( tci );
+            if (texcoord_colors) {
+                colors->push_back( osg::Vec4( tci[0], tci[1], 0.0, 1.0 ) );
+            }
+            quad_strip->push_back(idx);
+            idx++;
+            }
+            }
+            this_geom->addPrimitiveSet(quad_strip);
+
+            if (!texcoord_colors) {
+                colors->push_back(osg::Vec4(1.0f,1.0f,1.0f,1.0f));
+            }
+            this_geom->setVertexArray(vertices);
+            this_geom->setNormalArray(normals);
+            this_geom->setTexCoordArray(0,tc);
+            this_geom->setColorArray(colors.get());
+            if (texcoord_colors) {
+                this_geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+            } else {
+                this_geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+            }
+
+        return this_geom;
+    }
+
+
+private:
+    osg::Vec3 _left_lower_corner;
+    osg::Vec3 _left_upper_corner;
+    osg::Vec3 _right_lower_corner;
+
+    osg::Vec3 _normal;
+    osg::Vec3 _dir_u;
+    osg::Vec3 _dir_v;
+
+};
+
 osg::Vec3 parse_vec3( json_t *root) {
 	float x,y,z;
 
@@ -319,6 +396,27 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
 		osg::Vec3 center = parse_vec3( center_json );
 
 		_geom = new SphereModel(radius,center);
+    } else if (model==std::string("planar_rectangle")) {
+
+        json_t *lowerleft_json = json_object_get(root, "lowerleft");
+        if(!json_is_object(lowerleft_json)){
+            throw std::runtime_error("sphere parsing lowerleft: expected object");
+        }
+        osg::Vec3 lowerleft = parse_vec3( lowerleft_json );
+
+        json_t *upperleft_json = json_object_get(root, "upperleft");
+        if(!json_is_object(upperleft_json)){
+            throw std::runtime_error("sphere parsing upperleft: expected object");
+        }
+        osg::Vec3 upperleft = parse_vec3( upperleft_json );
+
+        json_t *lowerright_json = json_object_get(root, "lowerright");
+        if(!json_is_object(lowerright_json)){
+            throw std::runtime_error("sphere parsing lowerright: expected object");
+        }
+        osg::Vec3 lowerright = parse_vec3( lowerright_json );
+
+        _geom = new PlanarRectangleModel(lowerleft, upperleft, lowerright);
 	} else {
         std::ostringstream os;
         os << "unknown model " << model;
