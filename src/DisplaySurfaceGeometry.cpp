@@ -101,16 +101,6 @@ public:
 		return this_geom;
 	}
 
-	KeyPointMap get_key_points() {
-		std::map<std::string, osg::Vec3> result;
-
-		result["base"] = _base;
-		result["top"] = _base+_axis;
-		result["(0,0)"] = texcoord2worldcoord( osg::Vec2(0,0));
-		result["(0,1)"] = texcoord2worldcoord( osg::Vec2(0,1));
-		return result;
-	}
-
 private:
 	double _radius;
 	osg::Vec3 _base;
@@ -237,16 +227,6 @@ public:
 		return this_geom;
 	}
 
-	KeyPointMap get_key_points() {
-		std::map<std::string, osg::Vec3> result;
-
-		result["center"] = _center;
-		result["(0,0)"] = texcoord2worldcoord( osg::Vec2(0,0));
-		result["(0,0.5)"] = texcoord2worldcoord( osg::Vec2(0,0.5));
-		result["(0,1)"] = texcoord2worldcoord( osg::Vec2(0,1));
-		return result;
-	}
-
 private:
 	double _radius;
 	osg::Vec3 _center;
@@ -351,7 +331,3 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
 osg::ref_ptr<osg::Geometry> DisplaySurfaceGeometry::make_geom(bool texcoord_colors) {
 	return _geom->make_geom(texcoord_colors);
 };
-
-KeyPointMap DisplaySurfaceGeometry::get_key_points() {
-	return _geom->get_key_points();
-}
