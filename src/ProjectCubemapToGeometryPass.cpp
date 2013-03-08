@@ -58,6 +58,8 @@ void ProjectCubemapToGeometryPass::create_output_texture() {
 	_out_texture->setInternalFormat(GL_RGBA);
 	_out_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
 	_out_texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
+	_out_texture->setWrap(osg::Texture2D::WRAP_S, osg::Texture2D::REPEAT);
+	_out_texture->setWrap(osg::Texture2D::WRAP_T, osg::Texture2D::REPEAT);
 }
 
 void ProjectCubemapToGeometryPass::setup_camera()
@@ -72,7 +74,8 @@ void ProjectCubemapToGeometryPass::setup_camera()
     _camera->setViewMatrix(osg::Matrix::identity());
 
     // viewport
-    _camera->setViewport(0, 0, _tex_width, _tex_height);
+    _camera->setViewport(0, 0, _tex_width+1, _tex_height);
+    // off by one error in the width? removes visible seam!
 
 	_camera->setRenderOrder(osg::Camera::PRE_RENDER);
     _camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
