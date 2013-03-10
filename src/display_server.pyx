@@ -101,6 +101,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int two_pass,
               int show_geom_coords,
               int tethered_mode,
+              int slave
               ) nogil except +
         void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
         void update( double, Vec3, Quat )
@@ -258,6 +259,8 @@ cdef class MyNode:
         parser.add_argument('--pbuffer', default=False, action='store_true')
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--throttle', default=False, action='store_true')
+        parser.add_argument('--slave', default=False, action='store_true',
+            help='In a multiprocess VR setup, this is a slave')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
         parser.add_argument('--config', type=str,
             help='JSON configuration file describing the setup. '\
@@ -270,9 +273,12 @@ cdef class MyNode:
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
-        self._throttle = args.throttle
-
         rospy.init_node("display_server")
+
+        rospy.loginfo("slave instance: %s" % args.slave)
+
+        self._throttle = args.throttle
+        rospy.loginfo("throttle framerate: %s" % self._throttle)
 
         config_dict = rospy.get_param('~',{})
         rospy.loginfo("starting display_server")
@@ -327,10 +333,12 @@ cdef class MyNode:
                     if self._mode_change is not None:
                         rospy.loginfo('got latched simulus mode %s' % self._mode_change)
                         break
-
         with self._mode_lock:
             if self._mode_change is None:
-                self._mode_change = 'Stimulus3DDemo'
+                if args.stimulus is not None:
+                    self._mode_change = args.stimulus
+                else:
+                    self._mode_change = 'Stimulus3DDemo'
 
         flyvr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(flyvr_basepath),
@@ -340,6 +348,7 @@ cdef class MyNode:
                                args.two_pass,
                                args.show_geom_coords,
                                tethered_mode,
+                               args.slave
                                )
         #these subscribers access self.dsosg
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_callback)

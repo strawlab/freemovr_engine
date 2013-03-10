@@ -337,7 +337,7 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 // constructor
 DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
-             bool tethered_mode) :
+             bool tethered_mode, bool slave) :
     _current_stimulus(NULL), _mode(mode),
     _flyvr_basepath(flyvr_basepath),
     _config_file_path(config_fname),
@@ -453,7 +453,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 				_stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
 
                 try {
-                    _stimulus_plugins[ plugin_name ]->post_init();
+                    _stimulus_plugins[ plugin_name ]->post_init(slave);
                 } catch (...) {
                     std::cerr << "ERROR while calling post_init() on plugin: " << plugin_name << std::endl;
                     throw;

@@ -27,7 +27,7 @@ std::string name() const {
 	return "Stimulus3DDemo";
 }
 
-virtual void post_init(void) {
+virtual void post_init(bool slave) {
 	_virtual_world = create_virtual_world();
 }
 
