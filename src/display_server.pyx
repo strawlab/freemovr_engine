@@ -321,24 +321,28 @@ cdef class MyNode:
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
 
-        if args.stimulus is None:
-            #if the user did not specify a mode on the command line then
-            #wait for 2 seconds in case an existing stimulus mode is already latched
-            #(also gives a chance to get the initial pose)
-            t0 = t1 = rospy.get_time()
-            while (t1 - t0) < 2.0: #seconds
-                rospy.sleep(0.1)
-                t1 = rospy.get_time()
-                with self._mode_lock:
-                    if self._mode_change is not None:
-                        rospy.loginfo('got latched simulus mode %s' % self._mode_change)
-                        break
+        #wait for 2 seconds in case an existing stimulus mode is already latched
+        #(also gives a chance to get the initial pose)
+        #
+        #but, if the user specified a mode on the command line, give up on the
+        #latched stimulus
+        t0 = t1 = rospy.get_time()
+        while (t1 - t0) < 2.0: #seconds
+            rospy.sleep(0.1)
+            t1 = rospy.get_time()
+            with self._mode_lock:
+                if self._mode_change is not None:
+                    rospy.loginfo('got latched simulus mode %s' % self._mode_change)
+                    break
         with self._mode_lock:
-            if self._mode_change is None:
-                if args.stimulus is not None:
-                    self._mode_change = args.stimulus
-                else:
-                    self._mode_change = 'Stimulus3DDemo'
+            if args.stimulus is not None:
+                self._mode_change = args.stimulus
+            elif self._mode_change is None:
+                self._mode_change = 'Stimulus3DDemo'
+
+                self._mode_change = 'Stimulus3DDemo'
+
+        rospy.loginfo('selecting initial simulus mode %s' % self._mode_change)
 
         flyvr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(flyvr_basepath),
