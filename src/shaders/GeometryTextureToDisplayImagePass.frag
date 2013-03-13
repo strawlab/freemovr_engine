@@ -18,14 +18,10 @@ void main(void)
   } else {
     if (show_geom_coords) {
       gl_FragData[0] = vec4(GeomCoord.xy,0.0,1.0);
-    } else if (display_gamma > 0.0) {
-      // linearize texture, mask with 3rd channel and then gamma-correct it 
-      vec3 colorG = texture2D(inputGeometryTexture, GeomCoord.xy).rgb;
-      gl_FragData[0] = vec4(pow(colorG*GeomCoord.z,  vec3(1.0 / display_gamma)), 1.0);
     } else {
-      // no gamma correction
-      gl_FragData[0] = texture2D(inputGeometryTexture,GeomCoord.xy);
+      vec3 color = texture2D(inputGeometryTexture, GeomCoord.xy).rgb; // lookup texture
+      vec3 luminance_corrected = color*GeomCoord.z;                   // multiply with luminance mask
+      gl_FragData[0] = vec4(pow(luminance_corrected,  vec3(1.0 / display_gamma)), 1.0); // correct for display gamma
     }
   }
 }
-

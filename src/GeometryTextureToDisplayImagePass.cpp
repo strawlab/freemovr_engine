@@ -41,7 +41,7 @@ GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(std::string
 	_top->addChild( _camera );
 	set_shader( join_path(shader_dir,"GeometryTextureToDisplayImagePass.vert"),
 				join_path(shader_dir,"GeometryTextureToDisplayImagePass.frag") );
-
+    set_gamma(display_gamma);
 }
 
 osg::ref_ptr<osg::Group> GeometryTextureToDisplayImagePass::create_input_geometry()
@@ -104,6 +104,11 @@ osg::ref_ptr<osg::Group> GeometryTextureToDisplayImagePass::create_input_geometr
 	
 	top_group->addChild(geode.get());
 	return top_group;
+}
+
+void GeometryTextureToDisplayImagePass::set_gamma(float g) {
+    _display_gamma=g;
+    _display_gamma_uniform->set(g);
 }
 
 void GeometryTextureToDisplayImagePass::create_output_texture() {

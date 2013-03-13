@@ -313,7 +313,7 @@ cdef class MyNode:
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo("tethered_mode: %s" % tethered_mode)
 
-        self._gamma = config_dict.get('gamma', 0.0)
+        self._gamma = config_dict.get('gamma', 1.0)
         rospy.loginfo("gamma correction: %s" % self._gamma)
 
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
