@@ -6,7 +6,7 @@ import numpy as np
 import roslib; roslib.load_manifest('flyvr')
 from exr import save_exr
 
-def gen_exr(fname=None, width=None, height=None, luminance):
+def gen_exr(fname=None, width=None, height=None, luminance=None):
     u = np.linspace( 0.0, 1.0, width )
     v = np.linspace( 0.0, 1.0, height )
 
@@ -22,10 +22,10 @@ if __name__ == "__main__":
     parser.add_argument('--height', type=int, default=1080,
                         help="width of display (in pixels)")
     parser.add_argument('--fname', type=str, default='monitor.exr',
-                        help="name of generated EXR file",
-    parser.add_argument('--luminance', type=float, default=-1,
+                        help="name of generated EXR file")
+    parser.add_argument('--luminance', type=float, default=1.0,
                         help="luminance value to write into 3rd channel")
     args = parser.parse_args()
 
-    gen_exr( fname=args.fname, width=args.width, height=args.height, args.luminance)
+    gen_exr( fname=args.fname, width=args.width, height=args.height, luminance=args.luminance)
 
