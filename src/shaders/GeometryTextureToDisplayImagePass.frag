@@ -1,4 +1,5 @@
-//#version 140
+/* -*- Mode: C -*- */
+//#version 140 // Keep this commented out so that we trick Intel drivers into accepting as v1.2 and NVidia as 1.4
 
 #extension GL_ARB_texture_rectangle : enable
 
@@ -28,4 +29,3 @@ void main(void)
   }
 }
 
-/* -*- Mode: C -*- */
