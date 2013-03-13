@@ -122,6 +122,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         setCursorVisible(int visible) nogil except +
         void setCaptureFilename(std_string name) nogil except +
         void setGamma(float gamma) nogil except +
+        void setRedMax(int red_max) nogil except +
 
         TrackballManipulatorState getTrackballManipulatorState() nogil except +
         void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
@@ -236,6 +237,7 @@ cdef class MyNode:
     cdef int _throttle
     cdef object _timer
     cdef object _gamma
+    cdef object _red_max
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -316,10 +318,14 @@ cdef class MyNode:
         self._gamma = config_dict.get('gamma', 1.0)
         rospy.loginfo("gamma correction: %s" % self._gamma)
 
+        self._red_max = config_dict.get('red_max', False)
+        rospy.loginfo("red max: %s" % self._red_max)
+
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
+        rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
 
         #wait for 2 seconds in case an existing stimulus mode is already latched
         #(also gives a chance to get the initial pose)
@@ -478,6 +484,9 @@ cdef class MyNode:
     def gamma_callback(self, msg):
         self._gamma = msg.data
 
+    def red_max_callback(self, msg):
+        self._red_max = msg.data
+
     def capture_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
@@ -576,6 +585,10 @@ cdef class MyNode:
             if self._gamma is not None:
                 self.dsosg.setGamma(self._gamma)
                 self._gamma = None
+
+            if self._red_max is not None:
+                self.dsosg.setRedMax(self._red_max)
+                self._red_max = None
 
             with nogil:
                 self.dsosg.frame()

@@ -69,6 +69,7 @@ namespace dsosg{
 		void setCursorVisible(bool visible);
 		void setWindowName(std::string name);
 		void setGamma(float gamma);
+		void setRedMax(bool red_max);
 
 		void setCaptureFilename(std::string name);
 

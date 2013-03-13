@@ -19,6 +19,7 @@ geom:
   model: cylinder
   radius: 0.046
 gamma: 1.0
+red_max: false
 p2c: /home/strawlab/flyvr-devel/flyvr/flyvr/config/p2c.exr
 p2g: /home/strawlab/flyvr-devel/flyvr/flyvr/config/p2g.exr
 stimulus_plugins: []

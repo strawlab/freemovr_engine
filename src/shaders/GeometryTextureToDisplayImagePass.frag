@@ -6,6 +6,7 @@
 uniform sampler2D inputGeometryTexture;
 uniform sampler2DRect p2g;
 uniform bool show_geom_coords;
+uniform bool red_max;
 uniform float display_gamma;
 varying vec2 ProjectorCoord;
 
@@ -23,5 +24,8 @@ void main(void)
       vec3 luminance_corrected = color*GeomCoord.z;                   // multiply with luminance mask
       gl_FragData[0] = vec4(pow(luminance_corrected,  vec3(1.0 / display_gamma)), 1.0); // correct for display gamma
     }
+  }
+  if (red_max) {
+    gl_FragData[0].r = 1.0;
   }
 }

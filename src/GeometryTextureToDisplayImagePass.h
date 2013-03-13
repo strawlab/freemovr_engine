@@ -14,13 +14,15 @@ public:
 									  osg::ref_ptr<osg::Texture2D> input_texture,
 									  std::string p2g_filename,
 									  bool show_geom_coords=false,
-									  float display_gamma=1.0);
+									  float display_gamma=1.0,
+                                      bool red_max=false);
 									  
 	osg::ref_ptr<osg::Group> get_top() { return _top; }
 	osg::ref_ptr<osg::TextureRectangle> get_output_texture() { return _out_texture; }
 	int get_display_width() {return _display_width; }
 	int get_display_height() {return _display_height; }
     void set_gamma(float g);
+    void set_red_max(bool r);
 	
 private:
 	void create_output_texture();
@@ -40,6 +42,8 @@ private:
 	bool _show_geom_coords;
 	float _display_gamma;
     osg::ref_ptr<osg::Uniform> _display_gamma_uniform;
+	bool _red_max;
+    osg::ref_ptr<osg::Uniform> _red_max_uniform;
 };
 
 #endif

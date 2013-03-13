@@ -1024,4 +1024,9 @@ void DSOSG::setGamma(float gamma) {
         _g2di->set_gamma(gamma);
 }
 
+void DSOSG::setRedMax(bool red_max) {
+    if (_g2di)
+        _g2di->set_red_max(red_max);
+}
+
 }
