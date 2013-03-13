@@ -11,7 +11,7 @@ varying vec2 ProjectorCoord;
 
 void main(void)
 {
-  float eps=1e-10;
+  float eps=-0.5;
   vec3 GeomCoord = texture2DRect(p2g, ProjectorCoord).xyz;
   if ((GeomCoord.x <= eps) && (GeomCoord.y <= eps)) {
     discard;
