@@ -81,7 +81,7 @@ void ProjectCubemapToGeometryPass::setup_camera()
     _camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
     // attach the output texture
-	_camera->attach(osg::Camera::COLOR_BUFFER, _out_texture.get(), 0);
+	_camera->attach(osg::Camera::COLOR_BUFFER, _out_texture.get(), 0, 0, false, 8, 8);
 
 }
 
