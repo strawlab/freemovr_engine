@@ -243,8 +243,9 @@ public:
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
         // attach the texture and use it as the color buffer.
-        camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i);
-
+        //camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i);
+        camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i, false, 8, 8);
+			
         // add subgraph to render
         camera->addChild(input_node);
         _top->addChild(camera);
@@ -649,6 +650,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                     show_hud=true;
                 }
                 if (show_hud) {
+					//std::cerr << "texture: " << _g2di->get_display_width() << "  " << _g2di->get_display_height() << std::endl;
                     osg::Group* g = make_textured_quad(_g2di->get_output_texture(),
                                                        -1.0,
                                                        //_g2di->get_display_width(), _g2di->get_display_height(),
@@ -662,6 +664,11 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     }
 
     _viewer = new osgViewer::Viewer;
+    
+    osg::ref_ptr<osg::DisplaySettings> displaySettings = new osg::DisplaySettings;
+    displaySettings->setNumMultiSamples(4);
+    _viewer->setDisplaySettings( displaySettings.get() );
+    
     _viewer->setSceneData(root.get());
     _viewer->getViewerStats()->collectStats("frame_rate",true);
 
