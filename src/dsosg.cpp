@@ -243,7 +243,7 @@ public:
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
         // attach the texture and use it as the color buffer.
-        camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i);
+        camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i, false, 8, 8);
 
         // add subgraph to render
         camera->addChild(input_node);
