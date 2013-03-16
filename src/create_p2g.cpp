@@ -78,7 +78,9 @@ int main(int argc, char *argv[])
 
 		osg::Group* g = make_textured_quad(ci2di->get_output_texture(),
 										   -1.0,
-										   ci2di->get_display_width(), ci2di->get_display_height(),
+										   //ci2di->get_display_width(), ci2di->get_display_height(),
+										   1.0, 1.0,
+										   
 										   0,0,1,1);
 		image_camera->addChild( g );
 

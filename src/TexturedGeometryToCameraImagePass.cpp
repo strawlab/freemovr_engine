@@ -32,7 +32,7 @@ TexturedGeometryToCameraImagePass::TexturedGeometryToCameraImagePass(
 }
 
 void TexturedGeometryToCameraImagePass::create_output_texture() {
-	_out_texture = new osg::TextureRectangle;
+	_out_texture = new osg::Texture2D;
 	_out_texture->setDataVariance(osg::Object::DYNAMIC);
 	_out_texture->setTextureSize(_camera_model->width(), _camera_model->height());
 	_out_texture->setInternalFormat(GL_RGBA);

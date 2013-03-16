@@ -21,10 +21,11 @@ def send_pose(positionstr, verbose, freq):
         t = rospy.get_time()
 
         if not positionstr:
-            x = 10*np.sin( t*2*np.pi/5.0 )
+            x = 0.2*np.sin( t*2*np.pi/5.0 )+0.32
             #y = 0.4*np.cos( t*2*np.pi/15.0 )
-            y = 0
-            z = 0.4*np.cos( t*2*np.pi/15.0 ) + 0.5
+            y = 0.15*np.cos( t*2*np.pi/25.0 )+0.18
+            #y = 0.18
+            z = 0.15*np.cos( t*2*np.pi/30.0 ) + 0.18
             position = [x,y,z]
 
         msg = Pose()

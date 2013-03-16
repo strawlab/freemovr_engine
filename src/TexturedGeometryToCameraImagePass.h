@@ -13,7 +13,7 @@ class TexturedGeometryToCameraImagePass {
 public:
 	TexturedGeometryToCameraImagePass(osg::ref_ptr<osg::Group> textured_geometry, CameraModel* camera_model);
 	osg::ref_ptr<osg::Group> get_top() { return _top; }
-	osg::ref_ptr<osg::TextureRectangle> get_output_texture() {	return _out_texture; }
+	osg::ref_ptr<osg::Texture2D> get_output_texture() {	return _out_texture; }
 
 private:
 	void create_output_texture();
@@ -23,6 +23,6 @@ private:
 	osg::ref_ptr<osg::Group> _top;
 	osg::Camera* _camera;
 	osg::ref_ptr<osg::Group> _textured_geometry;
-	osg::ref_ptr<osg::TextureRectangle> _out_texture;
+	osg::ref_ptr<osg::Texture2D> _out_texture;
 };
 #endif
