@@ -26,8 +26,8 @@ CameraImageToDisplayImagePass::CameraImageToDisplayImagePass(std::string shader_
 	_p2c_texture = new osg::Texture2D;
 	_p2c_texture->setTextureSize( _display_width, _display_height);
 	_p2c_texture->setInternalFormat(GL_RGB32F);
-	_p2c_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::NEAREST);
-	_p2c_texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::NEAREST);
+	_p2c_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
+	_p2c_texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
 
 	_p2c_texture->setImage(image);
 
