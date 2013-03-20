@@ -21,9 +21,11 @@ def save_exr( fname, r=None, g=None, b=None, comments='' ):
     out.writePixels(data)
     out.close()
 
-def read_exr(file):
+def read_exr(file,full_output=False):
     f = OpenEXR.InputFile(file)
     dw = f.header()['dataWindow']
+    comments = f.header()['comments']
+
     size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
     pt = Imath.PixelType(Imath.PixelType.FLOAT)
 
@@ -38,5 +40,11 @@ def read_exr(file):
     b = read_chan('B')
     f.close()
 
-    return r,g,b
+    if full_output:
+        result = {'comments':comments,
+                  'r':r, 'g':g, 'b':b,
+                  }
+    else:
+        result = r,g,b
+    return result
 
