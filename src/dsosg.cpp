@@ -245,7 +245,11 @@ public:
         // attach the texture and use it as the color buffer.
         //camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i);
         camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i, false, 8, 8);
-			
+
+        osg::ref_ptr<osg::DisplaySettings> displaySettings = new osg::DisplaySettings;
+        displaySettings->setNumMultiSamples(4);
+        camera->setDisplaySettings( displaySettings.get() );
+
         // add subgraph to render
         camera->addChild(input_node);
         _top->addChild(camera);
