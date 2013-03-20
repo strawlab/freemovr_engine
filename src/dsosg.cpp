@@ -1028,7 +1028,12 @@ TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
 }
 
 void DSOSG::setTrackballManipulatorState(TrackballManipulatorState s) {
-    flyvr_assert(_cameraManipulator.valid());
+    if (!_cameraManipulator.valid()) {
+        // We could be rendering only the cubemap,
+        // so we might not have camera manipulator.
+		std::cerr << "ignoring request to set camera manipulator state." << std::endl;
+        return;
+    }
     _cameraManipulator->setRotation(s.rotation);
     _cameraManipulator->setCenter(s.center);
     _cameraManipulator->setDistance(s.distance);
