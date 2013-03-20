@@ -15,7 +15,7 @@ public:
 								  std::string p2c_filename,
 								  bool UseHDR=false);
 	osg::ref_ptr<osg::Group> get_top() { return _top; }
-	osg::ref_ptr<osg::TextureRectangle> get_output_texture() {	return _out_texture; }
+	osg::ref_ptr<osg::Texture2D> get_output_texture() {	return _out_texture; }
 	int get_display_width() {return _display_width; }
 	int get_display_height() {return _display_height; }
     osg::ref_ptr<osg::StateSet> get_stateset() { return _state_set; }
@@ -29,8 +29,8 @@ private:
 	osg::ref_ptr<osg::Group> _top;
 	osg::Camera* _camera;
 	osg::ref_ptr<osg::Texture> _live_camera_texture;
-	osg::ref_ptr<osg::TextureRectangle> _p2c_texture;
-	osg::ref_ptr<osg::TextureRectangle> _out_texture;
+	osg::ref_ptr<osg::Texture2D> _p2c_texture;
+	osg::ref_ptr<osg::Texture2D> _out_texture;
 	osg::ref_ptr<osg::Program> _program;
     osg::ref_ptr<osg::StateSet> _state_set;
 	int _display_width;

@@ -587,8 +587,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 root->addChild( cam1_params->make_rendering(1) );
                 osg::Group* g = make_textured_quad(mytex,
                                                    -1.0,
-                                                   cam1_params->width(),
-                                                   cam1_params->height(),
+                                                   1.0, 1.0,
                                                    0, 0, 0.3, 0.3);
                 debug_hud_cam->addChild(g);
             }
@@ -617,7 +616,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 if (show_hud) {
                     osg::Group* g = make_textured_quad(ci2di->get_output_texture(),
                                                        -1.0,
-                                                       ci2di->get_display_width(), ci2di->get_display_height(),
+                                                       1.0, 1.0,
                                                        l,b,w,h);
                     debug_hud_cam->addChild(g);
                 }
@@ -650,7 +649,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 if (show_hud) {
                     osg::Group* g = make_textured_quad(_g2di->get_output_texture(),
                                                        -1.0,
-                                                       _g2di->get_display_width(), _g2di->get_display_height(),
+                                                       1.0, 1.0,
                                                        0.0,0.0,w,h);
                     debug_hud_cam->addChild(g);
                 }

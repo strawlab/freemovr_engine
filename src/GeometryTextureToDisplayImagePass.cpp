@@ -23,7 +23,7 @@ GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(std::string
 	_input_texture(input_texture), _show_geom_coords(show_geom_coords), _display_gamma(display_gamma), _red_max(red_max)
 {
 	osg::ref_ptr<osg::Image> image = load_exr( p2g_filename, _display_width, _display_height);
-	_p2g_texture = new osg::TextureRectangle;
+	_p2g_texture = new osg::Texture2D;
 	_p2g_texture->setTextureSize( _display_width, _display_height);
 	_p2g_texture->setInternalFormat(GL_RGB32F);
 	_p2g_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::NEAREST);
@@ -60,8 +60,8 @@ osg::ref_ptr<osg::Group> GeometryTextureToDisplayImagePass::create_input_geometr
 		float height=1.0;
 		float zpos=0.0;
 
-		float max_tc_width= _p2g_texture->getTextureWidth();
-		float max_tc_height= _p2g_texture->getTextureHeight();
+		float max_tc_width=1.0;
+		float max_tc_height=1.0;
 
 		// make quad
 		osg::Vec3Array* vertices = new osg::Vec3Array;
@@ -122,7 +122,7 @@ void GeometryTextureToDisplayImagePass::set_red_max(bool r) {
 }
 
 void GeometryTextureToDisplayImagePass::create_output_texture() {
-	_out_texture = new osg::TextureRectangle;
+	_out_texture = new osg::Texture2D;
 	_out_texture->setDataVariance(osg::Object::DYNAMIC);
 	_out_texture->setTextureSize(_display_width, _display_height);
 	_out_texture->setInternalFormat(GL_RGBA);

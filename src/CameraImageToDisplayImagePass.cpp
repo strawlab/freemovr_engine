@@ -23,7 +23,7 @@ CameraImageToDisplayImagePass::CameraImageToDisplayImagePass(std::string shader_
 	double scale_width = live_camera_texture->getTextureWidth();
 	double scale_height = live_camera_texture->getTextureHeight();
 	osg::ref_ptr<osg::Image> image = load_exr( p2c_filename, _display_width, _display_height, scale_width, scale_height );
-	_p2c_texture = new osg::TextureRectangle;
+	_p2c_texture = new osg::Texture2D;
 	_p2c_texture->setTextureSize( _display_width, _display_height);
 	_p2c_texture->setInternalFormat(GL_RGB32F);
 	_p2c_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::NEAREST);
@@ -96,7 +96,7 @@ osg::ref_ptr<osg::Group> CameraImageToDisplayImagePass::create_input_geometry()
 }
 
 void CameraImageToDisplayImagePass::create_output_texture() {
-	_out_texture = new osg::TextureRectangle;
+	_out_texture = new osg::Texture2D;
 	_out_texture->setDataVariance(osg::Object::DYNAMIC);
 	_out_texture->setTextureSize(_display_width, _display_height);
 	if (_UseHDR) {
