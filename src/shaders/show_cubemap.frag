@@ -9,7 +9,7 @@ void main(void)
 	// divide coord x at 0.0, 0.25, 0.50, 0.75, 1.0
 	// divide coord y at 0.0, 0.25, 0.50, 0.75
 
-	vec3 v;
+	vec3 v = vec3(0,0,0);
 	bool noface;
 
 	noface=false;
