@@ -83,7 +83,7 @@ void create_HUD_group(unsigned int width, unsigned int height, osg::Texture* tex
 
 }
 
-virtual void post_init(void) {
+virtual void post_init(bool slave) {
     // TODO: show with 1:1 pixel scaling.
 
     std::string fname = get_plugin_data_path(std::string("vienna-morning.jpg"));

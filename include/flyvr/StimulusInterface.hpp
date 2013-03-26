@@ -15,7 +15,7 @@ class StimulusInterface: public ResourceLoader
 
   // Initialization. Called after the plugin path has been set. Plugins can call get_plugin_shader_dir
   // and friends in here.
-  virtual void post_init(void) {};
+  virtual void post_init(bool slave=false) {};
 
   bool is_CUDA_available();
 

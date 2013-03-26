@@ -155,6 +155,9 @@ class DataIO:
             self._display_tree = {}
         elif ds in self._display_tree:
             del self._display_tree[ds]
+
+    def save(self):
+        self._bag.flush()
         
     def close(self):
         self._bag.close()
@@ -163,11 +166,13 @@ class DataIO:
     def load(self, name, calibration_except=None, vis_callback_2d=None):
         if calibration_except is None:
             calibration_except = set()
+
         with rosbag.Bag(name, 'r') as bag:
             for topic, msg, t in bag.read_messages(topics=[CALIB_MAPPING_TOPIC]):
 
                 viewport_desc = "%s/%s" % (msg.display_server,msg.vdisp)
-                if viewport_desc in calibration_except:
+                viewport_desc_all = "%s/all" % msg.display_server
+                if (viewport_desc) in calibration_except or (viewport_desc_all in calibration_except):
                     continue
 
                 self._add_mapping(msg)
@@ -260,6 +265,17 @@ class Calib:
         laser_camera = config["laser_camera"]
         trigger = config["trigger"]
         laser = config["laser"]
+
+        if 0:
+            ####SAVE EVERY IMAGE FOR NICE MOVIE
+            basedir = "/mnt/ssd/CALIB_STEPS/"
+            self.__ds_fmt = basedir+"%(time)f_ds.png"
+            self.__l_fmt = basedir+"%(time)f_laser.png"
+            self.__ptc_fmt = basedir+"%(time)f_ptc%(imgtype)s.png"
+        else:
+            self.__ds_fmt = None
+            self.__l_fmt = None
+            self.__ptc_fmt = None
 
         self.debug_control = "control" in debug
 
@@ -385,7 +401,7 @@ class Calib:
         self.laser_camera = laser_camera
         fd = DotBGFeatureDetector(
                     laser_camera,
-                    method="med",
+                    method="morphbinary",
                     show=show_type if (show_cameras[0] == "all" or laser_camera in show_cameras) else "")
         if "detection" in debug:
             fd.enable_debug_detection()
@@ -404,6 +420,16 @@ class Calib:
         #being able to read the resoluions
         self._calculate_background()
 
+        #now we know the resolutions we can show a debug target in the blue channel
+        b = np.zeros((494, 659),dtype=np.uint8)
+        cv2.circle(b, 
+                tuple(self.laser_expected_detect_location),
+                self.laser_expected_detect_hist, (255,0,0))
+        self.laser_detector.add_debug_blue_channel(b)
+
+        if self.__ptc_fmt:
+            self.laser_detector.enable_debug_saveimages(self.__ptc_fmt)
+
         self._vdisptocalibrate = []            
         self._vdispinfo = {}
 
@@ -419,6 +445,8 @@ class Calib:
 
         s = rospy.Service('~clear_kdtree', std_srvs.srv.Empty, self._on_clear_kdtree)
         s = rospy.Service('~calib_change_mode', flyvr.srv.CalibMode, self._on_change_mode)
+        s = rospy.Service('~set_visual_threshold', flyvr.srv.CalibSetFloat, self._on_set_visual_threshold)
+
         self.change_mode(CALIB_MODE_SLEEP)
 
     def change_mode(self, mode, *service_args):
@@ -444,6 +472,12 @@ class Calib:
             self._laser_handles[handle] = np.zeros((sizetilt+1,sizepan+1,3),dtype=np.uint8)
             cv2.imshow(handle, self._laser_handles[handle])
         return std_srvs.srv.EmptyResponse()
+
+    def _on_set_visual_threshold(self, req):
+        old = self.visible_thresh
+        self.visible_thresh = int(req.data)
+        rospy.loginfo("updating visible thresh = %s (was %s)" % (self.visible_thresh, old))
+        return flyvr.srv.CalibSetFloatResponse()
 
     def _on_change_mode(self, req):
         self.change_mode(req.mode, req.sa, req.fa, req.fb, req.fc)
@@ -500,6 +534,8 @@ class Calib:
                         col=math.floor(pan)+(0-self.laser_range_pan[0]),
                         sz=-1,  fill=255, chan=1)
             cv2.imshow(handle, img)
+            if self.__l_fmt:
+                cv2.imwrite(self.__l_fmt%{"time":time.time()},img)
         
         return pan,tilt
 
@@ -538,6 +574,8 @@ class Calib:
             if col != None:
                 add_crosshairs_to_nparr(arr=img, row=row, col=col, sz=-1, fill=255, chan=1)
             cv2.imshow(handle, img)
+            if self.__ds_fmt:
+                cv2.imwrite(self.__ds_fmt%{"time":time.time()},img)
 
         rospy.logdebug("lighting projector %s col:%s row:%s" % (ds,col,row))
         self._light_proj_cache[ds] = target
@@ -552,7 +590,7 @@ class Calib:
         for cam in imgs:
             if restrict and cam not in restrict:
                 continue
-            features = self.tracking_cameras[cam].detect(imgs[cam][:,:,0], thresh)
+            features,dmax = self.tracking_cameras[cam].detect(imgs[cam][:,:,0], thresh)
             if features:
                 if len(features) > 1:
                     rospy.logerr("multiple features not supported, taking the first one")
@@ -577,7 +615,7 @@ class Calib:
             self.laser_detector.set_mask(self.laser_mask, copy=False)
 
         img = imgs[self.laser_camera][:,:,0]
-        features = self.laser_detector.detect(
+        features,dmax = self.laser_detector.detect(
                         img,
                         thresh,
                         exact_luminance=thresh != self.laser_thresh)
@@ -586,9 +624,18 @@ class Calib:
             self.laser_detector.clear_mask()
 
         if features:
-            if len(features) > 1:
-                rospy.logerr("multiple features not supported, taking the first one")
             row,col,luminance = features[0]
+
+            if len(features) > 1:
+                rospy.logerr("multiple features not supported, taking the closest one")
+                dist = 1e6 #any big number
+                expected = np.array(self.laser_expected_detect_location)
+                for feat in features:
+                    _row,_col,_luminance = feat
+                    _dist = numpy.linalg.norm(expected - np.array((_col,_row)))
+                    if _dist < dist:
+                        row,col,liminance = _row,_col,_luminance
+
             if thresh == self.laser_thresh:
                 msg = msgprefix + "PTC laser"
                 expected = np.array(self.laser_expected_detect_location)
@@ -605,7 +652,7 @@ class Calib:
             rospy.loginfo("detect 2D %s: col:%s row:%s lum:%s" % (msg,col,row,luminance))
             return col,row,luminance
 
-        return None,None,None
+        return None,None,dmax
 
     def _detect_3d_point(self, runner, thresh):
         restrict = self.tracking_cameras.keys()
@@ -639,14 +686,6 @@ class Calib:
 
     def _load_previous_calibration(self, path, calibration_except=None):
         self.data.load(path, calibration_except, vis_callback_2d=self._show_correspondence)
-#        for ds in self.show_display_servers:
-#            cv2.imshow(
-#                    self.show_display_servers[ds]["handle"],
-#                    self.show_display_servers[ds]["visualizeimg"])
-#        if show_laser_scatter:
-#            cv2.imshow(
-#                    laser_handle,
-#                    self._laser_handles[laser_handle])
 
     def _parse_ds_specified(self, args):
         try:
@@ -680,6 +719,9 @@ class Calib:
                 col=col,
                 sz=1, fill=255, chan=0)
             cv2.imshow(handle, img)
+            if self.__ds_fmt:
+                cv2.imwrite(self.__ds_fmt%{"time":time.time()},img)
+
 
         if show_laser_scatter:
             handle = laser_handle
@@ -691,6 +733,8 @@ class Calib:
             except:
                 rospy.logerr("could not plot pan/tilt: tilt:%s pan:%s" % (tilt,pan))
             cv2.imshow(handle, img)
+            if self.__l_fmt:
+                cv2.imwrite(self.__l_fmt%{"time":time.time()},img)
 
     def run(self):
         while not rospy.is_shutdown():
@@ -698,6 +742,7 @@ class Calib:
                 mode = self.mode
                 service_args = self.mode_args
             if mode == CALIB_MODE_FINISHED:
+                self.data.save()
                 break
 
             elif mode == CALIB_MODE_SLEEP:
@@ -835,8 +880,9 @@ class Calib:
                     centroid = get_centre_of_vdisp(vdmask)
                     
                 if not searchpath:
-                    #start search at current location (twice for reliability)
+                    #start search at current location (thrice for reliability)
                     searchpath = [(self._laser_currpan,self._laser_currtilt),
+                                  (self._laser_currpan,self._laser_currtilt),
                                   (self._laser_currpan,self._laser_currtilt)]
                     
                 rospy.loginfo("Calibrating %s:%s@%s" % (ds,vdisp,repr(centroid)))
@@ -855,72 +901,90 @@ class Calib:
                                         startw=minpan,starth=mintilt,
                                         sw=npan,sh=ntilt,
                                         linspace=True) )
-#
-#HACK FOR DS3 WHILE I DO NOT WRAP THE PTC PROPER
-#                searchpath.extend( reversed(list(gen_vert_snake(
-#                                        w=maxpan,h=maxtilt,
-#                                        startw=minpan,starth=mintilt,
-#                                        sw=npan,sh=ntilt,
-#                                        linspace=True) )))
-
 
                 found = False
                 for pan,tilt in searchpath:
+                    if found:
+                        break
                     #so it doesnt look like we are hung
                     self.pub_mode.publish(self.mode)
-
+                    #ensure the laser is off
                     pan,tilt = self._light_laser_pixel(pan=pan,tilt=tilt,power=False)
                     col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
-                    if col:
+                    #we can see the projector pixel, somewhere
+                    if col is not None:
                         expected = np.array(self.laser_expected_detect_location)
                         expdist = numpy.linalg.norm(expected - np.array((col,row)))
                         fine_dist = expdist
+                        oldpan,oldtilt      = pan,tilt
+                        foundpan,foundtilt  = pan,tilt
+                        newpan,newtilt      = pan,tilt
                         if expdist < 150:
-
-                            #we have a rough estimate, refine it                            
+                            #we have a rough estimate, refine it
                             tries = 40
                             if self.debug_control:
-                                rospy.loginfo("ROUGH n%d %r %r" % (tries,expdist,expected - np.array((col,row))))
+                                rospy.loginfo("CTRL:MPTC:DETE rough n%d %r %r" % (tries,expdist,expected - np.array((col,row))))
                             
                             while (tries > 0):
-                                diffcol,diffrow = expected - np.array((col,row))
-                                newpan  = pan  + (np.sign(diffcol) * self._vdispinfo["p_laser_col"])
-                                newtilt = tilt + (np.sign(diffrow) * self._vdispinfo["p_laser_row"])
+                                #use the returned pan,tilt because of mechanical limits
+                                #or future wrap-around
                                 pan,tilt = self._light_laser_pixel(pan=newpan,tilt=newtilt,power=False)
-                                oldcol = col
-                                oldrow = row
-                                col,row,lum = self._detect_laser_camera_2d_point(self.visible_thresh)
-                                #we lost the pixel
-                                if not col:
-                                    col = oldcol
-                                    row = oldrow
+                                if self.debug_control:
+                                    rospy.loginfo("CTRL:MPTC:SHOW n%d p:%s t:%s (was p%s t%s)" % (
+                                                                tries,
+                                                                newpan,newtilt,
+                                                                oldpan,oldtilt))
+
+                                _col,_row,_lum = self._detect_laser_camera_2d_point(self.visible_thresh)
+                                if _col is None:
+                                    #we lost the pixel
                                     tries -= 1
                                     if self.debug_control:
-                                        rospy.loginfo("ROUGH LOST")
+                                        rospy.loginfo("CTRL:MPTC:MISS rough lost (thresh %f dmax %f)" % (
+                                                                self.visible_thresh,_lum))
+
                                 else:
+                                    #we found the pixel
+                                    col,row = _col, _row
+                                    foundpan,foundtilt = pan,tilt
                                     fine_dist = numpy.linalg.norm(expected - np.array((col,row)))
                                     if self.debug_control:
-                                        rospy.loginfo("FINE n%d %r %r" % (tries,fine_dist,expected - np.array((col,row))))
+                                        rospy.loginfo("CTRL:MPTC:DETE fine dist=%f (%r)" % (
+                                                                fine_dist,
+                                                                expected - np.array((col,row))))
+
+                                    #already close enough
                                     if fine_dist < 3:
-                                        tries = 0
-                                        found = True
+                                        tries = 0       #tries = 0 breaks from inner loop
+                                        found = True    #break from outer loop
+                                        if self.debug_control:
+                                            rospy.loginfo("CTRL:MPTC:FIN rough dist=%r" % fine_dist)
+
+                                    #control to get it closer
                                     else:
                                         tries -= 1
+                                        diffcol,diffrow = expected - np.array((col,row))
+                                        oldpan,oldtilt = pan,tilt
+                                        newpan  = pan  + (np.sign(diffcol) * self._vdispinfo["p_laser_col"])
+                                        newtilt = tilt + (np.sign(diffrow) * self._vdispinfo["p_laser_row"])
+
                                         
                             if not found and (fine_dist < 80):
-                                if self.debug_control:
-                                    rospy.loginfo("AVERAGE DIST %s" % fine_dist)
                                 found = True
-                                        
-                            break
+                                if self.debug_control:
+                                    rospy.loginfo("CTRL:MPTC:FIN rough dist=%r" % fine_dist)
+
+
+                            #FIXME: there was a break here, I think that is superceded by using 
+                            #foundpan and foundtilt
                         else:
                             rospy.loginfo("2D pixel too far from start location (dist:%.1f)" % (expdist))
 
                 if found:
                     rospy.loginfo("found starting pixel: col:%s row:%s pan:%s tilt:%s (dist:%.1f)" % (
-                                    colmid,rowmid,pan,tilt,fine_dist))
-                    self._vdispinfo["panmid"] = pan
-                    self._vdispinfo["tiltmid"] = tilt
+                                    colmid,rowmid,foundpan,foundtilt,fine_dist))
+                    self._vdispinfo["panmid"] = foundpan
+                    self._vdispinfo["tiltmid"] = foundtilt
 
                     self._vdispinfo["colmid"] = int(colmid)
                     self._vdispinfo["rowmid"] = int(rowmid)
@@ -957,7 +1021,7 @@ class Calib:
                     continue
                 
                 col,row,lum = self._detect_laser_camera_2d_point(self.laser_thresh)
-                if col != None:
+                if col is not None:
                     self.laser_proxy_power(False)
                     
                     #generate N points about the start - and include the
@@ -1011,7 +1075,7 @@ class Calib:
                     rospy.loginfo("no 3d point (visible in %d cams, reproj error: %f)" % (nvisible,reproj))
                     continue
 
-                if col != None:
+                if col is not None:
                     self._vdispinfo["targetcol"] = col
                     self._vdispinfo["targetrow"] = row
                     self._vdispinfo["currxyz"] = xyz
@@ -1020,7 +1084,7 @@ class Calib:
                     #view of the ptc camera
                     self._vdispinfo["projcol"] = self._vdispinfo["colmid"]
                     self._vdispinfo["projrow"] = self._vdispinfo["rowmid"]
-                    self._vdispinfo["currattempt"] = 30
+                    self._vdispinfo["currattempt"] = 40
                     self.laser_proxy_power(False)
                     self.change_mode(CALIB_MODE_DISPLAY_SERVER_PROJECTOR)
 
@@ -1039,17 +1103,27 @@ class Calib:
                         row=self._vdispinfo["projrow"],
                         col=self._vdispinfo["projcol"])
 
+                if self.debug_control:
+                    rospy.loginfo("CTRL:MPRJ:SHOW n%d pr:%s pc:%s" % (
+                                        self._vdispinfo["currattempt"],
+                                        self._vdispinfo["projrow"],
+                                        self._vdispinfo["projcol"]))
+
                 col,row,lum = self._detect_laser_camera_2d_point(
                                     self.visible_thresh,
                                     msgprefix="attempt %d " % self._vdispinfo["currattempt"])
 
-                #FIXME: We get stuck looping here still
-
                 #missed the projector pixel. try again (we are safe from looping
                 #because of the currattempt test)
-                if col == None:
+                if col is None:
+                    if self.debug_control:
+                        rospy.loginfo("CTRL:MPRJ:MISS no detect (thresh %f dmax %f)" % (
+                                                self.visible_thresh, lum))
                     continue
                 else:
+                    if self.debug_control:
+                        rospy.loginfo("CTRL:MPRJ:DETE cr:%s cc:%s" %(row,col))
+
                     targetcol = self._vdispinfo["targetcol"]
                     targetrow = self._vdispinfo["targetrow"]
                     projcol = self._vdispinfo["projcol"]
@@ -1091,6 +1165,11 @@ class Calib:
                     self._vdispinfo["projrow"] = np.clip(projrow,0,self._vdispinfo["height"]-1)
 
                     if colfound and rowfound:
+                        if self.debug_control:
+                            rospy.loginfo("CTRL:MPRJ:FIN r:%s c:%s" %(
+                                                self._vdispinfo["projrow"],
+                                                self._vdispinfo["projcol"]))
+
                         if ds in self.show_display_servers or show_laser_scatter:
                             self._show_correspondence(
                                     ds=ds,
@@ -1098,14 +1177,6 @@ class Calib:
                                     row=self._vdispinfo["projrow"],
                                     pan=self._vdispinfo["currpan"],
                                     tilt=self._vdispinfo["currtilt"])
-#                            if ds in self.show_display_servers:
-#                                cv2.imshow(
-#                                        self.show_display_servers[ds]["handle"],
-#                                        self.show_display_servers[ds]["visualizeimg"])
-#                            if show_laser_scatter:
-#                                cv2.imshow(
-#                                        laser_handle,
-#                                        self._laser_handles[laser_handle])
 
                         rospy.loginfo("FOUND CORRESPONDENCE: %s:%s@(%s,%s) -> %r" % (
                                 ds,self._vdispinfo["id"],

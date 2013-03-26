@@ -23,7 +23,7 @@ std::string name() const {
     return "StimulusStandby";
 }
 
-virtual void post_init(std::string config_data_dir) {
+virtual void post_init(bool slave) {
     std::string fname = get_plugin_data_path(std::string("/Pond/posz.png"));
     osg::Image* image = osgDB::readImageFile(fname);
     osg::Texture2D* texture = new osg::Texture2D(image);

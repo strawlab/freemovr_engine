@@ -376,17 +376,11 @@ MyNode::MyNode(int argc, char**argv) : _tf_mode("upload")
 		ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
 		//forcedWireFrameModeOn( geode );
 		root->addChild(geode);
-		if (texture_filename==std::string("")) {
-			KeyPointMap kpm = geometry_parameters->get_key_points();
-			for (KeyPointMap::const_iterator ki=kpm.begin(); ki!=kpm.end(); ++ki) {
-				std::cout << "point " << ki->first << " coords: " << ki->second << std::endl;
-				root->addChild( show_point( ki->second, ki->first ) );
-			}
-		} else {
-            osg::Image* image = osgDB::readImageFile(texture_filename);
-            osg::Texture2D* texture = new osg::Texture2D(image);
-			ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-        }
+		assert(texture_filename!=std::string(""));
+        osg::Image* image = osgDB::readImageFile(texture_filename);
+        assert(image!=NULL);
+        osg::Texture2D* texture = new osg::Texture2D(image);
+        ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
 	}
 
     _manipulator = new osgGA::TrackballManipulator();

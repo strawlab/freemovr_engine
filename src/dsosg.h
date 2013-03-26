@@ -43,7 +43,7 @@ namespace dsosg{
 	class DSOSG {
 	public:
 		DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
-			  bool show_geom_coords=false, bool tethered_mode=true);
+			  bool show_geom_coords=false, bool tethered_mode=true, bool slave=false);
 
 		std::vector<std::string> get_stimulus_plugin_names();
 		std::string get_current_stimulus_plugin_name() { return std::string(_current_stimulus->name()); }
@@ -67,6 +67,7 @@ namespace dsosg{
 		void setCursorVisible(bool visible);
 		void setWindowName(std::string name);
 		void setGamma(float gamma);
+		void setRedMax(bool red_max);
 
 		void setCaptureFilename(std::string name);
 

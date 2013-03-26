@@ -101,6 +101,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int two_pass,
               int show_geom_coords,
               int tethered_mode,
+              int slave
               ) nogil except +
         void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
         void update( double, Vec3, Quat )
@@ -121,6 +122,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         setCursorVisible(int visible) nogil except +
         void setCaptureFilename(std_string name) nogil except +
         void setGamma(float gamma) nogil except +
+        void setRedMax(int red_max) nogil except +
 
         TrackballManipulatorState getTrackballManipulatorState() nogil except +
         void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
@@ -235,6 +237,7 @@ cdef class MyNode:
     cdef int _throttle
     cdef object _timer
     cdef object _gamma
+    cdef object _red_max
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -258,6 +261,8 @@ cdef class MyNode:
         parser.add_argument('--pbuffer', default=False, action='store_true')
         parser.add_argument('--two_pass', default=False, action='store_true')
         parser.add_argument('--throttle', default=False, action='store_true')
+        parser.add_argument('--slave', default=False, action='store_true',
+            help='In a multiprocess VR setup, this is a slave')
         parser.add_argument('--show_geom_coords', default=False, action='store_true')
         parser.add_argument('--config', type=str,
             help='JSON configuration file describing the setup. '\
@@ -270,9 +275,12 @@ cdef class MyNode:
         argv = rospy.myargv()
         args = parser.parse_args(argv[1:])
 
-        self._throttle = args.throttle
-
         rospy.init_node("display_server")
+
+        rospy.loginfo("slave instance: %s" % args.slave)
+
+        self._throttle = args.throttle
+        rospy.loginfo("throttle framerate: %s" % self._throttle)
 
         config_dict = rospy.get_param('~',{})
         rospy.loginfo("starting display_server")
@@ -307,30 +315,40 @@ cdef class MyNode:
         tethered_mode = config_dict.get('tethered_mode',True)
         rospy.loginfo("tethered_mode: %s" % tethered_mode)
 
-        self._gamma = config_dict.get('gamma', 0.0)
+        self._gamma = config_dict.get('gamma', 1.0)
         rospy.loginfo("gamma correction: %s" % self._gamma)
+
+        self._red_max = config_dict.get('red_max', False)
+        rospy.loginfo("red max: %s" % self._red_max)
 
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
+        rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
 
-        if args.stimulus is None:
-            #if the user did not specify a mode on the command line then
-            #wait for 2 seconds in case an existing stimulus mode is already latched
-            #(also gives a chance to get the initial pose)
-            t0 = t1 = rospy.get_time()
-            while (t1 - t0) < 2.0: #seconds
-                rospy.sleep(0.1)
-                t1 = rospy.get_time()
-                with self._mode_lock:
-                    if self._mode_change is not None:
-                        rospy.loginfo('got latched simulus mode %s' % self._mode_change)
-                        break
-
+        #wait for 2 seconds in case an existing stimulus mode is already latched
+        #(also gives a chance to get the initial pose)
+        #
+        #but, if the user specified a mode on the command line, give up on the
+        #latched stimulus
+        t0 = t1 = rospy.get_time()
+        while (t1 - t0) < 2.0: #seconds
+            rospy.sleep(0.1)
+            t1 = rospy.get_time()
+            with self._mode_lock:
+                if self._mode_change is not None:
+                    rospy.loginfo('got latched simulus mode %s' % self._mode_change)
+                    break
         with self._mode_lock:
-            if self._mode_change is None:
+            if args.stimulus is not None:
+                self._mode_change = args.stimulus
+            elif self._mode_change is None:
                 self._mode_change = 'Stimulus3DDemo'
+
+                self._mode_change = 'Stimulus3DDemo'
+
+        rospy.loginfo('selecting initial simulus mode %s' % self._mode_change)
 
         flyvr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
         self.dsosg = new DSOSG(std_string(flyvr_basepath),
@@ -340,6 +358,7 @@ cdef class MyNode:
                                args.two_pass,
                                args.show_geom_coords,
                                tethered_mode,
+                               args.slave
                                )
         #these subscribers access self.dsosg
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_callback)
@@ -465,6 +484,9 @@ cdef class MyNode:
     def gamma_callback(self, msg):
         self._gamma = msg.data
 
+    def red_max_callback(self, msg):
+        self._red_max = msg.data
+
     def capture_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
@@ -563,6 +585,10 @@ cdef class MyNode:
             if self._gamma is not None:
                 self.dsosg.setGamma(self._gamma)
                 self._gamma = None
+
+            if self._red_max is not None:
+                self.dsosg.setRedMax(self._red_max)
+                self._red_max = None
 
             with nogil:
                 self.dsosg.frame()

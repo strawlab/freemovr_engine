@@ -1,7 +1,7 @@
 /* -*- Mode: C -*- */
 #version 140
-uniform sampler2DRect liveCamera;
-uniform sampler2DRect p2c;
+uniform sampler2D liveCamera;
+uniform sampler2D p2c;
 in vec2 ProjectorCoord;
 out vec4 MyFragColor;
 

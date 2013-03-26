@@ -609,7 +609,7 @@ class UI:
             tcs[mask] = this_tcs[mask] # copy the important parts to the full display image
         r=tcs[:,:,0]
         g=tcs[:,:,1]
-        b=np.zeros_like(tcs[:,:,1])
+        b=np.ones_like(tcs[:,:,1])
         save_exr( fname, r=r, g=g, b=b)
 
     def on_save_calibration_exr(self,*args):

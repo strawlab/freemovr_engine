@@ -337,7 +337,7 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 // constructor
 DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
-             bool tethered_mode) :
+             bool tethered_mode, bool slave) :
     _current_stimulus(NULL), _mode(mode),
     _flyvr_basepath(flyvr_basepath),
     _config_file_path(config_fname),
@@ -453,7 +453,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 				_stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
 
                 try {
-                    _stimulus_plugins[ plugin_name ]->post_init();
+                    _stimulus_plugins[ plugin_name ]->post_init(slave);
                 } catch (...) {
                     std::cerr << "ERROR while calling post_init() on plugin: " << plugin_name << std::endl;
                     throw;
@@ -587,8 +587,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 root->addChild( cam1_params->make_rendering(1) );
                 osg::Group* g = make_textured_quad(mytex,
                                                    -1.0,
-                                                   cam1_params->width(),
-                                                   cam1_params->height(),
+                                                   1.0, 1.0,
                                                    0, 0, 0.3, 0.3);
                 debug_hud_cam->addChild(g);
             }
@@ -617,7 +616,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 if (show_hud) {
                     osg::Group* g = make_textured_quad(ci2di->get_output_texture(),
                                                        -1.0,
-                                                       ci2di->get_display_width(), ci2di->get_display_height(),
+                                                       1.0, 1.0,
                                                        l,b,w,h);
                     debug_hud_cam->addChild(g);
                 }
@@ -650,7 +649,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 if (show_hud) {
                     osg::Group* g = make_textured_quad(_g2di->get_output_texture(),
                                                        -1.0,
-                                                       _g2di->get_display_width(), _g2di->get_display_height(),
+                                                       1.0, 1.0,
                                                        0.0,0.0,w,h);
                     debug_hud_cam->addChild(g);
                 }
@@ -1013,7 +1012,12 @@ TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
 }
 
 void DSOSG::setTrackballManipulatorState(TrackballManipulatorState s) {
-    flyvr_assert(_cameraManipulator.valid());
+    if (!_cameraManipulator.valid()) {
+        // We could be rendering only the cubemap,
+        // so we might not have camera manipulator.
+		std::cerr << "ignoring request to set camera manipulator state." << std::endl;
+        return;
+    }
     _cameraManipulator->setRotation(s.rotation);
     _cameraManipulator->setCenter(s.center);
     _cameraManipulator->setDistance(s.distance);
@@ -1022,6 +1026,11 @@ void DSOSG::setTrackballManipulatorState(TrackballManipulatorState s) {
 void DSOSG::setGamma(float gamma) {
     if (_g2di)
         _g2di->set_gamma(gamma);
+}
+
+void DSOSG::setRedMax(bool red_max) {
+    if (_g2di)
+        _g2di->set_red_max(red_max);
 }
 
 }
