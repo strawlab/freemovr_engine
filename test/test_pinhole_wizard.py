@@ -9,7 +9,6 @@ import tempfile
 import roslib; roslib.load_manifest('flyvr')
 import rospkg
 import flyvr.calib.pinhole_wizard as pw
-import simple_geom
 
 rospack = rospkg.RosPack()
 pkg_dir = rospack.get_path('flyvr')
