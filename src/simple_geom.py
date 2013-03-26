@@ -28,7 +28,7 @@ def range_0_2pi(angle):
     pi2 = 2*np.pi
     return np.fmod((np.fmod(angle,pi2) + pi2),pi2)
 
-class ModelBase:
+class ModelBase(object):
     def get_first_surface(self, a, b):
         """return point on surface closest to point a in direction of point b.
 
@@ -64,6 +64,7 @@ class Cylinder(ModelBase):
         self._height = self.axis.z - self.base.z
         self._base = np.expand_dims(np.array( (self.base.x, self.base.y, self.base.z) ),1)
         self.center_arr = self._base[:,0] + np.array((0,0,self._height*0.5))
+        super(Cylinder,self).__init__()
 
     def __repr__(self):
         return 'Cylinder( base=%r, axis=%r, radius=%r )'%(self._base[:,0].tolist(), self.axis, self.radius )
@@ -194,6 +195,7 @@ class Sphere(ModelBase):
         self._radius = radius
         self._center = np.expand_dims(np.array( (self.center.x, self.center.y, self.center.z) ),1)
         self.center_arr = self._center[:,0]
+        super(Sphere,self).__init__()
 
     def __repr__(self):
         return 'Sphere( center=%r, radius=%r )'%(self._center[:,0].tolist(), self.radius )
