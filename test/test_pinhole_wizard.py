@@ -8,7 +8,7 @@ import tempfile
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import rospkg
-import flyvr.calib.pinhole_wizard as pw
+import flyvr.calib.pinhole.pinhole_wizard as pw
 
 rospack = rospkg.RosPack()
 pkg_dir = rospack.get_path('flyvr')
