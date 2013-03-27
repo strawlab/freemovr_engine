@@ -45,25 +45,6 @@ SET(DS_SOURCES
   src/CameraImageToDisplayImagePass.cpp
   src/GeometryTextureToDisplayImagePass.cpp)
 
-set(CUBMAP_TO_GEOMETRY_PART_SOURCES
-  src/project_cubemap_onto_geometry.cpp
-  src/WindowCaptureCallback.cpp
-  src/load_cubemap.cpp
-  src/util.cpp
-  src/ResourceLoader.cpp
-  src/ProjectCubemapToGeometryPass.cpp
-  src/DisplaySurfaceGeometry.cpp
-)
-
-SET(P2G_SOURCES
-  src/create_p2g.cpp
-  src/DisplaySurfaceGeometry.cpp
-  src/util.cpp
-  src/exrutil.cpp
-  src/camera_model.cpp
-  src/TexturedGeometryToCameraImagePass.cpp
-  src/CameraImageToDisplayImagePass.cpp)
-
 IF(OSG_COMPUTE_FOUND)
   add_definitions( -DFLYVR_USE_CUDA )
 ENDIF(OSG_COMPUTE_FOUND)
@@ -170,12 +151,5 @@ ELSE(BUILD_WITH_ROS)
 ENDIF(BUILD_WITH_ROS)
 
 # build non-ROS programs  ----------
-ADD_EXECUTABLE(project_cubemap_onto_geometry ${CUBMAP_TO_GEOMETRY_PART_SOURCES})
-TARGET_LINK_LIBRARIES(project_cubemap_onto_geometry ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES})
-
 ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
 
-# build other calibration programs  ----------
-ADD_EXECUTABLE(create_p2g ${P2G_SOURCES})
-INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
-TARGET_LINK_LIBRARIES(create_p2g ${OSG_LIBS} ${OPENEXR_LIBRARIES} ${JANSSON_LIBRARIES})
