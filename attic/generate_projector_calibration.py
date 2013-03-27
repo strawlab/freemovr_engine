@@ -6,7 +6,7 @@ import dynamic_reconfigure.client
 
 import flyvr.srv
 import flyvr.msg
-import display_client
+import flyvr.display_client as display_client
 
 import json
 import argparse

@@ -10,7 +10,7 @@ import numpy as np
 import scipy.misc
 
 import flyvr.srv
-import display_client
+import flyvr.display_client as display_client
 
 def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     rospy.init_node('show_image')

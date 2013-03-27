@@ -17,7 +17,7 @@ roslib.load_manifest('camera_trigger')
 import rospy
 
 # local flyvr imports
-import display_client
+import flyvr.display_client as display_client
 import std_srvs.srv
 import camera_trigger.srv
 

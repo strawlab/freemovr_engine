@@ -34,7 +34,7 @@ import rospy
 import rosbag
 
 # local flyvr imports
-import display_client
+import flyvr.display_client as display_client
 import camera_trigger.srv
 import std_srvs.srv
 import flycave.srv

@@ -26,7 +26,7 @@ import flydra.reconstruct
 import flydra.align
 
 import exr
-import display_client
+import flyvr.display_client as display_client
 
 X_INDEX = 0
 Y_INDEX = 1
