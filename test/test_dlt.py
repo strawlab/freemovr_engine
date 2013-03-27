@@ -3,7 +3,7 @@ import numpy as np
 
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
-import dlt
+import flyvr.dlt as dlt
 import camera_model
 
 # some sample data -----------------------
