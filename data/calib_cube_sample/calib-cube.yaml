@@ -1,0 +1,32 @@
+display_servers:
+  display_server0:
+    height: 1080
+    virtualDisplays:
+    - {id: fullscreen}
+    width: 1920
+  display_server1:
+    height: 1080
+    virtualDisplays:
+    - {id: fullscreen}
+    width: 1920
+  display_server2:
+    height: 1080
+    virtualDisplays:
+    - {id: fullscreen}
+    width: 1920
+  display_server3:
+    height: 1080
+    virtualDisplays:
+    - {id: fullscreen}
+    width: 1920
+  display_server4:
+    height: 1080
+    virtualDisplays:
+    - {id: fullscreen}
+    width: 1920
+tracking_cameras: [/Basler_21283677, /Basler_21275576, /Basler_21275577, /Basler_21283674]
+tracking_calibration: ~/FLYDRA/20130326_140733.mainbrain.h5.recal/
+mask_dir: package://flycave/conf/camera-masks/
+projector_point_size_px: 20
+projector_sleep: 0.2
+bg_thresh_visible: 35
