@@ -195,7 +195,7 @@ class UI:
 
         self._real_dsc = None
 
-        ui_file_contents = pkgutil.get_data('flyvr.calib','pinhole-wizard.ui')
+        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
 
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )
