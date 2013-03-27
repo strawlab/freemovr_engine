@@ -52,6 +52,7 @@
 #include "GeometryTextureToDisplayImagePass.h"
 
 #include "flyvr/flyvr_assert.h"
+#include "flyvr/ResourceLoader.hpp"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -114,7 +115,7 @@ public:
         CameraList                  _Cameras;
 };
 
-osg::ref_ptr<osg::Group>add_bg_quad(std::string shader_dir, std::string fname) {
+osg::ref_ptr<osg::Group>add_bg_quad(Poco::Path shader_path, std::string fname) {
     osg::Image* image = osgDB::readImageFile(fname);
 	osg::Texture2D* texture = new osg::Texture2D(image);
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
@@ -154,8 +155,8 @@ osg::ref_ptr<osg::Group>add_bg_quad(std::string shader_dir, std::string fname) {
 	BackgroundImageProgram->addShader( BackgroundImageFragObj );
 	BackgroundImageProgram->addShader( BackgroundImageVertObj );
 
-	LoadShaderSource( BackgroundImageVertObj, join_path(shader_dir,"background_image.vert" ));
-	LoadShaderSource( BackgroundImageFragObj, join_path(shader_dir, "background_image.frag" ));
+	BackgroundImageVertObj->loadShaderSourceFromFile( shader_path.absolute().append("background_image.vert").toString());
+	BackgroundImageFragObj->loadShaderSourceFromFile( shader_path.absolute().append("background_image.frag").toString());
 
 	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform( osg::Uniform::SAMPLER_2D, "BackgroundImage" );
 
@@ -211,7 +212,7 @@ private:
 
 class CameraCube {
 public:
-	CameraCube(osg::Node* input_node, osg::Node* observer_node, std::string shader_dir, unsigned int tex_width=512, unsigned int tex_height=512) {
+	CameraCube(osg::Node* input_node, osg::Node* observer_node, Poco::Path shader_path, unsigned int tex_width=512, unsigned int tex_height=512) {
     _texture = new osg::TextureCubeMap;
     _top = new osg::Group; _top->addDescription("CameraCube top node");
 
@@ -287,7 +288,7 @@ void ObserverPositionCallback::setObserverPosition( osg::Vec3 p ) {
 	_p = p;
 }
 
-osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
+osg::Group* ShowCubemap(osg::TextureCubeMap* texture, Poco::Path shader_path){
 	osg::Group* group = new osg::Group;
 
 	osg::Geode* geode = new osg::Geode();
@@ -320,8 +321,8 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 	ShowCubemapProgram->addShader( ShowCubemapFragObj );
 	ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-	LoadShaderSource( ShowCubemapVertObj, join_path(shader_dir,"show_cubemap.vert" ));
-	LoadShaderSource( ShowCubemapFragObj, join_path(shader_dir, "show_cubemap.frag" ));
+	ShowCubemapVertObj->loadShaderSourceFromFile( shader_path.absolute().append("show_cubemap.vert").toString());
+	ShowCubemapFragObj->loadShaderSourceFromFile( shader_path.absolute().append("show_cubemap.frag").toString());
 
 	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "observerViewCube" );
 
@@ -352,10 +353,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     // ensure we interpret this as a file
     _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
-    Poco::Path shader_path = _flyvr_basepath;
+    Poco::Path shader_path(_flyvr_basepath);
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
-
-	std::string shader_dir = shader_path.toString();
 
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
@@ -518,7 +517,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 		}
     }
 
-	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_dir );
+	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path);
 
 	if ( !(_mode==std::string("virtual_world"))) {
 		root->addChild(_cubemap_maker->get_node());
@@ -526,7 +525,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
     if (_mode==std::string("cubemap")) {
 		// create On Screen Display for debugging
-		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_dir);
+		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_path);
 		root->addChild(debug_osd.get());
     }
 
@@ -573,7 +572,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             osg::ref_ptr<osg::Group> g;
             if (show_geom_coords) {
                 throw std::runtime_error("have not implemented this again");
-                //g = geometry_parameters->make_texcoord_group(shader_dir);
+                //g = geometry_parameters->make_texcoord_group(shader_path);
             } else {
                 g = pctcp->get_textured_geometry();
             }
@@ -598,7 +597,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                        json_object_get(json_config, "p2c"))));
             std::string p2c_filename = p2c_path.toString();
             std::cerr << "p2c file: " << p2c_filename << "\n";
-            CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_dir,
+            CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_path,
                                                                                      mytex,
                                                                                      p2c_filename);
             root->addChild(ci2di->get_top().get());
@@ -630,7 +629,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                     Poco::Path(json_string_value(p2g_json)));
             std::string p2g_filename = p2g_path.toString();
             std::cerr << "p2g file: " << p2g_filename << "\n";
-            _g2di = new GeometryTextureToDisplayImagePass(shader_dir,
+            _g2di = new GeometryTextureToDisplayImagePass(shader_path,
                                                           pctcp->get_output_texture(),
                                                           p2g_filename,
                                                           show_geom_coords);
