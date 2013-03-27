@@ -2,7 +2,7 @@ import numpy as np
 
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
-import simple_geom
+import flyvr.simple_geom as simple_geom
 
 def nan_shape_allclose( a,b, **kwargs):
     if a.shape != b.shape:

@@ -10,7 +10,7 @@ import roslib;
 roslib.load_manifest('flyvr')
 import rospy
 
-import simple_geom
+import flyvr.simple_geom as simple_geom
 
 from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.visualization import create_pcd_file_from_points, \

@@ -12,7 +12,7 @@ roslib.load_manifest('motmot_ros_utils')
 import rosbag
 import rospy
 
-import simple_geom
+import flyvr.simple_geom as simple_geom
 import flyvr.display_client as display_client
 import calib.imgproc
 from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher

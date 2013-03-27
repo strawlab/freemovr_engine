@@ -11,7 +11,7 @@ roslib.load_manifest('flyvr')
 from calib.reconstruct import PointCloudTransformer
 from calib.io import MultiCalSelfCam, save_ascii_matrix
 import tf
-from simple_geom import Cylinder
+from flyvr.simple_geom import Cylinder
 
 class Autofitter:
     def __init__(self, filename, orig_flydra_R, out_fname=None):

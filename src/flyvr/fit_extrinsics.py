@@ -3,7 +3,7 @@ import roslib; roslib.load_manifest('flyvr')
 
 import scipy.optimize
 import camera_model
-import simple_geom
+import flyvr.simple_geom as simple_geom
 import numpy as np
 import os
 import cv
