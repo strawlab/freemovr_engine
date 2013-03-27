@@ -18,7 +18,7 @@ import roslib; roslib.load_manifest('flyvr')
 from tf.transformations import quaternion_from_matrix, \
     quaternion_matrix, rotation_from_matrix, rotation_matrix, \
     quaternion_about_axis
-from cvnumpy import  numpy2opencv_image, opencv_image2numpy, \
+from flyvr.cvnumpy import  numpy2opencv_image, opencv_image2numpy, \
     rodrigues2matrix, matrix2rodrigues
 
 def matrix2quaternion( R ):
