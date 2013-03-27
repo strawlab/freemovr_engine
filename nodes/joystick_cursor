@@ -9,7 +9,7 @@ import flyvr.msg
 from geometry_msgs.msg import Pose2D
 from sensor_msgs.msg import Joy
 
-import display_client
+import flyvr.display_client as display_client
 
 import os
 
