@@ -22,18 +22,18 @@ from sensor_msgs.msg import CameraInfo
 import tf.broadcaster
 from visualization_msgs.msg import MarkerArray
 
-import simple_geom
+import flyvr.simple_geom as simple_geom
 import camera_model
-import dlt
-import display_client
-import fill_polygon
-from exr import save_exr
+import flyvr.dlt as dlt
+import flyvr.display_client as display_client
+import flyvr.fill_polygon as fill_polygon
+from flyvr.exr import save_exr
 
 import rosgobject.core
 import rosgobject.wrappers
 import cairo
 from gi.repository import Gtk, GObject
-from fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
+from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -195,7 +195,7 @@ class UI:
 
         self._real_dsc = None
 
-        ui_file_contents = pkgutil.get_data('flyvr.calib','pinhole-wizard.ui')
+        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
 
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )

@@ -13,7 +13,7 @@ from flyvr.msg import ROSPath
 import flyvr.msg
 from geometry_msgs.msg import Quaternion, Point
 
-import rosmsg2json
+import flyvr.rosmsg2json as rosmsg2json
 
 import sys
 import time
