@@ -1,6 +1,3 @@
-import roslib
-roslib.load_manifest('flyvr')
-
 import rospy
 import std_msgs.msg
 import flyvr.srv
@@ -17,8 +14,6 @@ import numpy as np
 import scipy.misc
 
 import fill_polygon
-
-_pkg_dir = roslib.packages.get_pkg_dir('flyvr')
 
 class DisplayServerProxy(object):
 
@@ -65,16 +60,6 @@ class DisplayServerProxy(object):
     def set_stimulus_mode(mode):
         publisher = rospy.Publisher('/stimulus_mode', std_msgs.msg.String, latch=True)
         publisher.publish(mode)
-        return publisher
-
-    @staticmethod
-    def hide_sprite():
-        publisher = rospy.Publisher('sprite_image', flyvr.msg.FlyVRCompressedImage, latch=True)
-        fname = os.path.join(_pkg_dir,"data","cursorblank.png")
-        image = flyvr.msg.FlyVRCompressedImage()
-        image.format = os.path.splitext(fname)[-1]
-        image.data = open(fname).read()
-        publisher.publish(image)
         return publisher
 
     def _spin_wait_for_mode(self,mode):
