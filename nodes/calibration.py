@@ -34,7 +34,7 @@ import rospy
 import rosbag
 
 # local flyvr imports
-import display_client
+import flyvr.display_client as display_client
 import camera_trigger.srv
 import std_srvs.srv
 import flycave.srv
@@ -263,8 +263,9 @@ class Calib:
     def __init__(self, config, show_cameras, show_display_servers, show_type, outdir, continue_calibration, calibration_except, enable_mouse_click, debug):
         tracking_cameras = config["tracking_cameras"]
         laser_camera = config["laser_camera"]
-        trigger = config["trigger"]
         laser = config["laser"]
+
+        trigger = '/camera_trigger'
 
         if 0:
             ####SAVE EVERY IMAGE FOR NICE MOVIE
@@ -1274,7 +1275,7 @@ if __name__ == '__main__':
     conffile = decode_url(args.calib_config)
     with open(conffile, 'r') as f:
         config = yaml.load(f)
-        for k in ("tracking_cameras", "display_servers", "trigger", "mask_dir"):
+        for k in ("tracking_cameras", "display_servers", "mask_dir"):
             if not config.has_key(k):
                 parser.error("malformed calibration config, missing %s" % k)
 

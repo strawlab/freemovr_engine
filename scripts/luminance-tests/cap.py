@@ -14,7 +14,7 @@ roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('rosbag')
 import rospy
 
-import display_client
+import flyvr.display_client as display_client
 import calib.acquire
 
 if __name__ == "__main__":

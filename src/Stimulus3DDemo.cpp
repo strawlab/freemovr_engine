@@ -18,8 +18,6 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
-#include "util.h"
-
 class Stimulus3DDemo: public StimulusInterface
 {
 public:

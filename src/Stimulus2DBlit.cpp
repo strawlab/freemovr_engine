@@ -100,7 +100,7 @@ virtual void post_init(bool slave) {
     }
 
     {
-        std::string fname = get_plugin_data_path(std::string("cursor.png"));
+        std::string fname = get_plugin_data_path(std::string("cursorblank.png"));
         osg::ref_ptr<osg::Image> image = osgDB::readImageFile(fname);
         _load_sprite_image(image);
     }

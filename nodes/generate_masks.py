@@ -17,7 +17,7 @@ roslib.load_manifest('camera_trigger')
 import rospy
 
 # local flyvr imports
-import display_client
+import flyvr.display_client as display_client
 import std_srvs.srv
 import camera_trigger.srv
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     conffile = decode_url(args.calib_config)
     with open(conffile, 'r') as f:
         config = yaml.load(f)
-        for k in ("display_servers", "mask_dir", "tracking_cameras", "trigger"):
+        for k in ("display_servers", "mask_dir", "tracking_cameras"):
             if not config.has_key(k):
                 parser.error("malformed calibration config, missing %s" % k)
 
@@ -112,6 +112,6 @@ if __name__ == '__main__':
     c = GenMasks(display_servers=display_servers,
                  cams=all_cams,
                  mask_dir=mask_dir,
-                 trigger=config["trigger"])
+                 trigger="camera_trigger")
     c.run()
 

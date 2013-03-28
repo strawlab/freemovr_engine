@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate
 
-import simple_geom
+import flyvr.simple_geom as simple_geom
 
 class PointCloudTransformer(object):
     def __init__(self, scale=None, translate=None, rotate=None):

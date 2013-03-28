@@ -5,12 +5,15 @@ import argparse
 import roslib; roslib.load_manifest('flyvr')
 import rospy
 
+import flyvr.msg
 from geometry_msgs.msg import Pose2D
 from sensor_msgs.msg import Joy
 
-import display_client
+import flyvr.display_client as display_client
 
 import os
+
+_pkg_dir = roslib.packages.get_pkg_dir('flyvr')
 
 class App:
     def __init__(self,button=0):
@@ -22,6 +25,8 @@ class App:
 
         arr=self.display_server.new_image(self.display_server.IMAGE_COLOR_BLACK)
         self.display_server.show_pixels(arr)
+
+        self._show_cursor()
 
         self.pub = rospy.Publisher('sprite_pose', Pose2D)
         self.pubclick = rospy.Publisher('joy_click_pose', Pose2D)
@@ -38,6 +43,16 @@ class App:
 
         self._gain_k = rospy.get_param('~gain_k', 2.0)
         self._gain_p = rospy.get_param('~gain_p', 3.0)
+
+    def _show_cursor(self):
+        publisher = rospy.Publisher('sprite_image',
+                                    flyvr.msg.FlyVRCompressedImage,
+                                    latch=True)
+        fname = os.path.join(_pkg_dir,"data","cursor.png")
+        image = flyvr.msg.FlyVRCompressedImage()
+        image.format = os.path.splitext(fname)[-1]
+        image.data = open(fname).read()
+        publisher.publish(image)
 
     def _gain_func(self, x):
         return (self._gain_k * x)**self._gain_p
@@ -57,7 +72,7 @@ class App:
                 print '%.1f %.1f'%(self.x, self.y)
                 self.pubclick.publish(
                     Pose2D(float(self.x), float(self.y), 0.0))
-        
+
     def run(self):
         while not rospy.is_shutdown():
             self.x -= self._gain_func( self.cur_joy_x )

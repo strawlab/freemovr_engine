@@ -7,6 +7,6 @@
   </node>
 
   <!-- Set the camera position. -->
-  <node name="camera_position" pkg="rostopic" type="rostopic" args="pub --once /display_server_demo/trackball_manipulator_state  flyvr/TrackballManipulatorState '{rotation: {x: 0.149473585075, y: 0.36104283051, z: 0.854972787701, w: 0.341067814652}, center: {x: 0.0304595567286, y: -0.0418556034565, z: 0.116477496922}, distance: 1.5655520953}'" />
+  <node name="camera_position" pkg="rostopic" type="rostopic" args="pub --latch --once /display_server_demo/trackball_manipulator_state  flyvr/TrackballManipulatorState '{rotation: {x: 0.149473585075, y: 0.36104283051, z: 0.854972787701, w: 0.341067814652}, center: {x: 0.0304595567286, y: -0.0418556034565, z: 0.116477496922}, distance: 1.5655520953}'" />
 
 </launch>

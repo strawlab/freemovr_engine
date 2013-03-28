@@ -4,7 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import roslib
 roslib.load_manifest('flyvr')
-from simple_geom import Cylinder, Vec3
+from flyvr.simple_geom import Cylinder, Vec3
 
 def vec3(a,b,c):
     return dict(x=a, y=b, z=c)

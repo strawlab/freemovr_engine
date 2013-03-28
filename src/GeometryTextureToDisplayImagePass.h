@@ -8,9 +8,11 @@
 #include <osg/TextureRectangle>
 #include <osg/Texture2D>
 
+#include "Poco/Path.h"
+
 class GeometryTextureToDisplayImagePass {
 public:
-	GeometryTextureToDisplayImagePass(std::string shader_dir,
+	GeometryTextureToDisplayImagePass(Poco::Path shader_path,
 									  osg::ref_ptr<osg::Texture2D> input_texture,
 									  std::string p2g_filename,
 									  bool show_geom_coords=false,
