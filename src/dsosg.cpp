@@ -914,6 +914,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		throw std::invalid_argument("unknown mode");
 	}
 
+    _viewer->setLightingMode( osg::View::SKY_LIGHT );
+
     // If the window frame is on, show the mouse cursor.
     if (traits->windowDecoration) {
         setCursorVisible(true);
