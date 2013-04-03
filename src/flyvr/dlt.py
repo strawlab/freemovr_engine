@@ -201,7 +201,7 @@ def dlt(X3d, x2d, ransac=True):
     result['reprojection_error'] = err['all']
     return result
 
-def print_summary(results):
+def print_summary(results,n_pts=None):
     opts = np.get_printoptions()
     np.set_printoptions(precision=6, linewidth=150, suppress=True)
     try:
@@ -209,7 +209,7 @@ def print_summary(results):
             import camera_model
             camera = camera_model.load_camera_from_pmat( results['pmat'], name='tmp' )
 
-            testpts = results['X3d'][:20]
+            testpts = results['X3d'][:n_pts]
             test2d = camera.project_3d_to_pixel(testpts, distorted=True)
             for i in range(len(testpts)):
                 print '%s -> %s (expect %s, err %.1f)'%(testpts[i], test2d[i], results['x2d'][i], results['reprojection_error'][i])
