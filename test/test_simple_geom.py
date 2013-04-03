@@ -54,25 +54,26 @@ def check_worldcoord_roundtrip(klass,kwargs):
     assert nan_shape_allclose( tc1, tc2)
     assert nan_shape_allclose( wc1, wc2 )
 
-def disabled_tst_rect():
-    # not finished yet
+def test_rect():
     ll = {'x':0, 'y':0, 'z':0}
     lr = {'x':1, 'y':0, 'z':0}
     ul = {'x':0, 'y':1, 'z':0}
 
     rect = simple_geom.PlanarRectangle(lowerleft=ll, upperleft=ul, lowerright=lr)
 
+    zval = 20.0
     # several look-at locations
     b=np.array([(0,0,0),
                 (0,1,0),
-                (0,-1,0),
+                (0,-1,zval),
                 (0,0.5,0),
                 (0,0,1),
+                (0,0,2*zval),
+                (0,0,1.0001*zval),
                 ])
 
-    # the look-from location is essentially (0,0,+inf)
     a=np.zeros( b.shape )
-    a[:,2] = 1e10
+    a[:,2] = zval
 
     actual = rect.get_first_surface(a,b)
     expected = np.array([(0,0,0),
@@ -80,7 +81,10 @@ def disabled_tst_rect():
                          (np.nan,np.nan,np.nan),
                          (0,0.5,0),
                          (0,0,0),
+                         (np.nan,np.nan,np.nan),
+                         (np.nan,np.nan,np.nan),
                          ])
+
     assert nan_shape_allclose( actual, expected)
 
 def test_cyl():

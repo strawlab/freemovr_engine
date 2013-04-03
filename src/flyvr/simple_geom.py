@@ -337,8 +337,9 @@ class PlanarRectangle(ModelBase):
 
         self._dir_u = self._right_lower_corner - self._left_lower_corner
         self._dir_v = self._left_upper_corner - self._left_lower_corner
+        self._normal = np.cross( self._dir_u, self._dir_v )
         super(PlanarRectangle,self).__init__()
-        
+
     def __repr__(self):
         return 'PlanarRectangle( lowerleft=%r, upperleft=%r, lowerright=%r )'%(
             self._left_lower_corner[:,0].tolist(),
@@ -404,27 +405,28 @@ class PlanarRectangle(ModelBase):
         assert b.shape[1]==3
         assert b.shape==inshape
 
-        a = a.T
-        b = b.T
+        # See http://en.wikipedia.org/wiki/Line-plane_intersection
+        # especially the "Algebraic form" section.
 
-        # Move so that lowerleft is at (0,0).
-        ax = a[0] - self.left_lower_corner.x
-        ay = a[1] - self.left_lower_corner.y
-        az = a[2] - self.left_lower_corner.z
+        # Create variables according to wikipedia notation linked above
+        l = b-a
+        l0 = a
+        n = self._normal
+        p0 = np.array( [self.left_lower_corner.x,
+                        self.left_lower_corner.y,
+                        self.left_lower_corner.z],
+                       dtype=np.float)
 
-        bx = b[0] - self.left_lower_corner.x
-        by = b[1] - self.left_lower_corner.y
-        bz = b[2] - self.left_lower_corner.z
-
-        del a, b
-
-        # Now create vector between points a and b
-        sx = bx-ax
-        sy = by-ay
-        sz = bz-az
+        # Now, do the math...
 
         old_settings = np.seterr(invalid='ignore') # we expect some nans below
-        raise NotImplementedError('not finished yet')
+        d = np.dot((p0-l0),n)/np.dot(l,n)
+        d[np.isinf(d)] = np.nan # don't let infinity in
+        d[d<0] = np.nan # don't look backwards, either
+        d = d[:,np.newaxis]
+        pt = d*l+l0
+        np.seterr(**old_settings)
+        return pt
 
 def get_distance_between_point_and_ray( c, a, b ):
     """return distance between point c and ray from a in direction of point b.
@@ -500,6 +502,10 @@ class Geometry:
         elif geom_dict['model']=='sphere':
             self.model = Sphere(center=geom_dict['center'],
                                 radius=geom_dict['radius'])
+        elif geom_dict['model']=='planar_rectangle':
+            kwargs = geom_dict.copy()
+            del kwargs['model']
+            self.model = PlanarRectangle(**kwargs)
         else:
             raise ValueError("unknown model type: %s"%geom_dict['model'])
 
