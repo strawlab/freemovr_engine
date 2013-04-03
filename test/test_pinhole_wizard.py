@@ -73,4 +73,6 @@ def test_save_exr():
     method = pw.EXTRINSIC_CALIBRATION_METHODS[0]
 
     ui.calibrate_all_vdisps(method)
-    ui.save_calibration_exr('/tmp/pinhole.exr')
+    fname = '/tmp/pinhole.exr'
+    ui.save_calibration_exr(fname)
+    print 'saved',fname
