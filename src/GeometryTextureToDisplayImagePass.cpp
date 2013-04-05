@@ -14,7 +14,7 @@
 #define UNIT_P2G 1
 #define UNIT_OUT 2
 
-GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(std::string shader_dir,
+GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(Poco::Path shader_path,
 																	 osg::ref_ptr<osg::Texture2D> input_texture,
 																	 std::string p2g_filename,
 																	 bool show_geom_coords,
@@ -41,8 +41,8 @@ GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(std::string
 	_top = new osg::Group;
 	_top->addDescription("GeometryTextureToDisplayImagePass top node");
 	_top->addChild( _camera );
-	set_shader( join_path(shader_dir,"GeometryTextureToDisplayImagePass.vert"),
-				join_path(shader_dir,"GeometryTextureToDisplayImagePass.frag") );
+	set_shader( shader_path.absolute().append("GeometryTextureToDisplayImagePass.vert").toString(),
+				shader_path.absolute().append("GeometryTextureToDisplayImagePass.frag").toString() );
     set_gamma(display_gamma);
     set_red_max(red_max);
 }
@@ -61,8 +61,8 @@ osg::ref_ptr<osg::Group> GeometryTextureToDisplayImagePass::create_input_geometr
 		float height=1.0;
 		float zpos=0.0;
 
-		float max_tc_width=1.0; // _p2g_texture->getTextureWidth();
-		float max_tc_height=1.0; // _p2g_texture->getTextureHeight();
+		float max_tc_width=1.0;
+		float max_tc_height=1.0;
 
 		// make quad
 		osg::Vec3Array* vertices = new osg::Vec3Array;

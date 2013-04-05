@@ -8,8 +8,7 @@ import tempfile
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import rospkg
-import flyvr.calib.pinhole_wizard as pw
-import simple_geom
+import flyvr.calib.pinhole.pinhole_wizard as pw
 
 rospack = rospkg.RosPack()
 pkg_dir = rospack.get_path('flyvr')
@@ -74,4 +73,6 @@ def test_save_exr():
     method = pw.EXTRINSIC_CALIBRATION_METHODS[0]
 
     ui.calibrate_all_vdisps(method)
-    ui.save_calibration_exr('/tmp/pinhole.exr')
+    fname = '/tmp/pinhole.exr'
+    ui.save_calibration_exr(fname)
+    print 'saved',fname

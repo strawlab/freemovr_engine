@@ -5,7 +5,7 @@ import scipy.misc
 
 import roslib
 roslib.load_manifest('flyvr')
-from simple_geom import Cylinder, Vec3
+from flyvr.simple_geom import Cylinder, Vec3
 
 def make_xy_circle_at_z(z, r=0.5, n=1024):
     theta = np.linspace(0,2*np.pi,n+1)

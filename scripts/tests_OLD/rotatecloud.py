@@ -13,7 +13,7 @@ import numpy as np
 
 import calib.reconstruct
 import calib.visualization
-import simple_geom
+import flyvr.simple_geom as simple_geom
 
 import pcl
 

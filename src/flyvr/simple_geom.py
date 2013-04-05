@@ -28,7 +28,7 @@ def range_0_2pi(angle):
     pi2 = 2*np.pi
     return np.fmod((np.fmod(angle,pi2) + pi2),pi2)
 
-class ModelBase:
+class ModelBase(object):
     def get_first_surface(self, a, b):
         """return point on surface closest to point a in direction of point b.
 
@@ -64,6 +64,7 @@ class Cylinder(ModelBase):
         self._height = self.axis.z - self.base.z
         self._base = np.expand_dims(np.array( (self.base.x, self.base.y, self.base.z) ),1)
         self.center_arr = self._base[:,0] + np.array((0,0,self._height*0.5))
+        super(Cylinder,self).__init__()
 
     def __repr__(self):
         return 'Cylinder( base=%r, axis=%r, radius=%r )'%(self._base[:,0].tolist(), self.axis, self.radius )
@@ -194,6 +195,7 @@ class Sphere(ModelBase):
         self._radius = radius
         self._center = np.expand_dims(np.array( (self.center.x, self.center.y, self.center.z) ),1)
         self.center_arr = self._center[:,0]
+        super(Sphere,self).__init__()
 
     def __repr__(self):
         return 'Sphere( center=%r, radius=%r )'%(self._center[:,0].tolist(), self.radius )
@@ -313,6 +315,119 @@ class Sphere(ModelBase):
         assert result.shape==inshape
         return result
 
+class PlanarRectangle(ModelBase):
+    def __init__(self, lowerleft=None, upperleft=None, lowerright=None):
+        self.left_lower_corner = point_dict_to_vec(lowerleft)
+        self.left_upper_corner = point_dict_to_vec(upperleft)
+        self.right_lower_corner = point_dict_to_vec(lowerright)
+
+        # keep in sync with DisplaySurfaceGeometry.cpp
+        self._left_lower_corner = np.array( (self.left_lower_corner.x,
+                                             self.left_lower_corner.y,
+                                             self.left_lower_corner.z),
+                                            dtype=np.float )
+        self._left_upper_corner = np.array( (self.left_upper_corner.x,
+                                             self.left_upper_corner.y,
+                                             self.left_upper_corner.z),
+                                            dtype=np.float )
+        self._right_lower_corner = np.array( (self.right_lower_corner.x,
+                                              self.right_lower_corner.y,
+                                              self.right_lower_corner.z),
+                                             dtype=np.float )
+
+        self._dir_u = self._right_lower_corner - self._left_lower_corner
+        self._dir_v = self._left_upper_corner - self._left_lower_corner
+        self._normal = np.cross( self._dir_u, self._dir_v )
+        super(PlanarRectangle,self).__init__()
+
+    def __repr__(self):
+        return 'PlanarRectangle( lowerleft=%r, upperleft=%r, lowerright=%r )'%(
+            self._left_lower_corner[:,0].tolist(),
+            self._left_upper_corner[:,0].tolist(),
+            self._right_lower_corner[:,0].tolist(),
+            )
+
+    def to_geom_dict(self):
+        return dict(
+            lowerleft=self.left_lower_corner.to_dict(),
+            upperleft=self.left_upper_corner.to_dict(),
+            lowerright=self.right_lower_corner.to_dict(),
+            model="planar_rectangle")
+
+    def texcoord2worldcoord(self,tc):
+        # Parse inputs
+        tc = np.array(tc,copy=False)
+        assert tc.ndim==2
+        assert tc.shape[1]==2
+        tex_u,tex_v = tc.T
+
+        # keep in sync with DisplaySurfaceGeometry.cpp
+        self._dir_u[:,np.newaxis] * tex_u[np.newaxis]
+        self._dir_v[:,np.newaxis] * tex_v[np.newaxis]
+
+        result = self._left_lower_corner[:,np.newaxis] \
+            + self._dir_u[:,np.newaxis] * tex_u[np.newaxis] \
+            + self._dir_v[:,np.newaxis] * tex_v[np.newaxis]
+        return result.T
+
+    def worldcoord2texcoord(self,wc):
+        # Parse inputs
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        wc = wc.T
+
+        x,y,z = wc
+        x0 = x-self.left_lower_corner.x
+        y0 = y-self.left_lower_corner.y
+        z0 = z-self.left_lower_corner.z
+        wc = np.vstack((x0,y0,z0))
+        u = np.dot( self._dir_u, wc )
+        v = np.dot( self._dir_v, wc )
+        result = np.vstack((u,v))
+        return result.T
+
+    def get_first_surface(self,a,b):
+        """return point on surface closest to point a in direction of point b.
+
+        a is Nx3 array of points
+        b is Nx3 array of points
+
+        return Nx3 array of points
+        """
+        a = np.array(a,copy=False)
+        assert a.ndim==2
+        assert a.shape[1]==3
+        inshape = a.shape
+
+        b = np.array(b,copy=False)
+        assert b.ndim==2
+        assert b.shape[1]==3
+        assert b.shape==inshape
+
+        # See http://en.wikipedia.org/wiki/Line-plane_intersection
+        # especially the "Algebraic form" section.
+
+        # Create variables according to wikipedia notation linked above
+        l = b-a
+        l0 = a
+        n = self._normal
+        p0 = np.array( [self.left_lower_corner.x,
+                        self.left_lower_corner.y,
+                        self.left_lower_corner.z],
+                       dtype=np.float)
+
+        # Now, do the math...
+
+        old_settings = np.seterr(invalid='ignore') # we expect some nans below
+        d = np.dot((p0-l0),n)/np.dot(l,n)
+        d[np.isinf(d)] = np.nan # don't let infinity in
+        d[d<0] = np.nan # don't look backwards, either
+        d = d[:,np.newaxis]
+        pt = d*l+l0
+        np.seterr(**old_settings)
+        return pt
+
 def get_distance_between_point_and_ray( c, a, b ):
     """return distance between point c and ray from a in direction of point b.
 
@@ -387,6 +502,10 @@ class Geometry:
         elif geom_dict['model']=='sphere':
             self.model = Sphere(center=geom_dict['center'],
                                 radius=geom_dict['radius'])
+        elif geom_dict['model']=='planar_rectangle':
+            kwargs = geom_dict.copy()
+            del kwargs['model']
+            self.model = PlanarRectangle(**kwargs)
         else:
             raise ValueError("unknown model type: %s"%geom_dict['model'])
 

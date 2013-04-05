@@ -8,9 +8,11 @@
 #include <osg/TextureRectangle>
 #include <osg/Texture2D>
 
+#include "Poco/Path.h"
+
 class CameraImageToDisplayImagePass {
 public:
-	CameraImageToDisplayImagePass(std::string shader_dir,
+	CameraImageToDisplayImagePass(Poco::Path shader_dir,
 								  osg::ref_ptr<osg::Texture> live_camera_texture,
 								  std::string p2c_filename,
 								  bool UseHDR=false);
