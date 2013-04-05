@@ -41,8 +41,8 @@ bool StimulusInterface::is_CUDA_available() {
 
 void StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
   if (_skybox_pat.valid()) {
-    // this is a skybox - don't update the orientation with the observer
-    _skybox_pat->setPosition(observer_position);
+	// this is a skybox - don't update the orientation with the observer
+	_skybox_pat->setPosition(observer_position);
   }
 }
 
@@ -68,14 +68,13 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 	  // add skybox
 
 	  if (1) {
-                  osg::TextureCubeMap* skymap = load_cubemap(basepath,extension);
+		  osg::TextureCubeMap* skymap = load_cubemap(basepath,extension);
 
 		  _skybox_pat = new osg::PositionAttitudeTransform;
 		  osg::Geode* geode = new osg::Geode();
 
 		  // do not cull, since we change the vertex positions in the shader
 		  geode->setCullingActive(false);
-
 
 		  // Set up geometry for the background quad
 		  osg::Geometry* BackgroundGeometry = new osg::Geometry();
@@ -99,7 +98,14 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  BackgroundGeometry->setVertexArray(BackgroundVertices);
 
 		  geode->addDrawable(BackgroundGeometry);
-
+		  
+		  // if I don't expand the initial bounds, the skybox gets culled, even though
+		  // culling is disabled above. As soon as the BackgoundGeometry is behind the 
+		  // camera, it is not rendered anymore. weird.
+		  double d = 10.0; // 10 should be enough for our apps
+						   // if you make it too large, the viewer loses the scene
+		  BackgroundGeometry->setInitialBound(osg::BoundingBox(-d,-d,-d,d,d,d));
+		  
 		  _skybox_pat->addChild(geode);
 
 		  // add vertex & fragment shaders, which make the quad fullscreen
@@ -117,7 +123,7 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ShowCubemapProgram->addShader( ShowCubemapFragObj );
 		  ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-          Poco::Path shader_path = Poco::Path(_flyvr_base_path).append("src").append("shaders");
+		  Poco::Path shader_path = Poco::Path(_flyvr_base_path).append("src").append("shaders");
 		  ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.vert").toString());
 		  ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.frag").toString());
 
