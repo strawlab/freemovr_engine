@@ -10,6 +10,7 @@
 #include <osg/Light>
 #include <osg/LightSource>
 #include <osg/LightModel>
+#include <osg/Depth>
 
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
@@ -71,10 +72,38 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 
 		  _skybox_pat = new osg::PositionAttitudeTransform;
 		  osg::Geode* geode = new osg::Geode();
-		  osg::ref_ptr<osg::ShapeDrawable> box = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 100.0));
-		  geode->addDrawable(box);
+
+		  // do not cull, since we change the vertex positions in the shader
+		  geode->setCullingActive(false);
+
+
+		  // Set up geometry for the background quad
+		  osg::Geometry* BackgroundGeometry = new osg::Geometry();
+
+		  // vertices are interpreted as containing screen coordinates by
+		  // the vertex shader
+		  osg::Vec4Array* BackgroundVertices = new osg::Vec4Array(4);
+		  (*BackgroundVertices)[0].set(-1.0f,-1.0f, 1.0f, 1.0f);
+		  (*BackgroundVertices)[1].set( 1.0f,-1.0f, 1.0f, 1.0f);
+		  (*BackgroundVertices)[2].set( 1.0f, 1.0f, 1.0f, 1.0f);
+		  (*BackgroundVertices)[3].set(-1.0f, 1.0f, 1.0f, 1.0f);
+
+		  osg::DrawElementsUInt* BackgroundIndices =
+				new osg::DrawElementsUInt(osg::PrimitiveSet::POLYGON, 0);
+		  BackgroundIndices->push_back(0);
+		  BackgroundIndices->push_back(1);
+		  BackgroundIndices->push_back(2);
+		  BackgroundIndices->push_back(3);
+
+		  BackgroundGeometry->addPrimitiveSet(BackgroundIndices);
+		  BackgroundGeometry->setVertexArray(BackgroundVertices);
+
+		  geode->addDrawable(BackgroundGeometry);
+
 		  _skybox_pat->addChild(geode);
 
+		  // add vertex & fragment shaders, which make the quad fullscreen
+		  // and project the cubemap according to the view direction on it
 		  std::vector< osg::ref_ptr<osg::Program> > _programList;
 		  osg::Program* ShowCubemapProgram;
 		  osg::Shader*  ShowCubemapVertObj;
@@ -89,8 +118,8 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
           Poco::Path shader_path = Poco::Path(_flyvr_base_path).append("src").append("shaders");
-          ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.vert").toString());
-          ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.frag").toString());
+		  ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.vert").toString());
+		  ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.frag").toString());
 
 		  osg::Uniform* skymapSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "skybox" );
 
@@ -98,8 +127,12 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
 		  ss->setAttributeAndModes(ShowCubemapProgram, osg::StateAttribute::ON);
 		  ss->addUniform( skymapSampler );
 		  ss->setTextureAttributeAndModes(0,skymap,osg::StateAttribute::ON);
-		  ss->setMode(GL_BLEND, osg::StateAttribute::ON);
-		  ss->setAttributeAndModes(new osg::CullFace(osg::CullFace::FRONT), osg::StateAttribute::ON);
+
+		  // set depth test to LESS EQUAL because background shader renders at precisely zFar
+		  osg::Depth* depth = new osg::Depth;
+		  depth->setFunction(osg::Depth::LEQUAL);
+		  ss->setAttributeAndModes( depth, osg::StateAttribute::ON );
+
 
 		  top->addChild(_skybox_pat);
 	  }
