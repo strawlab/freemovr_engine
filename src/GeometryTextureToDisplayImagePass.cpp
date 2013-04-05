@@ -24,6 +24,7 @@ GeometryTextureToDisplayImagePass::GeometryTextureToDisplayImagePass(std::string
 {
 	osg::ref_ptr<osg::Image> image = load_exr( p2g_filename, _display_width, _display_height);
 	_p2g_texture = new osg::Texture2D;
+	_p2g_texture->setResizeNonPowerOfTwoHint(false);
 	_p2g_texture->setTextureSize( _display_width, _display_height);
 	_p2g_texture->setInternalFormat(GL_RGB32F);
 	_p2g_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
