@@ -244,13 +244,9 @@ public:
         camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
         // attach the texture and use it as the color buffer.
-        camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i);
-
-        osg::ref_ptr<osg::DisplaySettings> displaySettings = new osg::DisplaySettings;
-        displaySettings->setNumMultiSamples(4);
-        camera->setDisplaySettings( displaySettings.get() );
-
-
+        //camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i);
+        camera->attach(osg::Camera::COLOR_BUFFER, _texture, 0, i, false, 4, 0);
+			
         // add subgraph to render
         camera->addChild(input_node);
         _top->addChild(camera);
@@ -621,7 +617,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                     osg::Group* g = make_textured_quad(ci2di->get_output_texture(),
                                                        -1.0,
                                                        1.0, 1.0,
-                                                       1.0, 1.0,
                                                        l,b,w,h);
                     debug_hud_cam->addChild(g);
                 }
@@ -639,6 +634,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                                           pctcp->get_output_texture(),
                                                           p2g_filename,
                                                           show_geom_coords);
+                                                          
             root->addChild(_g2di->get_top().get());
             {
                 bool show_hud = false;
@@ -825,6 +821,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		}
 		traits->doubleBuffer = true;
 		traits->sharedContext = 0;
+		//traits->samples = 4;
 
 		json_decref(root);
 	}
