@@ -1,16 +1,15 @@
 <launch>
-  <!-- Spawn the display server. -->
-  <node name="display_server" pkg="flyvr" type="display_server" args="--mode=virtual_world">
-    <rosparam command="load" file="$(find flyvr)/config/rosparamconfig.yaml" />
-    <param name="p2g" type="str" value="$(find flyvr)/config/p2g.exr" />
-    <param name="display/windowDecoration" type="bool" value="true" />
+  <node name="ds_virtual_world" pkg="flyvr" type="display_server" args="--mode=virtual_world">
+    <rosparam command="load" file="$(find flyvr)/sample_code/render_trajectory/display_config.yaml" />
+  </node>
+
+  <node name="ds_geometry" pkg="flyvr" type="display_server" args="--mode=geometry">
+    <rosparam command="load" file="$(find flyvr)/sample_code/render_trajectory/display_config.yaml" />
   </node>
 
   <node name="ds_cubemap" pkg="flyvr" type="display_server" args="--mode=cubemap">
-    <rosparam command="load" file="$(find flyvr)/config/rosparamconfig.yaml" />
-    <param name="display/windowDecoration" type="bool" value="true" />
+    <rosparam command="load" file="$(find flyvr)/sample_code/render_trajectory/display_config.yaml" />
   </node>
 
   <node name="render_trajectory" pkg="flyvr" type="render_trajectory.py"/>
-
 </launch>

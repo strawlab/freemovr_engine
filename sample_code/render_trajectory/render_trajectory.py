@@ -25,39 +25,64 @@ class RenderTrajectory:
 
         self.dscs = {}
         self.capture = {}
-        for name,node in [('vr','/display_server'),
-                          ('cubemap','/ds_cubemap')]:
+        self.cam = {}
+        for name,node in [('vr','/ds_virtual_world'),
+                          ('cubemap','/ds_cubemap'),
+                          ('geometry','/ds_geometry'),
+                          ]:
             p=flyvr.display_client.DisplayServerProxy(display_server_node_name=node,
                                                       wait=True)
             self.dscs[name]=p
-            pub=rospy.Publisher(p.name+'/capture_frame_to_path',
+
+            pathpub=rospy.Publisher(p.name+'/capture_frame_to_path',
                                 ROSPath,
                                 latch=True)
-            self.capture[name]=pub
+            self.capture[name]=pathpub
 
-        self.cam_pub = rospy.Publisher(self.dscs['vr'].name+'/trackball_manipulator_state',
-                                       flyvr.msg.TrackballManipulatorState,
-                                       latch=True)
+            if name != 'cubemap':
+                cam_pub = rospy.Publisher(p.name+'/trackball_manipulator_state',
+                                          flyvr.msg.TrackballManipulatorState,
+                                          latch=True)
+                self.cam[name] = cam_pub
         self.pose_pub = rospy.Publisher('pose', Pose, latch=True)
 
         if 1:
             # generate artificial trajectory
             t = np.linspace(0,3,200)
             self.poses = np.zeros( (len(t),7) ) # columns: x,y,z, qx,qy,qz,qw
-            self.poses[:,0] = 0.5*np.cos(TAU*t*0.5)
+            self.poses[:,0] = 0.35*np.cos(TAU*t*0.5)
             self.poses[:,2] = 0.5
             self.poses[:,6] = 1
 
         if 1:
             # setup camera position
-              msg = flyvr.msg.TrackballManipulatorState()
-              msg.rotation.x = 0.149473585075
-              msg.rotation.y = 0.36104283051
-              msg.rotation.z = 0.854972787701
-              msg.rotation.w = 0.341067814652
-              msg.distance = 1.5655520953
-              self.cam_pub.publish(msg)
-              time.sleep(0.5) # give display servers time to catch up
+            for name in self.cam:
+                # easiest way to get these:
+                #   rosservice call /ds_geometry/get_trackball_manipulator_state
+                if name=='vr':
+                    msg = flyvr.msg.TrackballManipulatorState()
+                    msg.rotation.x = 0.340491356063
+                    msg.rotation.y = 0.13693607086
+                    msg.rotation.z = 0.313095377359
+                    msg.rotation.w = 0.875948305335
+                    msg.center.x = 1.89151716232
+                    msg.center.y = -1.83406555653
+                    msg.center.z = 2.26704955101
+                    msg.distance = 1.5655520953
+                elif name=='geometry':
+                    msg = flyvr.msg.TrackballManipulatorState()
+                    msg.rotation.x = 0.122742295197
+                    msg.rotation.y = 0.198753058426
+                    msg.rotation.z = 0.873456803025
+                    msg.rotation.w = 0.427205763051
+                    msg.center.x = -0.187373220921
+                    msg.center.y = -0.0946640968323
+                    msg.center.z = 0.282709181309
+                    msg.distance = 1.5655520953
+                else:
+                    raise ValueError('unknown name %r'%name)
+                self.cam[name].publish(msg)
+            time.sleep(0.5) # give display servers time to catch up
 
     def render_frame(self,current_frame):
         pose = self.poses[current_frame]
