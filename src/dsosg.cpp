@@ -115,62 +115,6 @@ public:
         CameraList                  _Cameras;
 };
 
-osg::ref_ptr<osg::Group>add_bg_quad(Poco::Path shader_path, std::string fname) {
-    osg::Image* image = osgDB::readImageFile(fname);
-	osg::Texture2D* texture = new osg::Texture2D(image);
-    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-    texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR );
-    texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
-
-	osg::Group* group = new osg::Group;
-
-	osg::Geode* geode = new osg::Geode();
-	{
-		// make quad
-		osg::Vec2Array* vertices = new osg::Vec2Array;
-		float low=-1.0;
-		vertices->push_back(  osg::Vec2(low, low) );
-		vertices->push_back(  osg::Vec2(low,  1.0) );
-		vertices->push_back(  osg::Vec2( 1.0,  1.0) );
-		vertices->push_back(  osg::Vec2( 1.0, low) );
-
-		osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
-		this_geom->setVertexArray(vertices);
-		this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
-		geode->addDrawable(this_geom);
-	}
-	group->addChild(geode);
-
-	std::vector< osg::ref_ptr<osg::Program> > _programList;
-	osg::Program* BackgroundImageProgram;
-	osg::Shader*  BackgroundImageVertObj;
-	osg::Shader*  BackgroundImageFragObj;
-
-	BackgroundImageProgram = new osg::Program;
-	BackgroundImageProgram->setName( "background_image" );
-	_programList.push_back( BackgroundImageProgram );
-	BackgroundImageVertObj = new osg::Shader( osg::Shader::VERTEX );
-	BackgroundImageFragObj = new osg::Shader( osg::Shader::FRAGMENT );
-	BackgroundImageProgram->addShader( BackgroundImageFragObj );
-	BackgroundImageProgram->addShader( BackgroundImageVertObj );
-
-	BackgroundImageVertObj->loadShaderSourceFromFile( shader_path.absolute().append("background_image.vert").toString());
-	BackgroundImageFragObj->loadShaderSourceFromFile( shader_path.absolute().append("background_image.frag").toString());
-
-	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform( osg::Uniform::SAMPLER_2D, "BackgroundImage" );
-
-	osg::StateSet* ss = geode->getOrCreateStateSet();
-	ss->setAttributeAndModes(BackgroundImageProgram, osg::StateAttribute::ON);
-	ss->addUniform( observerViewCubeUniformSampler );
-	ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-	//ss->setMode(GL_BLEND, osg::StateAttribute::ON);
-    ss->setRenderBinDetails(-1,"RenderBin");
-	ss->setMode(GL_DEPTH, osg::StateAttribute::OFF);
-
-	return group;
-}
-
 osg::ref_ptr<osg::Camera> create_HUD_cam(unsigned int width, unsigned int height)
 {
   // create a camera to set up the projection and model view matrices, and the subgraph to drawn in the HUD
