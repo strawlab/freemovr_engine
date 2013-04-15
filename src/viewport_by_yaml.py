@@ -4,6 +4,7 @@ from scipy import ndimage
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import yaml
+import flyvr.exr
 
 
 def getViewportMask(fname):
@@ -32,6 +33,8 @@ def getViewportMask(fname):
 
 	
 in_name='../data/Feb22/ds%d.yaml'
+savePath='/mnt/hgfs/VMware_shared/'
+
 plt.figure()
 count=1
 for number in [0,1,3]:
@@ -40,7 +43,8 @@ for number in [0,1,3]:
 	plt.subplot(1,3,count)
 	count+=1
 	mask=getViewportMask(fname)
-	import pdb; pdb.set_trace()	
+#	import pdb; pdb.set_trace()	
+	flyvr.exr.save_exr( savePath+"mask_index_"+str(number)+".exr", r=mask, g=mask, b=mask, comments='viewport indices' )
 	plt.imshow(mask)
 plt.show()
 	

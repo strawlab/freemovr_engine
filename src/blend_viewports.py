@@ -6,6 +6,7 @@ import scipy.cluster.hierarchy
 from scipy import ndimage
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
+import yaml
 
 def convexHull (quv):
 	hull = scipy.spatial.Delaunay(quv).convex_hull 
@@ -65,7 +66,7 @@ def getViewportMask(fname):
 		a=tuple(tuple(x) for x in v)
 		drawMask.polygon(a, fill=color, outline=color) # draw binary mask
 		color+=1
-	return mask
+	return np.array(mask)
 	
 
 def main():   
@@ -75,6 +76,8 @@ def main():
 	in_file_numbers=[0, 1, 3] # server numbers to put into filenames below
 	in_name='display_server%d.nointerp.exr'
 	in_name_interp='display_server%d.exr'
+	mask_name='ds%d.yaml'
+
 	out_name='display_server%d.blend.exr'
 
 	UV_scale=[2400, 1133] # resolution of intermediary UV map
@@ -93,38 +96,42 @@ def main():
 		M = flyvr.exr.read_exr(in_file_name)
 		(channels, height, width) = np.shape(M)
 		images.append(M)
-		# valid samples are where M[0] > -1
-		L=M[0]>-0.99
 
-		# coordinates of valid sample points
-		YX=np.nonzero(L)
+		mask_fname = in_directory + '/' + mask_name % in_file_numbers[iarg]
+		print 'reading: ', mask_fname
+		mask_index = getViewportMask(mask_fname)
 
-		# extract valid sample values into vectors
-		U=M[0][L]
-		V=M[1][L]
-		I=M[2][L]
 
-		# test for wrap around of U coordinate (texture seam)
-		has_wraparound=((max(U)-min(U))>0.5)
-		if has_wraparound:
-			L=(U>0.5)
-			U[L]-=0.5
-			U[np.logical_not(L)]+=0.5
-
-		# ToDo: change this to viewport masks from file
-		cluster= scipy.cluster.hierarchy.fclusterdata(np.transpose(YX), 3.0, criterion='maxclust', metric='euclidean', depth=1, method='single')
-
-		xy=np.transpose(YX)
-		uv=np.transpose([V*UV_scale[1], U*UV_scale[0]])
 		
-		plt.subplot(3, 1, iarg)
+		#import pdb; pdb.set_trace()	
+		plt.subplot(3, 1, iarg+1)
 		plt.title(in_file_name)
+		plt.imshow(mask_index)
+		L=M[0]>-0.99 
+		YX=np.nonzero(L)
+		plt.plot( YX[1], YX[0], ".w")
 		for i in [1, 2, 3]: # loop over viewports
+			# valid samples are where M[0] > -1 and mask_index==i
+			L=np.logical_and(M[0]>-0.99, mask_index==i) 
 
-			# draw viewport samples
-			q=xy[cluster==i]
-			quv=uv[cluster==i]
+			# coordinates of valid sample points
+			YX=np.nonzero(L)
 
+			# extract valid sample values into vectors
+			U=M[0][L]
+			V=M[1][L]
+			I=M[2][L]
+
+			# test for wrap around of U coordinate (texture seam)
+			has_wraparound=((max(U)-min(U))>0.5)
+			if has_wraparound:
+				L=(U>0.5)
+				U[L]-=0.5
+				U[np.logical_not(L)]+=0.5
+
+			q=np.transpose(YX)
+			quv=np.transpose([V*UV_scale[1], U*UV_scale[0]])
+ 
 			imgCount+=1
 			plt.axis('equal')
 			plt.plot(np.transpose(q)[1], np.transpose(q)[0], ".")
