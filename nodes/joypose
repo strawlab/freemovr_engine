@@ -38,7 +38,9 @@ class JoyPose:
         body.setPosition( (0,0,0) )
 
     def on_joy(self,msg):
-        self.roll, self.pitch, _, self.thrust = msg.axes[:4]
+        self.roll, self.pitch = msg.axes[:2]
+        if len(msg.axes)>=4:
+            self.thrust = msg.axes[3]
         self.yaw = 0
         if len(msg.buttons) < 16:
             return
