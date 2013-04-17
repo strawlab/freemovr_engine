@@ -116,6 +116,7 @@ def ransac_dlt(X3d, x2d,
                k = 200,   # do it 200 times
                t = 15.0,  # mean reprojection error should be less than 15
                d = 8,
+               debug=False,
                ):
     """perform the DLT in RANSAC
 
@@ -130,7 +131,7 @@ def ransac_dlt(X3d, x2d,
     data = np.arange( len(X3d) )
 
 
-    return ransac.ransac(data,model,n,k,t,d,debug=True,return_all=True)
+    return ransac.ransac(data,model,n,k,t,d,debug=debug,return_all=True)
 
 def simple_dlt2(X3d, x2d):
     normalize = True
