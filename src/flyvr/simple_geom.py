@@ -630,9 +630,9 @@ class Geometry:
         ray = camera.project_pixel_to_3d_ray(distorted, distorted=True )
 
         camcenter = camera.camcenter_like(ray)
-        world_coords = self.model.get_first_surface(camcenter,ray)
 
         if what=='world_coords':
+            world_coords = self.model.get_first_surface(camcenter,ray)
             rx, ry, rz = world_coords.T
             # reshape into image-sized arrays
             rx.shape = (camera.height, camera.width, 1)
@@ -642,6 +642,7 @@ class Geometry:
             assert output.shape == (camera.height, camera.width, 3)
 
         elif what == 'texture_coords':
+            world_coords = self.model.get_first_surface(camcenter,ray)
             texcoords = self.model.worldcoord2texcoord(world_coords)
             tc0, tc1 = texcoords.T
             # reshape into image-sized arrays
@@ -649,6 +650,12 @@ class Geometry:
             tc1.shape = (camera.height, camera.width, 1)
             output = np.concatenate((tc0,tc1),axis=2)
             assert output.shape == (camera.height, camera.width, 2)
+
+        elif what == 'distance':
+            distance = self.model.get_distance_to_first_surface(camcenter,ray)
+            distance.shape = (camera.height, camera.width)
+            output = distance
+
         return output
 
 def angle_between_vectors(v1, v2):
