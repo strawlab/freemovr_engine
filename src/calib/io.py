@@ -93,33 +93,6 @@ class _Calibrator:
     def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
         raise NotImplementedError
 
-class VincentSFM(_Calibrator):
-
-    LOG = logging.getLogger('vsfm')
-
-    def __init__(self, out_dirname):
-        _Calibrator.__init__(self, out_dirname)
-
-    def create_from_cams(self, cam_ids=[], cam_resolutions={}, cam_points={}, cam_calibrations={}, **kwargs):
-        #remove cameras with no points
-        cams_to_remove = []
-        for cam in cam_ids:
-            nvalid = np.count_nonzero(np.nan_to_num(np.array(cam_points[cam])))
-            if nvalid == 0:
-                cams_to_remove.append(cam)
-                self.LOG.warn("removing cam %s - no points detected" % cam)
-        map(cam_ids.remove, cams_to_remove)
-
-        for i,cam in enumerate(cam_ids):
-            points = np.array(cam_points[cam])
-            assert points.shape[1] == 2
-            npts = points.shape[0]
-
-        W = np.dstack([np.array(cam_points[c]).T for c in cam_ids])
-
-        dest = self.out_dirname+'/points.mat'
-        scipy.io.savemat(dest,{'W':W})
-
 class AllPointPickle:
 
     LOG = logging.getLogger('allpoints')
