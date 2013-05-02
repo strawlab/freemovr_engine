@@ -44,7 +44,6 @@ import calib
 import calib.imgproc
 import calib.kdtree
 from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
-from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
 from calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
 from calib.calibrationconstants import *
