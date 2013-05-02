@@ -401,12 +401,6 @@ cdef class MyNode:
             if self._subscription_mode == 'always':
                 self.register_subscribers(name)
 
-        self._timer = rospy.Timer(rospy.Duration(60), # every 60 seconds
-                                  self._on_heartbeat)
-
-    def _on_heartbeat(self,event):
-        rospy.loginfo('heartbeat at ' + str(event.current_real))
-
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS
         result = {'id':rospy.get_name(),
