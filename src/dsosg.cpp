@@ -911,6 +911,11 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
 
 void DSOSG::frame() {
 	_viewer->frame();
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_osg_capture_mutex);
+    if (!_osg_capture_filename.empty()){
+        osgDB::writeNodeFile(*(_active_3d_world.get()), _osg_capture_filename);
+        _osg_capture_filename = "";
+    }
 };
 
 bool DSOSG::done() {
@@ -942,9 +947,14 @@ void DSOSG::setWindowName(std::string name) {
     }
 };
 
-void DSOSG::setCaptureFilename(std::string name) {
+void DSOSG::setCaptureImageFilename(std::string name) {
     flyvr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
     _wcc->set_next_filename( name );
+}
+
+void DSOSG::setCaptureOSGFilename(std::string name) {
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_osg_capture_mutex);
+    _osg_capture_filename = name;
 }
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {

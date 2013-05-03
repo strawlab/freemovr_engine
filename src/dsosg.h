@@ -71,7 +71,8 @@ namespace dsosg{
 		void setGamma(float gamma);
 		void setRedMax(bool red_max);
 
-		void setCaptureFilename(std::string name);
+		void setCaptureImageFilename(std::string name);
+		void setCaptureOSGFilename(std::string name);
 
         TrackballManipulatorState getTrackballManipulatorState();
         void setTrackballManipulatorState(TrackballManipulatorState s);
@@ -103,6 +104,8 @@ namespace dsosg{
 		osg::ref_ptr<osgGA::TrackballManipulator> _cameraManipulator;
 		WindowCaptureCallback* _wcc;
         GeometryTextureToDisplayImagePass *_g2di;
+        OpenThreads::Mutex _osg_capture_mutex;
+        std::string        _osg_capture_filename;
 	};
 
 }
