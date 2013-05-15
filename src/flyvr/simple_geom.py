@@ -126,6 +126,20 @@ class Cylinder(ModelBase):
         result = np.vstack((tc0,tc1))
         return result.T
 
+    def worldcoord2normal(self,wc):
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        wc = wc.T
+
+        x,y,z = wc
+        x0 = x-self.base.x
+        y0 = y-self.base.y
+        r = np.sqrt( x0**2 + y0**2 )
+
+        result = np.vstack( (x0/r, y0/r, z*0) )
+        return result.T
+
     def get_distance_to_first_surface(self, a, b):
         """return distance surface from point a in direction of point b.
 
@@ -299,6 +313,21 @@ class Sphere(ModelBase):
         result = np.vstack((tc0,tc1))
         return result.T
 
+    def worldcoord2normal(self,wc):
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        wc = wc.T
+
+        x,y,z = wc
+        x0 = x-self.center.x
+        y0 = y-self.center.y
+        z0 = z-self.center.z
+        r = np.sqrt( x0**2 + y0**2 + z0**2 )
+
+        result = np.vstack( (x0/r, y0/r, z0/r) )
+        return result.T
+
     def get_distance_to_first_surface(self, a, b):
         """return distance surface from point a in direction of point b.
 
@@ -467,6 +496,18 @@ class PlanarRectangle(ModelBase):
         result = np.vstack((u,v))
         return result.T
 
+    def worldcoord2normal(self,wc):
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        N = wc.shape[0]
+
+        one_sz = np.ones((1,N))
+        bad = np.isnan(wc[:,0])
+        result = (self._normal[:,np.newaxis]*one_sz).T
+        result[bad] = np.nan
+        return result
+
     def get_distance_to_first_surface(self, a, b):
         """return distance surface from point a in direction of point b.
 
@@ -627,7 +668,9 @@ class Geometry:
 
         distorted = np.vstack((XX,YY)).T
 
-        ray = camera.project_pixel_to_3d_ray(distorted, distorted=True )
+        ray = camera.project_pixel_to_3d_ray(distorted,
+                                             distorted=True,
+                                             distance=1.0 )
 
         camcenter = camera.camcenter_like(ray)
 
@@ -655,6 +698,15 @@ class Geometry:
             distance = self.model.get_distance_to_first_surface(camcenter,ray)
             distance.shape = (camera.height, camera.width)
             output = distance
+
+        elif what == 'incidence_angle':
+            world_coords = self.model.get_first_surface(camcenter,ray)
+            surface_normal = self.model.worldcoord2normal(world_coords)
+            projector_dir = -ray
+            dot_product = np.sum(projector_dir*surface_normal,axis=1)
+            angle = np.arccos(dot_product)
+            angle.shape = (camera.height, camera.width)
+            output = angle
 
         return output
 
