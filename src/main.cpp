@@ -202,10 +202,7 @@ int main(int argc, char**argv) {
 
         while (!topicmessages.empty()) {
             StimulusMessage &s = topicmessages.front();
-
-            std::cerr << s.topic << " " << s.json << "\n";
-            //dsosg->stimulus_receive_json_message(/*get plugin name from map*/, s.topic, s.json)
-
+            dsosg->topic_receive_json_message(s.topic, s.json);
             topicmessages.pop();
         }
 

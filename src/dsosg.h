@@ -51,6 +51,8 @@ namespace dsosg{
 
         std::vector<std::string> stimulus_get_topic_names(const std::string& plugin_name);
         std::string stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name);
+
+        void topic_receive_json_message(const std::string& topic_name, const std::string& json_message);
         void stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message);
 
         void setup_viewer(const std::string& viewer_window_name, const std::string& json_config, bool pbuffer=false);
@@ -79,6 +81,8 @@ namespace dsosg{
         StimulusLoader _stimulus_loader;
 
         std::map<std::string, StimulusInterface*> _stimulus_plugins;
+        std::map<std::string, std::vector<std::string> > _stimulus_topics;
+
         StimulusInterface* _current_stimulus;
         std::string _mode;
 
