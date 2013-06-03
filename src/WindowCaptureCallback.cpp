@@ -26,13 +26,14 @@ void WindowCaptureCallback::operator () (osg::RenderInfo& renderInfo) const {
   if (_fileName.empty()) return; // no point in capturing image if it's not used
 
   glReadBuffer(GL_BACK);
-  if (gc->getTraits()) {
+  const osg::GraphicsContext::Traits* traits = gc->getTraits();
+  if (traits!=NULL) {
     GLenum pixelFormat;
 
     pixelFormat = GL_RGBA; // force saving alpha
 
-    int width = gc->getTraits()->width;
-    int height = gc->getTraits()->height;
+    int width = traits->width;
+    int height = traits->height;
 
     //std::cout<<"Capture: size="<<width<<"x"<<height<<", format="<<(pixelFormat == GL_RGBA ? "GL_RGBA":"GL_RGB")<<std::endl;
 

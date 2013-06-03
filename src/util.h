@@ -8,8 +8,6 @@
 #include <osg/Texture>
 #include <osg/Group>
 
-std::string join_path(std::string a,std::string b);
-void LoadShaderSource( osg::Shader* shader, const std::string& fileName );
 osg::Camera* createHUD();
 osg::Group* make_textured_quad(osg::Texture* texture,
 							   float zpos=-1.0,

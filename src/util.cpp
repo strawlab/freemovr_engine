@@ -7,32 +7,6 @@
 
 #include <sstream>
 
-std::string join_path(std::string a,std::string b) {
-	// roughly inspired by Python's os.path.join
-	char pathsep = '/'; // TODO: FIXME: not OK on Windows.
-	if (a.at(a.size()-1)==pathsep) {
-		return a+b;
-	} else {
-		return a+std::string("/")+b;
-	}
-}
-
-// load source from a file.
-void LoadShaderSource( osg::Shader* shader, const std::string& fileName )
-{
-    std::string fqFileName = osgDB::findDataFile(fileName);
-    if( fqFileName.length() != 0 )
-    {
-        shader->loadShaderSourceFromFile( fqFileName.c_str() );
-    }
-    else
-    {
-		std::stringstream ss;
-		ss << "File \"" << fileName << "\" not found.";
-		throw std::ios_base::failure(ss.str());
-    }
-}
-
 osg::Camera* createHUD()
 {
     // create a camera to set up the projection and model view matrices, and the subgraph to drawn in the HUD

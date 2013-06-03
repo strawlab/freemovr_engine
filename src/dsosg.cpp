@@ -52,6 +52,7 @@
 #include "GeometryTextureToDisplayImagePass.h"
 
 #include "flyvr/flyvr_assert.h"
+#include "flyvr/ResourceLoader.hpp"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -114,62 +115,6 @@ public:
         CameraList                  _Cameras;
 };
 
-osg::ref_ptr<osg::Group>add_bg_quad(std::string shader_dir, std::string fname) {
-    osg::Image* image = osgDB::readImageFile(fname);
-	osg::Texture2D* texture = new osg::Texture2D(image);
-    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-    texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR );
-    texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
-
-	osg::Group* group = new osg::Group;
-
-	osg::Geode* geode = new osg::Geode();
-	{
-		// make quad
-		osg::Vec2Array* vertices = new osg::Vec2Array;
-		float low=-1.0;
-		vertices->push_back(  osg::Vec2(low, low) );
-		vertices->push_back(  osg::Vec2(low,  1.0) );
-		vertices->push_back(  osg::Vec2( 1.0,  1.0) );
-		vertices->push_back(  osg::Vec2( 1.0, low) );
-
-		osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
-		this_geom->setVertexArray(vertices);
-		this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
-		geode->addDrawable(this_geom);
-	}
-	group->addChild(geode);
-
-	std::vector< osg::ref_ptr<osg::Program> > _programList;
-	osg::Program* BackgroundImageProgram;
-	osg::Shader*  BackgroundImageVertObj;
-	osg::Shader*  BackgroundImageFragObj;
-
-	BackgroundImageProgram = new osg::Program;
-	BackgroundImageProgram->setName( "background_image" );
-	_programList.push_back( BackgroundImageProgram );
-	BackgroundImageVertObj = new osg::Shader( osg::Shader::VERTEX );
-	BackgroundImageFragObj = new osg::Shader( osg::Shader::FRAGMENT );
-	BackgroundImageProgram->addShader( BackgroundImageFragObj );
-	BackgroundImageProgram->addShader( BackgroundImageVertObj );
-
-	LoadShaderSource( BackgroundImageVertObj, join_path(shader_dir,"background_image.vert" ));
-	LoadShaderSource( BackgroundImageFragObj, join_path(shader_dir, "background_image.frag" ));
-
-	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform( osg::Uniform::SAMPLER_2D, "BackgroundImage" );
-
-	osg::StateSet* ss = geode->getOrCreateStateSet();
-	ss->setAttributeAndModes(BackgroundImageProgram, osg::StateAttribute::ON);
-	ss->addUniform( observerViewCubeUniformSampler );
-	ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-	//ss->setMode(GL_BLEND, osg::StateAttribute::ON);
-    ss->setRenderBinDetails(-1,"RenderBin");
-	ss->setMode(GL_DEPTH, osg::StateAttribute::OFF);
-
-	return group;
-}
-
 osg::ref_ptr<osg::Camera> create_HUD_cam(unsigned int width, unsigned int height)
 {
   // create a camera to set up the projection and model view matrices, and the subgraph to drawn in the HUD
@@ -211,7 +156,7 @@ private:
 
 class CameraCube {
 public:
-	CameraCube(osg::Node* input_node, osg::Node* observer_node, std::string shader_dir, unsigned int tex_width=512, unsigned int tex_height=512) {
+	CameraCube(osg::Node* input_node, osg::Node* observer_node, Poco::Path shader_path, unsigned int tex_width=512, unsigned int tex_height=512) {
     _texture = new osg::TextureCubeMap;
     _top = new osg::Group; _top->addDescription("CameraCube top node");
 
@@ -287,7 +232,7 @@ void ObserverPositionCallback::setObserverPosition( osg::Vec3 p ) {
 	_p = p;
 }
 
-osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
+osg::Group* ShowCubemap(osg::TextureCubeMap* texture, Poco::Path shader_path){
 	osg::Group* group = new osg::Group;
 
 	osg::Geode* geode = new osg::Geode();
@@ -320,8 +265,8 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture,std::string shader_dir){
 	ShowCubemapProgram->addShader( ShowCubemapFragObj );
 	ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-	LoadShaderSource( ShowCubemapVertObj, join_path(shader_dir,"show_cubemap.vert" ));
-	LoadShaderSource( ShowCubemapFragObj, join_path(shader_dir, "show_cubemap.frag" ));
+	ShowCubemapVertObj->loadShaderSourceFromFile( shader_path.absolute().append("show_cubemap.vert").toString());
+	ShowCubemapFragObj->loadShaderSourceFromFile( shader_path.absolute().append("show_cubemap.frag").toString());
 
 	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "observerViewCube" );
 
@@ -352,10 +297,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     // ensure we interpret this as a file
     _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
-    Poco::Path shader_path = _flyvr_basepath;
+    Poco::Path shader_path(_flyvr_basepath);
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
-
-	std::string shader_dir = shader_path.toString();
 
 	// Check the mode is valid.
 	if (!(_mode==std::string("cubemap") || _mode==std::string("vr_display") ||
@@ -498,27 +441,35 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
         _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
-			// draw a small red cone as the observer
             osg::ref_ptr<osg::PositionAttitudeTransform> obs_pat = new osg::PositionAttitudeTransform;
             obs_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
             osg::Quat attitude;
             attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
             obs_pat->setAttitude(attitude);
 
-			osg::Geode* geode_1 = new osg::Geode;
-            float height = 2* observer_radius;
-            osg::ref_ptr<osg::ShapeDrawable> shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height));
-			shape->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-			osg::StateSet* ss = geode_1->getOrCreateStateSet();
-			ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
-			geode_1->addDrawable(shape);
-			obs_pat->addChild(geode_1);
-			_observer_pat->addChild(obs_pat);
-			root->addChild(_observer_pat);
+            osg::Shape *shape;
+            if (observer_radius > 0) {
+                // draw a small red cone as the observer
+                float height = 2* observer_radius;
+                shape = new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height);
+            } else {
+                // draw a small red sphere as the observer
+                shape = new osg::Sphere(osg::Vec3(0, 0, 0), -1.0*observer_radius);
+            }
+
+            osg::ref_ptr<osg::ShapeDrawable> shaped = new osg::ShapeDrawable(shape);
+            osg::Geode* geode_1 = new osg::Geode;
+            shaped->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            osg::StateSet* ss = geode_1->getOrCreateStateSet();
+            ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+            geode_1->addDrawable(shaped);
+            obs_pat->addChild(geode_1);
+            _observer_pat->addChild(obs_pat);
+            root->addChild(_observer_pat);
 		}
     }
 
-	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_dir );
+	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path);
 
 	if ( !(_mode==std::string("virtual_world"))) {
 		root->addChild(_cubemap_maker->get_node());
@@ -526,7 +477,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
     if (_mode==std::string("cubemap")) {
 		// create On Screen Display for debugging
-		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_dir);
+		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_path);
 		root->addChild(debug_osd.get());
     }
 
@@ -573,7 +524,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             osg::ref_ptr<osg::Group> g;
             if (show_geom_coords) {
                 throw std::runtime_error("have not implemented this again");
-                //g = geometry_parameters->make_texcoord_group(shader_dir);
+                //g = geometry_parameters->make_texcoord_group(shader_path);
             } else {
                 g = pctcp->get_textured_geometry();
             }
@@ -598,7 +549,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                        json_object_get(json_config, "p2c"))));
             std::string p2c_filename = p2c_path.toString();
             std::cerr << "p2c file: " << p2c_filename << "\n";
-            CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_dir,
+            CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_path,
                                                                                      mytex,
                                                                                      p2c_filename);
             root->addChild(ci2di->get_top().get());
@@ -630,7 +581,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                     Poco::Path(json_string_value(p2g_json)));
             std::string p2g_filename = p2g_path.toString();
             std::cerr << "p2g file: " << p2g_filename << "\n";
-            _g2di = new GeometryTextureToDisplayImagePass(shader_dir,
+            _g2di = new GeometryTextureToDisplayImagePass(shader_path,
                                                           pctcp->get_output_texture(),
                                                           p2g_filename,
                                                           show_geom_coords);
@@ -873,7 +824,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
 		flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
 		_viewer->getCamera()->setGraphicsContext(gc.get());
-        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.5f, 0.0f)); // clear blue
+        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.3f, 0.0f)); // clear dark gray
 
         _wcc = new WindowCaptureCallback();
 
@@ -914,6 +865,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	else {
 		throw std::invalid_argument("unknown mode");
 	}
+
+    _viewer->setLightingMode( osg::View::SKY_LIGHT );
 
     // If the window frame is on, show the mouse cursor.
     if (traits->windowDecoration) {
@@ -966,6 +919,11 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
 
 void DSOSG::frame() {
 	_viewer->frame();
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_osg_capture_mutex);
+    if (!_osg_capture_filename.empty()){
+        osgDB::writeNodeFile(*(_active_3d_world.get()), _osg_capture_filename);
+        _osg_capture_filename = "";
+    }
 };
 
 bool DSOSG::done() {
@@ -997,9 +955,14 @@ void DSOSG::setWindowName(std::string name) {
     }
 };
 
-void DSOSG::setCaptureFilename(std::string name) {
+void DSOSG::setCaptureImageFilename(std::string name) {
     flyvr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
     _wcc->set_next_filename( name );
+}
+
+void DSOSG::setCaptureOSGFilename(std::string name) {
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_osg_capture_mutex);
+    _osg_capture_filename = name;
 }
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {

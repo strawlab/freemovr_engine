@@ -14,7 +14,7 @@
 #define UNIT_P2C 1
 #define UNIT_OUT 2
 
-CameraImageToDisplayImagePass::CameraImageToDisplayImagePass(std::string shader_dir,
+CameraImageToDisplayImagePass::CameraImageToDisplayImagePass(Poco::Path shader_dir,
                                                              osg::ref_ptr<osg::Texture> live_camera_texture,
                                                              std::string p2c_filename,
 															 bool UseHDR) :
@@ -40,8 +40,8 @@ CameraImageToDisplayImagePass::CameraImageToDisplayImagePass(std::string shader_
 	_top = new osg::Group;
 	_top->addDescription("CameraImageToDisplayImagePass top node");
 	_top->addChild( _camera );
-	set_shader( join_path(shader_dir,"CameraImageToDisplayImagePass.vert"),
-				join_path(shader_dir,"CameraImageToDisplayImagePass.frag") );
+	set_shader( shader_dir.absolute().append("CameraImageToDisplayImagePass.vert").toString(),
+				shader_dir.absolute().append("CameraImageToDisplayImagePass.frag").toString() );
 
 }
 

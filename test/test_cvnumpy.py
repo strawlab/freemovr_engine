@@ -1,6 +1,6 @@
 import roslib; roslib.load_manifest('flyvr')
 
-import cvnumpy
+import flyvr.cvnumpy as cvnumpy
 import numpy as np
 from camera_model.camera_model import is_rotation_matrix
 

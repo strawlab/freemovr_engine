@@ -3,7 +3,7 @@ import numpy as np
 
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
-import dlt
+import flyvr.dlt as dlt
 import camera_model
 
 # some sample data -----------------------
@@ -54,7 +54,6 @@ xy = np.array([[ 467.85551727,  663.68835971],
 # the tests -------------------
 def test_basic_dlt():
     results = dlt.dlt(XYZ, xy, ransac=False)
-    print results['mean_reprojection_error']
     assert results['mean_reprojection_error'] < 6.0
     c1 = camera_model.load_camera_from_pmat(  results['pmat']  )
 

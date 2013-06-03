@@ -13,7 +13,7 @@ from flyvr.msg import ROSPath
 import flyvr.msg
 from geometry_msgs.msg import Quaternion, Point
 
-import rosmsg2json
+import flyvr.rosmsg2json as rosmsg2json
 
 import sys
 import time
@@ -120,7 +120,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
 
         float getFrameRate() nogil except +
         setCursorVisible(int visible) nogil except +
-        void setCaptureFilename(std_string name) nogil except +
+        void setCaptureImageFilename(std_string name) nogil except +
+        void setCaptureOSGFilename(std_string name) nogil except +
         void setGamma(float gamma) nogil except +
         void setRedMax(int red_max) nogil except +
 
@@ -361,7 +362,8 @@ cdef class MyNode:
                                args.slave
                                )
         #these subscribers access self.dsosg
-        rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_callback)
+        rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_image_callback)
+        rospy.Subscriber("~capture_osg_to_path", ROSPath, self.capture_osg_callback)
         rospy.Subscriber("~trackball_manipulator_state",
                          flyvr.msg.TrackballManipulatorState,
                          self.manipulator_callback)
@@ -398,12 +400,6 @@ cdef class MyNode:
             rospy.loginfo('loaded plugin: %s' % name)
             if self._subscription_mode == 'always':
                 self.register_subscribers(name)
-
-        self._timer = rospy.Timer(rospy.Duration(60), # every 60 seconds
-                                  self._on_heartbeat)
-
-    def _on_heartbeat(self,event):
-        rospy.loginfo('heartbeat at ' + str(event.current_real))
 
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS
@@ -487,11 +483,17 @@ cdef class MyNode:
     def red_max_callback(self, msg):
         self._red_max = msg.data
 
-    def capture_callback(self, msg):
+    def capture_image_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
-        rospy.loginfo("will capture next frame to filename: %r"%fname)
-        self.dsosg.setCaptureFilename(std_string(fname))
+        rospy.loginfo("will capture next image frame to filename: %r"%fname)
+        self.dsosg.setCaptureImageFilename(std_string(fname))
+
+    def capture_osg_callback(self, msg):
+        d = rosmsg2json.rosmsg2dict(msg)
+        fname = d['data']
+        rospy.loginfo("will capture next osg frame to filename: %r"%fname)
+        self.dsosg.setCaptureOSGFilename(std_string(fname))
 
     def manipulator_callback(self, msg):
         # This is called in some callback thread by ROS.

@@ -18,8 +18,8 @@ import tf.broadcaster
 import tf.msg
 from visualization_msgs.msg import Marker, MarkerArray
 
-import simple_geom
-import display_client
+import flyvr.simple_geom as simple_geom
+import flyvr.display_client as display_client
 import camera_model
 
 class MyApp:
