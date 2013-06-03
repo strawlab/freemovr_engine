@@ -2,6 +2,7 @@
 import os
 import time
 import numpy as np
+import tempfile
 
 import roslib; roslib.load_manifest('flyvr')
 import rospy
@@ -15,9 +16,14 @@ TAU = 2*np.pi
 class RenderTrajectory:
     def __init__(self,output_dir,output_fname_fmt):
         rospy.init_node('render_trajectory')
-        assert not os.path.exists(output_dir), \
-               "won't render to preexisting dir %r"%(output_dir,)
-        os.makedirs(output_dir)
+        if output_dir.startswith("/tmp/"):
+            if not os.path.isdir(output_dir):
+                os.makedirs(output_dir)
+        else:
+            if not os.path.isdir(output_dir):
+                raise Exception("won't render to preexisting dir %s" % output_dir)
+            else:
+                os.makedirs(output_dir)
         self.output_dir = output_dir
         self.output_fname_fmt = output_fname_fmt
 
@@ -92,7 +98,7 @@ class RenderTrajectory:
         for i in range(4):
             setattr(msg.orientation,'xyzw'[i], pose[i+3])
         self.pose_pub.publish(msg)
-        time.sleep(0.005) # give message a change to get to display server
+        time.sleep(0.01) # give message a change to get to display server
 
         wait = []
         for name in self.capture:
@@ -115,12 +121,15 @@ class RenderTrajectory:
             if not success:
                 raise ValueError('requested frame that never came')
 
+        return wait
+
     def run(self):
         for i in range(len(self.poses)):
-            self.render_frame(i)
+            print self.render_frame(i)
 
 def main():
-    node = RenderTrajectory(output_dir='tmp',output_fname_fmt='frame_%s_%05d.png')
+    tmpdir = tempfile.mkdtemp()
+    node = RenderTrajectory(output_dir=tmpdir,output_fname_fmt='frame_%s_%05d.png')
     node.run()
 
 if __name__=='__main__':

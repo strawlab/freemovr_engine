@@ -206,9 +206,48 @@ class DisplayServerProxy(object):
         rospy.set_param(self._server_node_name+"/geom", var)
 
     def set_binary_exr(self, path):
-        print path,self._server_node_name+"/p2g"
         with open(path,'rb') as f:
             b = xmlrpclib.Binary(f.read())
             rospy.set_param(self._server_node_name+"/p2g", b)
+
+class RenderFrameSlave:
+
+    dsc = None
+
+    def __init__(self, dsc):
+        self.dsc = dsc
+
+        self.path_pub = rospy.Publisher(self.dsc.name+'/capture_frame_to_path',
+                                        flyvr.msg.ROSPath,
+                                        latch=True)
+        self.cam_pub = rospy.Publisher(self.dsc.name+'/trackball_manipulator_state',
+                                       flyvr.msg.TrackballManipulatorState,
+                                       latch=True)
+
+    def set_view(self, msg):
+        self.cam_pub.publish(msg)
+        time.sleep(0.05)
+
+    def render_frame(self, frame, posemsg):
+        if os.path.exists(frame):
+            raise Exception("frame already rendered")
+
+        self.path_pub.publish(frame)
+        time.sleep(0.05)
+
+        timeout_t = time.time() + 10.0 #10 seconds
+        success = False
+        while not rospy.is_shutdown() and not success and time.time() < timeout_t:
+            time.sleep(0.1)
+            # wait for new frame to be saved
+            if os.path.exists(frame):
+                # TODO: check that the image is actually valid and makes sense
+                success = True
+        if not success:
+            raise ValueError('requested frame that never came: %s' % frame)
+
+        return frame
+
+        
 
 

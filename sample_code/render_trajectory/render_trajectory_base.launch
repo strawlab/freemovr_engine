@@ -11,5 +11,4 @@
     <rosparam command="load" file="$(find flyvr)/sample_code/render_trajectory/display_config.yaml" />
   </node>
 
-  <node name="render_trajectory" pkg="flyvr" type="render_trajectory.py"/>
 </launch>
