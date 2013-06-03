@@ -441,23 +441,31 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
         _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
-			// draw a small red cone as the observer
             osg::ref_ptr<osg::PositionAttitudeTransform> obs_pat = new osg::PositionAttitudeTransform;
             obs_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
             osg::Quat attitude;
             attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
             obs_pat->setAttitude(attitude);
 
-			osg::Geode* geode_1 = new osg::Geode;
-            float height = 2* observer_radius;
-            osg::ref_ptr<osg::ShapeDrawable> shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height));
-			shape->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-			osg::StateSet* ss = geode_1->getOrCreateStateSet();
-			ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
-			geode_1->addDrawable(shape);
-			obs_pat->addChild(geode_1);
-			_observer_pat->addChild(obs_pat);
-			root->addChild(_observer_pat);
+            osg::Shape *shape;
+            if (observer_radius > 0) {
+                // draw a small red cone as the observer
+                float height = 2* observer_radius;
+                shape = new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height);
+            } else {
+                // draw a small red sphere as the observer
+                shape = new osg::Sphere(osg::Vec3(0, 0, 0), -1.0*observer_radius);
+            }
+
+            osg::ref_ptr<osg::ShapeDrawable> shaped = new osg::ShapeDrawable(shape);
+            osg::Geode* geode_1 = new osg::Geode;
+            shaped->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            osg::StateSet* ss = geode_1->getOrCreateStateSet();
+            ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+            geode_1->addDrawable(shaped);
+            obs_pat->addChild(geode_1);
+            _observer_pat->addChild(obs_pat);
+            root->addChild(_observer_pat);
 		}
     }
 
@@ -816,7 +824,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
 		flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
 		_viewer->getCamera()->setGraphicsContext(gc.get());
-        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.5f, 0.0f)); // clear blue
+        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.3f, 0.0f)); // clear dark gray
 
         _wcc = new WindowCaptureCallback();
 
