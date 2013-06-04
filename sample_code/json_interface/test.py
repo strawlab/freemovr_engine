@@ -13,7 +13,11 @@ while 1:
     srvsock.connect((DS_IP, DS_PORT))
 
     z += (random.random()*0.1)
-    j = {"position":{"x":0.0,"y":0.0,"z":z},"cylinder_radius":{"data":1+random.random()},"foo/bar":{"data":1.2}}
+    j = {"position":{"x":0.0,"y":0.0,"z":z},
+         "cylinder_radius":{"data":1+random.random()},
+         "cylinder_image":{"data":random.choice(["checkerboard16.png","gray.png"])},
+         "foo/bar":{"data":1.2}
+    }
     s = json.dumps(j)
 
     srvsock.sendall(s)
