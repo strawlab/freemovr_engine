@@ -174,6 +174,7 @@ int main(int argc, char**argv) {
         display = json_dumps(json, 0);
     }
   }
+  json_decref(conf);
 
   dsosg->setup_viewer("display_server", display);
 
