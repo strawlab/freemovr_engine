@@ -290,7 +290,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
 {
     json_error_t json_error;
-    json_t *json_config, *json_stimulus, *json_geom;
+    json_t *json_config;
+    json_t *json_stimulus, *json_geom;
 
     // ensure we interpret this as a directory (ensure trailing slash)
     _flyvr_basepath.makeAbsolute(); _flyvr_basepath.makeDirectory();
@@ -343,7 +344,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	}
 
     json_config = json_load_file(_config_file_path.toString().c_str(), 0, &json_error);
-
 	json_stimulus = json_object_get(json_config, "stimulus_plugins");
 	json_geom = json_object_get(json_config, "geom");
 
@@ -611,6 +611,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     _viewer = new osgViewer::Viewer;
     _viewer->setSceneData(root.get());
     _viewer->getViewerStats()->collectStats("frame_rate",true);
+
+    json_decref(json_config);
 
     //osgDB::writeNodeFile(*(root.get()), _mode + std::string(".osg"));
 }
