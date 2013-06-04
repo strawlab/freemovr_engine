@@ -16,7 +16,7 @@ rospack = rospkg.RosPack()
 re_ros_path = re.compile(r'\$\(find (.*)\)')
 re_array = re.compile(r'(.+)\[(\d*)\]$')
 
-BASIC_TYPES = ['float64','float32','string','uint32','uint8','bool']
+BASIC_TYPES = ['float64','float32','string','uint32','uint8','bool','int8']
 
 def _findrepl(matchobj):
     ros_pkg_name = matchobj.group(1)
