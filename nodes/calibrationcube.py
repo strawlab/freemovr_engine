@@ -117,6 +117,8 @@ class Calib:
             rospy.loginfo("Connecting to cam %s" % cam)
             self._set_bg_mask(cam, fd)
         self.runner = SimultainousCameraRunner(cam_handlers)
+
+        display_client.DisplayServerProxy.hide_sprite()
         
         self._calculate_background()
 
