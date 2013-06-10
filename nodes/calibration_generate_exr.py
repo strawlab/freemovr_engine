@@ -14,6 +14,8 @@ import rospy
 
 import flyvr.simple_geom as simple_geom
 import flyvr.display_client as display_client
+import flyvr.exr as exr
+
 import calib.imgproc
 from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
 from calib.reconstruct import interpolate_pixel_cords
@@ -24,7 +26,6 @@ import flydra.reconstruct
 import matplotlib.pyplot as plt
 import numpy as np
 import cv,cv2
-import exr
 
 import pcl
 
@@ -331,14 +332,18 @@ class Calibrator:
             #in our shader convention -1 means no data, not NaN
             fill_masked_exr(ds, "u", -1)
             fill_masked_exr(ds, "v", -1)
-            fill_masked_exr(ds, "l", -1)
+
+            if do_luminance:
+                raise Exception("Not Supported")
+            else:
+                exrs[ds]["l"]["exr"][exrs[ds]["l"]["dsmask"]] = 1
 
             exrpath = decode_url(fn)
             exr.save_exr(
                     exrpath,
                     r=exrs[ds]["u"]["exr"],
                     g=exrs[ds]["v"]["exr"],
-                    b=exrs[ds]["l"]["exr"] if do_luminance else np.zeros_like(exrs[ds]["u"]["exr"]),
+                    b=exrs[ds]["l"]["exr"],
                     comments=comment)
 
             if do_xyz:

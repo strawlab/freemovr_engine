@@ -812,11 +812,11 @@ class Calib:
                         selected_vdisp = None
 
                 try:
-                    pointspace = int(service_args[1])
+                    pointspace = int(service_args[1]) if service_args[1] else 40
                 except:
                     pointspace = 40
                 finally:
-                    pointspace = np.clip(pointspace,0,200)
+                    pointspace = np.clip(pointspace,10,200)
                     rospy.loginfo("calibrating display servers %r/%s with %d point space" % (
                                     options, selected_vdisp, pointspace))
 
