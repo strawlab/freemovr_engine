@@ -142,7 +142,7 @@ class DataIO:
         self._pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self._pub_mapping = rospy.Publisher('~mapping', CalibMapping)
         
-        fn = "CALIB"+datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+".bag"
+        fn = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+".bag"
         self._dest = os.path.join(self.outdir,fn)
         self._bag = rosbag.Bag(self._dest, 'w')
         rospy.loginfo("Saving to %s" % self._dest)
@@ -1241,7 +1241,8 @@ if __name__ == '__main__':
         '--calib-config', type=str, default='package://flycave/conf/calib-all.yaml',
         help='path to calibration configuration yaml file')
     parser.add_argument(
-        '--save-dir', type=str, default=os.path.expanduser('~/FLYDRA/flyvr-calibration/wip'),
+        '--save-dir', type=str,
+        default=os.path.expanduser('~/FLYDRA/flyvr-calibration/%s' % datetime.datetime.now().strftime("%b")),
         help='path to save calibration data')
     parser.add_argument(
         '--continue-calibration', type=str,
