@@ -414,7 +414,11 @@ class Calib:
                                 queue_depth=1)
         rospy.loginfo("Connecting to cam %s" % laser_camera)
         self.laser_detector = fd
-        self.laser_mask = load_mask_image(decode_url(config["laser_camera_mask"]))
+        try:
+            self.laser_mask = load_mask_image(decode_url(config["laser_camera_mask"]))
+        except IOError:
+            self.laser_mask = None
+            rospy.logwarn("Could not find laser_camera_mask image")
 
         #need to recieve images (i.e. by calculating the background) before
         #being able to read the resoluions

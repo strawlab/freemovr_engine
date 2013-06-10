@@ -151,7 +151,7 @@ class DotBGFeatureDetector:
         self._debug_b = img
 
     def set_mask(self, arr, copy=True):
-        if copy:
+        if (arr is not None) and copy:
             #FIXME: DO I NEED TO MAKE THIS COPY IN ANY CASE???
             self._mask = arr.astype(np.bool).copy()
         else:
