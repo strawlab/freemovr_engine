@@ -156,10 +156,10 @@ class DisplayServerProxy(object):
             points = []
         return points
 
-    def get_virtual_display_mask(self, vdisp_name, squeeze=False):
+    def get_virtual_display_mask(self, vdisp_name, squeeze=False, dtype=np.bool, fill=1):
         points = self.get_virtual_display_points(vdisp_name)
-        image = np.zeros((self.height, self.width, 1), dtype=np.bool)
-        fp.fill_polygon(points, image, 1)
+        image = np.zeros((self.height, self.width, 1), dtype=dtype)
+        fp.fill_polygon(points, image, fill)
         if squeeze:
             return np.squeeze(image)
         else:
