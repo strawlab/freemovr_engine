@@ -13,7 +13,9 @@ import json
 import numpy as np
 import scipy.misc
 
-import fill_polygon
+#re-export the fill polygon helper
+import fill_polygon as fp
+fill_polygon = fp.fill_polygon
 
 class DisplayServerProxy(object):
 
@@ -55,6 +57,10 @@ class DisplayServerProxy(object):
     @property
     def height(self):
         return self.get_display_info()['height']
+
+    @property
+    def virtual_displays(self):
+        return [i['id'] for i in self.get_display_info()['virtualDisplays']]
 
     @staticmethod
     def set_stimulus_mode(mode):
@@ -124,14 +130,15 @@ class DisplayServerProxy(object):
         return self._info_cached
 
     def _get_viewport_index(self, name):
-        viewport_ids = []
         viewport_idx = -1
         for i,obj in enumerate(self.get_display_info()['virtualDisplays']):
-            viewport_ids.append(obj['id'])
             if obj['id'] == name:
                 viewport_idx = i
                 break
         return viewport_idx
+
+    def get_virtual_displays(self):
+        return self.get_display_info()['virtualDisplays']
 
     def get_virtual_display_points(self, vdisp_name):
         viewport_idx = self._get_viewport_index(vdisp_name)
@@ -149,18 +156,24 @@ class DisplayServerProxy(object):
             points = []
         return points
 
-    def get_virtual_display_mask(self, vdisp_name):
+    def get_virtual_display_mask(self, vdisp_name, squeeze=False):
         points = self.get_virtual_display_points(vdisp_name)
         image = np.zeros((self.height, self.width, 1), dtype=np.bool)
-        fill_polygon.fill_polygon(points, image, 1)
-        return image
+        fp.fill_polygon(points, image, 1)
+        if squeeze:
+            return np.squeeze(image)
+        else:
+            return image
 
-    def get_display_mask(self):
+    def get_display_mask(self, squeeze=False):
         """ Gets the mask of all virtual displays (logical or) """
         image = np.zeros((self.height, self.width, 1), dtype=np.bool)
         for vdisp in self.get_display_info()['virtualDisplays']:
             image |= self.get_virtual_display_mask(vdisp["id"])
-        return image
+        if squeeze:
+            return np.squeeze(image)
+        else:
+            return image
 
     def get_virtual_display_mirror(self,vdisp_name):
         viewport_idx = self._get_viewport_index(vdisp_name)
