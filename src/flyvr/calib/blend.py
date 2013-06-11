@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import sys
+import os.path
+import collections
+
 import numpy as np
 import scipy.spatial
 import scipy.ndimage as nd
@@ -10,8 +13,11 @@ from PIL import Image, ImageDraw
 
 try:
     from ..exr import read_exr, save_exr
+    from ..display_client import DisplayServerProxy
 except ValueError:
     from exr import read_exr, save_exr
+    from display_client import fill_polygon,DisplayServerProxy
+
 
 def convexHull (quv):
     hull = scipy.spatial.Delaunay(quv).convex_hull 
@@ -72,49 +78,53 @@ def getViewportMask(fname):
         drawMask.polygon(a, fill=color, outline=color) # draw binary mask
         color+=1
     return np.array(mask)
-    
 
-def main():   
+def getViewportMask2(name):
+    ds = DisplayServerProxy("/"+name, wait=False,prefer_parameter_server_properties=True)
+    mask = np.squeeze(ds.new_image(color=0,nchan=1))
+    for i,vdisp in enumerate(ds.get_virtual_displays()):
+        color = i + 1
+        fill_polygon(vdisp['viewport'],mask,color)
+    return mask
+
+def main():
+
+    DISPLAY_SERVERS = ("display_server0", "display_server1", "display_server3")
+
     in_directory=sys.argv[1] # directory, where input and output files are located 
     savePath=in_directory # path for debug output
 
-    in_file_numbers=[0, 1, 3] # server numbers to put into filenames below
-    in_name='display_server%d.nointerp.exr'
-    in_name_interp='display_server%d.exr'
-    mask_name='ds%d.yaml'
-
-    out_name='display_server%d.blend.exr'
-
     UV_scale=[2400, 1133] # resolution of intermediary UV map
-    #UV_scale=[800, 400]
-    images=[]
     masks=[]
     gradients=[]
+    # generate blend masks in UV space
+    blended=[]
     fig=plt.figure()
     fig.canvas.set_window_title('Sample Points')
     imgCount=0
 
-    for iarg in range(0,len(in_file_numbers)):
-        in_file_name = in_directory + '/' + in_name % in_file_numbers[iarg]
+    for iarg,name in enumerate(DISPLAY_SERVERS):
+        in_file_name = os.path.join(in_directory,"%s.nointerp.exr" % name)
         print "reading: ", in_file_name
-        # read OpenEXR file    
+        # read OpenEXR file (M is an r,g,b) tuple
         M = read_exr(in_file_name)
         (channels, height, width) = np.shape(M)
-        images.append(M)
 
-        mask_fname = in_directory + '/' + mask_name % in_file_numbers[iarg]
-        print 'reading: ', mask_fname
-        mask_index = getViewportMask(mask_fname)
+        mask_index = getViewportMask2(name)
 
-
-        
         #import pdb; pdb.set_trace()    
         plt.subplot(3, 1, iarg+1)
         plt.title(in_file_name)
         plt.imshow(mask_index)
         L=M[0]>-0.99 
         YX=np.nonzero(L)
+
+        print L.shape
+
         plt.plot( YX[1], YX[0], ".w")
+
+        #plt.show()
+
         for i in [1, 2, 3]: # loop over viewports
             # valid samples are where M[0] > -1 and mask_index==i
             L=np.logical_and(M[0]>-0.99, mask_index==i) 
@@ -182,9 +192,6 @@ def main():
         
     save_exr( savePath+"gradSum.exr", r=gradSum, g=gradSum, b=gradSum, comments='' )    
 
-    # generate blend masks in UV space
-    blended=[]
-
     fig=plt.figure()
     fig.canvas.set_window_title('Blended Viewports in UV')
     for i in range(0,len(gradients)): # loop over viewports
@@ -199,8 +206,8 @@ def main():
     plt.show(block=False)    
     plt.figure()
     count=0    # count masks
-    for iarg in range(0,len(in_file_numbers)):
-        in_file_name = in_directory + '/' + in_name_interp % in_file_numbers[iarg]
+    for iarg,name in enumerate(DISPLAY_SERVERS):
+        in_file_name = os.path.join(in_directory,"%s.exr" % name)
 #        print "reading: ", in_file_name
         # read interpolated OpenEXR file    
         M = read_exr(in_file_name)
@@ -223,7 +230,7 @@ def main():
             #I[mask]=gradients[count][(V[mask], U[mask])]+1
             count += 1  # running index of masks
 
-        out_file_name = in_directory + '/' + out_name % in_file_numbers[iarg]
+        out_file_name = os.path.join(in_directory,"%s.blend.exr" % name)
         print "writing: ", out_file_name
         save_exr( out_file_name, r=M[0], g=M[1], b=I, comments='blended masks' )
         #save_exr( savePath+"gradientUV_"+str(iarg)+".exr", r=I, g=I, b=I, comments='blended masks' )
