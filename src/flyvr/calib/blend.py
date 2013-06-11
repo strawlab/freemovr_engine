@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import sys
 import numpy as np
-import scipy.cluster.hierarchy
-from scipy import ndimage
+import scipy.ndimage as nd
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
 import yaml
+
+from PIL import Image, ImageDraw
 
 try:
     from ..exr import read_exr, save_exr
@@ -163,7 +163,7 @@ def main():
 			
 			# calculate distance gradient in UV space
 			p = np.array(img)
-			pg=ndimage.distance_transform_edt(p)
+			pg=nd.distance_transform_edt(p)
 			#plt.subplot(2,3, 3+i)
 
 			if has_wraparound:
