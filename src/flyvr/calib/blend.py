@@ -56,37 +56,6 @@ def mergedHull (q1, q2):
     idx = np.argsort(np.arctan2(A[:,1], A[:,0])) # idx now contains the ordered indices of the merged convex hulls
     return ps[idx]
     
-def getViewportMask(fname):
-    with open(fname, 'r') as f:
-        config = yaml.load(f)
-        for k in ("display", "p2c", "p2g"):
-            if not config.has_key(k):
-                print "malformed calibration config, missing %s" % k
-                exit()
-
-    virtualDisplays=config["display"]["virtualDisplays"]
-    viewports=[]
-
-    for vD in virtualDisplays:
-        viewports.append(vD["viewport"])
-        
-    mask = Image.new('L', (1024, 768), 0)
-    drawMask=ImageDraw.Draw(mask)
-    color=1;
-    for v in viewports:
-        a=tuple(tuple(x) for x in v)
-        drawMask.polygon(a, fill=color, outline=color) # draw binary mask
-        color+=1
-    return np.array(mask)
-
-def getViewportMask2(name):
-    ds = DisplayServerProxy("/"+name, wait=False,prefer_parameter_server_properties=True)
-    mask = np.squeeze(ds.new_image(color=0,nchan=1))
-    for i,vdisp in enumerate(ds.get_virtual_displays()):
-        color = i + 1
-        fill_polygon(vdisp['viewport'],mask,color)
-    return mask
-
 def main():
 
     DISPLAY_SERVERS = ("display_server0", "display_server1", "display_server3")
@@ -99,8 +68,6 @@ def main():
     gradients=[]
     # generate blend masks in UV space
     blended=[]
-    fig=plt.figure()
-    fig.canvas.set_window_title('Sample Points')
     imgCount=0
 
     for iarg,name in enumerate(DISPLAY_SERVERS):
@@ -110,24 +77,12 @@ def main():
         M = read_exr(in_file_name)
         (channels, height, width) = np.shape(M)
 
-        mask_index = getViewportMask2(name)
+        dsc = DisplayServerProxy("/"+name, wait=False,prefer_parameter_server_properties=True)
 
-        #import pdb; pdb.set_trace()    
-        plt.subplot(3, 1, iarg+1)
-        plt.title(in_file_name)
-        plt.imshow(mask_index)
-        L=M[0]>-0.99 
-        YX=np.nonzero(L)
-
-        print L.shape
-
-        plt.plot( YX[1], YX[0], ".w")
-
-        #plt.show()
-
-        for i in [1, 2, 3]: # loop over viewports
+        for viewport in dsc.virtual_displays: # loop over viewports
+            mask_index = dsc.get_virtual_display_mask(viewport,squeeze=True)
             # valid samples are where M[0] > -1 and mask_index==i
-            L=np.logical_and(M[0]>-0.99, mask_index==i) 
+            L=np.logical_and(M[0]>-0.99, mask_index)
 
             # coordinates of valid sample points
             YX=np.nonzero(L)
@@ -148,8 +103,6 @@ def main():
             quv=np.transpose([V*UV_scale[1], U*UV_scale[0]])
  
             imgCount+=1
-            plt.axis('equal')
-            plt.plot(np.transpose(q)[1], np.transpose(q)[0], ".")
 
             ch=mergedHull(q, quv)
             #ch=convexHull(q)
