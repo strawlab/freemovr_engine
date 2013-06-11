@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 import sys
-import flyvr.exr
 import numpy as np
 import scipy.cluster.hierarchy
 from scipy import ndimage
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 import yaml
+
+try:
+    from ..exr import read_exr, save_exr
+except ValueError:
+    from exr import read_exr, save_exr
 
 def convexHull (quv):
 	hull = scipy.spatial.Delaunay(quv).convex_hull 
@@ -70,8 +74,8 @@ def getViewportMask(fname):
 	
 
 def main():   
-	savePath='/mnt/hgfs/VMware_shared/' # path for debug output
 	in_directory=sys.argv[1] # directory, where input and output files are located 
+	savePath=in_directory # path for debug output
 
 	in_file_numbers=[0, 1, 3] # server numbers to put into filenames below
 	in_name='display_server%d.nointerp.exr'
@@ -93,7 +97,7 @@ def main():
 		in_file_name = in_directory + '/' + in_name % in_file_numbers[iarg]
 		print "reading: ", in_file_name
 		# read OpenEXR file    
-		M = flyvr.exr.read_exr(in_file_name)
+		M = read_exr(in_file_name)
 		(channels, height, width) = np.shape(M)
 		images.append(M)
 
@@ -149,7 +153,7 @@ def main():
 			mask = Image.new('F', (width, height), 0)
 			drawMask=ImageDraw.Draw(mask)
 			drawMask.polygon(tp, fill=1) # draw binary mask
-			flyvr.exr.save_exr( savePath+"masks_"+str(imgCount)+".exr", r=mask, g=mask, b=mask, comments='' )		
+			save_exr( savePath+"masks_"+str(imgCount)+".exr", r=mask, g=mask, b=mask, comments='' )		
 			masks.append(np.array(mask))
 
 			# now generate binary viewport mask in UV space
@@ -165,7 +169,7 @@ def main():
 			if has_wraparound:
 				pg=np.roll(pg, -np.shape(pg)[1]/2, axis=1)
 
-#			flyvr.exr.save_exr( savePath+"gradient_"+str(imgCount)+".exr", r=pg, g=p, b=pg, comments='' )
+#			save_exr( savePath+"gradient_"+str(imgCount)+".exr", r=pg, g=p, b=pg, comments='' )
 			gradients.append(pg) # save gradient to list
 
 	plt.show(block=False)
@@ -175,7 +179,7 @@ def main():
 	for i in range(1, len(gradients)): # loop over other gradients
 		gradSum+=gradients[i]
 		
-	flyvr.exr.save_exr( savePath+"gradSum.exr", r=gradSum, g=gradSum, b=gradSum, comments='' )	
+	save_exr( savePath+"gradSum.exr", r=gradSum, g=gradSum, b=gradSum, comments='' )	
 
 	# generate blend masks in UV space
 	blended=[]
@@ -186,7 +190,7 @@ def main():
 		g=gradients[i]>0
 		tr=np.zeros(np.shape(gradients[i])) 
 		tr[g]=np.divide(gradients[i][g], gradSum[g])
-#		flyvr.exr.save_exr( savePath+"gradientV_"+str(i)+".exr", r=tr, g=tr, b=tr, comments='' )
+#		save_exr( savePath+"gradientV_"+str(i)+".exr", r=tr, g=tr, b=tr, comments='' )
 		blended.append(tr) # save blend mask to list
 		plt.subplot(3, 3, i+1)
 		plt.imshow(Image.fromarray(tr*255), origin='lower') # show blended masks
@@ -198,7 +202,7 @@ def main():
 		in_file_name = in_directory + '/' + in_name_interp % in_file_numbers[iarg]
 #		print "reading: ", in_file_name
 		# read interpolated OpenEXR file    
-		M = flyvr.exr.read_exr(in_file_name)
+		M = read_exr(in_file_name)
 
 		# extract channels
 		U=(M[0]*UV_scale[0]-0.5).astype(int)
@@ -220,9 +224,9 @@ def main():
 
 		out_file_name = in_directory + '/' + out_name % in_file_numbers[iarg]
 		print "writing: ", out_file_name
-		flyvr.exr.save_exr( out_file_name, r=M[0], g=M[1], b=I, comments='blended masks' )
-		#flyvr.exr.save_exr( savePath+"gradientUV_"+str(iarg)+".exr", r=I, g=I, b=I, comments='blended masks' )
-		#flyvr.exr.save_exr( savePath+"forward_"+str(iarg)+".exr", r=J, g=J, b=J, comments='' )
+		save_exr( out_file_name, r=M[0], g=M[1], b=I, comments='blended masks' )
+		#save_exr( savePath+"gradientUV_"+str(iarg)+".exr", r=I, g=I, b=I, comments='blended masks' )
+		#save_exr( savePath+"forward_"+str(iarg)+".exr", r=J, g=J, b=J, comments='' )
 		
 #		import pdb; pdb.set_trace()
 			
