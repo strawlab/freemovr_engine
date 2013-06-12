@@ -1,0 +1,24 @@
+display:
+  displayNum: 0
+  height: 768
+  screenNum: 0
+  virtualDisplays:
+  - id: vdisp
+    viewport:
+    - [0, 0]
+    - [1024, 0]
+    - [1024, 0]
+    - [0, 768]
+  width: 1024
+  windowDecoration: true
+  x: 0
+  y: 0
+geom:
+  axis: {x: 0.0, y: 0.0, z: 1.0}
+  base: {x: 0.0, y: 0.0, z: 0.0}
+  model: cylinder
+  radius: 0.5
+gamma: 1.0
+red_max: false
+stimulus_plugins: []
+tethered_mode: false

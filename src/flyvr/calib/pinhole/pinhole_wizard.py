@@ -576,6 +576,8 @@ class UI:
         comments = yaml.dump(obj)
 
         tcs = np.zeros( (self.dsc.height,self.dsc.width,2))-1
+        dist = np.nan*np.ones( (self.dsc.height,self.dsc.width))
+        angle = np.nan*np.ones( (self.dsc.height,self.dsc.width))
         allmask = np.zeros((self.dsc.height,self.dsc.width))
 
         di = self.dsc.get_display_info()
@@ -603,13 +605,28 @@ class UI:
             camera = row[VS_CAMERA_OBJECT]
             assert camera is not None
 
-            this_tcs = self.geom.compute_for_camera_view( camera,
-                                                          what='texture_coords' )
+            this_tcs = self.geom.compute_for_camera_view(camera,
+                                                         what='texture_coords')
+            this_dist = self.geom.compute_for_camera_view(camera,
+                                                          what='distance' )
+            this_angle = self.geom.compute_for_camera_view(camera,
+                                                           what='incidence_angle' )
+
             this_tcs[ np.isnan(this_tcs) ] = -1.0 # nan -> -1
-            tcs[mask] = this_tcs[mask] # copy the important parts to the full display image
+
+            # copy the important parts to the full display image
+            tcs[mask] = this_tcs[mask]
+            dist[mask] = this_dist[mask]
+            angle[mask] = this_angle[mask]
         r=tcs[:,:,0]
         g=tcs[:,:,1]
-        b=np.ones_like(tcs[:,:,1])
+        if 0:
+            # Replace this code with something that calculates a real
+            # blending value here based on distance. Probably need to
+            # normalize by the maximum distance.
+            b = f(dist,angle)
+        else:
+            b=np.ones_like(tcs[:,:,1])
         save_exr( fname, r=r, g=g, b=b)
 
     def on_save_calibration_exr(self,*args):

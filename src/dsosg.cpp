@@ -115,62 +115,6 @@ public:
         CameraList                  _Cameras;
 };
 
-osg::ref_ptr<osg::Group>add_bg_quad(Poco::Path shader_path, std::string fname) {
-    osg::Image* image = osgDB::readImageFile(fname);
-	osg::Texture2D* texture = new osg::Texture2D(image);
-    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-    texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR_MIPMAP_LINEAR );
-    texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
-
-	osg::Group* group = new osg::Group;
-
-	osg::Geode* geode = new osg::Geode();
-	{
-		// make quad
-		osg::Vec2Array* vertices = new osg::Vec2Array;
-		float low=-1.0;
-		vertices->push_back(  osg::Vec2(low, low) );
-		vertices->push_back(  osg::Vec2(low,  1.0) );
-		vertices->push_back(  osg::Vec2( 1.0,  1.0) );
-		vertices->push_back(  osg::Vec2( 1.0, low) );
-
-		osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
-		this_geom->setVertexArray(vertices);
-		this_geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
-		geode->addDrawable(this_geom);
-	}
-	group->addChild(geode);
-
-	std::vector< osg::ref_ptr<osg::Program> > _programList;
-	osg::Program* BackgroundImageProgram;
-	osg::Shader*  BackgroundImageVertObj;
-	osg::Shader*  BackgroundImageFragObj;
-
-	BackgroundImageProgram = new osg::Program;
-	BackgroundImageProgram->setName( "background_image" );
-	_programList.push_back( BackgroundImageProgram );
-	BackgroundImageVertObj = new osg::Shader( osg::Shader::VERTEX );
-	BackgroundImageFragObj = new osg::Shader( osg::Shader::FRAGMENT );
-	BackgroundImageProgram->addShader( BackgroundImageFragObj );
-	BackgroundImageProgram->addShader( BackgroundImageVertObj );
-
-	BackgroundImageVertObj->loadShaderSourceFromFile( shader_path.absolute().append("background_image.vert").toString());
-	BackgroundImageFragObj->loadShaderSourceFromFile( shader_path.absolute().append("background_image.frag").toString());
-
-	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform( osg::Uniform::SAMPLER_2D, "BackgroundImage" );
-
-	osg::StateSet* ss = geode->getOrCreateStateSet();
-	ss->setAttributeAndModes(BackgroundImageProgram, osg::StateAttribute::ON);
-	ss->addUniform( observerViewCubeUniformSampler );
-	ss->setTextureAttributeAndModes(0,texture,osg::StateAttribute::ON);
-	//ss->setMode(GL_BLEND, osg::StateAttribute::ON);
-    ss->setRenderBinDetails(-1,"RenderBin");
-	ss->setMode(GL_DEPTH, osg::StateAttribute::OFF);
-
-	return group;
-}
-
 osg::ref_ptr<osg::Camera> create_HUD_cam(unsigned int width, unsigned int height)
 {
   // create a camera to set up the projection and model view matrices, and the subgraph to drawn in the HUD
@@ -346,7 +290,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
 {
     json_error_t json_error;
-    json_t *json_config, *json_stimulus, *json_geom;
+    json_t *json_config;
+    json_t *json_stimulus, *json_geom;
 
     // ensure we interpret this as a directory (ensure trailing slash)
     _flyvr_basepath.makeAbsolute(); _flyvr_basepath.makeDirectory();
@@ -399,7 +344,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	}
 
     json_config = json_load_file(_config_file_path.toString().c_str(), 0, &json_error);
-
 	json_stimulus = json_object_get(json_config, "stimulus_plugins");
 	json_geom = json_object_get(json_config, "geom");
 
@@ -478,6 +422,17 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	flyvr_assert(_current_stimulus != NULL);
 	std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
+	// create a map from topic name to one or more stimulus plugin names
+	for (std::map<std::string, StimulusInterface*>::const_iterator i=_stimulus_plugins.begin();
+		i!=_stimulus_plugins.end(); ++i ) {
+		std::vector<std::string> topics = i->second->get_topic_names();
+		for (std::vector<std::string>::iterator j = topics.begin() ; j != topics.end(); ++j) {
+			if (_stimulus_topics.count(*j) == 0)
+				_stimulus_topics[*j] = std::vector<std::string>();
+			_stimulus_topics[*j].push_back(i->first);
+        }
+	}
+
 	_active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
 	_active_3d_world->addChild( _current_stimulus->get_3d_world() );
 
@@ -497,23 +452,31 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
         _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
-			// draw a small red cone as the observer
             osg::ref_ptr<osg::PositionAttitudeTransform> obs_pat = new osg::PositionAttitudeTransform;
             obs_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
             osg::Quat attitude;
             attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
             obs_pat->setAttitude(attitude);
 
-			osg::Geode* geode_1 = new osg::Geode;
-            float height = 2* observer_radius;
-            osg::ref_ptr<osg::ShapeDrawable> shape = new osg::ShapeDrawable(new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height));
-			shape->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
-			osg::StateSet* ss = geode_1->getOrCreateStateSet();
-			ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
-			geode_1->addDrawable(shape);
-			obs_pat->addChild(geode_1);
-			_observer_pat->addChild(obs_pat);
-			root->addChild(_observer_pat);
+            osg::Shape *shape;
+            if (observer_radius > 0) {
+                // draw a small red cone as the observer
+                float height = 2* observer_radius;
+                shape = new osg::Cone(osg::Vec3(0, 0, 0), observer_radius, height);
+            } else {
+                // draw a small red sphere as the observer
+                shape = new osg::Sphere(osg::Vec3(0, 0, 0), -1.0*observer_radius);
+            }
+
+            osg::ref_ptr<osg::ShapeDrawable> shaped = new osg::ShapeDrawable(shape);
+            osg::Geode* geode_1 = new osg::Geode;
+            shaped->setColor(osg::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            osg::StateSet* ss = geode_1->getOrCreateStateSet();
+            ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+            geode_1->addDrawable(shaped);
+            obs_pat->addChild(geode_1);
+            _observer_pat->addChild(obs_pat);
+            root->addChild(_observer_pat);
 		}
     }
 
@@ -660,6 +623,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     _viewer->setSceneData(root.get());
     _viewer->getViewerStats()->collectStats("frame_rate",true);
 
+    json_decref(json_config);
+
     //osgDB::writeNodeFile(*(root.get()), _mode + std::string(".osg"));
 }
 
@@ -719,6 +684,12 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
         std::cerr << "exception while calling stimulus->get_message_type(\"" << topic_name << "\")" << std::endl;
         throw; // rethrow the original exception
     }
+}
+
+void DSOSG::topic_receive_json_message(const std::string& topic_name, const std::string& json_message) {
+    std::vector<std::string> &stimulus = _stimulus_topics[topic_name];
+    for (int i=0; i<stimulus.size(); i++)
+        stimulus_receive_json_message(stimulus.at(i),topic_name,json_message);
 }
 
 void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
@@ -872,7 +843,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
 		flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
 		_viewer->getCamera()->setGraphicsContext(gc.get());
-        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.5f, 0.0f)); // clear blue
+        _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.3f, 0.0f)); // clear dark gray
 
         _wcc = new WindowCaptureCallback();
 
@@ -913,6 +884,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 	else {
 		throw std::invalid_argument("unknown mode");
 	}
+
+    _viewer->setLightingMode( osg::View::SKY_LIGHT );
 
     // If the window frame is on, show the mouse cursor.
     if (traits->windowDecoration) {
@@ -965,6 +938,11 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
 
 void DSOSG::frame() {
 	_viewer->frame();
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_osg_capture_mutex);
+    if (!_osg_capture_filename.empty()){
+        osgDB::writeNodeFile(*(_active_3d_world.get()), _osg_capture_filename);
+        _osg_capture_filename = "";
+    }
 };
 
 bool DSOSG::done() {
@@ -996,9 +974,14 @@ void DSOSG::setWindowName(std::string name) {
     }
 };
 
-void DSOSG::setCaptureFilename(std::string name) {
+void DSOSG::setCaptureImageFilename(std::string name) {
     flyvr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
     _wcc->set_next_filename( name );
+}
+
+void DSOSG::setCaptureOSGFilename(std::string name) {
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_osg_capture_mutex);
+    _osg_capture_filename = name;
 }
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {

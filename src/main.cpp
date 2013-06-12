@@ -137,6 +137,7 @@ int main(int argc, char**argv) {
   arguments.getApplicationUsage()->setDescription("Manual display/camera calibration utility");
   arguments.getApplicationUsage()->addCommandLineOption("--config <filename>","Display server config JSON file");
   arguments.getApplicationUsage()->addCommandLineOption("--display-mode <name>","Display mode");
+  arguments.getApplicationUsage()->addCommandLineOption("--stimulus <name>","Name of stimulus plugin to start rendering");
 
   osg::ApplicationUsage::Type help = arguments.readHelpType();
   if (help != osg::ApplicationUsage::NO_HELP) {
@@ -173,9 +174,13 @@ int main(int argc, char**argv) {
         display = json_dumps(json, 0);
     }
   }
+  json_decref(conf);
 
   dsosg->setup_viewer("display_server", display);
-  dsosg->set_stimulus_plugin("Stimulus3DDemo");
+
+  std::string stimulus = "Stimulus3DDemo";
+  while(arguments.read("--stimulus", stimulus));
+  dsosg->set_stimulus_plugin(stimulus);
 
   sock.listen();
   Poco::Net::TCPServer server(new MyConnectionFactory(
@@ -198,10 +203,7 @@ int main(int argc, char**argv) {
 
         while (!topicmessages.empty()) {
             StimulusMessage &s = topicmessages.front();
-
-            std::cerr << s.topic << " " << s.json << "\n";
-            //dsosg->stimulus_receive_json_message(/*get plugin name from map*/, s.topic, s.json)
-
+            dsosg->topic_receive_json_message(s.topic, s.json);
             topicmessages.pop();
         }
 

@@ -29,6 +29,16 @@ def range_0_2pi(angle):
     return np.fmod((np.fmod(angle,pi2) + pi2),pi2)
 
 class ModelBase(object):
+    def get_distance_to_first_surface(self, a, b):
+        """return distance surface from point a in direction of point b.
+
+        a is Nx3 array of points
+        b is Nx3 array of points
+
+        return length N vector of points
+        """
+        raise NotImplementedError
+
     def get_first_surface(self, a, b):
         """return point on surface closest to point a in direction of point b.
 
@@ -116,13 +126,27 @@ class Cylinder(ModelBase):
         result = np.vstack((tc0,tc1))
         return result.T
 
-    def get_first_surface(self,a,b):
-        """return point on surface closest to point a in direction of point b.
+    def worldcoord2normal(self,wc):
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        wc = wc.T
+
+        x,y,z = wc
+        x0 = x-self.base.x
+        y0 = y-self.base.y
+        r = np.sqrt( x0**2 + y0**2 )
+
+        result = np.vstack( (x0/r, y0/r, z*0) )
+        return result.T
+
+    def get_distance_to_first_surface(self, a, b):
+        """return distance surface from point a in direction of point b.
 
         a is Nx3 array of points
         b is Nx3 array of points
 
-        return Nx3 array of points
+        return length N vector of points
         """
         a = np.array(a,copy=False)
         assert a.ndim==2
@@ -178,6 +202,41 @@ class Cylinder(ModelBase):
         tt[zz > self.axis.z] = np.nan
 
         tmin = np.nanmin(tt, axis=0) # find closest to camera
+        return tmin
+
+    def get_first_surface(self,a,b):
+        """return point on surface closest to point a in direction of point b.
+
+        a is Nx3 array of points
+        b is Nx3 array of points
+
+        return Nx3 array of points
+        """
+        tmin = self.get_distance_to_first_surface(a,b)
+
+        a = np.array(a,copy=False)
+        b = np.array(b,copy=False)
+        inshape = a.shape
+
+        a = a.T
+        b = b.T
+
+        # Move so that cylinder base is at (0,0).
+        ax = a[0] - self.base.x
+        ay = a[1] - self.base.y
+        az = a[2] - self.base.z
+
+        bx = b[0] - self.base.x
+        by = b[1] - self.base.y
+        bz = b[2] - self.base.z
+
+        del a, b
+
+        # Now create vector between points a and b
+        sx = bx-ax
+        sy = by-ay
+        sz = bz-az
+
         x = ax+sx*tmin
         y = ay+sy*tmin
         z = az+sz*tmin
@@ -254,13 +313,28 @@ class Sphere(ModelBase):
         result = np.vstack((tc0,tc1))
         return result.T
 
-    def get_first_surface(self,a,b):
-        """return point on surface closest to point a in direction of point b.
+    def worldcoord2normal(self,wc):
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        wc = wc.T
+
+        x,y,z = wc
+        x0 = x-self.center.x
+        y0 = y-self.center.y
+        z0 = z-self.center.z
+        r = np.sqrt( x0**2 + y0**2 + z0**2 )
+
+        result = np.vstack( (x0/r, y0/r, z0/r) )
+        return result.T
+
+    def get_distance_to_first_surface(self, a, b):
+        """return distance surface from point a in direction of point b.
 
         a is Nx3 array of points
         b is Nx3 array of points
 
-        return Nx3 array of points
+        return length N vector of points
         """
         a = np.array(a,copy=False)
         assert a.ndim==2
@@ -307,6 +381,41 @@ class Sphere(ModelBase):
         tt[tt <= 0] = np.nan # behind camera - invalid
 
         tmin = np.nanmin(tt, axis=0) # find closest to camera
+        return tmin
+
+    def get_first_surface(self,a,b):
+        """return point on surface closest to point a in direction of point b.
+
+        a is Nx3 array of points
+        b is Nx3 array of points
+
+        return Nx3 array of points
+        """
+        tmin = self.get_distance_to_first_surface(a,b)
+
+        a = np.array(a,copy=False)
+        inshape = a.shape
+        b = np.array(b,copy=False)
+
+        a = a.T
+        b = b.T
+
+        # Move so that sphere center is at (0,0).
+        ax = a[0] - self.center.x
+        ay = a[1] - self.center.y
+        az = a[2] - self.center.z
+
+        bx = b[0] - self.center.x
+        by = b[1] - self.center.y
+        bz = b[2] - self.center.z
+
+        del a, b
+
+        # Now create vector between points a and b
+        sx = bx-ax
+        sy = by-ay
+        sz = bz-az
+
         x = ax+sx*tmin
         y = ay+sy*tmin
         z = az+sz*tmin
@@ -337,8 +446,9 @@ class PlanarRectangle(ModelBase):
 
         self._dir_u = self._right_lower_corner - self._left_lower_corner
         self._dir_v = self._left_upper_corner - self._left_lower_corner
+        self._normal = np.cross( self._dir_u, self._dir_v )
         super(PlanarRectangle,self).__init__()
-        
+
     def __repr__(self):
         return 'PlanarRectangle( lowerleft=%r, upperleft=%r, lowerright=%r )'%(
             self._left_lower_corner[:,0].tolist(),
@@ -386,13 +496,25 @@ class PlanarRectangle(ModelBase):
         result = np.vstack((u,v))
         return result.T
 
-    def get_first_surface(self,a,b):
-        """return point on surface closest to point a in direction of point b.
+    def worldcoord2normal(self,wc):
+        wc = np.array(wc,copy=False)
+        assert wc.ndim==2
+        assert wc.shape[1]==3
+        N = wc.shape[0]
+
+        one_sz = np.ones((1,N))
+        bad = np.isnan(wc[:,0])
+        result = (self._normal[:,np.newaxis]*one_sz).T
+        result[bad] = np.nan
+        return result
+
+    def get_distance_to_first_surface(self, a, b):
+        """return distance surface from point a in direction of point b.
 
         a is Nx3 array of points
         b is Nx3 array of points
 
-        return Nx3 array of points
+        return length N vector of points
         """
         a = np.array(a,copy=False)
         assert a.ndim==2
@@ -404,27 +526,52 @@ class PlanarRectangle(ModelBase):
         assert b.shape[1]==3
         assert b.shape==inshape
 
-        a = a.T
-        b = b.T
+        # See http://en.wikipedia.org/wiki/Line-plane_intersection
+        # especially the "Algebraic form" section.
 
-        # Move so that lowerleft is at (0,0).
-        ax = a[0] - self.left_lower_corner.x
-        ay = a[1] - self.left_lower_corner.y
-        az = a[2] - self.left_lower_corner.z
+        # Create variables according to wikipedia notation linked above
+        l = b-a
+        l0 = a
+        n = self._normal
+        p0 = np.array( [self.left_lower_corner.x,
+                        self.left_lower_corner.y,
+                        self.left_lower_corner.z],
+                       dtype=np.float)
 
-        bx = b[0] - self.left_lower_corner.x
-        by = b[1] - self.left_lower_corner.y
-        bz = b[2] - self.left_lower_corner.z
+        # Now, do the math...
 
-        del a, b
+        old_settings = np.seterr(invalid='ignore',divide='ignore') # we expect some nans below
+        d = np.dot((p0-l0),n)/np.dot(l,n)
+        d[np.isinf(d)] = np.nan # don't let infinity in
+        d[d<0] = np.nan # don't look backwards, either
+        np.seterr(**old_settings)
+        return d
 
-        # Now create vector between points a and b
-        sx = bx-ax
-        sy = by-ay
-        sz = bz-az
+    def get_first_surface(self,a,b):
+        """return point on surface closest to point a in direction of point b.
 
-        old_settings = np.seterr(invalid='ignore') # we expect some nans below
-        raise NotImplementedError('not finished yet')
+        a is Nx3 array of points
+        b is Nx3 array of points
+
+        return Nx3 array of points
+        """
+        d = self.get_distance_to_first_surface(a,b)
+
+        a = np.array(a,copy=False)
+        assert a.ndim==2
+        assert a.shape[1]==3
+        inshape = a.shape
+
+        b = np.array(b,copy=False)
+        assert b.ndim==2
+        assert b.shape[1]==3
+        assert b.shape==inshape
+
+        l = b-a
+        l0 = a
+        d = d[:,np.newaxis]
+        pt = d*l+l0
+        return pt
 
 def get_distance_between_point_and_ray( c, a, b ):
     """return distance between point c and ray from a in direction of point b.
@@ -500,6 +647,10 @@ class Geometry:
         elif geom_dict['model']=='sphere':
             self.model = Sphere(center=geom_dict['center'],
                                 radius=geom_dict['radius'])
+        elif geom_dict['model']=='planar_rectangle':
+            kwargs = geom_dict.copy()
+            del kwargs['model']
+            self.model = PlanarRectangle(**kwargs)
         else:
             raise ValueError("unknown model type: %s"%geom_dict['model'])
 
@@ -517,12 +668,14 @@ class Geometry:
 
         distorted = np.vstack((XX,YY)).T
 
-        ray = camera.project_pixel_to_3d_ray(distorted, distorted=True )
+        ray = camera.project_pixel_to_3d_ray(distorted,
+                                             distorted=True,
+                                             distance=1.0 )
 
         camcenter = camera.camcenter_like(ray)
-        world_coords = self.model.get_first_surface(camcenter,ray)
 
         if what=='world_coords':
+            world_coords = self.model.get_first_surface(camcenter,ray)
             rx, ry, rz = world_coords.T
             # reshape into image-sized arrays
             rx.shape = (camera.height, camera.width, 1)
@@ -532,6 +685,7 @@ class Geometry:
             assert output.shape == (camera.height, camera.width, 3)
 
         elif what == 'texture_coords':
+            world_coords = self.model.get_first_surface(camcenter,ray)
             texcoords = self.model.worldcoord2texcoord(world_coords)
             tc0, tc1 = texcoords.T
             # reshape into image-sized arrays
@@ -539,6 +693,21 @@ class Geometry:
             tc1.shape = (camera.height, camera.width, 1)
             output = np.concatenate((tc0,tc1),axis=2)
             assert output.shape == (camera.height, camera.width, 2)
+
+        elif what == 'distance':
+            distance = self.model.get_distance_to_first_surface(camcenter,ray)
+            distance.shape = (camera.height, camera.width)
+            output = distance
+
+        elif what == 'incidence_angle':
+            world_coords = self.model.get_first_surface(camcenter,ray)
+            surface_normal = self.model.worldcoord2normal(world_coords)
+            projector_dir = -ray
+            dot_product = np.sum(projector_dir*surface_normal,axis=1)
+            angle = np.arccos(dot_product)
+            angle.shape = (camera.height, camera.width)
+            output = angle
+
         return output
 
 def angle_between_vectors(v1, v2):

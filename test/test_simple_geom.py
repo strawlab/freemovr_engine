@@ -1,8 +1,77 @@
 import numpy as np
+import yaml
 
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import flyvr.simple_geom as simple_geom
+import camera_model
+
+def get_sample_camera():
+    yaml_str = """header:
+  seq: 0
+  stamp:
+    secs: 0
+    nsecs: 0
+  frame_id: ''
+height: 494
+width: 659
+distortion_model: plumb_bob
+D:
+  - -0.331416226762
+  - 0.143584747016
+  - 0.00314558656669
+  - -0.00393597842852
+  - 0.0
+K:
+  - 516.385667641
+  - 0.0
+  - 339.167079537
+  - 0.0
+  - 516.125799368
+  - 227.379935241
+  - 0.0
+  - 0.0
+  - 1.0
+R:
+  - 1.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+P:
+  - 444.369750977
+  - 0.0
+  - 337.107817516
+  - 0.0
+  - 0.0
+  - 474.186859131
+  - 225.062742824
+  - 0.0
+  - 0.0
+  - 0.0
+  - 1.0
+  - 0.0
+binning_x: 0
+binning_y: 0
+roi:
+  x_offset: 0
+  y_offset: 0
+  height: 0
+  width: 0
+  do_rectify: False"""
+    d = yaml.load(yaml_str)
+    cam1 = camera_model.load_camera_from_dict(d,extrinsics_required=False)
+
+    eye = (10,20,30)
+    lookat = (11,20,30)
+    up = (0,-1,0)
+    cam = cam1.get_view_camera(eye, lookat, up)
+
+    return cam
 
 def nan_shape_allclose( a,b, **kwargs):
     if a.shape != b.shape:
@@ -54,25 +123,26 @@ def check_worldcoord_roundtrip(klass,kwargs):
     assert nan_shape_allclose( tc1, tc2)
     assert nan_shape_allclose( wc1, wc2 )
 
-def disabled_tst_rect():
-    # not finished yet
+def test_rect():
     ll = {'x':0, 'y':0, 'z':0}
     lr = {'x':1, 'y':0, 'z':0}
     ul = {'x':0, 'y':1, 'z':0}
 
     rect = simple_geom.PlanarRectangle(lowerleft=ll, upperleft=ul, lowerright=lr)
 
+    zval = 20.0
     # several look-at locations
     b=np.array([(0,0,0),
                 (0,1,0),
-                (0,-1,0),
+                (0,-1,zval),
                 (0,0.5,0),
                 (0,0,1),
+                (0,0,2*zval),
+                (0,0,1.0001*zval),
                 ])
 
-    # the look-from location is essentially (0,0,+inf)
     a=np.zeros( b.shape )
-    a[:,2] = 1e10
+    a[:,2] = zval
 
     actual = rect.get_first_surface(a,b)
     expected = np.array([(0,0,0),
@@ -80,8 +150,22 @@ def disabled_tst_rect():
                          (np.nan,np.nan,np.nan),
                          (0,0.5,0),
                          (0,0,0),
+                         (np.nan,np.nan,np.nan),
+                         (np.nan,np.nan,np.nan),
                          ])
+
     assert nan_shape_allclose( actual, expected)
+
+    actual_norms = rect.worldcoord2normal( actual )
+    expected_norms = np.array([(0,0,1),
+                               (0,0,1),
+                               (np.nan,np.nan,np.nan),
+                               (0,0,1),
+                               (0,0,1),
+                               (np.nan,np.nan,np.nan),
+                               (np.nan,np.nan,np.nan),
+                               ])
+    assert nan_shape_allclose( actual_norms, expected_norms)
 
 def test_cyl():
     base = {'x':0, 'y':0, 'z':0}
@@ -109,6 +193,11 @@ def test_cyl():
                          (np.nan,np.nan,np.nan),
                          ])
     assert nan_shape_allclose( actual, expected)
+
+    actual_norms = cyl.worldcoord2normal( actual )
+    expected_norms = expected
+    assert nan_shape_allclose( actual_norms, expected_norms)
+
 
 def test_sphere():
     center = {'x':0, 'y':0, 'z':0}
@@ -161,12 +250,30 @@ def test_sphere2():
                          ])
     assert nan_shape_allclose( actual, expected)
 
-    actual_wcs = sphere.worldcoord2texcoord( actual )
-    expected_wcs = np.array([[0, 0.5],
+    actual_tcs = sphere.worldcoord2texcoord( actual )
+    expected_tcs = np.array([[0, 0.5],
                              [0.25, 0.5],
                              [0.75, 0.5],
                              [0.0, 1.0],
                              [np.nan, np.nan],
                              [np.nan, np.nan],
                              ])
-    assert nan_shape_allclose( actual_wcs, expected_wcs)
+    assert nan_shape_allclose( actual_tcs, expected_tcs)
+
+    actual_norms = sphere.worldcoord2normal( actual )
+    expected_norms = expected
+    assert nan_shape_allclose( actual_norms, expected_norms)
+
+
+def test_geom_class():
+    cam = get_sample_camera()
+
+    d = {'model':'cylinder',
+         'base':{'x':0,'y':0,'z':0},
+         'axis':{'x':0,'y':0,'z':1},
+         'radius':1.0}
+    geom = simple_geom.Geometry(geom_dict=d)
+    wcs = geom.compute_for_camera_view(cam,'world_coords')
+    tcs = geom.compute_for_camera_view(cam,'texture_coords')
+    dist = geom.compute_for_camera_view(cam,'distance')
+    angle = geom.compute_for_camera_view(cam,'incidence_angle')
