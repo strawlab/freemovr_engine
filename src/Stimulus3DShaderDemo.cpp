@@ -49,8 +49,8 @@ private:
 
 Stimulus3DShaderDemo::Stimulus3DShaderDemo() :
     _example_param(0.5),
-    _mem("Stimulus3DDemo", 1024, Poco::SharedMemory::AccessMode(Poco::SharedMemory::AM_WRITE | Poco::SharedMemory::AM_READ)),
-    _memlock("Stimulus3DDemo")
+    _mem("_memStimulus3DDemo", 1024, Poco::SharedMemory::AccessMode(Poco::SharedMemory::AM_WRITE | Poco::SharedMemory::AM_READ)),
+    _memlock("_mutexStimulus3DDemo")  // different names for shared memory and mutex are required in windows!
 {
 }
 
