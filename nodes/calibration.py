@@ -1253,7 +1253,8 @@ if __name__ == '__main__':
         help='path to previous calibration bag file')
     parser.add_argument(
         '--continue-calibration-except', type=str, default=("",), nargs='*',
-        help='viewport strings describing parts of a calibration not to load')
+        help='viewport strings describing parts of a calibration not to load',
+        metavar="display_serverN/{vdisp_name,all}")
     parser.add_argument(
         '--show-display-servers', type=str, default=("",),
         help='show display servers with the given names (or "all") calibration in process',
