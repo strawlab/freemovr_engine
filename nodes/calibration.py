@@ -409,8 +409,13 @@ class Calib:
             fd.enable_debug_images("/mnt/ssd/CALIB/")
         if "benchmark" in debug:
             fd.enable_benchmark()
+        self.laser_handler = CameraHandler(
+                                laser_camera,
+                                debug="acquisition" in debug,
+                                enable_dynamic_reconfigure=True
+        )
         self.laser_runner = SequentialCameraRunner(
-                                (CameraHandler(laser_camera,"acquisition" in debug),),
+                                (self.laser_handler,),
                                 queue_depth=1)
         rospy.loginfo("Connecting to cam %s" % laser_camera)
         self.laser_detector = fd

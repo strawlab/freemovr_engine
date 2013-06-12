@@ -1,6 +1,11 @@
-import roslib; roslib.load_manifest('sensor_msgs')
+import roslib
+roslib.load_manifest('sensor_msgs')
+roslib.load_manifest('dynamic_reconfigure')
+
 import rospy
 import sensor_msgs.msg
+import dynamic_reconfigure.srv
+import dynamic_reconfigure.encoding
 
 import numpy as np
 import time
@@ -8,7 +13,7 @@ import os.path
 import Queue
 
 class CameraHandler(object):
-    def __init__(self,topic_prefix='',debug=False):
+    def __init__(self,topic_prefix='',debug=False,enable_dynamic_reconfigure=False):
         self.topic_prefix=topic_prefix
         self.debug = debug
         rospy.Subscriber( '%s/image_raw'%self.topic_prefix, sensor_msgs.msg.Image,
@@ -16,8 +21,37 @@ class CameraHandler(object):
         self.pipeline_max_latency = 0.2
         self.last_image = None
         self.im_queue = None
+
+        self.recon = None
+        if enable_dynamic_reconfigure:
+            self.recon = rospy.ServiceProxy('%s/set_parameters'%self.topic_prefix, dynamic_reconfigure.srv.Reconfigure)
+            self.recon_cache = {}
+
+    def reconfigure(self, **params):
+        if self.recon is not None:
+            changed = {}
+            for k,v in params.items():
+                if k in self.recon_cache:
+                    if self.recon_cache[k] != v:
+                        changed[k] = v
+                else:
+                    changed[k] = v
+
+            if changed:
+                msg = dynamic_reconfigure.encoding.encode_config(params)
+                self.recon_cache.update(changed)
+                self.recon(msg)
+                if self.im_queue is not None:
+                    #clear the queue so we get a new image with the new settings
+                    while True:
+                        try:
+                            self.im_queue.get_nowait()
+                        except Queue.Empty:
+                            break
+
     def set_im_queue(self,q):
         self.im_queue = q
+
     def get_image_callback(self,msg):
         if self.im_queue is None:
             return
