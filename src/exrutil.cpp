@@ -7,10 +7,10 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
-#include <OpenEXR/ImfTestFile.h>
-#include <OpenEXR/ImfRgbaFile.h>
-#include <OpenEXR/ImfArray.h>
-#include <OpenEXR/ImathBox.h>
+#include <ImfTestFile.h>
+#include <ImfRgbaFile.h>
+#include <ImfArray.h>
+#include <ImathBox.h>
 
 #include <sstream>
 
@@ -99,7 +99,7 @@ osg::ref_ptr<osg::Image> load_exr( std::string p2c_filename, int& width, int& he
 	const unsigned char* pData = reinterpret_cast<const unsigned char*>(pRadiance);
 	unsigned char* pData1 = const_cast<unsigned char*>(pData);
 
-	result->setInternalTextureFormat(GL_RGB32F);
+	result->setInternalTextureFormat(GL_RGB32F_ARB);
 	result->allocateImage(proj_width, proj_height, 1, GL_RGB, GL_FLOAT);
 	memcpy( result->data(), pData1, result->getTotalSizeInBytes());
 	assert (result->valid() );

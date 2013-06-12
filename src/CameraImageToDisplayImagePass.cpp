@@ -25,7 +25,8 @@ CameraImageToDisplayImagePass::CameraImageToDisplayImagePass(Poco::Path shader_d
 	osg::ref_ptr<osg::Image> image = load_exr( p2c_filename, _display_width, _display_height, scale_width, scale_height );
 	_p2c_texture = new osg::Texture2D;
 	_p2c_texture->setTextureSize( _display_width, _display_height);
-	_p2c_texture->setInternalFormat(GL_RGB32F);
+	_p2c_texture->setInternalFormat(GL_RGB32F_ARB);
+//	_p2c_texture->setInternalFormat(GL_RGB);
 	_p2c_texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
 	_p2c_texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
 
@@ -100,7 +101,7 @@ void CameraImageToDisplayImagePass::create_output_texture() {
 	_out_texture->setDataVariance(osg::Object::DYNAMIC);
 	_out_texture->setTextureSize(_display_width, _display_height);
 	if (_UseHDR) {
-		_out_texture->setInternalFormat(GL_RGBA32F_ARB);
+		_out_texture->setInternalFormat(GL_RGB32F_ARB);
 		_out_texture->setSourceFormat(GL_RGBA);
 		_out_texture->setSourceType(GL_FLOAT);
 	} else {

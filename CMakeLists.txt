@@ -1,25 +1,35 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.10)
 SET(BUILD_WITH_ROS OFF CACHE BOOL "Building with ROS")
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 SET(CUDA_TOOLKIT_ROOT "/usr/local/cuda")
 
-FIND_PACKAGE(OpenThreads)
-FIND_PACKAGE(osg)
-FIND_PACKAGE(osgUtil)
-FIND_PACKAGE(osgDB)
-FIND_PACKAGE(osgText)
-FIND_PACKAGE(osgParticle)
-FIND_PACKAGE(osgTerrain)
-FIND_PACKAGE(osgViewer)
-FIND_PACKAGE(osgGA)
-FIND_PACKAGE(osgWidget)
+add_definitions(-DUNICODE -D_UNICODE) # use unicode in MS projects
 
-FIND_PACKAGE(GLU)
+include (GenerateExportHeader)
+
+FIND_PACKAGE(OpenThreads)
+# FIND_PACKAGE(osg)
+# FIND_PACKAGE(osgUtil)
+# FIND_PACKAGE(osgDB)
+# FIND_PACKAGE(osgText)
+# FIND_PACKAGE(osgParticle)
+# FIND_PACKAGE(osgTerrain)
+# FIND_PACKAGE(osgViewer)
+# FIND_PACKAGE(osgGA)
+# FIND_PACKAGE(osgWidget)
+find_package(OpenSceneGraph 3.0.1 REQUIRED osg osgDB osgUtil osgParticle osgTerrain osgViewer osgGA osgWidget)
+
+FIND_PACKAGE(OPENGL)
 FIND_PACKAGE(GLUT)
 
-FIND_PACKAGE(OpenEXR)
-FIND_PACKAGE(OsgCompute)
+IF(!WIN32)
+	SET(OPENEXR_FIND_REQUIRED 1)
+	FIND_PACKAGE(OpenEXR)
+ENDIF(!WIN32)
+
+
+#FIND_PACKAGE(OsgCompute)
 
 SET(POCO_FIND_REQUIRED 1)
 FIND_PACKAGE(Poco)
@@ -125,32 +135,42 @@ ELSE(BUILD_WITH_ROS)
   FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}    )
 
   # the flyvr library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(flyvr SHARED src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
-  TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
+  #add_compiler_export_flags()
+  ADD_LIBRARY(flyvr STATIC src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
+  #generate_export_header(flyvr)
 
+  TARGET_LINK_LIBRARIES(flyvr ${OSG_LIBS} ${POCO_LIBRARIES})
+	
   # default stimulus plugins --------------------
   ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
-  ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp)
+  ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
   ADD_EXECUTABLE(display_server src/main.cpp ${DS_SOURCES})
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
-  INCLUDE_DIRECTORIES(
-    ${OSG_COMPUTE_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS}
-  )
+
+  include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} ${POCO_INCLUDE_PATHS} ${JANSSON_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS})
+  
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
     ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${POCO_NET_LIBRARY} ${JANSSON_LIBRARIES}
-    ${OSG_COMPUTE_LIBRARIES})
+    ${OSG_COMPUTE_LIBRARIES}  ${OPENGL_gl_LIBRARY})
+
+  MESSAGE( STATUS "OSG_COMPUTE_INCLUDE_PATHS: " ${OSG_COMPUTE_INCLUDE_PATHS} )
+  MESSAGE( STATUS "OPENSCENEGRAPH_INCLUDE_DIRS: " ${OPENSCENEGRAPH_INCLUDE_DIRS} )
+  MESSAGE( STATUS "OPENSCENEGRAPH_LIBRARIES: " ${OPENSCENEGRAPH_LIBRARIES} )
+  MESSAGE( STATUS "POCO_INCLUDE_PATHS: " ${POCO_INCLUDE_PATHS} )
+  MESSAGE( STATUS "OPENEXR_INCLUDE_PATHS: " ${OPENEXR_INCLUDE_PATHS} )
+  MESSAGE( STATUS "OPENGL_gl_LIBRARY: " ${OPENGL_gl_LIBRARY} )
 
 ENDIF(BUILD_WITH_ROS)
 
