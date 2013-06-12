@@ -1138,7 +1138,7 @@ class Calib:
                         diff = abs(targetcol - col)
                         if diff > 5:
                             #p-control
-                            adj = int(self._vdispinfo["dcol"] * diff * 0.3)
+                            adj = self._vdispinfo["dcol"] * diff * 0.3
                         else:
                             #i-control
                             adj = self._vdispinfo["dcol"]
@@ -1153,7 +1153,7 @@ class Calib:
                         diff = abs(targetrow - row)
                         if diff > 5:
                             #p-control
-                            adj = int(self._vdispinfo["drow"] * diff * 0.3)
+                            adj = self._vdispinfo["drow"] * diff * 0.3
                         else:
                             #i-control
                             adj = self._vdispinfo["drow"]
@@ -1165,8 +1165,8 @@ class Calib:
                         rowfound = True
                         
                     #clamp the projection range and then
-                    self._vdispinfo["projcol"] = np.clip(projcol,0,self._vdispinfo["width"]-1)
-                    self._vdispinfo["projrow"] = np.clip(projrow,0,self._vdispinfo["height"]-1)
+                    self._vdispinfo["projcol"] = int(np.clip(projcol,0,self._vdispinfo["width"]-1))
+                    self._vdispinfo["projrow"] = int(np.clip(projrow,0,self._vdispinfo["height"]-1))
 
                     if colfound and rowfound:
                         if self.debug_control:
