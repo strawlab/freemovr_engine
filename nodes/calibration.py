@@ -617,6 +617,11 @@ class Calib:
         return detected,visible
 
     def _detect_laser_camera_2d_point(self, thresh, msgprefix=""):
+        if thresh == self.laser_thresh:
+            self.laser_handler.reconfigure(shutter=2000)
+        else:
+            self.laser_handler.reconfigure(shutter=30000)
+
         self.laser_runner.get_images(1)
         imgs = self.laser_runner.result_as_nparray
 
