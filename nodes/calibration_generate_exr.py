@@ -214,7 +214,7 @@ class Calibrator:
             publish_now=True, latch=True)
 
 
-    def do_exr(self, interp_method, do_luminance):
+    def do_exr(self, interp_method, do_luminance, gamma, blend_curve):
         exrs = {ds:{} for ds in self.display_servers}
 
         do_xyz = ["x","y","z"]
@@ -226,6 +226,7 @@ class Calibrator:
         if self.flydra_calib:
             comment += '. 3D reconstruction from %s' % self.flydra_calib
         comment += '. Interpolation method %s' % interp_method
+        comment += '. Luminance blend %s (gamma: %.2f curve: %.2f)' % (do_luminance, gamma, blend_curve)
         rospy.loginfo(comment)
 
         if do_luminance:
@@ -355,7 +356,7 @@ class Calibrator:
             create_point_cloud_message_publisher(all_3d,'/calibration/points',publish_now=True, latch=True)
 
         if do_luminance:
-            blended = blender.blend()
+            blended = blender.blend(gamma, blend_curve)
 
         for ds in self.display_servers:
             dsc = self.dscs[ds]
@@ -444,8 +445,15 @@ if __name__ == "__main__":
         "path to a new flydra calibration (use the "\
         "new reconstructor to calculate the 3D position)")
     parser.add_argument(
+        '--gamma', type=float, default=2.2, help=\
+        "gamma for blending regious")
+    parser.add_argument(
+        '--blend-curve', type=float, default=1.0, help=\
+        "shape of blend function in overlapping regious")
+    parser.add_argument(
         '--smooth', type=float, help=\
-        "amount to smooth by, see pcl.filter_msl")
+        "amount to smooth by, see pcl.filter_msl, rviz the /calibratio/ topics",
+        metavar="[0...1.5]")
     parser.add_argument(
         '--interpolation', type=str, default="linear", choices=["nearest","linear","cubic","none"], help=\
         "interpolation method in (see scipy.interpolate.griddata)")
@@ -489,7 +497,7 @@ if __name__ == "__main__":
     if args.smooth:
         cal.smooth(args.smooth)
 
-    cal.do_exr(args.interpolation, args.luminance)
+    cal.do_exr(args.interpolation, args.luminance, args.gamma, args.blend_curve)
 
     if cal.visualize:
         plt.show()

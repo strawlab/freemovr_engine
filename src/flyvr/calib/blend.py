@@ -50,6 +50,9 @@ def mergedHull (q1, q2):
     idx = np.argsort(np.arctan2(A[:,1], A[:,0])) # idx now contains the ordered indices of the merged convex hulls
     return ps[idx]
 
+def blendFunc(a, curve):
+    return a
+
 class Blender:
     def __init__(self, visualize, out_dir, debug_exr=True, exr_comments=''):
         self._visualize = visualize
@@ -102,7 +105,7 @@ class Blender:
         self._ui[name] = ui
         self._vi[name] = vi
 
-    def blend(self):
+    def blend(self, gamma, blend_curve):
         img_count = 0
 
         for name in self._dscs:
@@ -234,8 +237,11 @@ class Blender:
                 viewport_fq = "%s/%s" % (name,viewport)
                 # mask contains all pixels of the viewport
                 mask = np.nonzero(self._masks[viewport_fq])
-                # lookup into blended images on cylinder
-                I[mask] = self._blended[viewport_fq][(V[mask], U[mask])]
+                # lookup into blended images on cylinder and apply gamma correction
+                I[mask] = blendFunc(
+                            self._blended[viewport_fq][(V[mask], U[mask])],
+                            curve=blend_curve)**(1/gamma)
+
                 J[(V[mask], U[mask])]+=1
 
             #the completed array
