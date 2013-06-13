@@ -5,21 +5,13 @@ import argparse
 import time
 import os.path
 import math
-import fnmatch
 import threading
-import tempfile
-import datetime
-import collections
-import traceback
-
-import json
 import yaml
 import numpy as np
 import numpy.linalg
 import scipy.ndimage
 import scipy.misc
-import cv,cv2
-import random
+import cv2
 
 # ROS imports
 import roslib;
@@ -29,9 +21,7 @@ roslib.load_manifest('flycave')
 roslib.load_manifest('std_srvs')
 roslib.load_manifest('std_msgs')
 roslib.load_manifest('motmot_ros_utils')
-roslib.load_manifest('rosbag')
 import rospy
-import rosbag
 
 # local flyvr imports
 import flyvr.display_client as display_client
@@ -40,21 +30,15 @@ import std_srvs.srv
 import flycave.srv
 import flyvr.srv
 
-import calib
-import calib.imgproc
-import calib.kdtree
-from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
-from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
-from calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
-from calib.calibrationconstants import *
+from flyvr.calib.acquire import CameraHandler, SimultainousCameraRunner
+from flyvr.calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
+from flyvr.calib.calibrationconstants import *
 
 from rosutils.io import decode_url
 
 import flydra.reconstruct
 
-from flyvr.msg import Calib2DPoint, CalibMapping
-from geometry_msgs.msg import Point32
-from std_msgs.msg import UInt32, String
+from std_msgs.msg import String
 
 class Calib:
 

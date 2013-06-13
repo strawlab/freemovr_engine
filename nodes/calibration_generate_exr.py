@@ -17,10 +17,11 @@ import flyvr.display_client as display_client
 import flyvr.exr as exr
 import flyvr.calib.blend as blend
 
-import calib.imgproc
-from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
-from calib.reconstruct import interpolate_pixel_cords
-from calib.calibrationconstants import CALIB_MAPPING_TOPIC
+from flyvr.calib.imgproc import add_crosshairs_to_nparr
+from flyvr.calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
+from flyvr.calib.reconstruct import interpolate_pixel_cords
+from flyvr.calib.calibrationconstants import CALIB_MAPPING_TOPIC
+
 from rosutils.io import decode_url
 import flydra.reconstruct
 
@@ -280,7 +281,7 @@ class Calibrator:
                     if self.visualize:
                         col = pixel[0]
                         row = pixel[1]
-                        calib.imgproc.add_crosshairs_to_nparr(img, row=row, col=col, chan=2, sz=1)
+                        add_crosshairs_to_nparr(img, row=row, col=col, chan=2, sz=1)
 
                         arr[row-2:row+2,col-2:col+2,X_INDEX] = xyz[0]
                         arr[row-2:row+2,col-2:col+2,Y_INDEX] = xyz[1]

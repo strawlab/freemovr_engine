@@ -40,13 +40,12 @@ import std_srvs.srv
 import flycave.srv
 import flyvr.srv
 
-import calib
-import calib.imgproc
-import calib.kdtree
-from calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
-from calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
-from calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
-from calib.calibrationconstants import *
+import flyvr.calib.kdtree
+from flyvr.calib.imgproc import add_crosshairs_to_nparr
+from flyvr.calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
+from flyvr.calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
+from flyvr.calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
+from flyvr.calib.calibrationconstants import *
 
 from rosutils.io import decode_url
 
@@ -75,14 +74,14 @@ def generate_sampling_pixel_coords_5(vdmask,pts,space,img=None):
     corners = [(colm,rowm)]
 
     if img != None:
-        calib.imgproc.add_crosshairs_to_nparr(img, row=rowm, col=colm, chan=CHAN_R, sz=4)
+        add_crosshairs_to_nparr(img, row=rowm, col=colm, chan=CHAN_R, sz=4)
 
     for pt in pts:
         col,row = pt
         p = np.array(pt)
 
         if img != None:
-            calib.imgproc.add_crosshairs_to_nparr(img, row=row, col=col, chan=CHAN_R, sz=2)
+            add_crosshairs_to_nparr(img, row=row, col=col, chan=CHAN_R, sz=2)
         
         quad = m > p
         dist = numpy.linalg.norm(m-p)
@@ -95,7 +94,7 @@ def generate_sampling_pixel_coords_5(vdmask,pts,space,img=None):
         c,r = (half + farpoint) / 2
         
         if img != None:
-            calib.imgproc.add_crosshairs_to_nparr(img, row=r, col=c, chan=CHAN_R, sz=4)
+            add_crosshairs_to_nparr(img, row=r, col=c, chan=CHAN_R, sz=4)
 
         corners.append( (c,r) )
     
@@ -109,11 +108,11 @@ def generate_sampling_pixel_coords(vdmask,pts,space,img=None):
     if img != None:
         #debugging....
         rowm,colm,_ = scipy.ndimage.center_of_mass(vdmask)
-        calib.imgproc.add_crosshairs_to_nparr(img, row=rowm, col=colm, chan=0, sz=4)
+        add_crosshairs_to_nparr(img, row=rowm, col=colm, chan=0, sz=4)
         for pt in pts:
             col,row = pt
             p = np.array(pt)
-            calib.imgproc.add_crosshairs_to_nparr(img, row=row, col=col, chan=1, sz=4)
+            add_crosshairs_to_nparr(img, row=row, col=col, chan=1, sz=4)
 
 
     valid = []
@@ -123,7 +122,7 @@ def generate_sampling_pixel_coords(vdmask,pts,space,img=None):
 
     for col,row in valid:
         if img != None:
-            calib.imgproc.add_crosshairs_to_nparr(img, row=row, col=col, chan=2, sz=2)
+            add_crosshairs_to_nparr(img, row=row, col=col, chan=2, sz=2)
 
     return valid
 
@@ -137,7 +136,7 @@ class DataIO:
         self.num_points = 0
         
         self._display_tree = {}
-        self._position_tree = calib.kdtree.create(dimensions=3, check_dimensions=False)
+        self._position_tree = flyvr.calib.kdtree.create(dimensions=3, check_dimensions=False)
         
         self._pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self._pub_mapping = rospy.Publisher('~mapping', CalibMapping)
@@ -212,7 +211,7 @@ class DataIO:
         try:
             self._display_tree[c.display_server]
         except KeyError:
-            self._display_tree[c.display_server] = calib.kdtree.create(dimensions=2, check_dimensions=False)
+            self._display_tree[c.display_server] = flyvr.calib.kdtree.create(dimensions=2, check_dimensions=False)
         finally:
             self._display_tree[c.display_server].add(dcorr)
         
@@ -234,7 +233,7 @@ class DataIO:
             rospy.logwarn(
                 "Unknown error getting correspondence for %r\n%s\nTree:\n\n" %(
                     dcorr,traceback.format_exc()))
-            calib.kdtree.visualize(self._display_tree[ds])
+            flyvr.calib.kdtree.visualize(self._display_tree[ds])
 
 
     def add_mapping(self, **kwargs):
