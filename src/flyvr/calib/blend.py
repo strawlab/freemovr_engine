@@ -95,6 +95,14 @@ class Blender:
         if (h != self._uv_height) or (w != self._uv_width):
             raise Exception("Display server images must be the same size")
 
+        #XXX:GRR Toni has assumed -1 is the sentinal, which breaks things at XXX
+        if np.isnan(u).sum() > 0:
+            u[np.isnan(u)] = -1
+            v[np.isnan(v)] = -1
+        if np.isnan(ui).sum() > 0:
+            ui[np.isnan(ui)] = -1
+            vi[np.isnan(vi)] = -1
+
         self._u[name] = u
         self._v[name] = v
         self._ui[name] = ui
@@ -108,8 +116,11 @@ class Blender:
             for viewport in dsc.virtual_displays: # loop over viewports
                 viewport_fq = "%s/%s" % (name,viewport)
 
-                #XXX: Should only get valid values here
-                mask_index = np.logical_and(self._u[name]>-0.99, dsc.get_virtual_display_mask(viewport,squeeze=True))
+                #XXX: See XXX:GRRR
+                mask_index = np.logical_and(
+                                    self._u[name]>-0.99,
+                                    dsc.get_virtual_display_mask(viewport,squeeze=True)
+                )
 
                 # coordinates of valid sample points
                 YX = np.nonzero(mask_index)
@@ -215,7 +226,8 @@ class Blender:
         for iarg,name in enumerate(self._dscs):
             dsc = self._dscs[name]
 
-            # upscale and center
+            #upscale and center
+            #XXX: broken with NaNs
             U = (self._ui[name]*self._uv_scale[0]-0.5).astype(int)
             V = (self._vi[name]*self._uv_scale[1]-0.5).astype(int)
 
