@@ -30,6 +30,7 @@ import numpy as np
 import cv,cv2
 
 import pcl
+import sh
 
 X_INDEX = 0
 Y_INDEX = 1
@@ -415,7 +416,10 @@ class Calibrator:
                 geom = self.geom.to_geom_dict()
                 dsc.set_geometry(geom)
                 dsc.set_binary_exr(exrpath)
-                rospy.loginfo("updating parameter server")
+                rospy.loginfo("updated parameter server")
+                sh.rosnode("kill","/%s"%ds)
+                rospy.loginfo("restarted server")
+
 
 
 if __name__ == "__main__":
