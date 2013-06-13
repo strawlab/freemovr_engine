@@ -162,12 +162,12 @@ class Blender:
                 if self._debug_exr:
                     save_exr(
                         os.path.join(self._out_dir,"masks_%s.exr" % img_count),
-                        r=mask, g=mask, b=mask, comments=''
+                        r=mask, g=mask, b=mask, comments=self._exr_comments
                     )
                     masko = dsc.get_virtual_display_mask(viewport,squeeze=True)
                     save_exr(
                         os.path.join(self._out_dir,"maskso_%s.exr" % img_count),
-                        r=masko, g=masko, b=masko, comments=''
+                        r=masko, g=masko, b=masko, comments=self._exr_comments
                     )
 
 
@@ -188,7 +188,7 @@ class Blender:
                 if self._debug_exr:
                     save_exr(
                         os.path.join(self._out_dir,"gradient_%s.exr" % img_count),
-                        r=pg, g=p, b=pg, comments=''
+                        r=pg, g=p, b=pg, comments=self._exr_comments
                     )
 
         # sum over all distance gradients
@@ -198,7 +198,7 @@ class Blender:
         if self._debug_exr:
             save_exr(
                 os.path.join(self._out_dir,"gradsum.exr"),
-                r=gradSum, g=gradSum, b=gradSum, comments=''
+                r=gradSum, g=gradSum, b=gradSum, comments=self._exr_comments
             )
 
         #blend viewports in UV per viewport
@@ -217,7 +217,7 @@ class Blender:
             for i,tr in enumerate(self._blended.values()):
                 save_exr(
                     os.path.join(self._out_dir,"gradientV_%s.exr" % i),
-                    r=tr, g=tr, b=tr, comments=''
+                    r=tr, g=tr, b=tr, comments=self._exr_comments
                 )
 
         if self._visualize:
@@ -254,22 +254,20 @@ class Blender:
                 for i,tr in enumerate(self._blended.values()):
                     save_exr(
                         os.path.join(self._out_dir,"%s.blend.exr" % name),
-                        r=self._ui[name], g=self._vi[name], b=self._output[name], comments=''
+                        r=self._ui[name], g=self._vi[name], b=I, comments=self._exr_comments
                     )
-
-        #XXX
-        plt.show()
+                    save_exr(
+                        os.path.join(self._out_dir,"%s.forward.exr" % name),
+                        r=J, g=J, b=J, comments=self._exr_comments
+                    )
 
         return self._output
 
-def main2():
+def main2(in_directory):
 
     DISPLAY_SERVERS = ("display_server0", "display_server1", "display_server3")
 
-    in_directory=sys.argv[1] # directory, where input and output files are located 
-    savePath=in_directory # path for debug output
-
-    b = Blender(True, "hate/2")
+    b = Blender(True, in_directory)
 
     for name in DISPLAY_SERVERS:
         u,v,_ = read_exr(os.path.join(in_directory,"%s.nointerp.exr" % name))
@@ -282,6 +280,8 @@ def main2():
         )
 
     b.blend()
+
+    plt.show()
     
 def main():
 
@@ -304,8 +304,6 @@ def main():
         M = read_exr(in_file_name)
         (channels, height, width) = np.shape(M)
 
-        print "--",np.shape(M)
-
         dsc = DisplayServerProxy("/"+name, wait=False,prefer_parameter_server_properties=True)
 
         for viewport in dsc.virtual_displays: # loop over viewports
@@ -313,8 +311,6 @@ def main():
             mask_index = dsc.get_virtual_display_mask(viewport,squeeze=True)
             # valid samples are where M[0] > -1 and mask_index==i
             L=np.logical_and(M[0]>-0.99, mask_index)
-
-            print (M[0]>-0.99).shape, mask_index.shape,L.shape
 
             # coordinates of valid sample points
             YX=np.nonzero(L)
@@ -432,4 +428,4 @@ def main():
 
     
 if __name__ == "__main__":
-    main2()
+    main2(sys.argv[1])
