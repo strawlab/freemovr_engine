@@ -15,6 +15,7 @@ import rospy
 import flyvr.simple_geom as simple_geom
 import flyvr.display_client as display_client
 import flyvr.exr as exr
+import flyvr.calib.blend as blend
 
 import calib.imgproc
 from calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
@@ -35,7 +36,7 @@ Z_INDEX = 2
 L_INDEX = 3
 
 class Calibrator:
-    def __init__(self, visualize=True, new_reconstructor="", mask_out=False, update_parameter_server=True):
+    def __init__(self, visualize=True, debug=False, new_reconstructor="", mask_out=False, update_parameter_server=True):
         self.data    = {}
         self.masks   = {}
         self.cvimgs  = {}
@@ -48,6 +49,7 @@ class Calibrator:
 
         self.mask_out = mask_out
         self.visualize = visualize
+        self.debug = debug
         self.update_parameter_server = update_parameter_server
 
         if new_reconstructor:
@@ -60,6 +62,10 @@ class Calibrator:
 
         self.smoothed = None
         self.filenames = []
+
+    @property
+    def display_servers(self):
+        return sorted(self.data)
 
     def load(self, b, nowait_display_server):
         with rosbag.Bag(b, 'r') as bag:
@@ -180,7 +186,7 @@ class Calibrator:
         self.smoothed = amount
 
         all_3d = []
-        for ds in self.data:
+        for ds in self.display_servers:
             for vdisp in self.data[ds]:
                 for xyz,pixel,lum in self.data[ds][vdisp]:
                     all_3d.append(xyz)
@@ -194,7 +200,7 @@ class Calibrator:
 
         i = 0
         all_3d = []
-        for ds in self.data:
+        for ds in self.display_servers:
             for vdisp in self.data[ds]:
                 for xyz,pixel,lum in self.data[ds][vdisp]:
                     sxyz = smoothed[i]
@@ -206,54 +212,57 @@ class Calibrator:
             publish_now=True, latch=True)
 
 
-    def do_exr(self, interp_method, do_luminance, do_xyz):
-        exrs = {ds:{} for ds in self.data}
+    def do_exr(self, interp_method, do_luminance):
+        exrs = {ds:{} for ds in self.display_servers}
 
-        if do_xyz is True:
-            do_xyz = tuple("xyz")
-        else:
-            do_xyz = tuple()
+        do_xyz = ["x","y","z"]
+        exrs_uvl = ["u","v","l","ui","vi","li"]
+
+        comment = 'created from %s' % (", ".join(self.filenames),)
+        if self.smoothed is not None:
+            comment += '. MLS smoothed by %f' % self.smoothed
+        if self.flydra_calib:
+            comment += '. 3D reconstruction from %s' % self.flydra_calib
+        comment += '. Interpolation method %s' % interp_method
+        rospy.loginfo(comment)
+
+        if do_luminance:
+            blender = blend.Blender(
+                        True or self.visualize,
+                        os.getcwd(),
+                        debug_exr=self.debug,
+                        exr_comments=comment
+            )
 
         def alloc_exr_mask(ds, name):
             dsc = self.dscs[ds]
             exrs[ds][name] = {
                 "exr":np.zeros((768,1024)),
-                "dsmask":np.zeros((768,1024), dtype=np.bool),
-                "vdispmask":np.ones((768,1024), dtype=np.bool)
             }
+            exrs[ds][name]["exr"].fill(np.nan)
 
-        def update_mask(ds, name, val):
-            exrs[ds][name]["vdispmask"][np.isnan(val)] = False
-            exrs[ds][name]["dsmask"] |= exrs[ds][name]["vdispmask"]
-            exrs[ds][name]["exr"] += np.nan_to_num(val)
-
-        def fill_masked_exr(ds, name, val):
-            exrs[ds][name]["exr"][~exrs[ds][name]["dsmask"]] = val
-
-
+        def update_mask(ds, name, val, vdispmask=None):
+            valid_val = ~np.isnan(val)
+            if vdispmask is not None:
+                valid = np.logical_or(vdispmask,valid_val)
+            else:
+                valid = valid_val
+            exrs[ds][name]["exr"][valid] = val[valid]
 
         all_3d = []
-        for ds in self.data:
+        for ds in self.display_servers:
+            dsc = self.dscs[ds]
+
             if self.visualize:
                 cv2.namedWindow(ds)
                 img = self.cvimgs[ds]
 
-            dsc = self.dscs[ds]
-
-            alloc_exr_mask(ds, "u")
-            alloc_exr_mask(ds, "v")
-            alloc_exr_mask(ds, "l")
-            for ax in do_xyz:
+            for ax in do_xyz + exrs_uvl:
                 alloc_exr_mask(ds, ax)
 
             ds_3d = []
             for vdisp in self.data[ds]:
-
-                exrs[ds]["u"]["vdispmask"].fill(True)
-                exrs[ds]["v"]["vdispmask"].fill(True)
-                exrs[ds]["l"]["vdispmask"].fill(True)
-                for ax in do_xyz:
-                    exrs[ds][ax]["vdispmask"].fill(True)
+                vdispmask = dsc.get_virtual_display_mask(vdisp, squeeze=True)
 
                 vdisp_3d = []
                 vdisp_2d = []
@@ -264,7 +273,6 @@ class Calibrator:
                     arr.fill(np.nan)
 
                 for xyz,pixel,lum in self.data[ds][vdisp]: #just do one vdisp
-
                     vdisp_2d.append(pixel)
                     vdisp_3d.append(xyz)
                     vdisp_lum.append(lum)
@@ -279,83 +287,127 @@ class Calibrator:
                         arr[row-2:row+2,col-2:col+2,Z_INDEX] = xyz[2]
                         arr[row-2:row+2,col-2:col+2,L_INDEX] = lum
 
+                ds_3d.extend(vdisp_3d)
+
                 vdisp_lum_arr = np.array(vdisp_lum, dtype=np.float)
                 vdisp_2d_arr = np.array(vdisp_2d, dtype=np.float)
                 vdisp_3d_arr = np.array(vdisp_3d, dtype=np.float)
 
-                #construct the geometry (uv) <-> 3d (xyz) mapping.
-                u0,v0 = self.interpolate_points(
+                #construct the interpoolated geometry (uv) <-> 3d (xyz) mapping.
+                ui,vi = self.interpolate_points(
                             vdisp_3d_arr,
                             vdisp_2d_arr,
                             dsc,
                             interp_method)
-
                 #interpolate luminance
-                l0 = interpolate_pixel_cords(
+                li = interpolate_pixel_cords(
                             points_2d=vdisp_2d_arr,
                             values_1d=vdisp_lum_arr,
                             img_width=dsc.width,
                             img_height=dsc.height,
                             method=interp_method)
+                update_mask(ds, "ui", ui, vdispmask)
+                update_mask(ds, "vi", vi, vdispmask)
+                update_mask(ds, "li", li, vdispmask)
 
-                update_mask(ds, "u", u0)
-                update_mask(ds, "v", v0)
-                update_mask(ds, "l", l0)
+                #and keep an unterpolated copy
+                u,v = self.interpolate_points(
+                            vdisp_3d_arr,
+                            vdisp_2d_arr,
+                            dsc,
+                            "none")
+                update_mask(ds, "u", u, vdispmask)
+                update_mask(ds, "v", v, vdispmask)
 
-                #save out maps in exr for tony
-                for axnum,ax in enumerate(do_xyz):
-                    update_mask(ds, ax,
-                        interpolate_pixel_cords(
-                            points_2d=vdisp_2d_arr,
-                            values_1d=vdisp_3d_arr[:,axnum],
-                            img_width=dsc.width,
-                            img_height=dsc.height,
-                            method="none")
-                    )
-
-                ds_3d.extend(vdisp_3d)
+                if self.debug:
+                    for axnum,ax in enumerate(do_xyz):
+                        update_mask(ds, ax,
+                            interpolate_pixel_cords(
+                                points_2d=vdisp_2d_arr,
+                                values_1d=vdisp_3d_arr[:,axnum],
+                                img_width=dsc.width,
+                                img_height=dsc.height,
+                                method="none")
+                        )
 
                 if self.visualize:
-                    self.show_vdisp_points(arr, ds, u0, v0, vdisp)
-
-            #comment describes exacltly how this exr was generated
-            fn = '%s.%sexr' % (ds, "nointerp." if interp_method == "none" else "")
-
-            comment = '%s created from %s' % (fn, ", ".join(self.filenames))
-            if self.smoothed is not None:
-                comment += '. MLS smoothed by %f' % self.smoothed
-            if self.flydra_calib:
-                comment += '. 3D reconstruction from %s' % self.flydra_calib
-            comment += '. Interpolation method %s' % interp_method
-            rospy.loginfo(comment)
-
-            #in our shader convention -1 means no data, not NaN
-            fill_masked_exr(ds, "u", -1)
-            fill_masked_exr(ds, "v", -1)
+                    self.show_vdisp_points(arr, ds, ui, vi, vdisp)
 
             if do_luminance:
-                raise Exception("Not Supported")
-            else:
-                exrs[ds]["l"]["exr"][exrs[ds]["l"]["dsmask"]] = 1
+                blender.add_display_server(
+                        ds,
+                        dsc,
+                        exrs[ds]["u"]["exr"].astype(np.float32),exrs[ds]["v"]["exr"].astype(np.float32),
+                        exrs[ds]["ui"]["exr"].astype(np.float32),exrs[ds]["vi"]["exr"].astype(np.float32),
+                )
 
-            exrpath = decode_url(fn)
+            if self.visualize:
+                cv2.imshow(ds, img)
+            if self.debug:
+                create_pcd_file_from_points(decode_url('%s.pcd' % ds),ds_3d)
+
+            all_3d.extend(ds_3d)
+
+        if self.debug:
+            create_pcd_file_from_points(decode_url('all.pcd'),all_3d)
+            create_point_cloud_message_publisher(all_3d,'/calibration/points',publish_now=True, latch=True)
+
+        if do_luminance:
+            blended = blender.blend()
+
+        for ds in self.display_servers:
+            dsc = self.dscs[ds]
+
+            if do_luminance:
+                final_li = blended[ds]
+            else:
+                #set the luminance channel to 1 (no blending) inside the viewport,
+                #0 (off) outside
+                final_li = np.ones_like(exrs[ds]["ui"]["exr"])
+                final_li[np.isnan(exrs[ds]["ui"]["exr"])] = 0
+
+            #in our shader convention -1 means no data, not NaN
+            exrs[ds]["ui"]["exr"][np.isnan(exrs[ds]["ui"]["exr"])] = -1
+            exrs[ds]["vi"]["exr"][np.isnan(exrs[ds]["vi"]["exr"])] = -1
+            final_ui = exrs[ds]["ui"]["exr"]
+            final_vi = exrs[ds]["vi"]["exr"]
+
+            if self.visualize:
+                plt.figure()
+                plt.imshow(final_ui)
+                plt.colorbar()
+                plt.title('%s U' % ds)
+
+                plt.figure()
+                plt.imshow(final_vi)
+                plt.colorbar()
+                plt.title('%s V' % ds)
+
+                plt.figure()
+                plt.imshow(final_li)
+                plt.colorbar()
+                plt.title('%s L' % ds)
+
+            exrpath = "%s.exr" % ds
             exr.save_exr(
                     exrpath,
-                    r=exrs[ds]["u"]["exr"],
-                    g=exrs[ds]["v"]["exr"],
-                    b=exrs[ds]["l"]["exr"],
+                    r=final_ui,
+                    g=final_vi,
+                    b=final_li,
                     comments=comment)
 
-            if do_xyz:
-                xyzfn = decode_url("%s.xyz.exr" % ds)
-                xyzcomment = (comment + ". XYZ data").replace(fn,os.path.basename(xyzfn))
+            if self.debug:
+                exrs[ds]["u"]["exr"][np.isnan(exrs[ds]["u"]["exr"])] = -1
+                exrs[ds]["v"]["exr"][np.isnan(exrs[ds]["v"]["exr"])] = -1
+                final_u = exrs[ds]["u"]["exr"]
+                final_v = exrs[ds]["v"]["exr"]
                 exr.save_exr(
-                        xyzfn,
-                        r=exrs[ds]["x"]["exr"],
-                        g=exrs[ds]["y"]["exr"],
-                        b=exrs[ds]["z"]["exr"],
-                        comments=xyzcomment)
-                rospy.loginfo(xyzcomment)
+                        "%s.nointerp.exr" % ds,
+                        r=final_u,
+                        g=final_v,
+                        b=np.zeros_like(final_u),
+                        comments=comment)
+
 
             #save the resulting geometry to the parameter server
             if self.update_parameter_server:
@@ -364,34 +416,6 @@ class Calibrator:
                 dsc.set_binary_exr(exrpath)
                 rospy.loginfo("updating parameter server")
 
-            if self.visualize:
-                plt.figure()
-                plt.imshow(exrs[ds]["u"]["exr"])
-                plt.colorbar()
-                plt.title('%s U' % ds)
-
-                plt.figure()
-                plt.imshow(exrs[ds]["v"]["exr"])
-                plt.colorbar()
-                plt.title('%s V' % ds)
-
-                plt.figure()
-                plt.imshow(exrs[ds]["l"]["exr"])
-                plt.colorbar()
-                plt.title('%s L' % ds)
-
-            create_pcd_file_from_points(
-                decode_url('/tmp/%sflydra3d.pcd' % ds),
-                ds_3d)
-
-            if self.visualize:
-                cv2.imshow(ds, img)
-
-            all_3d.extend(ds_3d)
-
-        create_pcd_file_from_points(decode_url('/tmp/allflydra3d.pcd'),all_3d)
-        create_point_cloud_message_publisher(all_3d,'/calibration/points',
-            publish_now=True, latch=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -402,8 +426,8 @@ if __name__ == "__main__":
         '--visualize', action='store_true', default=False, help=\
         "show plots")
     parser.add_argument(
-        '--xyz', action='store_true', default=False, help=\
-        "also generate uninterpolated exr files with xyz coordinates")
+        '--debug', action='store_true', default=False, help=\
+        "save extra exr files for debugging")
     parser.add_argument(
         '--luminance', action='store_true', default=False, help=\
         "also blen luminance")
@@ -436,6 +460,7 @@ if __name__ == "__main__":
 
     cal = Calibrator(
                 visualize=args.visualize,
+                debug=args.debug,
                 new_reconstructor=args.reconstructor,
                 mask_out=False,
                 update_parameter_server=args.update)
@@ -459,7 +484,7 @@ if __name__ == "__main__":
     if args.smooth:
         cal.smooth(args.smooth)
 
-    cal.do_exr(args.interpolation, args.luminance, args.xyz)
+    cal.do_exr(args.interpolation, args.luminance)
 
     if cal.visualize:
         plt.show()
