@@ -1,5 +1,6 @@
 import rospy
 import std_msgs.msg
+import geometry_msgs.msg
 import flyvr.srv
 import flyvr.msg
 
@@ -236,6 +237,21 @@ class RenderFrameSlave:
         self.cam_pub = rospy.Publisher(self.dsc.name+'/trackball_manipulator_state',
                                        flyvr.msg.TrackballManipulatorState,
                                        latch=True)
+
+        self.pose_pub = rospy.Publisher(self.dsc.name+'/pose',
+                                        geometry_msgs.msg.Pose,
+                                        latch=True)
+
+    def set_pose(self, msg=None,x=None,y=None,z=None):
+        if msg is None:
+            if None in (x,y,z):
+                raise Exception("Must suppy pose msg, or x,y,z coordinates")
+            msg = geometry_msgs.msg.Pose()
+            msg.position.x = x
+            msg.position.y = y
+            msg.position.z = z
+        self.pose_pub.publish(msg)
+        time.sleep(0.01)
 
     def set_view(self, msg):
         self.cam_pub.publish(msg)
