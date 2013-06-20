@@ -7,6 +7,10 @@
 #include <osgDB/WriteFile>
 #include <osgDB/FileUtils>
 
+#ifdef WIN32
+#define OPENEXR_DLL
+#endif
+
 #include <ImfTestFile.h>
 #include <ImfRgbaFile.h>
 #include <ImfArray.h>
