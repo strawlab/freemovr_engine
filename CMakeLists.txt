@@ -139,16 +139,22 @@ ELSE(BUILD_WITH_ROS)
   TARGET_LINK_LIBRARIES(flyvr ${OSG_LIBS} ${Poco_LIBRARIES})
 	
   # default stimulus plugins --------------------
+  SET(CMAKE_DEBUG_POSTFIX "d")  # all debug libraries should end with "d"
+  
   ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
+  SET_TARGET_PROPERTIES(Stimulus3DDemo PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${Poco_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
+  SET_TARGET_PROPERTIES(Stimulus3DShaderDemo PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${Poco_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
+  SET_TARGET_PROPERTIES(Stimulus2DBlit PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${Poco_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp src/util.cpp)
+  SET_TARGET_PROPERTIES(StimulusStandby PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${Poco_LIBRARIES} flyvr)
 
   # build the main display server node ----------
