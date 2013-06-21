@@ -131,10 +131,6 @@ ELSE(BUILD_WITH_ROS)
   SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
   SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-  FILE(COPY data DESTINATION ${PROJECT_BINARY_DIR})
-  FILE(COPY src/shaders DESTINATION ${PROJECT_BINARY_DIR}/src/)
-  FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}    )
-
   # the flyvr library (for building stimulus plugins) --------------------
   #add_compiler_export_flags()
   ADD_LIBRARY(flyvr STATIC src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
@@ -160,7 +156,17 @@ ELSE(BUILD_WITH_ROS)
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-# INCLUDE_DIRECTORIES(${OPENSCENEGRAPH_INCLUDE_DIRS} ${Poco_INCLUDE_DIRS} ${JANSSON_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS})
+# FILE(COPY data DESTINATION ${PROJECT_BINARY_DIR})
+# FILE(COPY src/shaders DESTINATION ${PROJECT_BINARY_DIR}/src/)
+# FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}    )
+
+  ADD_CUSTOM_COMMAND(TARGET display_server POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/shaders $<TARGET_FILE_DIR:display_server>/src/shaders
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:display_server>/data
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/config $<TARGET_FILE_DIR:display_server>/config
+	)
+
+  # INCLUDE_DIRECTORIES(${OPENSCENEGRAPH_INCLUDE_DIRS} ${Poco_INCLUDE_DIRS} ${JANSSON_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS})
 # do NOT use all OSG dirs, only the toplevel (otherwise windows C2504 errors)
  INCLUDE_DIRECTORIES(${OSG_INCLUDE_DIR} ${Poco_INCLUDE_DIRS} ${JANSSON_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS})
 
@@ -180,8 +186,10 @@ ENDIF(BUILD_WITH_ROS)
 # build non-ROS programs  ----------
 ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
 
-get_cmake_property(_variableNames VARIABLES)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
+ # debug print all cmake variables
+ 
+# get_cmake_property(_variableNames VARIABLES)
+# foreach (_variableName ${_variableNames})
+    # message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
 
