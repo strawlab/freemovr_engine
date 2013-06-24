@@ -28,7 +28,6 @@ FIND_PACKAGE(GLUT)
 	FIND_PACKAGE(OpenEXR)
 #ENDIF(!WIN32)
 
-
 #FIND_PACKAGE(OsgCompute)
 
 #SET(POCO_FIND_REQUIRED Net)
@@ -128,9 +127,19 @@ IF(BUILD_WITH_ROS)
 ELSE(BUILD_WITH_ROS)
   MESSAGE("Building Without ROS")
 
-  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+  IF(WIN32)
+#    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+	
+	FOREACH(config ${CMAKE_CONFIGURATION_TYPES})
+		STRING(TOUPPER "${config}" config_toupper)
+		SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config_toupper} ${PROJECT_BINARY_DIR}/${config}/lib/)
+	ENDFOREACH(config)
 
+  ELSE(WIN32)
+    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+	SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+  ENDIF(WIN32)
+  
   # the flyvr library (for building stimulus plugins) --------------------
   #add_compiler_export_flags()
   ADD_LIBRARY(flyvr STATIC src/ResourceLoader.cpp src/StimulusInterface.cpp src/load_cubemap.cpp)
@@ -140,37 +149,45 @@ ELSE(BUILD_WITH_ROS)
 	
   # default stimulus plugins --------------------
   SET(CMAKE_DEBUG_POSTFIX "d")  # all debug libraries should end with "d"
+  SET(CMAKE_SHARED_LIBRARY_PREFIX "lib") # use "lib" prefix for .dll even on windows
   
   ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
-  SET_TARGET_PROPERTIES(Stimulus3DDemo PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${Poco_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  SET_TARGET_PROPERTIES(Stimulus3DShaderDemo PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${Poco_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
-  SET_TARGET_PROPERTIES(Stimulus2DBlit PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${Poco_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp src/util.cpp)
-  SET_TARGET_PROPERTIES(StimulusStandby PROPERTIES PREFIX "lib")
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${Poco_LIBRARIES} flyvr)
 
+  GET_TARGET_PROPERTY(Lib_Location Stimulus3DDemo LOCATION)
+  
   # build the main display server node ----------
+  IF(WIN32)
+    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+	FOREACH(config ${CMAKE_CONFIGURATION_TYPES})
+		STRING(TOUPPER "${config}" config_toupper)
+		SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config_toupper} ${PROJECT_BINARY_DIR}/${config})
+	ENDFOREACH(config)
+  ENDIF(WIN32)
   ADD_EXECUTABLE(display_server src/main.cpp ${DS_SOURCES})
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-# FILE(COPY data DESTINATION ${PROJECT_BINARY_DIR})
-# FILE(COPY src/shaders DESTINATION ${PROJECT_BINARY_DIR}/src/)
-# FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}    )
-
-  ADD_CUSTOM_COMMAND(TARGET display_server POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/shaders $<TARGET_FILE_DIR:display_server>/src/shaders
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:display_server>/data
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/config $<TARGET_FILE_DIR:display_server>/config
-	)
+  IF(WIN32)
+	FOREACH(config ${CMAKE_CONFIGURATION_TYPES})
+		FILE(COPY data DESTINATION ${PROJECT_BINARY_DIR}/${config}/)
+		FILE(COPY src/shaders DESTINATION ${PROJECT_BINARY_DIR}/${config}/src/)
+		FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}/${config}/    )
+	ENDFOREACH(config)
+  ELSE(WIN32)
+    FILE(COPY data DESTINATION ${PROJECT_BINARY_DIR})
+    FILE(COPY src/shaders DESTINATION ${PROJECT_BINARY_DIR}/src/)
+    FILE(COPY config DESTINATION ${PROJECT_BINARY_DIR}    )
+  ENDIF(WIN32)
 
   # INCLUDE_DIRECTORIES(${OPENSCENEGRAPH_INCLUDE_DIRS} ${Poco_INCLUDE_DIRS} ${JANSSON_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS})
 # do NOT use all OSG dirs, only the toplevel (otherwise windows C2504 errors)
@@ -189,12 +206,14 @@ ELSE(BUILD_WITH_ROS)
 
 ENDIF(BUILD_WITH_ROS)
 
+IF(NOT WIN32)
 # build non-ROS programs  ----------
 ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
+ENDIF(NOT WIN32)
 
  # debug print all cmake variables
  
-# get_cmake_property(_variableNames VARIABLES)
+get_cmake_property(_variableNames VARIABLES)
 # foreach (_variableName ${_variableNames})
     # message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
