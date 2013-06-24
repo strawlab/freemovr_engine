@@ -223,14 +223,14 @@ void CameraModel::set_extrinsic( osg::Vec3 eye, osg::Vec3 center, osg::Vec3 up )
 
 CameraModel* make_real_camera_parameters() {
 	// this is just a stub until we get real parameter loading code in here.
-	osg::Vec3 eye = osg::Vec3(-0.708471152493,-1.4184181224,1.30394218099);
-	osg::Vec3 center = osg::Vec3(-0.280027771115,-0.647764804425,0.832211609118);
-	osg::Vec3 up = osg::Vec3(-0.197303085284,-0.429683565144,-0.881160329556);
-	float K00 = 604.39963621;
-	float K01 = -7.33740535;
-	float K02 = 356.25995387;
-	float K11 = 578.11306274;
-	float K12 = 257.36283644;
+	osg::Vec3 eye = osg::Vec3((float)-0.708471152493,(float)-1.4184181224,(float)1.30394218099);
+	osg::Vec3 center = osg::Vec3((float)-0.280027771115,(float)-0.647764804425,(float)0.832211609118);
+	osg::Vec3 up = osg::Vec3((float)-0.197303085284,(float)-0.429683565144,(float)-0.881160329556);
+	float K00 = (float)604.39963621;
+	float K01 = (float)-7.33740535;
+	float K02 = (float)356.25995387;
+	float K11 = (float)578.11306274;
+	float K12 = (float)257.36283644;
 	bool y_up=false;
 
     CameraModel* result = new CameraModel(752,480,y_up);
