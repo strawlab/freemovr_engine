@@ -47,8 +47,8 @@ public:
     osg::ref_ptr<osg::Group> get_3d_world() {return _virtual_world; }
 
 private:
-    const static float DEFAULT_RADIUS = 0.5f;
-    const static float DEFAULT_HEIGHT = 1.0f;
+    const static float DEFAULT_RADIUS;
+    const static float DEFAULT_HEIGHT;
 
     osg::ref_ptr<osg::Group>            _virtual_world;
     osg::ref_ptr<osg::Cylinder>         _cylinder;
@@ -81,6 +81,9 @@ private:
     void set_cylinder_v_offset(float vo);
     void set_cylinder_v_offset_rate(float vor);
 };
+
+const float StimulusCylinder::DEFAULT_RADIUS = 0.5f;
+const float StimulusCylinder::DEFAULT_HEIGHT = 1.0f;
 
 StimulusCylinder::StimulusCylinder() :
     _t0(-1),
@@ -154,11 +157,11 @@ void StimulusCylinder::receive_json_message(const std::string& topic_name, const
         osg::Vec3 position = parse_vec3(root);
         set_cylinder_position(position.x(),position.y(),position.z());
     } else if (topic_name=="cylinder_lock_pose_x") {
-        _lock_pose_x = parse_int(root);
+        _lock_pose_x = (parse_int(root) != 0);
     } else if (topic_name=="cylinder_lock_pose_y") {
-        _lock_pose_y = parse_int(root);
+        _lock_pose_y = (parse_int(root) != 0);
     } else if (topic_name=="cylinder_lock_pose_z") {
-        _lock_pose_z = parse_int(root);
+        _lock_pose_z = (parse_int(root) != 0);
     } else {
         throw std::runtime_error("unknown topic name");
     }
