@@ -174,7 +174,7 @@ ELSE(BUILD_WITH_ROS)
   
   # build the main display server node ----------
   IF(WIN32)
-    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+    SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${config})
 	FOREACH(config ${CMAKE_CONFIGURATION_TYPES})
 		STRING(TOUPPER "${config}" config_toupper)
 		SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config_toupper} ${PROJECT_BINARY_DIR}/${config})
