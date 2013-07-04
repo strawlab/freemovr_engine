@@ -65,7 +65,9 @@ class DotBGFeatureDetector:
             cv2.imshow(self._handles[win_type], img)
 
         if self._save_fmt is not None:
-            cv2.imwrite(self._get_path(win_type), arr)
+            fname = self._get_path(win_type)
+            #print 'for win_type %s, saving to %s'%(win_type,fname)
+            cv2.imwrite(fname, arr)
 
     def _show_features_and_diff(self, diff, dmax, features, sz=-1):
         if "F" in self._handles:
