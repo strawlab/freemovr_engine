@@ -22,7 +22,7 @@
   </export>
 
   <rosdep name="osg"/>
-  <rosdep name="osgcompute"/>
+  <!--rosdep name="osgcompute"/-->
   <rosdep name="openexr"/>
   <rosdep name="glut"/>
   <rosdep name="libxmu"/>
