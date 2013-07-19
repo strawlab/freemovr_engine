@@ -20,6 +20,10 @@ opencv2.3:
     precise:
       apt:
         packages: [libopencv-dev, libcv-dev, libhighgui-dev]
+python-opencv:
+  ubuntu:
+    apt:
+      packages: [python-opencv]
 glut:
   ubuntu:
     lucid:

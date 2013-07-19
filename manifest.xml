@@ -32,4 +32,5 @@
   <rosdep name="python-yaml"/>
   <rosdep name="cython"/>
   <rosdep name="rospkg"/>
+  <rosdep name="python-opencv"/>
 </package>
