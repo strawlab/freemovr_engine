@@ -109,7 +109,7 @@ def get_camera_for_boards(rows,width=0,height=0):
 
     buf = roslib.message.strify_message(msg)
     obj = yaml.safe_load(buf)
-    cam = camera_model.load_camera_from_dict(obj,
+    cam = camera_model.CameraModel.load_camera_from_dict(obj,
                                              extrinsics_required=False)
     return cam
 
@@ -945,7 +945,7 @@ class UI:
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
             r = dlt.dlt(XYZ, xy, ransac=ransac )
-            c1 = camera_model.load_camera_from_pmat( r['pmat'],
+            c1 = camera_model.CameraModel.load_camera_from_pmat( r['pmat'],
                                                      width=self.dsc.width,
                                                      height=self.dsc.height,
                                                      )

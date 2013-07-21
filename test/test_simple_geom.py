@@ -64,7 +64,7 @@ roi:
   width: 0
   do_rectify: False"""
     d = yaml.load(yaml_str)
-    cam1 = camera_model.load_camera_from_dict(d,extrinsics_required=False)
+    cam1 = camera_model.CameraModel.load_camera_from_dict(d,extrinsics_required=False)
 
     eye = (10,20,30)
     lookat = (11,20,30)

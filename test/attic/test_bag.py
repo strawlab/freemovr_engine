@@ -24,14 +24,14 @@ def test_bag():
         bagout.write(topic, intrinsics)
         bagout.close()
 
-    c = camera_model.load_default_camera()
+    c = camera_model.CameraModel.load_default_camera()
     c.save_to_bagfile('/tmp/testbag.bag')
 
     fname = '/home/stowers/.ros/camera_info/Basler_21220788.yaml'
     assert os.path.exists(fname)
-    c = camera_model.load_camera_from_file(fname)
+    c = camera_model.CameraModel.load_camera_from_file(fname)
     c.get_intrinsics_as_msg()
     c.save_to_bagfile('/tmp/testbag.bag')
 
-    c = camera_model.load_camera_from_file('/tmp/testbag.bag')
+    c = camera_model.CameraModel.load_camera_from_file('/tmp/testbag.bag')
     c.get_intrinsics_as_msg()

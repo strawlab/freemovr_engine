@@ -208,7 +208,7 @@ def print_summary(results,n_pts=None):
     try:
         if 1:
             import camera_model
-            camera = camera_model.load_camera_from_pmat( results['pmat'], name='tmp' )
+            camera = camera_model.CameraModel.load_camera_from_pmat( results['pmat'], name='tmp' )
 
             testpts = results['X3d'][:n_pts]
             test2d = camera.project_3d_to_pixel(testpts, distorted=True)
