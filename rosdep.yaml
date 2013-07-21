@@ -63,3 +63,5 @@ cython:
   ubuntu: cython
 rospkg:
   ubuntu: python-rospkg
+python-ode:
+  ubuntu: python-pyode

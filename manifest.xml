@@ -33,4 +33,5 @@
   <rosdep name="cython"/>
   <rosdep name="rospkg"/>
   <rosdep name="python-opencv"/>
+  <rosdep name="python-ode"/>
 </package>
