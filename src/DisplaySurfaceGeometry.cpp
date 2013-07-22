@@ -235,6 +235,11 @@ private:
 	unsigned int _n_el;
 };
 
+void printVec3(const char* text, osg::Vec3 v)
+{
+	fprintf(stderr, " %s: %f %f %f\n", text, v.x(), v.y(), v.z());
+}
+
 class PlanarRectangleModel : public GeomModel {
 public:
     PlanarRectangleModel(osg::Vec3 left_lower_corner, osg::Vec3 left_upper_corner, osg::Vec3 right_lower_corner) :
@@ -245,12 +250,22 @@ public:
         _dir_u = _right_lower_corner - _left_lower_corner;
         _dir_v = _left_upper_corner - _left_lower_corner;
         _normal = _dir_u ^ _dir_v;
+        printVec3("LL", _left_lower_corner);
+        printVec3("LU", _left_upper_corner);
+        printVec3("RL", _right_lower_corner);
+        printVec3("dir_u: ", _dir_u);
+        printVec3("dir_v: ", _dir_v);
+        printVec3("normal: ", _normal);
     }
 
     osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) {
         // keep in sync with simple_geom.py
 
-        return _left_lower_corner + _dir_u * tc.x() + _dir_v * tc.y();
+	osg::Vec3 t = _left_lower_corner + _dir_u * tc.x() + _dir_v * tc.y();
+	fprintf(stderr, "  texcoord2worldcoord: %f %f -> %f %f %f\n", tc.x(), tc.y(), t.x(), t.y(), t.z());
+//	t.y()=fabs(t.y());
+	return t;
+//        return _left_lower_corner + _dir_u * tc.x() + _dir_v * tc.y();
     }
 
     osg::Vec3 texcoord2normal( osg::Vec2 tc ) {
@@ -275,6 +290,7 @@ public:
             vertices->push_back( texcoord2worldcoord(tci) );
             normals->push_back( texcoord2normal(tci) );
             tc->push_back( tci );
+            fprintf(stderr," texcoords u: %f v: %f\n", tci[0], tci[1] );
             if (texcoord_colors) {
                 colors->push_back( osg::Vec4( tci[0], tci[1], 0.0, 1.0 ) );
             }
@@ -296,7 +312,6 @@ public:
             } else {
                 this_geom->setColorBinding(osg::Geometry::BIND_OVERALL);
             }
-
         return this_geom;
     }
 

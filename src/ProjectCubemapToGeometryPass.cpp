@@ -114,6 +114,7 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
     _state_set->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
     _state_set->setTextureAttributeAndModes(0, _in_texture_cubemap.get(), osg::StateAttribute::ON);
 	_state_set->setMode(GL_BLEND, osg::StateAttribute::ON);
+	//_state_set->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
 
 	osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform(osg::Uniform::SAMPLER_CUBE,
 																	"observerViewCube" );

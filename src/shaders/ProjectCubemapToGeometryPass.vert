@@ -12,6 +12,6 @@ void main(void)
     //gl_Position	= ftransform();
 
     // unwrap to texture coords
-    gl_Position = vec4(gl_MultiTexCoord0.st*2-1, -1, 1.0);
+    gl_Position = vec4(gl_MultiTexCoord0.st*2.0-1.0, -1.0, 1.0);
 }
 

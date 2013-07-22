@@ -229,6 +229,7 @@ void ObserverPositionCallback::operator() ( osg::Uniform* uniform, osg::NodeVisi
 
 void ObserverPositionCallback::setObserverPosition( osg::Vec3 p ) {
 	OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
+	fprintf(stderr,"setting observer position %f %f %f\n", p[0], p[1], p[2]);
 	_p = p;
 }
 
@@ -347,6 +348,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	json_stimulus = json_object_get(json_config, "stimulus_plugins");
 	json_geom = json_object_get(json_config, "geom");
 
+	fprintf(stderr, "line %d\n",__LINE__);
+
     if (!json_is_array(json_stimulus)) {
 		std::cerr << "config file must contain a valid list of stimulus plugins\n";
 		exit(1);
@@ -363,6 +366,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 			stimulus_plugin_names.push_back( plugin_name );
         }
     }
+	fprintf(stderr, "line %d\n",__LINE__);
 
 	{
 		// load the shared library for each plugin path
@@ -412,12 +416,14 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             }
 		}
 	}
+	fprintf(stderr, "line %d\n",__LINE__);
 
     // but default the current stimulus to the 3D one
 	if (_stimulus_plugins.count("Stimulus3DDemo")) {
 		// default is demo (only if present)
 		_current_stimulus = _stimulus_plugins["Stimulus3DDemo"];
 	}
+	fprintf(stderr, "line %d\n",__LINE__);
 
 	flyvr_assert(_current_stimulus != NULL);
 	std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
@@ -432,6 +438,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	if ( _mode==std::string("virtual_world") || _mode==std::string("overview")) {
 		root->addChild( _active_3d_world );
 	}
+	fprintf(stderr, "line %d\n",__LINE__);
 
     _observer_pat = new osg::PositionAttitudeTransform;
     _observer_pat->addDescription("observer position attitute transform node");
@@ -446,6 +453,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             osg::Quat attitude;
             attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
             obs_pat->setAttitude(attitude);
+	fprintf(stderr, "line %d\n",__LINE__);
 
             osg::Shape *shape;
             if (observer_radius > 0) {
@@ -466,10 +474,12 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             obs_pat->addChild(geode_1);
             _observer_pat->addChild(obs_pat);
             root->addChild(_observer_pat);
+	fprintf(stderr, "line %d\n",__LINE__);
 		}
     }
 
 	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path);
+	fprintf(stderr, "line %d\n",__LINE__);
 
 	if ( !(_mode==std::string("virtual_world"))) {
 		root->addChild(_cubemap_maker->get_node());
@@ -480,12 +490,14 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 		osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_path);
 		root->addChild(debug_osd.get());
     }
+	fprintf(stderr, "line %d\n",__LINE__);
 
     if (!json_is_object(json_geom)) {
 		std::cerr << "config file must contain a valid projector geometry\n";
 		exit(1);
 	}
-
+	
+	fprintf(stderr, "loading DisplaySurfaceGeometry\n");
     DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
     _observer_geometry_pat = new osg::PositionAttitudeTransform;
     _observer_geometry_pat->addDescription("_observer_geometry_pat");
@@ -496,6 +508,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     }
     root->addChild( _observer_geometry_pat );
 
+	fprintf(stderr, "loading ProjectCubemapToGeometryPass\n");
 	// render cubemap onto geometry
 	ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_flyvr_basepath.toString(),
 																		  _cubemap_maker->get_cubemap(),
