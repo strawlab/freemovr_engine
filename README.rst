@@ -1,6 +1,6 @@
-****
+*****
 FlyVR
-****
+*****
 
 FlyVR (Virtual reality for the Robot Operating System) manages
 multi-computer realtime tracking and display.
@@ -10,7 +10,7 @@ multi-computer realtime tracking and display.
 * `installation <docs/installation.rst>`_
 
 FlyVR architecture overview
-**************************
+***************************
 
 Theory of operation
 ===================
@@ -26,7 +26,7 @@ surface. From there, this image is warped to the physical display
 output.
 
 flyvr nodes
-==================
+===========
 
 display_server - the FlyVR display server
 ----------------------------------------
