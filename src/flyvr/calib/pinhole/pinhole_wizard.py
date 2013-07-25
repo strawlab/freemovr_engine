@@ -200,7 +200,7 @@ class UI:
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )
 
-        self.joy_mode=None
+        self.joy_mode='do points'
 
         self.intr_pub = {}
         self.frustum_pub = {}
@@ -688,6 +688,7 @@ class UI:
             self._current_checkerboard = None # delete current checkerboard
         finally:
             self.add_CK_dialog.hide()
+            self.joy_mode='do points'
 
         label = self._ui.get_object('N_CKB_points_label')
         label.set_text('')
@@ -1084,7 +1085,7 @@ class UI:
         return arr
 
 if __name__ == "__main__":
-    rospy.init_node("extrinsic_wizard")
+    rospy.init_node("pinhole_wizard")
     rosgobject.get_ros_thread() #ensure ros is spinning
     rosgobject.add_console_logger()
 
