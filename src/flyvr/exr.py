@@ -24,7 +24,10 @@ def save_exr( fname, r=None, g=None, b=None, comments='' ):
 def read_exr(file,full_output=False):
     f = OpenEXR.InputFile(file)
     dw = f.header()['dataWindow']
-    comments = f.header()['comments']
+    if 'comments' in f.header():
+        comments = f.header()['comments']
+    else:
+        comments = None
 
     size = (dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1)
     pt = Imath.PixelType(Imath.PixelType.FLOAT)
