@@ -34,4 +34,5 @@
   <rosdep name="rospkg"/>
   <rosdep name="python-opencv"/>
   <rosdep name="python-ode"/>
+  <rosdep name="python-openexr"/>
 </package>
