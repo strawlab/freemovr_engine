@@ -46,7 +46,10 @@ SET(DS_SOURCES
   src/GeometryTextureToDisplayImagePass.cpp)
 
 IF(OSG_COMPUTE_FOUND)
+  MESSAGE("Building With CUDA support")
   add_definitions( -DFLYVR_USE_CUDA )
+ELSE(OSG_COMPUTE_FOUND)
+  MESSAGE("Building Without CUDA support")
 ENDIF(OSG_COMPUTE_FOUND)
 
 IF(BUILD_WITH_ROS)
