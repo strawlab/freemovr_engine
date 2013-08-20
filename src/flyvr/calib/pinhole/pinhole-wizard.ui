@@ -534,6 +534,11 @@ the Straw Lab
       <placeholder/>
     </child>
   </object>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-missing-image</property>
+  </object>
   <object class="GtkListStore" id="liststore1"/>
   <object class="GtkListStore" id="liststore2"/>
   <object class="GtkListStore" id="liststore3"/>
@@ -621,7 +626,14 @@ the Straw Lab
                         <property name="label">set display point size</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="use_underline">True</property>
+                        <property name="use_stock">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImageMenuItem" id="view_mock_ds_item">
+                        <property name="label">show display server output</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
                         <property name="use_stock">False</property>
                       </object>
                     </child>

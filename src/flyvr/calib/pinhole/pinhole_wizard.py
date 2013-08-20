@@ -3,9 +3,13 @@
 import os.path
 import argparse
 import yaml
-import numpy as np
-from collections import defaultdict
+import math
+import collections
 import datetime
+import tempfile
+
+import numpy as np
+import scipy.misc
 import pkgutil
 
 import roslib; roslib.load_manifest('flyvr')
@@ -16,7 +20,6 @@ import camera_calibration.calibrator
 import rospy
 
 import flyvr.rviz_utils
-import std_msgs.msg
 from geometry_msgs.msg import Pose2D
 from sensor_msgs.msg import CameraInfo
 import tf.broadcaster
@@ -168,21 +171,69 @@ class CheckerboardPlotWidget(Gtk.DrawingArea):
         # cr.arc(cx, cy, self._r_px, 0, 2.0 * math.pi)
         # cr.stroke()
 
-class MockDisplayClient:
-    def __init__(self,di):
-        self.di = di
-        self.width = di['width']
-        self.height = di['height']
-    def get_display_info(self):
-        return self.di
-    def show_pixels(self,arr):
-        1
-
-class UI:
+class ProxyDisplayClient(object):
     def __init__(self):
-        self.display_intrinsic_cam = None
+        self._dsc = None
+        self._di = None
+        self._file = os.path.join(tempfile.mkdtemp(),"ds.png")
+        self._w = Gtk.Window(title="Display Server Output")
+        self._img = Gtk.Image()
+        self._img.set_from_stock("gtk-missing-image", Gtk.IconSize.DIALOG)
+        self._w.add(self._img)
+        self._w.connect("delete-event", self._on_close)
 
-        rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D).connect('message', self.on_joy_callback)
+    def _on_close(self, *args):
+        self._w.hide()
+        return True #stop signal
+
+    def proxy_show_mock(self):
+        self._w.show_all()
+
+    def proxy_set_dsc(self, dsc):
+        self._dsc = dsc
+        if self._dsc is not None:
+            self._dsc.enter_2dblit_mode()
+
+    def proxy_set_display_info(self, di):
+        self._di = di
+
+    def __getattr__(self, name):
+        return getattr(self._dsc, name)
+
+    @property
+    def height(self):
+        if self._di is not None:
+            return self._di['height']
+        elif self._dsc is not None:
+            return self._dsc.height
+
+    @property
+    def width(self):
+        if self._di is not None:
+            return self._di['width']
+        elif self._dsc is not None:
+            return self._dsc.width
+
+    def get_display_info(self):
+        if self._di is not None:
+            return self._di
+        elif self._dsc is not None:
+            return self._dsc.get_display_info()
+
+    def show_pixels(self,arr):
+        scipy.misc.imsave(self._file, arr)
+        self._img.set_from_file(self._file)
+        if self._dsc is not None:
+            self._dsc.show_pixels(arr)
+
+class UI(object):
+    def __init__(self):
+        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
+        self._ui = Gtk.Builder()
+        self._ui.add_from_string( ui_file_contents )
+        self._build_ui()
+
+        self.display_intrinsic_cam = None
 
         self.data_filename = None
         self.yamlfilter = Gtk.FileFilter()
@@ -193,24 +244,23 @@ class UI:
         self.exr_filter.set_name("EXR Files")
         self.exr_filter.add_pattern("*.exr")
 
-        self._real_dsc = None
-
-        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
-
-        self._ui = Gtk.Builder()
-        self._ui.add_from_string( ui_file_contents )
+        #initilaize connect to display server widget sensitivity
+        self.dsc = ProxyDisplayClient()
 
         self.joy_mode='do points'
 
         self.intr_pub = {}
         self.frustum_pub = {}
-        self._build_ui()
+
+        self.sub_joy = rosgobject.core.SubscriberGObject('joy_click_pose', Pose2D)
+        self.sub_joy.connect('message', self.on_joy_callback)
+
+        self.tf_b = tf.broadcaster.TransformBroadcaster()
 
         a1 = self._ui.get_object('main_window')
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
 
-        self.tf_b = tf.broadcaster.TransformBroadcaster()
         GObject.timeout_add(100, self.on_timer)
 
     def on_joy_callback(self, widget, msg):
@@ -239,13 +289,11 @@ class UI:
 
     def _build_ui(self):
         # connection status ----------------------
-        button = self._ui.get_object('connect_to_display_server_button')
-        button.connect('clicked', self.on_connect_to_display_server)
-
-        button = self._ui.get_object('disconnect_from_display_server_button')
-        button.connect('clicked', self.on_disconnect_from_display_server)
-
-        self._update_display_server_status()
+        self._ds_connect_btn = self._ui.get_object('connect_to_display_server_button')
+        self._ds_connect_btn.connect('clicked', self.on_connect_to_display_server)
+        self._ds_disconnect_btn = self._ui.get_object('disconnect_from_display_server_button')
+        self._ds_disconnect_btn.connect('clicked', self.on_disconnect_from_display_server)
+        self._ds_status_lbl = self._ui.get_object('ds_connection_status_label')
 
         # save calibration EXR button -----------
         button = self._ui.get_object('save_calibration_exr_button')
@@ -284,6 +332,9 @@ class UI:
 
         self._ui.get_object('help_about_menu_item').connect(
             'activate', self.on_help_about)
+
+        self._ui.get_object('view_mock_ds_item').connect(
+            'activate', self.on_view_mock_ds)
 
         # setup checkerboard treeview ----------------
 
@@ -535,6 +586,10 @@ class UI:
         finally:
             filechooserdialog.destroy()
 
+    # ---------------- View menu -----------------------------
+    def on_view_mock_ds(self,*args):
+        self.dsc.proxy_show_mock()
+
     # ---------------- Help menu -----------------------------
     def on_help_about(self,*args):
         try:
@@ -543,37 +598,27 @@ class UI:
             self.help_about_dialog.hide()
 
     # ---------------- Connect to display server ------------
-
-    def _update_display_server_status(self):
-        label = self._ui.get_object('ds_connection_status_label')
-        if self._real_dsc is None:
-            label.set_text('not connected')
-        else:
-            label.set_text('connected')
+    def update_dsc_sensitivity(self, value):
+        msg = 'connected' if value else 'not connected'
+        self._ds_status_lbl.set_text(msg)
+        self._ds_connect_btn.set_sensitive(not value)
+        self._ds_disconnect_btn.set_sensitive(not value)
 
     def on_connect_to_display_server(self,*args):
         e = self._ui.get_object('display_server_name_entry')
         ds_name = e.get_text()
-
-        dsc = display_client.DisplayServerProxy(ds_name)#,wait=True)
-        self._real_dsc  = dsc
-        e.set_sensitive(False) # disable new connection
-        self._update_display_server_status()
+        self.dsc.proxy_set_dsc(display_client.DisplayServerProxy(ds_name))
+        self.update_dsc_sensitivity(True)
         self.update_bg_image() # send current image over
 
     def on_disconnect_from_display_server(self,*args):
-        e = self._ui.get_object('display_server_name_entry')
-
-        self._real_dsc  = None
-        e.set_sensitive(True) # enable new connection
-        self._update_display_server_status()
-
+        self.dsc.proxy_set_dsc(None)
+        self.update_dsc_sensitivity(False)
 
     # ---------------- Save calibration EXR file -------------
     def save_calibration_exr(self,fname):
         state_dict = self._get_state_as_dict()
         obj = {'pinhole_wizard_input':state_dict}
-        comments = yaml.dump(obj)
 
         tcs = np.zeros( (self.dsc.height,self.dsc.width,2))-1
         dist = np.nan*np.ones( (self.dsc.height,self.dsc.width))
@@ -624,7 +669,7 @@ class UI:
             # Replace this code with something that calculates a real
             # blending value here based on distance. Probably need to
             # normalize by the maximum distance.
-            b = f(dist,angle)
+            raise NotImplementedError("b = f(dist,angle)")
         else:
             b=np.ones_like(tcs[:,:,1])
         save_exr( fname, r=r, g=g, b=b)
@@ -755,7 +800,8 @@ class UI:
     def load_display(self,obj):
         display_dict = obj['display']
 
-        self.dsc = MockDisplayClient( display_dict )
+        self.dsc.proxy_set_display_info(display_dict)
+
         self._ui.get_object('virtual_display_yaml').get_buffer().set_text(
             yaml.dump(display_dict) )
 
@@ -796,7 +842,7 @@ class UI:
         self.update_bg_image()
 
     def on_points_updated(self, *args):
-        vdisps = defaultdict(int)
+        vdisps = collections.defaultdict(int)
         for row in self.point_store:
             vdisps[ row[VDISP] ] += 1
 
@@ -1080,8 +1126,6 @@ class UI:
                     arr[y,x] = 255
                     showing.append( (x,y) )
         self.dsc.show_pixels(arr)
-        if self._real_dsc is not None:
-            self._real_dsc.show_pixels(arr)
         return arr
 
 if __name__ == "__main__":
