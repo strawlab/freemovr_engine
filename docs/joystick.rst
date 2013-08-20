@@ -19,6 +19,9 @@ This starts a webserver running on the local machine and prints the
 URL. Open this URL with a modern browser and the webserver should now
 emit messages on the ROS ``/joy`` topic.
 
+Note: this requres the installation of python-tornado (> 2.4.x) and
+python-sockjs-tornado packages.
+
 Using a physical joystick
 =========================
 
