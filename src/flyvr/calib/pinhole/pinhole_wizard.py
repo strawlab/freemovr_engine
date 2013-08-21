@@ -117,59 +117,111 @@ def get_camera_for_boards(rows,width=0,height=0):
     return cam
 
 class CheckerboardPlotWidget(Gtk.DrawingArea):
+
+    SZ = 50
+
     def __init__(self):
-        super(CheckerboardPlotWidget,self).__init__()
-        self.set_size_request(100,80)
-        self.connect('draw', self._on_draw_event)
-        self.connect('configure-event', self._on_configure_event)
-        self._surface = None
-        print 'CheckerboardPlotWidget.__init__'
+        Gtk.DrawingArea.__init__(self)
+        self._nrows = 2
+        self._ncols = 2
+        self._currpt = 0
 
-    def _on_draw_event(self, widget, cr):
-        print 'draw event!'
-        cr.set_source_surface(self._surface, 0.0, 0.0)
-        cr.paint()
-        if 1:
-            return
+    def set_next_point(self, n):
+        self._currpt = n
+        self.queue_draw()
 
-        vec,pts = self.get_vec_and_points()
+    def set_board_size_num_corners(self, row, col):
+        self.set_board_size(
+                None if row is None else row+1,
+                None if col is None else col+1)
 
-        if vec is not None:
-            cr.set_source_rgb (1, 0, 0)
-            cr.set_line_width (1)
-            cr.move_to(vec.p.x,vec.p.y)
-            cr.line_to(vec.p2.x,vec.p2.y)
-            cr.stroke()
+    def set_board_size(self, row, col):
+        self._nrows = self._nrows if row is None else row
+        self._ncols = self._ncols if col is None else col
+        self.set_size_request(
+                1.2*self._ncols*self.SZ,
+                1.2*self._nrows*self.SZ
+        )
+        self.queue_draw()
 
-        for pt,rgb in pts:
-            if pt is not None:
-                cr.set_source_rgb (*rgb)
-                cr.move_to(pt.x, pt.y)
-                cr.arc(pt.x, pt.y, 2, 0, 2.0 * math.pi)
+    def do_draw(self, cr):
+        SZ,W,H = self.SZ,int(self._ncols),int(self._nrows)
+
+        x0 = (self.get_allocation().width - (W*SZ)) // 2
+        y0 = (self.get_allocation().height - (H*SZ)) // 2
+
+        #the internal corner number
+        ic = 0
+
+        #column
+        for n,_x in enumerate(range(0,W*SZ,SZ)):
+            #row
+            for m,_y in enumerate(range(0,H*SZ,SZ)):
+                #ensure columns start with alternating colors
+                black = ((m % 2) + n) % 2
+
+                #centre the board
+                x = _x+x0
+                y = _y+y0
+
+                cr.rectangle(x, y, SZ,  SZ)
+                if black:
+                    colour = (0, 0, 0)
+                else:
+                    colour = (1, 1, 1)
+
+                cr.set_source_rgb(*colour)
                 cr.fill()
 
-    def _on_configure_event(self, widget, event):
-        print 'CheckerboardPlotWidget.config'
+                if (n > 0) and (n < self._ncols):
+                    if (m > 0) and (m < self._nrows):
+                        ic += 1
+                        if ic == self._currpt:
+                            cr.set_source_rgb(1,0,0)
+                            #draw a circle at the corner
+                            cr.arc(x,y,5,0,2*math.pi)
+                            cr.fill()
+                        #always draw text
+                        #cr.move_to(x, y)
+                        #cr.show_text("%d" % ic)
 
-        allocation = self.get_allocation()
-        self._surface = self.get_window().create_similar_surface(
-                                            cairo.CONTENT_COLOR,
-                                            allocation.width,
-                                            allocation.height)
 
-        self._draw_background()
+class AddCheckerboardDialog(Gtk.Dialog):
+    def __init__(self, ui, **kwargs):
+        Gtk.Dialog.__init__(self, title="Add checkerboard",
+                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL),
+                                  **kwargs)
+        self.get_content_area().add(ui.get_object('add_CK_dialog_grid'))
+        self._npts_lbl = ui.get_object('N_CKB_points_label')
+        self._checker = CheckerboardPlotWidget()
+        ui.get_object('checkerboard_plot_box').pack_start(self._checker, True, True, 0)
 
-    def _draw_background(self):
-        print 'CheckerboardPlotWidget.bg'
-        cr = cairo.Context(self._surface)
-        cr.set_source_rgb(1, 1, 0)
-        cr.paint()
+        self._sze = ui.get_object('CK_size_entry')
 
-        # cr.set_source_rgb (0, 0, 0)
-        # cr.set_line_width (1)
-        # cx,cy = self._xy_to_pxpy(0,0)
-        # cr.arc(cx, cy, self._r_px, 0, 2.0 * math.pi)
-        # cr.stroke()
+        #connect the spinbuttons to change the checkerboard
+        self._nr = ui.get_object('CK_n_rows_spinbutton')
+        self._nr.connect('value-changed',
+                    lambda sbr: self._checker.set_board_size_num_corners(sbr.get_value(), None))
+        self._nc = ui.get_object('CK_n_cols_spinbutton')
+        self._nc.connect('value-changed',
+                    lambda sbc: self._checker.set_board_size_num_corners(None, sbc.get_value()))
+        self._checker.set_board_size_num_corners(self._nr.get_value(),self._nc.get_value())
+
+    def get_num_rows(self):
+        return int(self._nr.get_value())
+    def get_num_cols(self):
+        return int(self._nc.get_value())
+    def get_size(self):
+        return float(self._sze.get_text())
+
+    def add_point(self, n, pt):
+        self._npts_lbl.set_text('%d' % n)
+        self._checker.set_next_point(n+1)
+
+    def run(self):
+        self.show_all()
+        return Gtk.Dialog.run(self)
 
 class ProxyDisplayClient(object):
     def __init__(self):
@@ -266,10 +318,9 @@ class UI(object):
     def on_joy_callback(self, widget, msg):
         if self.joy_mode=='do CK':
             pt = [ msg.x,  msg.y ]
-            self._current_checkerboard['points'].append( pt )
-
-            label = self._ui.get_object('N_CKB_points_label')
-            label.set_text( '%d'%len(self._current_checkerboard['points']))
+            self._current_checkerboard['points'].append(pt)
+            npts = len(self._current_checkerboard['points'])
+            self.add_CK_dialog.add_point(npts, pt)
 
         elif self.joy_mode=='do points':
             if not len(self.point_store):
@@ -344,12 +395,12 @@ class UI(object):
         treeview.set_model( self.checkerboard_store )
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("N rows", renderer)
+        column = Gtk.TreeViewColumn("rows", renderer)
         column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='rows')
         treeview.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("N columns", renderer)
+        column = Gtk.TreeViewColumn("columns", renderer)
         column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='columns')
         treeview.append_column(column)
 
@@ -369,22 +420,7 @@ class UI(object):
         self._ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
 
         # setup checkerboard dialog ----------------
-
-        self.add_CK_dialog = Gtk.Dialog(title="Add checkerboard",
-                            parent=None,
-                            buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
-                                     Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
-        grid = self._ui.get_object('add_CK_dialog_grid')
-        if 1:
-            grid.attach(  Gtk.Label(label='in grid2'),
-                          0, 5, 1, 1)
-            #grid.add(  Gtk.Label(label='in grid2'))
-            self.add_CK_dialog.get_content_area().add(grid)
-        if 1:
-
-            box = self._ui.get_object('checkerboard_plot_box')
-            box.pack_start( CheckerboardPlotWidget(), True, True, 0)
-            box.show_all()
+        self.add_CK_dialog = AddCheckerboardDialog(self._ui)
 
         # setup help->about dialog -----------------
         self.help_about_dialog = Gtk.Dialog(title='About',
@@ -712,20 +748,13 @@ class UI(object):
         self.joy_mode='do CK'
         self._current_checkerboard = {'points':[]}
         try:
-            print 'should see check plot now!'
-
+            #reset current number of collected points, and current point
+            self.add_CK_dialog.add_point(0, None)
             response = self.add_CK_dialog.run()
-
             if response == Gtk.ResponseType.OK:
-                m = self._ui.get_object('CK_n_rows_adjustment')
-                self._current_checkerboard['rows'] = int(m.get_value())
-
-                m = self._ui.get_object('CK_n_cols_adjustment')
-                self._current_checkerboard['columns'] = int(m.get_value())
-
-                e = self._ui.get_object('CK_size_entry')
-                size = float( e.get_text())
-                self._current_checkerboard['size'] = size
+                self._current_checkerboard['rows'] = self.add_CK_dialog.get_num_rows()
+                self._current_checkerboard['columns'] = self.add_CK_dialog.get_num_cols()
+                self._current_checkerboard['size'] = self.add_CK_dialog.get_size()
                 nowstr = datetime.datetime.now().isoformat(' ')
                 self._current_checkerboard['date_string'] = nowstr
                 self.checkerboard_store.append( [self._current_checkerboard] )
@@ -734,9 +763,6 @@ class UI(object):
         finally:
             self.add_CK_dialog.hide()
             self.joy_mode='do points'
-
-        label = self._ui.get_object('N_CKB_points_label')
-        label.set_text('')
 
     def on_CK_remove(self, *args):
         treeview = self._ui.get_object('checkerboard_treeview')
