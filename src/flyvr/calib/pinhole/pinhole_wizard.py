@@ -254,23 +254,23 @@ class ProxyDisplayClient(object):
 
     @property
     def height(self):
-        if self._di is not None:
-            return self._di['height']
-        elif self._dsc is not None:
+        if self._dsc is not None:
             return self._dsc.height
+        elif self._di is not None:
+            return self._di['height']
 
     @property
     def width(self):
-        if self._di is not None:
-            return self._di['width']
-        elif self._dsc is not None:
+        if self._dsc is not None:
             return self._dsc.width
+        elif self._di is not None:
+            return self._di['width']
 
     def get_display_info(self):
-        if self._di is not None:
-            return self._di
-        elif self._dsc is not None:
+        if self._dsc is not None:
             return self._dsc.get_display_info()
+        elif self._di is not None:
+            return self._di
 
     def show_pixels(self,arr):
         scipy.misc.imsave(self._file, arr)
