@@ -173,11 +173,17 @@ joystick button to advance to the next point&lt;/i&gt;</property>
   <object class="GtkGrid" id="checkerboard_grid">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
+    <property name="margin_left">5</property>
+    <property name="margin_right">5</property>
+    <property name="margin_top">5</property>
+    <property name="margin_bottom">5</property>
+    <property name="row_spacing">5</property>
     <child>
       <object class="GtkBox" id="box3">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="hexpand">True</property>
+        <property name="spacing">5</property>
         <child>
           <object class="GtkButton" id="CK_add_button">
             <property name="label" translatable="yes">Add...</property>
@@ -301,6 +307,10 @@ joystick button to advance to the next point&lt;/i&gt;</property>
   <object class="GtkBox" id="corresponding_points_grid">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
+    <property name="margin_left">5</property>
+    <property name="margin_right">5</property>
+    <property name="margin_top">5</property>
+    <property name="margin_bottom">5</property>
     <property name="hexpand">True</property>
     <property name="orientation">vertical</property>
     <child>
@@ -352,6 +362,7 @@ joystick button to advance to the next point&lt;/i&gt;</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="hexpand">True</property>
+        <property name="spacing">5</property>
         <child>
           <object class="GtkButton" id="UV_add_button">
             <property name="label" translatable="yes">Add</property>
@@ -491,10 +502,10 @@ joystick button to advance to the next point&lt;/i&gt;</property>
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkLabel" id="label11">
+      <object class="GtkLabel" id="geometry_header_label">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">The below is a placeholder. Currently you must edit this in the .yaml file.</property>
+        <property name="label" translatable="yes">Geometry is defined in yaml file.</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -570,6 +581,7 @@ the Straw Lab
   <object class="GtkListStore" id="liststore3"/>
   <object class="GtkWindow" id="main_window">
     <property name="can_focus">False</property>
+    <property name="default_height">600</property>
     <child>
       <object class="GtkBox" id="box1">
         <property name="visible">True</property>
@@ -714,7 +726,8 @@ the Straw Lab
               <object class="GtkGrid" id="left_grid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_bottom">10</property>
+                <property name="margin_right">10</property>
+                <property name="margin_bottom">5</property>
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <property name="row_spacing">5</property>
@@ -955,7 +968,8 @@ the Straw Lab
               <object class="GtkBox" id="main_box">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_bottom">10</property>
+                <property name="margin_left">10</property>
+                <property name="margin_bottom">5</property>
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
@@ -971,7 +985,7 @@ the Straw Lab
               </object>
               <packing>
                 <property name="resize">True</property>
-                <property name="shrink">True</property>
+                <property name="shrink">False</property>
               </packing>
             </child>
           </object>
@@ -1001,10 +1015,10 @@ the Straw Lab
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkLabel" id="label5">
+      <object class="GtkLabel" id="virtual_display_header_label">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">The below is a placeholder. Currently you must edit this in the .yaml file.</property>
+        <property name="label" translatable="yes">Virtual display layout is defined in yaml file.</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
