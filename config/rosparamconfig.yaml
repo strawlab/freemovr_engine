@@ -14,12 +14,13 @@ display:
   x: 0
   y: 0
 geom:
-  axis: {x: 0.0, y: 0.0, z: 0.144}
+  axis: {x: 0.0, y: 0.0, z: 1.0}
   base: {x: 0.0, y: 0.0, z: 0.0}
   model: cylinder
-  radius: 0.046
+  radius: 0.5
 gamma: 1.0
 red_max: false
+tethered_mode: false
 p2c: /home/strawlab/flyvr-devel/flyvr/flyvr/config/p2c.exr
 p2g: /home/strawlab/flyvr-devel/flyvr/flyvr/config/p2g.exr
 stimulus_plugins: []
