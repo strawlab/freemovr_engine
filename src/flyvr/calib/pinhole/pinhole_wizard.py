@@ -550,13 +550,11 @@ class UI(object):
     def _load_from_file( self, fname ):
         with open(fname,mode='r') as fd:
             buf = fd.read()
-
         obj = yaml.safe_load(buf)
-
-        self.load_display(obj)
+        self.load_display(obj,fname)
+        self.load_geom(obj,fname)
         self.load_corresponding_points(obj)
         self.load_checkerboards(obj)
-        self.load_geom(obj)
         self.data_filename = fname
 
     def _get_state_as_dict( self ):
@@ -823,13 +821,15 @@ class UI(object):
             assert count == 1
         return {'display':result}
 
-    def load_display(self,obj):
+    def load_display(self,obj,fname):
         display_dict = obj['display']
 
         self.dsc.proxy_set_display_info(display_dict)
 
         self._ui.get_object('virtual_display_yaml').get_buffer().set_text(
             yaml.dump(display_dict) )
+        self._ui.get_object('virtual_display_header_label').set_text(
+            "Virtual displays loaded from %s" % os.path.basename(fname))
 
         self.vdisp_store.clear()
 
@@ -852,10 +852,12 @@ class UI(object):
     def geom_to_list(self):
         return {'geom':self._geom_dict}
 
-    def load_geom(self,obj):
+    def load_geom(self,obj,fname):
         self._geom_dict = obj['geom']
         self._ui.get_object('geometry_entry').get_buffer().set_text(
             yaml.dump(self._geom_dict) )
+        self._ui.get_object('geometry_header_label').set_text(
+            "Geometry loaded from %s" % os.path.basename(fname))
 
         self.geom = simple_geom.Geometry(geom_dict=self._geom_dict)
 
