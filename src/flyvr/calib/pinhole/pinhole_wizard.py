@@ -643,7 +643,13 @@ class UI(object):
         ds_name = e.get_text()
         self.dsc.proxy_set_dsc(display_client.DisplayServerProxy(ds_name))
         self.update_dsc_sensitivity(True)
-        self.update_bg_image() # send current image over
+        self.update_bg_image()
+
+        gi = self.dsc.get_geom_info()
+        di = self.dsc.get_display_info()
+        fname = "running display server %s" % ds_name
+        self.load_display({"display":di},fname)
+        self.load_geom({"geom":gi},fname)
 
     def on_disconnect_from_display_server(self,*args):
         self.dsc.proxy_set_dsc(None)
