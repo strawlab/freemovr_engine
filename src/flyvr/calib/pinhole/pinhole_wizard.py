@@ -636,7 +636,7 @@ class UI(object):
         msg = 'connected' if value else 'not connected'
         self._ds_status_lbl.set_text(msg)
         self._ds_connect_btn.set_sensitive(not value)
-        self._ds_disconnect_btn.set_sensitive(not value)
+        self._ds_disconnect_btn.set_sensitive(value)
 
     def on_connect_to_display_server(self,*args):
         e = self._ui.get_object('display_server_name_entry')

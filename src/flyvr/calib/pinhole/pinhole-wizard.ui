@@ -157,10 +157,12 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="xalign">0</property>
-        <property name="label" translatable="yes">&lt;i&gt;Using the joystick, move the cursor until it illuminates
+        <property name="label" translatable="yes">Using the joystick, move the cursor until it illuminates
 the indicated point on the checkerboard. Push the
-joystick button to advance to the next point&lt;/i&gt;</property>
-        <property name="use_markup">True</property>
+joystick button to advance to the next point.</property>
+        <attributes>
+          <attribute name="style" value="italic"/>
+        </attributes>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -313,6 +315,7 @@ joystick button to advance to the next point&lt;/i&gt;</property>
     <property name="margin_bottom">5</property>
     <property name="hexpand">True</property>
     <property name="orientation">vertical</property>
+    <property name="spacing">5</property>
     <child>
       <object class="GtkLabel" id="label">
         <property name="visible">True</property>
@@ -322,7 +325,6 @@ joystick button to advance to the next point&lt;/i&gt;</property>
         <property name="label" translatable="yes">Corresponding texture (UV) and display (xy) points</property>
         <attributes>
           <attribute name="weight" value="bold"/>
-          <attribute name="underline" value="True"/>
         </attributes>
       </object>
       <packing>
@@ -505,7 +507,7 @@ joystick button to advance to the next point&lt;/i&gt;</property>
       <object class="GtkLabel" id="geometry_header_label">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Geometry is defined in yaml file.</property>
+        <property name="label" translatable="yes">Please define and load a pinhole_wizard yaml calibration file.</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -1018,7 +1020,7 @@ the Straw Lab
       <object class="GtkLabel" id="virtual_display_header_label">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">Virtual display layout is defined in yaml file.</property>
+        <property name="label" translatable="yes">Please define and load a pinhole_wizard yaml calibration file.</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
