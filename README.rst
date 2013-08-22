@@ -7,7 +7,7 @@ multi-computer realtime tracking and display.
 
 .. contents::
 
-* `installation <docs/installation.rst>`_
+* `installation and getting started <docs/getting_started.rst>`_
 * `using the joystick for input <docs/joystick.rst>`_
 
 FlyVR architecture overview
