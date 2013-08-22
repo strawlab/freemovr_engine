@@ -117,6 +117,9 @@ class DisplayServerProxy(object):
     def get_mode(self):
         return self._spin_wait_for_mode(None)
 
+    def get_geom_info(self, nocache=False):
+        return rospy.get_param(self._server_node_name+'/geom')
+
     def get_display_info(self, nocache=False):
         if nocache or not self._info_cached:
             if self._use_param_server:
