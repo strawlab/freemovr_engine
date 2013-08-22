@@ -1,44 +1,55 @@
-Installation
-************
+Installation and Getting Started
+********************************
 
-(These instructions are modeled after the `ROS kinect package
-<http://www.ros.org/wiki/kinect>`_.) These instructions were tested on
-Ubuntu Lucid (10.04).
+FlyVR is developed and tested on Ubuntu 12.04 on the amd64 architecture using NVIDIA graphics.
 
- 1. Get the rosinstall tool::
+Please contact Andrew Straw for a script which will automatically install all requirements on your system.
 
-      sudo apt-get install python-stdeb python-yaml
-      pypi-install vcstools
-      pypi-install rosinstall
+Getting Started
+===============
 
- 2. `Install ROS Electric Desktop-Full from source
-    <http://www.ros.org/wiki/electric/Installation/Ubuntu/Source>`_ to
-    ``~/ros``.  (This will install the required stacks, such as
-    image_pipeline and executive_smach.) Although installing from
-    source will work directly frollowing these instructions, step 4
-    below will fail unless you also enable the ROS .deb
-    repository. (Specifically, you'll get errors such as ``E: Couldn't
-    find package libeigen3-dev``.) Do steps 1.2 and 1.3 as described
-    `here
-    <http://www.ros.org/wiki/electric/Installation/Ubuntu>`_. Then
-    run::
+Testing the basic installation
+------------------------------
 
-      apt-get update
+Once FlyVR is installed, you should be able to run a quick demo by typing:
 
- 3. Get the flyvr.rosinstall file from github and save to a local
-    directory. Manually visit https://github.com/strawlab/flyvr and
-    download the ``flyvr.rosinstall`` file.
+    roslaunch flyvr demo_display_server.launch
+    
+If that opens a graphics window showing a 3D scene, FlyVR is installed and running properly.
 
- 4. Download FlyVR into ``~/flyvr-devel``::
+Configuring a new display
+-------------------------
 
-      rosinstall ~/flyvr-devel ~/ros flyvr.rosinstall
+The most important part of FlyVR is the Display Server. This is the program that draws on a single
+display. If you need multiple physical displays, you will run multiple display servers. (A single display
+server can drive multiple virtual displays, as explained in the glossary.) We need to tell the Display
+Server about your display.
 
- 5. Build FlyVR::
+FlyVR uses `ROS <http://ros.org>`_ to handle configuration. To bootstrap a new system, begin by
+copying a default configuration file into a new location:
 
-      . ~/flyvr-devel/setup.sh
-      rosmake flyvr --rosdep-install
+    roscd flyvr/config
+    cp rosparamconfig.yaml my_display.yaml
+    
+Edit this new ``my_display.yaml`` to reflect your display. Much of this `YAML <http://en.wikipedia.org/wiki/YAML>`_
+file should be self-explanatory. On initial setup, the most critical information is the contents of the
+``display:`` key are the X windows parameters ``displayNum`` and ``screenNum`` and the window geometry parameters
+``x``, ``y``, ``width``, ``height``, and ``windowDecoration``. FlyVR does not switch your graphics mode, so set
+these values such that the display server will completely utilize your display.
 
-Note, the above requires installation of package libeigen3-dev on
-Ubuntu, which is not available through normal Ubuntu channels. Binaries are available at:
- * http://packages.ros.org/ros/ubuntu/pool/main/e/eigen3/libeigen3-dev_3.0.1-1+ros4~lucid_amd64.deb
- * http://packages.ros.org/ros/ubuntu/pool/main/e/eigen3/libeigen3-dev_3.0.1-1+ros4~lucid_i386.deb
+You can test your new configuration by creating a new ROS launch file which will load these parameters.
+
+    roscd flyvr/launch
+    cp demo_display_server.launch my_test.launch
+    
+Edit this new ``my_test.launch`` file and change the name of the configuration .yaml file to refer to the file you
+created above. Now, run this new launch file:
+
+    roslaunch flyvr my_test.launch
+    
+The displayed window should now have the properties you specified in ``my_display.yaml``.
+
+Running the pinhole calibration wizard
+--------------------------------------
+
+(To be continued...)
