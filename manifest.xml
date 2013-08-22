@@ -35,4 +35,5 @@
   <rosdep name="python-opencv"/>
   <rosdep name="python-ode"/>
   <rosdep name="python-openexr"/>
+  <rosdep name="python-scipy"/>
 </package>
