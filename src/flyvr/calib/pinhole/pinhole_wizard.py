@@ -578,7 +578,7 @@ class UI(object):
             self.data_filename = file
 
         obj = self._get_state_as_dict()
-        buf = yaml.dump(obj)
+        buf = yaml.safe_dump(obj)
 
         fd.write(buf)
         if do_close:
@@ -827,7 +827,7 @@ class UI(object):
         self.dsc.proxy_set_display_info(display_dict)
 
         self._ui.get_object('virtual_display_yaml').get_buffer().set_text(
-            yaml.dump(display_dict) )
+            yaml.safe_dump(display_dict) )
         self._ui.get_object('virtual_display_header_label').set_text(
             "Virtual displays loaded from %s" % os.path.basename(fname))
 
@@ -855,7 +855,7 @@ class UI(object):
     def load_geom(self,obj,fname):
         self._geom_dict = obj['geom']
         self._ui.get_object('geometry_entry').get_buffer().set_text(
-            yaml.dump(self._geom_dict) )
+            yaml.safe_dump(self._geom_dict) )
         self._ui.get_object('geometry_header_label').set_text(
             "Geometry loaded from %s" % os.path.basename(fname))
 
