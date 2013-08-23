@@ -64,45 +64,45 @@ osg::Vec4 StimulusInterface::get_clear_color() const {
 
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
   if (1) {
-	  // add skybox
+    // add skybox
 
-	  if (1) {
+    if (1) {
                   osg::TextureCubeMap* skymap = load_cubemap(basepath,extension);
 
-		  _skybox_pat = new osg::PositionAttitudeTransform;
-		  osg::Geode* geode = new osg::Geode();
-		  osg::ref_ptr<osg::ShapeDrawable> box = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 100.0));
-		  geode->addDrawable(box);
-		  _skybox_pat->addChild(geode);
+      _skybox_pat = new osg::PositionAttitudeTransform;
+      osg::Geode* geode = new osg::Geode();
+      osg::ref_ptr<osg::ShapeDrawable> box = new osg::ShapeDrawable(new osg::Sphere(osg::Vec3(0.0f, 0.0f, 0.0f), 100.0));
+      geode->addDrawable(box);
+      _skybox_pat->addChild(geode);
 
-		  std::vector< osg::ref_ptr<osg::Program> > _programList;
-		  osg::Program* ShowCubemapProgram;
-		  osg::Shader*  ShowCubemapVertObj;
-		  osg::Shader*  ShowCubemapFragObj;
+      std::vector< osg::ref_ptr<osg::Program> > _programList;
+      osg::Program* ShowCubemapProgram;
+      osg::Shader*  ShowCubemapVertObj;
+      osg::Shader*  ShowCubemapFragObj;
 
-		  ShowCubemapProgram = new osg::Program;
-		  ShowCubemapProgram->setName( "skybox" );
-		  _programList.push_back( ShowCubemapProgram );
-		  ShowCubemapVertObj = new osg::Shader( osg::Shader::VERTEX );
-		  ShowCubemapFragObj = new osg::Shader( osg::Shader::FRAGMENT );
-		  ShowCubemapProgram->addShader( ShowCubemapFragObj );
-		  ShowCubemapProgram->addShader( ShowCubemapVertObj );
+      ShowCubemapProgram = new osg::Program;
+      ShowCubemapProgram->setName( "skybox" );
+      _programList.push_back( ShowCubemapProgram );
+      ShowCubemapVertObj = new osg::Shader( osg::Shader::VERTEX );
+      ShowCubemapFragObj = new osg::Shader( osg::Shader::FRAGMENT );
+      ShowCubemapProgram->addShader( ShowCubemapFragObj );
+      ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
           Poco::Path shader_path = Poco::Path(_flyvr_base_path).append("src").append("shaders");
           ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.vert").toString());
           ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("skybox.frag").toString());
 
-		  osg::Uniform* skymapSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "skybox" );
+      osg::Uniform* skymapSampler = new osg::Uniform( osg::Uniform::SAMPLER_CUBE, "skybox" );
 
-		  osg::StateSet* ss = geode->getOrCreateStateSet();
-		  ss->setAttributeAndModes(ShowCubemapProgram, osg::StateAttribute::ON);
-		  ss->addUniform( skymapSampler );
-		  ss->setTextureAttributeAndModes(0,skymap,osg::StateAttribute::ON);
-		  ss->setMode(GL_BLEND, osg::StateAttribute::ON);
-		  ss->setAttributeAndModes(new osg::CullFace(osg::CullFace::FRONT), osg::StateAttribute::ON);
+      osg::StateSet* ss = geode->getOrCreateStateSet();
+      ss->setAttributeAndModes(ShowCubemapProgram, osg::StateAttribute::ON);
+      ss->addUniform( skymapSampler );
+      ss->setTextureAttributeAndModes(0,skymap,osg::StateAttribute::ON);
+      ss->setMode(GL_BLEND, osg::StateAttribute::ON);
+      ss->setAttributeAndModes(new osg::CullFace(osg::CullFace::FRONT), osg::StateAttribute::ON);
 
-		  top->addChild(_skybox_pat);
-	  }
+      top->addChild(_skybox_pat);
+    }
 
   }
  }
