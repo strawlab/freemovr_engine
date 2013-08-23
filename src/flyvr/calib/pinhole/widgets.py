@@ -10,11 +10,12 @@ class CellRendererButton(Gtk.CellRenderer):
 
     text = GObject.property(type=str, default='')
 
-    def __init__(self):
+    def __init__(self, text=''):
         GObject.GObject.__init__(self)
         self._xpad = 6
         self._ypad = 2
-        self.set_property('mode', Gtk.CellRendererMode.ACTIVATABLE)
+        self.props.mode = Gtk.CellRendererMode.ACTIVATABLE
+        self.props.text = text
 
     def do_get_size (self, widget, *args):
         context = widget.get_pango_context()
@@ -32,8 +33,6 @@ class CellRendererButton(Gtk.CellRenderer):
     def do_render(self, cr, widget, background_area, cell_area, flags):
         style = widget.get_style()
         state = widget.get_state()
-
-        print state
 
         layout = widget.create_pango_layout(self.props.text)
         (layout_width, layout_height) = layout.get_pixel_size()
@@ -55,6 +54,7 @@ GObject.type_register(CellRendererButton)
 
 if __name__ == "__main__":
     def _clicked(*args):
+        print "click", args
         pass
 
     w = Gtk.Window(title="CellRendererText Example")
@@ -73,6 +73,10 @@ if __name__ == "__main__":
     renderer_btn = CellRendererButton()
     renderer_btn.connect("clicked", _clicked)
     column_btn = Gtk.TreeViewColumn("Button", renderer_btn, text=1)
+    renderer_btn2 = CellRendererButton('Click')
+    renderer_btn2.connect("clicked", _clicked)
+    column_btn.pack_start(renderer_btn2, False)
+
     treeview.append_column(column_btn)
 
     w.add(treeview)

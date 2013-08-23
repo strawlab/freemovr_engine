@@ -36,7 +36,9 @@ import rosgobject.core
 import rosgobject.wrappers
 import cairo
 from gi.repository import Gtk, GObject
+
 from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
+from flyvr.calib.pinhole.widgets import CellRendererButton
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -62,11 +64,12 @@ JOYLISTEN=6
 # columns in self.vdisp_store
 VS_VDISP = 0
 VS_COUNT = 1
-VS_CAL_BUTTON = 2
-VS_MRE = 3
-VS_SHOW_BEACHBALL = 4
-VS_CAMERA_OBJECT = 5
-VS_PUBLISH_RVIZ = 6
+VS_CALIBRATION_RUNNING = 2
+VS_CALIBRATION_PROGRESS = 3
+VS_MRE = 4
+VS_SHOW_BEACHBALL = 5
+VS_CAMERA_OBJECT = 6
+VS_PUBLISH_RVIZ = 7
 
 def pretty_intrinsics_str(cam):
     K = cam.K
@@ -338,6 +341,12 @@ class UI(object):
             row[DISPLAYY] = msg.y
             self.update_bg_image()
 
+    def _pulse_spinner(self, *args):
+        if self.vdisp_store:
+            for row in self.vdisp_store:
+                row[VS_CALIBRATION_PROGRESS] += 1
+        return True
+
     def _build_ui(self):
         # connection status ----------------------
         self._ds_connect_btn = self._ui.get_object('connect_to_display_server_button')
@@ -431,7 +440,7 @@ class UI(object):
         self._ui.get_object('version_label').set_text(version_str)
 
         # setup vdisp combobox ----------------
-        self.vdisp_store = Gtk.ListStore(str,int,bool,float,bool,object,bool)
+        self.vdisp_store = Gtk.ListStore(str,int,bool,int,float,bool,object,bool)
 
         # create vdisp treeview -----------------------
 
@@ -448,10 +457,16 @@ class UI(object):
         column.set_sort_column_id(VS_COUNT)
         treeview.append_column(column)
 
-        renderer = Gtk.CellRendererToggle()
-        renderer.connect("toggled", self.on_trigger_cal)
-        column = Gtk.TreeViewColumn("calibrate", renderer, active=VS_CAL_BUTTON)
+        renderer = CellRendererButton('Calibrate')
+        renderer.connect("clicked", self.on_trigger_cal)
+        column = Gtk.TreeViewColumn("calibration")
+        column.pack_start(renderer, False)
+        renderer = Gtk.CellRendererSpinner()
+        column.pack_start(renderer, False)
+        column.add_attribute(renderer, "active", VS_CALIBRATION_RUNNING)
+        column.add_attribute(renderer, "pulse", VS_CALIBRATION_PROGRESS)
         treeview.append_column(column)
+        GObject.timeout_add(100, self._pulse_spinner)
 
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("mean reproj. error", renderer,
@@ -847,7 +862,7 @@ class UI(object):
             vdisps = [FULLSCREEN]
 
         for vdisp in vdisps:
-            self.vdisp_store.append([vdisp,0,0,np.nan,0,None,0])
+            self.vdisp_store.append([vdisp,0,False,0,np.nan,0,None,0])
             self.intr_pub[vdisp] = rospy.Publisher(vdisp+'/camera_info',
                                                    CameraInfo, latch=True)
             self.frustum_pub[vdisp] = rospy.Publisher(vdisp+'/frustum',
@@ -1001,17 +1016,25 @@ class UI(object):
                 self.frustum_pub[vdisp].publish(r['markers'])
 
     def on_trigger_cal(self, widget, path):
-        vdisp = self.vdisp_store[path][0]
-
+        vdisp = self.vdisp_store[path][VS_VDISP]
         method = self._ui.get_object('cal_method_cbtext').get_active_text()
+        self.vdisp_store[path][VS_CALIBRATION_RUNNING] = True
         self.launch_calibration( method, vdisp )
+        self.vdisp_store[path][VS_CALIBRATION_RUNNING] = False
 
     def calibrate_all_vdisps(self,method):
         for row in self.vdisp_store:
-            vdisp = row[VS_VDISP]
-            self.launch_calibration( method, vdisp )
+            row[VS_CALIBRATION_RUNNING] = True
+            self.launch_calibration( method, row[VS_VDISP] )
+            row[VS_CALIBRATION_RUNNING] = False
 
     def launch_calibration(self, method, vdisp ):
+
+        def _pump_ui():
+            Gtk.main_iteration_do(False) #run once, no block
+            while Gtk.events_pending():  #run remaining
+                Gtk.main_iteration()
+
         orig_data = []
         for row in self.point_store:
             if row[VDISP]==vdisp:
@@ -1031,6 +1054,8 @@ class UI(object):
                                                      height=self.dsc.height,
                                                      )
 
+            _pump_ui()
+
             if 0:
                 c2 = c1.get_flipped_camera()
 
@@ -1048,6 +1073,8 @@ class UI(object):
             elif 1:
                 farr = self.geom.compute_for_camera_view( c1,
                                                           what='texture_coords' )
+
+                _pump_ui()
 
                 u = farr[:,:,0]
                 good = ~np.isnan( u )
@@ -1080,15 +1107,21 @@ class UI(object):
             else:
                 cami = self.display_intrinsic_cam
 
+            _pump_ui()
+
             if method == 'iterative extrinsic only':
                 result = fit_extrinsics_iterative(cami,XYZ,xy)
             else:
                 result = fit_extrinsics(cami,XYZ,xy)
 
+            _pump_ui()
+
             c1 = result['cam']
             if 1:
                 farr = self.geom.compute_for_camera_view( c1,
                                                           what='texture_coords' )
+
+                _pump_ui()
 
                 u = farr[:,:,0]
                 good = ~np.isnan( u )
@@ -1104,6 +1137,8 @@ class UI(object):
         else:
             raise ValueError('unknown calibration method %r'%method)
 
+        _pump_ui()
+
         projected_points = camera.project_3d_to_pixel( XYZ )
         reproj_error = np.sum( (projected_points - xy)**2, axis=1)
         mre = np.mean(reproj_error)
@@ -1112,6 +1147,9 @@ class UI(object):
             if row[VS_VDISP]==vdisp:
                 row[VS_MRE] = mre
                 row[VS_CAMERA_OBJECT] = camera
+
+        _pump_ui()
+
         self.update_bg_image()
 
     def update_bg_image(self):
