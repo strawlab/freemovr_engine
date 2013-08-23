@@ -19,6 +19,7 @@
 #include "Poco/File.h"
 
 #include "load_cubemap.h"
+#include "flyvr/flyvr_assert.h"
 
 #include <stdexcept>
 
@@ -62,6 +63,15 @@ osg::Vec4 StimulusInterface::get_clear_color() const {
   return osg::Vec4(1.0, 1.0, 0.0, 0.0); // default to clear yellow
 }
 
+class InvalidBoundsCallback : public osg::Drawable::ComputeBoundingBoxCallback
+{
+  osg::BoundingBox computeBound(const osg::Drawable&) const  {
+    osg::BoundingBox bb = osg::BoundingBox(1.0, 1.0, 1.0, -1.0, -1.0, -1.0); // max < min, thus invalid
+    flyvr_assert_msg( !bb.valid(), "bounding box should be invalid" );
+    return bb;
+  }
+};
+
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
   if (1) {
     // add skybox
@@ -72,12 +82,14 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
       _skybox_pat = new osg::PositionAttitudeTransform;
       osg::Geode* geode = new osg::Geode();
 
-      // do not cull, since we change the vertex positions in the shader
-      geode->setCullingActive(false);
-
-
       // Set up geometry for the background quad
       osg::Geometry* BackgroundGeometry = new osg::Geometry();
+
+      // Force bounding box to be undefined, since we change vertex
+      // position in the shader.
+      osg::Drawable::ComputeBoundingBoxCallback* no_bounds_callback =
+        new InvalidBoundsCallback();
+      BackgroundGeometry->setComputeBoundingBoxCallback(no_bounds_callback);
 
       // vertices are interpreted as containing screen coordinates by
       // the vertex shader
