@@ -1,0 +1,12 @@
+<launch>
+
+  <node name="display_server" pkg="flyvr" type="display_server" args="--mode overview --throttle">
+    <rosparam command="load" file="$(find flyvr)/config/rosparamconfig.yaml" />
+    <param name="p2g" type="str" value="$(find flyvr)/config/p2g.exr" />
+    <param name="display/windowDecoration" type="bool" value="true" />
+  </node>
+
+  <node name="webserver" pkg="browser_joystick" type="web_control.py"/>
+  <node name="joystick_cursor" pkg="flyvr" type="joystick_cursor"/>
+
+</launch>
