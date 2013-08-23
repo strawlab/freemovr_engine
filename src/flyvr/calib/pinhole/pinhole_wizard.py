@@ -19,26 +19,27 @@ import camera_calibration.calibrator
 
 import rospy
 
-import flyvr.rviz_utils
 from geometry_msgs.msg import Pose2D
 from sensor_msgs.msg import CameraInfo
-import tf.broadcaster
 from visualization_msgs.msg import MarkerArray
 
-import flyvr.simple_geom as simple_geom
+import tf.broadcaster
+
 import camera_model
+
+import flyvr.rviz_utils
+import flyvr.simple_geom as simple_geom
 import flyvr.dlt as dlt
 import flyvr.display_client as display_client
 import flyvr.fill_polygon as fill_polygon
-from flyvr.exr import save_exr
+import flyvr.exr as exr
+from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
+from flyvr.calib.pinhole.widgets import CellRendererButton
 
 import rosgobject.core
 import rosgobject.wrappers
 import cairo
 from gi.repository import Gtk, GObject
-
-from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
-from flyvr.calib.pinhole.widgets import CellRendererButton
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -727,7 +728,8 @@ class UI(object):
             raise NotImplementedError("b = f(dist,angle)")
         else:
             b=np.ones_like(tcs[:,:,1])
-        save_exr( fname, r=r, g=g, b=b)
+
+        exr.save_exr( fname, r=r, g=g, b=b)
 
     def on_save_calibration_exr(self,*args):
         filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
