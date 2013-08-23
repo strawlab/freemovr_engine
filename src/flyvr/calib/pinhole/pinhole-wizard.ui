@@ -910,7 +910,7 @@ the Straw Lab
                     </child>
                     <child>
                       <object class="GtkCheckButton" id="display_server_populate_cb">
-                        <property name="label" translatable="yes">Populate display and geometry info</property>
+                        <property name="label" translatable="yes">Import display and geometry info</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">False</property>
