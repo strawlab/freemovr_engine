@@ -110,13 +110,6 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;
   osg::ref_ptr<osg::Geometry> this_geom = _geometry_parameters->make_geom();
 
-  {
-    // Hack large bounding box so OSG doesn't cull our vertices. (They
-    // get moved by the shader.)
-    double d = 100.0;
-    this_geom->setInitialBound(osg::BoundingBox(-d,-d,-d, d, d, d));
-  }
-
     _state_set = this_geom->getOrCreateStateSet();
     _state_set->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
     _state_set->setTextureAttributeAndModes(0, _in_texture_cubemap.get(), osg::StateAttribute::ON);
