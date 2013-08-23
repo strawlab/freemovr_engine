@@ -661,11 +661,12 @@ class UI(object):
         self.update_dsc_sensitivity(True)
         self.update_bg_image()
 
-        gi = self.dsc.get_geom_info()
-        di = self.dsc.get_display_info()
-        fname = "running display server %s" % ds_name
-        self.load_display({"display":di},fname)
-        self.load_geom({"geom":gi},fname)
+        if self._ui.get_object('display_server_populate_cb').get_active():
+            gi = self.dsc.get_geom_info()
+            di = self.dsc.get_display_info()
+            fname = "running display server %s" % ds_name
+            self.load_display({"display":di},fname)
+            self.load_geom({"geom":gi},fname)
 
     def on_disconnect_from_display_server(self,*args):
         self.dsc.proxy_set_dsc(None)
