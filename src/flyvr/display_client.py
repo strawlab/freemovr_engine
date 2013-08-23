@@ -284,9 +284,9 @@ class OSGFileStimulusSlave:
 
     dsc = None
 
-    def __init__(self, dsc, osg_file_description):
+    def __init__(self, dsc, stimulus='StimulusOSGFile'):
         self.dsc = dsc
-        self.dsc.set_mode('StimulusOSGFile')
+        self.dsc.set_mode(stimulus)
 
         self.pub_stimulus_scale = rospy.Publisher(self.dsc.name+'/model_scale',
                                                   geometry_msgs.msg.Vector3,
@@ -298,30 +298,24 @@ class OSGFileStimulusSlave:
                                             std_msgs.msg.String,
                                             latch=True)
 
-        if osg_file_description:
-            self.set_from_osg_descriptor(osg_file_description)
-
-    def set_from_osg_descriptor(self, desc):
-
-        try:
-            fname,origin,scale = desc.split("/")
-        except ValueError:
-            fname = desc
-            origin = scale = None
-
+    def set_model_filename(self, fname):
         self.pub_stimulus.publish(fname)
 
-        if origin:
-            xyz = map(float,origin.split(','))
-            msg = geometry_msgs.msg.Pose()
-            msg.position.x = xyz[0]
-            msg.position.y = xyz[1]
-            msg.position.z = xyz[2]
-            msg.orientation.w = 1.0
-            self.pub_stimulus_centre.publish(msg)
+    def set_model_origin(self, xyz):
+        if len(xyz) != 3:
+            raise ValueError("orgin must be 3-tuple of x,y,z (m)")
+        msg = geometry_msgs.msg.Pose()
+        msg.position.x = xyz[0]
+        msg.position.y = xyz[1]
+        msg.position.z = xyz[2]
+        msg.orientation.w = 1.0
+        self.pub_stimulus_centre.publish(msg)
 
-        if scale:
-            xyz = map(float,scale.split(','))
-            msg = geometry_msgs.msg.Vector3(*xyz)
-            self.pub_stimulus_scale.publish(msg)
+    def set_model_scale(self, xyz):
+        if len(xyz) != 3:
+            raise ValueError("scale must be 3-tuple of x,y,z (m)")
+        msg = geometry_msgs.msg.Vector3(*xyz)
+        self.pub_stimulus_scale.publish(msg)
+
+
 
