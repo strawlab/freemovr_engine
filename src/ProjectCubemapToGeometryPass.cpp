@@ -19,6 +19,8 @@
 
 #include "util.h"
 #include "ProjectCubemapToGeometryPass.h"
+#include "InvalidBoundsCallback.h"
+
 #include "flyvr/flyvr_assert.h"
 
 ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_basepath,
@@ -109,6 +111,12 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
 
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;
   osg::ref_ptr<osg::Geometry> this_geom = _geometry_parameters->make_geom();
+
+  // Force bounding box to be undefined, since we change vertex
+  // position in the shader.
+  osg::Drawable::ComputeBoundingBoxCallback* no_bounds_callback =
+        new InvalidBoundsCallback();
+  this_geom->setComputeBoundingBoxCallback(no_bounds_callback);
 
     _state_set = this_geom->getOrCreateStateSet();
     _state_set->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
