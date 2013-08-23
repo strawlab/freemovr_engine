@@ -19,7 +19,7 @@
 #include "Poco/File.h"
 
 #include "load_cubemap.h"
-#include "flyvr/flyvr_assert.h"
+#include "InvalidBoundsCallback.h"
 
 #include <stdexcept>
 
@@ -62,15 +62,6 @@ void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
 osg::Vec4 StimulusInterface::get_clear_color() const {
   return osg::Vec4(1.0, 1.0, 0.0, 0.0); // default to clear yellow
 }
-
-class InvalidBoundsCallback : public osg::Drawable::ComputeBoundingBoxCallback
-{
-  osg::BoundingBox computeBound(const osg::Drawable&) const  {
-    osg::BoundingBox bb = osg::BoundingBox(1.0, 1.0, 1.0, -1.0, -1.0, -1.0); // max < min, thus invalid
-    flyvr_assert_msg( !bb.valid(), "bounding box should be invalid" );
-    return bb;
-  }
-};
 
 void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string basepath, std::string extension) {
   if (1) {
