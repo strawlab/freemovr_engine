@@ -47,6 +47,7 @@ class GenMasks:
 
         self.trigger_proxy_rate = rospy.ServiceProxy(trigger+'/set_framerate', camera_trigger.srv.SetFramerate)
         self.trigger_proxy_rate(1.0)
+        rospy.loginfo("Set framerate to 1fps")
 
         self.runner = SimultaneousCameraRunner(cam_handlers)
 
