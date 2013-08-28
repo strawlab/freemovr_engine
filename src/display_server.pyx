@@ -382,6 +382,9 @@ cdef class MyNode:
         rospy.Service('~get_display_info',
                       flyvr.srv.GetDisplayInfo,
                       self.handle_get_display_info)
+        rospy.Service('~get_geometry_info',
+                      flyvr.srv.GetDisplayInfo,
+                      self.handle_get_geom_info)
         rospy.Service('~set_display_server_mode',
                       flyvr.srv.SetDisplayServerMode,
                       self.handle_set_display_server_mode)
@@ -428,6 +431,20 @@ cdef class MyNode:
         response = flyvr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
+
+    def handle_get_geom_info(self,request):
+        try:
+            if self._using_ros_config:
+                result = rospy.get_param('~geom')
+            else:
+                result = self._config_dict['geom']
+        except KeyError:
+            result = {}
+
+        response = flyvr.srv.GetDisplayInfoResponse()
+        response.info_json = json.dumps(result)
+        return response
+
 
     def handle_set_display_server_mode(self, request):
         with self._mode_lock:
