@@ -117,21 +117,24 @@ class DisplayServerProxy(object):
     def get_mode(self):
         return self._spin_wait_for_mode(None)
 
-    def get_geom_info(self, nocache=False):
-        return rospy.get_param(self._server_node_name+'/geom')
-
-    def get_display_info(self, nocache=False):
-        if nocache or not self._info_cached:
+    def _get_cached_service_call(self, paramname, servicename, nocache):
+        if nocache or (paramname not in self._info_cached):
             if self._use_param_server:
-                self._info_cached = rospy.get_param(self._server_node_name+'/display')
+                self._info_cached[paramname] = rospy.get_param(self._server_node_name+'/'+paramname)
             try:
-                get_display_info_proxy = rospy.ServiceProxy(self.get_fullname('get_display_info'),
+                get_info_proxy = rospy.ServiceProxy(self.get_fullname(servicename),
                                                             flyvr.srv.GetDisplayInfo)
-                result = get_display_info_proxy()
-                self._info_cached = json.loads(result.info_json)
+                result = get_info_proxy()
+                self._info_cached[paramname] = json.loads(result.info_json)
             except:
                 pass
-        return self._info_cached
+        return self._info_cached[paramname]
+
+    def get_geometry_info(self, nocache=False):
+        return self._get_cached_service_call('geom','get_geometry_info',nocache)
+
+    def get_display_info(self, nocache=False):
+        return self._get_cached_service_call('display','get_display_info',nocache)
 
     def _get_viewport_index(self, name):
         viewport_idx = -1
