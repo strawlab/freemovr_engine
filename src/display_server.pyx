@@ -239,6 +239,8 @@ cdef class MyNode:
     cdef object _timer
     cdef object _gamma
     cdef object _red_max
+    cdef object _config_dict
+    cdef object _using_ros_config
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -283,7 +285,9 @@ cdef class MyNode:
         self._throttle = args.throttle
         rospy.loginfo("throttle framerate: %s" % self._throttle)
 
+        self._using_ros_config = False
         config_dict = rospy.get_param('~',{})
+
         rospy.loginfo("starting display_server")
         if args.config and os.path.exists(args.config):
             config_file = args.config
@@ -294,6 +298,7 @@ cdef class MyNode:
                 except ValueError:
                     pass
         elif config_dict:
+            self._using_ros_config = True
             rospy.loginfo("using ros config")
             #the exr file can be specified as a base64 string. In that case we decode it and write it
             #to a tmp file
@@ -311,15 +316,16 @@ cdef class MyNode:
             config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'config','config.json')
             config_dict = json.load(open(config_file,'r'))
 
+        self._config_dict = config_dict
         rospy.loginfo("config_file = %s" % config_file)
 
-        tethered_mode = config_dict.get('tethered_mode',True)
+        tethered_mode = self._config_dict.get('tethered_mode',True)
         rospy.loginfo("tethered_mode: %s" % tethered_mode)
 
-        self._gamma = config_dict.get('gamma', 1.0)
+        self._gamma = self._config_dict.get('gamma', 1.0)
         rospy.loginfo("gamma correction: %s" % self._gamma)
 
-        self._red_max = config_dict.get('red_max', False)
+        self._red_max = self._config_dict.get('red_max', False)
         rospy.loginfo("red max: %s" % self._red_max)
 
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
@@ -410,11 +416,14 @@ cdef class MyNode:
                   }
 
         try:
-            virtualDisplays = rospy.get_param('~display/virtualDisplays')
+            if self._using_ros_config:
+                virtualDisplays = rospy.get_param('~display/virtualDisplays')
+            else:
+                virtualDisplays = self._config_dict['display']['virtualDisplays']
         except KeyError:
-            pass
-        else:
-            result['virtualDisplays'] = virtualDisplays
+            virtualDisplays = {}
+
+        result['virtualDisplays'] = virtualDisplays
 
         response = flyvr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
