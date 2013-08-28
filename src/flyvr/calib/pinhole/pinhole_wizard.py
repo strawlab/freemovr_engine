@@ -253,6 +253,7 @@ class ProxyDisplayClient(object):
     def __init__(self):
         self._dsc = None
         self._di = None
+        self._gi = None
         self._file = os.path.join(tempfile.mkdtemp(),"ds.png")
         self._w = Gtk.Window(title="Display Server Output")
         self._img = Gtk.Image()
@@ -274,6 +275,9 @@ class ProxyDisplayClient(object):
 
     def proxy_set_display_info(self, di):
         self._di = di
+
+    def proxy_set_geometry_info(self, gi):
+        self._gi = gi
 
     def __getattr__(self, name):
         return getattr(self._dsc, name)
@@ -297,6 +301,12 @@ class ProxyDisplayClient(object):
             return self._dsc.get_display_info()
         elif self._di is not None:
             return self._di
+
+    def get_geometry_info(self):
+        if self._dsc is not None:
+            return self._dsc.get_geometry_info()
+        elif self._gi is not None:
+            return self._gi
 
     def show_pixels(self,arr):
         scipy.misc.imsave(self._file, arr)
@@ -684,7 +694,7 @@ class UI(object):
         self.update_bg_image()
 
         if self._ui.get_object('display_server_populate_cb').get_active():
-            gi = self.dsc.get_geom_info()
+            gi = self.dsc.get_geometry_info()
             di = self.dsc.get_display_info()
             fname = "running display server %s" % ds_name
             self.load_display({"display":di},fname)
@@ -900,6 +910,7 @@ class UI(object):
 
     def load_geom(self,obj,fname):
         self._geom_dict = obj['geom']
+        self.dsc.proxy_set_geometry_info(self._geom_dict)
         self._ui.get_object('geometry_entry').get_buffer().set_text(
             yaml.safe_dump(self._geom_dict) )
         self._ui.get_object('geometry_header_label').set_text(
