@@ -104,10 +104,32 @@ def get_camera_for_boards(rows,width=0,height=0):
 
     boards = []
     goodcorners = []
+    mpl_debug = False
+    mpl_lines = []
     for k in info_dict:
         info = info_dict[k]['info']
         for xys in info_dict[k]['corners']:
             goodcorners.append( (xys,info) )
+
+        if mpl_debug:
+            N = info.n_cols
+            xs = []; ys=[]
+            for (x,y) in xys:
+                xs.append(x); ys.append(y)
+            while len(xs):
+                this_xs = xs[:N]
+                this_ys = ys[:N]
+
+                del xs[:N]
+                del ys[:N]
+
+                mpl_lines.append( (this_xs, this_ys ) )
+
+    if mpl_debug:
+        import matplotlib.pyplot as plt
+        for (this_xs, this_ys) in mpl_lines:
+            plt.plot( this_xs, this_ys )
+        plt.show()
 
     cal = camera_calibration.calibrator.MonoCalibrator(boards)
     cal.size = (width,height)
