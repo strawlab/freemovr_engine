@@ -183,10 +183,10 @@ class CheckerboardPlotWidget(Gtk.DrawingArea):
         #the internal corner number
         ic = 0
 
-        #column
-        for n,_x in enumerate(range(0,W*SZ,SZ)):
-            #row
-            for m,_y in enumerate(range(0,H*SZ,SZ)):
+        #row
+        for m,_y in enumerate(range(0,H*SZ,SZ)):
+            #col
+            for n,_x in enumerate(range(0,W*SZ,SZ)):
                 #ensure columns start with alternating colors
                 black = ((m % 2) + n) % 2
 
