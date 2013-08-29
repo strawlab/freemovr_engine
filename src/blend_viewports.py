@@ -70,7 +70,7 @@ def getViewportMask(fname):
 	
 
 def main():   
-	savePath='/mnt/hgfs/VMware_shared/'
+	savePath='/mnt/hgfs/VMware_shared/' # path for debug output
 	in_directory=sys.argv[1] # directory, where input and output files are located 
 
 	in_file_numbers=[0, 1, 3] # server numbers to put into filenames below
