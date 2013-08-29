@@ -56,6 +56,20 @@ def _fill_polygon(polygon, canvas, color=1):
             nn += 1
             canvas[y,n:nn] = color
 
+def line_poly( x0, y0, x1, y1, width = 1.0 ):
+    '''get polygon of line from (x0,y0) to (x1,y2)'''
+    v = np.array( [(x1-x0), (y1-y0)], dtype=np.float )
+    mag = np.sqrt(np.sum(v**2))
+    norm_v = v/mag
+
+    d = 0.5*width*np.array( [norm_v[1], norm_v[0]], dtype=np.float)
+    poly = [ [x0 - d[0],y0 - d[1]],
+             [x1 - d[0],y1 - d[1]],
+             [x1 + d[0], y1 + d[1]],
+             [x0 + d[0], y0 + d[1]],
+             ]
+    return poly
+
 def test_fill():
     poly = [ [1,1],
              [1, 3],
