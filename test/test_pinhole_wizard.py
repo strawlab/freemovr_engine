@@ -14,6 +14,8 @@ rospack = rospkg.RosPack()
 pkg_dir = rospack.get_path('flyvr')
 data_fname = os.path.join( pkg_dir, 'data/calib_pinhole_sample/pinhole_wizard_sample.yaml')
 
+os.environ['RUNNING_NOSE'] = '1'
+
 def test_pinhole_wizard():
     for extrinsic_method in pw.EXTRINSIC_CALIBRATION_METHODS:
         yield check_pinhole_calibration, extrinsic_method

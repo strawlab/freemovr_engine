@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
-import os.path
+import os
 import argparse
 import yaml
 import math
@@ -1034,9 +1034,10 @@ class UI(object):
     def launch_calibration(self, method, vdisp ):
 
         def _pump_ui():
-            Gtk.main_iteration_do(False) #run once, no block
-            while Gtk.events_pending():  #run remaining
-                Gtk.main_iteration()
+            if os.environ.get('RUNNING_NOSE') != '1':
+                Gtk.main_iteration_do(False) #run once, no block
+                while Gtk.events_pending():  #run remaining
+                    Gtk.main_iteration()
 
         orig_data = []
         for row in self.point_store:
