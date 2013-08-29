@@ -385,6 +385,8 @@ class UI(object):
         a1.connect("delete-event", rosgobject.main_quit)
         a1.show_all()
 
+        self._geom_dict = {}
+
         GObject.timeout_add(100, self.on_timer)
 
     def on_joy_callback(self, widget, msg):
