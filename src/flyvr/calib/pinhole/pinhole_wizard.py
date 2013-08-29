@@ -45,6 +45,10 @@ def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
     cell.set_property('text', '%g'%float_in )
 
+DEFAULT_CHECKER_NROWS = 6
+DEFAULT_CHECKER_NCOLS = 8
+DEFAULT_CHECKER_SIZE = 0.015
+
 EXTRINSIC_CALIBRATION_METHODS = [
     'extrinsic only',
     'iterative extrinsic only',
@@ -213,7 +217,7 @@ class CheckerboardPlotWidget(Gtk.DrawingArea):
 
 
 class AddCheckerboardDialog(Gtk.Dialog):
-    def __init__(self, ui, **kwargs):
+    def __init__(self, ui, nrows, ncols, size, **kwargs):
         Gtk.Dialog.__init__(self, title="Add checkerboard",
                                   buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
                                            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL),
@@ -224,15 +228,22 @@ class AddCheckerboardDialog(Gtk.Dialog):
         ui.get_object('checkerboard_plot_box').pack_start(self._checker, True, True, 0)
 
         self._sze = ui.get_object('CK_size_entry')
+        self._nr = ui.get_object('CK_n_rows_spinbutton')
+        self._nc = ui.get_object('CK_n_cols_spinbutton')
+
+        self.set_board_size(nrows,ncols,size)
 
         #connect the spinbuttons to change the checkerboard
-        self._nr = ui.get_object('CK_n_rows_spinbutton')
         self._nr.connect('value-changed',
                     lambda sbr: self._checker.set_board_size_num_corners(sbr.get_value(), None))
-        self._nc = ui.get_object('CK_n_cols_spinbutton')
         self._nc.connect('value-changed',
                     lambda sbc: self._checker.set_board_size_num_corners(None, sbc.get_value()))
-        self._checker.set_board_size_num_corners(self._nr.get_value(),self._nc.get_value())
+
+    def set_board_size(self, nrows, ncols, size):
+        self._nr.set_value(nrows)
+        self._nc.set_value(ncols)
+        self._sze.set_text(str(size))
+        self._checker.set_board_size_num_corners(nrows,ncols)
 
     def get_num_rows(self):
         return int(self._nr.get_value())
@@ -462,7 +473,10 @@ class UI(object):
         self._ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
 
         # setup checkerboard dialog ----------------
-        self.add_CK_dialog = AddCheckerboardDialog(self._ui)
+        self.add_CK_dialog = AddCheckerboardDialog(self._ui,
+                                nrows=DEFAULT_CHECKER_NROWS,
+                                ncols=DEFAULT_CHECKER_NCOLS,
+                                size=DEFAULT_CHECKER_SIZE)
 
         # setup help->about dialog -----------------
         self.help_about_dialog = Gtk.Dialog(title='About',
