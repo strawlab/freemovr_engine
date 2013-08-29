@@ -239,6 +239,9 @@ class AddCheckerboardDialog(Gtk.Dialog):
         self._nc.connect('value-changed',
                     lambda sbc: self._checker.set_board_size_num_corners(None, sbc.get_value()))
 
+        self._dsc = None
+        self._dsc_pts = None
+
     def set_board_size(self, nrows, ncols, size):
         self._nr.set_value(nrows)
         self._nc.set_value(ncols)
@@ -256,9 +259,28 @@ class AddCheckerboardDialog(Gtk.Dialog):
         self._npts_lbl.set_text('%d' % n)
         self._checker.set_next_point(n+1)
 
-    def run(self):
+        if pt is not None and self._dsc is not None:
+            x,y = pt
+            self._dsc_arr[y-2:y+2,x-2:x+2,:] = self._dsc.IMAGE_COLOR_WHITE
+            self._dsc.show_pixels(self._dsc_arr)
+
+    def run(self, dsc):
+        self.add_point(0, None)
+        self._dsc_pts = []
+
+        if dsc.proxy_is_connected():
+            self._dsc = dsc
+            self._dsc_arr = self._dsc.new_image(self._dsc.IMAGE_COLOR_BLACK)
+        else:
+            self._dsc = None
+
         self.show_all()
-        return Gtk.Dialog.run(self)
+        resp = Gtk.Dialog.run(self)
+
+        if dsc.proxy_is_connected():
+            self._dsc.show_pixels(self._dsc.new_image(self._dsc.IMAGE_COLOR_BLACK))
+
+        return resp
 
 class ProxyDisplayClient(object):
     def __init__(self):
@@ -289,6 +311,9 @@ class ProxyDisplayClient(object):
 
     def proxy_set_geometry_info(self, gi):
         self._gi = gi
+
+    def proxy_is_connected(self):
+        return self._dsc is not None
 
     def __getattr__(self, name):
         return getattr(self._dsc, name)
@@ -817,8 +842,7 @@ class UI(object):
         self._current_checkerboard = {'points':[]}
         try:
             #reset current number of collected points, and current point
-            self.add_CK_dialog.add_point(0, None)
-            response = self.add_CK_dialog.run()
+            response = self.add_CK_dialog.run(self.dsc)
             if response == Gtk.ResponseType.OK:
                 self._current_checkerboard['rows'] = self.add_CK_dialog.get_num_rows()
                 self._current_checkerboard['columns'] = self.add_CK_dialog.get_num_cols()
