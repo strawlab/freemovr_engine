@@ -77,7 +77,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('fname',nargs='?',default=default_fname)
-    parser.add_argument('--rgb', help='RGB value r,g,b', default="-1,-1,-1")    
+    parser.add_argument('--rgb', help='RGB tuple r,g,b (float, 0...1)', default="-1,-1,-1")    
     parser.add_argument('--white', action='store_true', help='show a white screen')
     parser.add_argument('--black', action='store_true', help='show a black screen')
     parser.add_argument('--viewport', type=str, help='only show on this viewport')
