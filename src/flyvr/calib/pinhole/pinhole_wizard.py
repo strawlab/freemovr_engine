@@ -1231,10 +1231,8 @@ class UI(object):
 
     def update_bg_image(self):
         arr = np.zeros( (self.dsc.height,self.dsc.width,3), dtype=np.uint8 )
-
+        di = self.dsc.get_display_info()
         # draw beachballs ----------------------
-
-        # FIXME: add masks
 
         for row in self.vdisp_store:
             if not row[VS_SHOW_BEACHBALL]:
@@ -1242,6 +1240,15 @@ class UI(object):
             cam = row[VS_CAMERA_OBJECT]
             if cam is None:
                 continue
+
+            vdisp = row[VS_VDISP]
+            for d in di['virtualDisplays']:
+                if d['id'] != vdisp:
+                    continue
+                else:
+                    break
+
+            assert d['id'] == vdisp
 
             farr = self.geom.compute_for_camera_view( cam,
                                                       what='texture_coords' )
@@ -1252,8 +1259,18 @@ class UI(object):
             print '  npix0',np.sum( np.nonzero( good ) )
 
             arr2 = simple_geom.tcs_to_beachball(farr)
+
+            h,w = arr2.shape[:2]
+            maskarr = np.zeros( (h,w), dtype=np.uint8 )
+            polygon_verts = d['viewport']
+            fill_polygon.fill_polygon(polygon_verts, maskarr)
+            if np.max(maskarr)==0: # no mask
+                maskarr += 1
+
+            arr3 = maskarr[:,:,np.newaxis]*arr2
+
             print '  npix1',np.sum(np.nonzero(arr2))
-            arr = arr+arr2 # FIXME: hacky OR operation assumes pixels are either 0 or final value
+            arr = arr+arr3
 
             print '  npix2',np.sum(np.nonzero(arr))
 
