@@ -805,6 +805,19 @@ class UI(object):
 
         exr.save_exr( fname, r=r, g=g, b=b)
 
+        if 1:
+            # save low dynamic range .png image
+            ri = np.array( r*255, dtype=np.uint8 )
+            gi = np.array( g*255, dtype=np.uint8 )
+            bi = np.array( b*255, dtype=np.uint8 )
+
+            h,w = r.shape[:2]
+            imi = np.empty( (h,w,3), dtype=np.uint8 )
+            imi[:,:,0] = ri
+            imi[:,:,1] = gi
+            imi[:,:,2] = bi
+            scipy.misc.imsave(fname+'.png', imi)
+
     def on_save_calibration_exr(self,*args):
         filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
                                                   parent=None,
