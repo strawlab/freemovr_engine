@@ -10,7 +10,6 @@
   <depend package="sensor_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="dynamic_reconfigure" />
-  <depend package="opencv2"/>
   <depend package="camera_calibration"/>
   <depend package="tf" />
   <depend package="tf_conversions" />
@@ -31,7 +30,6 @@
   <rosdep name="python-yaml"/>
   <rosdep name="cython"/>
   <rosdep name="rospkg"/>
-  <rosdep name="python-opencv"/>
   <rosdep name="python-ode"/>
   <rosdep name="python-openexr"/>
   <rosdep name="python-scipy"/>

@@ -15,11 +15,6 @@ osgcompute:
   ubuntu: osgcompute
 openexr:
   ubuntu: libopenexr-dev
-opencv2.3:
-  ubuntu:
-    precise:
-      apt:
-        packages: [libopencv-dev, libcv-dev, libhighgui-dev]
 python-opencv:
   ubuntu: python-opencv
 glut:
