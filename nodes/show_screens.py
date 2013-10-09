@@ -39,7 +39,7 @@ class WindowOnScreen:
             width,
             height))
 
-        l.set_markup('<span size="xx-large">%s</span>' % label)
+        l.set_markup('<span font_desc="150">%s</span>' % label)
         b.add(l)
 
         bg = Gdk.RGBA()
