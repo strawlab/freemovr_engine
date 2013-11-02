@@ -6,7 +6,7 @@ import camera_model
 import flyvr.simple_geom as simple_geom
 import numpy as np
 import os
-import cv
+import cv2
 
 PLOT=int(os.environ.get('PLOT',0))
 if PLOT:
@@ -18,8 +18,7 @@ import roslib; roslib.load_manifest('flyvr')
 from tf.transformations import quaternion_from_matrix, \
     quaternion_matrix, rotation_from_matrix, rotation_matrix, \
     quaternion_about_axis
-from flyvr.cvnumpy import  numpy2opencv_image, opencv_image2numpy, \
-    rodrigues2matrix, matrix2rodrigues
+from flyvr.cvnumpy import rodrigues2matrix, matrix2rodrigues
 
 def matrix2quaternion( R ):
     rnew = np.eye(4)
@@ -296,25 +295,6 @@ def fit_extrinsics_iterative(base_cam,X3d,x2d, geom=None):
         cam = cam)
     return result
 
-
-def mk_object_points(X3d):
-    assert X3d.ndim==2
-    assert X3d.shape[1]==3
-    opts = cv.CreateMat(len(X3d), 3, cv.CV_32FC1)
-    for i in range(len(X3d)):
-        for j in range(3):
-            opts[i,j] = X3d[i,j]
-    return opts
-
-def mk_image_points(x2d):
-    assert x2d.ndim==2
-    assert x2d.shape[1]==2
-    ipts = cv.CreateMat(len(x2d), 2, cv.CV_32FC1)
-    for i in range(len(x2d)):
-        for j in range(2):
-            ipts[i,j] = x2d[i,j]
-    return ipts
-
 def save_point_image(fname, sz, x2d ):
     im = np.zeros( (sz[1], sz[0]), dtype=np.uint8 )
     for xy in x2d:
@@ -335,24 +315,16 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
         save_point_image(fname, (base_cam.width, base_cam.height), x2d )
         print 'saved pt debug image to',fname
 
-    ipts = mk_image_points(x2d)
-    opts = mk_object_points(X3d)
+    ipts = np.array(x2d,dtype=np.float64)
+    opts = np.array(X3d,dtype=np.float64)
 
+    K = np.array(base_cam.get_K(), dtype=np.float64)
+    dist_coeffs = np.array( base_cam.get_D()[:,0], dtype=np.float64)
 
-    K = numpy2opencv_image(base_cam.get_K())
-    D = numpy2opencv_image(base_cam.get_D())
-
-    rvec = cv.CreateMat(1, 3, cv.CV_32FC1)
-    tvec = cv.CreateMat(1, 3, cv.CV_32FC1)
-
-    cv.FindExtrinsicCameraParams2( opts, ipts,
-                                   K,
-                                   D,
-                                   rvec,
-                                   tvec,
-                                   False)
-    rvec = opencv_image2numpy( rvec ); rvec.shape=(3,)
-    tvec = opencv_image2numpy( tvec ); tvec.shape=(3,)
+    retval, rvec, tvec = cv2.solvePnP( opts, ipts,
+                                       K,
+                                       dist_coeffs)
+    assert retval
 
     print 'rvec',rvec
     # we get two possible cameras back, figure out which one has objects in front
