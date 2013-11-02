@@ -27,7 +27,7 @@ import flydra.reconstruct
 
 import matplotlib.pyplot as plt
 import numpy as np
-import cv,cv2
+import cv2
 
 import pcl
 import sh

@@ -2,7 +2,7 @@ import time
 import math
 import numpy as np
 import scipy.ndimage
-import cv,cv2
+import cv2
 import traceback
 
 class DotBGFeatureDetector:
