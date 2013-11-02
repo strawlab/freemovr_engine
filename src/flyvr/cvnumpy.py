@@ -1,5 +1,6 @@
 import numpy as np
 import cv
+import cv2
 
 def numpy2opencv_image(arr):
     arr = np.array(arr)
@@ -37,12 +38,9 @@ def opencv_image2numpy( cvimage ):
     return result
 
 def rodrigues2matrix_cv(params):
-    rvec = np.array(params)
+    rvec = np.array(params,dtype=np.float64)
     rvec.shape = (1,3)
-    rvec = numpy2opencv_image(rvec.astype(np.float))
-    Rmat = numpy2opencv_image(np.empty( (3,3) ))
-    cv.Rodrigues2(rvec, Rmat)
-    Rmat = opencv_image2numpy(Rmat)
+    Rmat, jacobian = cv2.Rodrigues(rvec)
     return Rmat
 
 def rodrigues2matrix(params):
@@ -75,11 +73,9 @@ def rodrigues2matrix(params):
     return R
 
 def matrix2rodrigues(R):
-    rvec = np.empty( (1,3) )
-    rvec = numpy2opencv_image(rvec)
-    Rmat = numpy2opencv_image(R.astype(np.float))
-    cv.Rodrigues2(Rmat, rvec)
-    rvec = opencv_image2numpy(rvec)
+    Rmat = np.array(R,dtype=np.float64)
+    assert Rmat.shape == (3,3)
+    rvec, jacobian = cv2.Rodrigues(Rmat)
     return rvec
 
 def rodrigues2angle_axis(params):
