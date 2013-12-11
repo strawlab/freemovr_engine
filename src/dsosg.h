@@ -77,6 +77,8 @@ namespace dsosg{
         TrackballManipulatorState getTrackballManipulatorState();
         void setTrackballManipulatorState(TrackballManipulatorState s);
 
+        bool is_CUDA_available();
+
     private:
         StimulusLoader _stimulus_loader;
 

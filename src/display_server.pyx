@@ -128,6 +128,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
         TrackballManipulatorState getTrackballManipulatorState() nogil except +
         void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
 
+        int is_CUDA_available() nogil except +
+
 # ================================================================
 
 def _import_message_name( message_type_name ):
@@ -409,6 +411,8 @@ cdef class MyNode:
             rospy.loginfo('loaded plugin: %s' % name)
             if self._subscription_mode == 'always':
                 self.register_subscribers(name)
+
+        rospy.loginfo("CUDA available: %s" % bool(self.dsosg.is_CUDA_available()))
 
     def handle_get_display_info(self,request):
         # this is called in some callback thread by ROS

@@ -998,4 +998,13 @@ void DSOSG::setRedMax(bool red_max) {
         _g2di->set_red_max(red_max);
 }
 
+bool DSOSG::is_CUDA_available() {
+#ifdef FLYVR_USE_CUDA
+  return true;
+#else
+  return false;
+#endif
 }
+
+}
+
