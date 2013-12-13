@@ -1,3 +1,8 @@
+.. image:: http://flyvr.org/FlyVR-airplane-640.png
+    :alt: FlyVR
+    :width: 640
+    :height: 263
+
 *****
 FlyVR
 *****
