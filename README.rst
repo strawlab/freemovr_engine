@@ -3,12 +3,14 @@
     :width: 640
     :height: 263
 
-*****
-FlyVR
-*****
+******************************
+FlyVR - virtual reality engine
+******************************
 
-FlyVR (Virtual reality for the Robot Operating System) manages
-multi-computer realtime tracking and display.
+FlyVR is a virtual reality engine built on [ROS](http://ros.org) and
+[OpenSceneGraph](http://openscenegraph.org). It manages multi-computer
+realtime tracking and display with the goal of being useful for
+scientific studies of vision.
 
 .. contents::
 
