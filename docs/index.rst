@@ -17,8 +17,13 @@ scientific studies of vision.
 * `installation and getting started <docs/getting_started.rst>`_
 * `using the joystick for input <docs/joystick.rst>`_
 
-FlyVR architecture overview
-***************************
+FlyVR pipeline overview
+***********************
+
+.. image:: architecture.png
+    :alt: pipeline
+    :width: 893
+    :height: 483
 
 Theory of operation
 ===================
@@ -37,7 +42,7 @@ flyvr nodes
 ===========
 
 display_server - the FlyVR display server
-----------------------------------------
+-----------------------------------------
 
 The FlyVR display server node runs locally on the computer(s) connected
 to the physical display. During a typical experiment, it will be
@@ -47,7 +52,7 @@ scenegraph and the calibrated screen layout, the node will compute the
 images shown on the projectors.
 
 viewport_definer.py - FlyVR viewport definer
--------------------------------------------
+--------------------------------------------
 
 Runs a GUI program that allows the user to interactively define the
 viewports for all connected projectors.
