@@ -793,7 +793,8 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
     if (_mode==std::string("cubemap") || _mode==std::string("overview") ||
         _mode==std::string("geometry") ||
-		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world")) {
+		_mode==std::string("geometry_texture") || _mode==std::string("virtual_world") ||
+        use_pbuffer) {
 
         if (!use_pbuffer) {
             // setup in windowed mode
@@ -850,8 +851,6 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 		_viewer->realize();
 	}
 	else if (_mode==std::string("vr_display")) {
-        flyvr_assert(!use_pbuffer); //unsupported (currently)
-
 		osg::ref_ptr<osg::GraphicsContext> gc;
 		gc = osg::GraphicsContext::createGraphicsContext(traits.get());
 		flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
