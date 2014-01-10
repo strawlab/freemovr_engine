@@ -10,8 +10,8 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="893.42853"
-   height="483.3064"
+   width="1180.0157"
+   height="485"
    id="svg2"
    version="1.1"
    inkscape:version="0.48.3.1 r9886"
@@ -41,6 +41,34 @@
          y="43.200001"
          id="rect4148" />
     </clipPath>
+    <marker
+       inkscape:stockid="Arrow1Send"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Send-0"
+       style="overflow:visible">
+      <path
+         id="path5376-3"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.2,0,0,-0.2,-1.2,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Send"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Send-9"
+       style="overflow:visible">
+      <path
+         id="path5376-7"
+         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(-0.2,0,0,-0.2,-1.2,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -50,15 +78,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.79052785"
-     inkscape:cx="649.74556"
-     inkscape:cy="322.66417"
+     inkscape:cx="548.51311"
+     inkscape:cy="423.86236"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1039"
-     inkscape:window-height="866"
-     inkscape:window-x="854"
-     inkscape:window-y="146"
+     inkscape:window-width="1481"
+     inkscape:window-height="1041"
+     inkscape:window-x="37"
+     inkscape:window-y="46"
      inkscape:window-maximized="0"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -80,7 +108,56 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-20.714293,-47.877239)">
+     transform="translate(-20.698521,-46.183636)">
+    <image
+       y="46.183636"
+       x="735.71429"
+       id="image3680"
+       xlink:href="images/frame_ds3_00001_black.png"
+       height="150"
+       width="200" />
+    <image
+       y="301.18362"
+       x="1000.7143"
+       id="image3618"
+       xlink:href="images/ds3_exr_blue_166.png"
+       height="150"
+       width="200" />
+    <image
+       y="301.18362"
+       x="740.71429"
+       id="image3556"
+       xlink:href="images/ds3_exr_redgreen_166.png"
+       height="150"
+       width="200" />
+    <image
+       y="316.18365"
+       x="985.71429"
+       id="image3494"
+       xlink:href="images/ds1_exr_blue_166.png"
+       height="149.99998"
+       width="200" />
+    <image
+       y="316.18362"
+       x="720.71429"
+       id="image3370"
+       xlink:href="images/ds1_exr_redgreen_166.png"
+       height="150"
+       width="200" />
+    <image
+       y="61.183636"
+       x="720.71429"
+       id="image3432"
+       xlink:href="images/frame_ds1_00001_black.png"
+       height="150"
+       width="200" />
+    <image
+       y="76.183632"
+       x="705.71429"
+       id="image3122"
+       xlink:href="images/frame_ds0_00001_black.png"
+       height="150"
+       width="200" />
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -94,13 +171,13 @@
          y="58.076458"
          style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">FlyVR display_server architecture overview</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_virtual_world.jpg"
+       
        xlink:href="images/architecture_virtual_world.jpg"
-       width="212.92207"
-       height="156.14285"
-       id="image3046"
+       y="68.790749"
        x="20.714293"
-       y="68.790749" />
+       id="image3046"
+       height="156.14285"
+       width="212.92207" />
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -134,13 +211,13 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3076">• defined in lab frame</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_cubemap.png"
+       
        xlink:href="images/architecture_cubemap.png"
-       width="212.76375"
-       height="159.76624"
-       id="image3201"
+       y="68.71933"
        x="266.42856"
-       y="68.71933" />
+       id="image3201"
+       height="159.76624"
+       width="212.76375" />
     <text
        sodipodi:linespacing="125%"
        id="text3204"
@@ -164,14 +241,14 @@
          x="266.41281"
          sodipodi:role="line">• from viewpoint of observer in lab frame</tspan></text>
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_geometry_texture.jpg"
+       
        xlink:href="images/architecture_geometry_texture.jpg"
-       transform="scale(-1,1)"
-       width="158.57143"
-       height="158.57143"
-       id="image3275"
+       y="69.505043"
        x="-669.28571"
-       y="69.505043" />
+       id="image3275"
+       height="158.57143"
+       width="158.57143"
+       transform="scale(-1,1)" />
     <text
        xml:space="preserve"
        style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
@@ -199,14 +276,6 @@
          y="284.34"
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3384">  frame</tspan></text>
-    <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_projector.jpg"
-       xlink:href="images/architecture_projector.jpg"
-       width="207.57143"
-       height="155.67857"
-       id="image3365"
-       x="706.57141"
-       y="69.969307" />
     <text
        sodipodi:linespacing="125%"
        id="text3368"
@@ -261,14 +330,6 @@
          y="529.0791"
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan4452">• measured during auto-calibration</tspan></text>
-    <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/architecture_p2g.png"
-       xlink:href="images/architecture_p2g.png"
-       width="206.57143"
-       height="156.26685"
-       id="image4517"
-       x="706.71429"
-       y="313.63644" />
     <text
        sodipodi:linespacing="125%"
        id="text4520"
@@ -349,7 +410,7 @@
     <path
        inkscape:connector-curvature="0"
        id="path5805"
-       d="m 810.67322,304.714 0,-14.28572"
+       d="m 810.67322,298.714 0,-14.28572"
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
     <path
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
@@ -362,24 +423,24 @@
        d="m 333.53037,304.714 0,-14.28572"
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
     <image
-       sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/cyl-texcoords.png"
+       
        xlink:href="images/cyl-texcoords.png"
-       y="309.25507"
-       x="505.28571"
-       id="image3313"
+       width="123.26724"
        height="151.84598"
-       width="123.26724" />
+       id="image3313"
+       x="505.28571"
+       y="309.25507" />
     <g
        id="g3571"
        transform="translate(-11.069118,0.33542783)">
       <image
-         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/panels_full.png"
+         
          xlink:href="images/panels_full.png"
-         width="36"
-         height="36"
-         id="image3378"
+         y="416.75507"
          x="642.71429"
-         y="416.75507" />
+         id="image3378"
+         height="36"
+         width="36" />
       <text
          sodipodi:linespacing="125%"
          id="text3278-2-0"
@@ -405,26 +466,57 @@
            x="691.92859"
            sodipodi:role="line">v</tspan></text>
       <image
-         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/panels_x.png"
+         
          xlink:href="images/panels_x.png"
-         width="36.155239"
-         height="9.2857141"
-         id="image3503"
+         y="454.61221"
          x="642.49066"
-         y="454.61221" />
+         id="image3503"
+         height="9.2857141"
+         width="36.155239" />
       <image
-         sodipodi:absref="/home/straw/ros-flycave.electric.boost1.46/flyvr/guide/images/panels_y.png"
+         
          xlink:href="images/panels_y.png"
-         width="9.5817823"
-         height="35.975048"
-         id="image3568"
+         y="416.82343"
          x="680.534"
-         y="416.82343" />
+         id="image3568"
+         height="35.975048"
+         width="9.5817823" />
     </g>
     <path
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
        d="m 476.87569,302.21552 10.10153,-10.10153"
        id="path3043"
        inkscape:connector-curvature="0" />
+    <image
+       y="331.18362"
+       x="705.71429"
+       id="image3246"
+       xlink:href="images/ds0_exr_redgreen_166.png"
+       height="150"
+       width="200" />
+    <image
+       y="331.18362"
+       x="970.71429"
+       id="image3308"
+       xlink:href="images/ds0_exr_blue_166.png"
+       height="150"
+       width="200" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)"
+       d="m 996.81915,298.714 -10.1015,-10.10153"
+       id="path3043-3"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="970.85107"
+       y="491.57913"
+       id="text3731"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="970.85107"
+         y="491.57913"
+         style="font-size:10px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial Bold"
+         id="tspan3735">bluminance lending calibration</tspan></text>
   </g>
 </svg>
