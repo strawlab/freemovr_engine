@@ -12,11 +12,6 @@ FlyVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
 realtime tracking and display with the goal of being useful for
 scientific studies of vision.
 
-.. contents::
-
-* `installation and getting started <docs/getting_started.rst>`_
-* `using the joystick for input <docs/joystick.rst>`_
-
 FlyVR pipeline overview
 ***********************
 
@@ -24,6 +19,13 @@ FlyVR pipeline overview
     :alt: pipeline
     :width: 893
     :height: 483
+
+.. toctree::
+  :maxdepth: 2
+
+  joystick.rst
+
+.. contents::
 
 Theory of operation
 ===================

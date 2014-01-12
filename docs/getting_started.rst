@@ -3,8 +3,6 @@ Installation and Getting Started
 
 FlyVR is developed and tested on Ubuntu 12.04 on the amd64 architecture using NVIDIA graphics.
 
-Please contact Andrew Straw for a script which will automatically install all requirements on your system.
-
 Getting Started
 ===============
 
