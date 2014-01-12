@@ -3,6 +3,26 @@ Installation and Getting Started
 
 FlyVR is developed and tested on Ubuntu 12.04 on the amd64 architecture using NVIDIA graphics.
 
+Installation
+============
+
+From the bash command-line in Ubuntu 12.04, do this::
+
+    #!/bin/bash -x
+    set -e
+
+    export ROS_TARGET="/opt/ros/ros.electric.boost1.46"
+    export FLYVR_TARGET="/opt/ros/ros-flyvr.electric.boost1.46"
+
+    wget https://raw.github.com/strawlab/rosinstall/master/scripts/electric_check_ros.bash -O /tmp/electric_check_ros.bash
+    chmod a+x /tmp/electric_check_ros.bash
+    /tmp/electric_check_ros.bash
+
+    wget https://raw.github.com/strawlab/rosinstall/master/scripts/electric_check_flyvr.bash -O /tmp/electric_check_flyvr.bash
+    chmod a+x /tmp/electric_check_flyvr.bash
+    /tmp/electric_check_flyvr.bash
+
+
 Getting Started
 ===============
 
@@ -12,7 +32,7 @@ Testing the basic installation
 Once FlyVR is installed, you should be able to run a quick demo by typing:
 
     roslaunch flyvr demo_display_server.launch
-    
+
 If that opens a graphics window showing a 3D scene, FlyVR is installed and running properly.
 
 Configuring a new display
@@ -28,7 +48,7 @@ copying a default configuration file into a new location:
 
     roscd flyvr/config
     cp rosparamconfig.yaml my_display.yaml
-    
+
 Edit this new ``my_display.yaml`` to reflect your display. Much of this `YAML <http://en.wikipedia.org/wiki/YAML>`_
 file should be self-explanatory. On initial setup, the most critical information is the contents of the
 ``display:`` key are the X windows parameters ``displayNum`` and ``screenNum`` and the window geometry parameters
@@ -39,12 +59,12 @@ You can test your new configuration by creating a new ROS launch file which will
 
     roscd flyvr/launch
     cp demo_display_server.launch my_test.launch
-    
+
 Edit this new ``my_test.launch`` file and change the name of the configuration .yaml file to refer to the file you
 created above. Now, run this new launch file:
 
     roslaunch flyvr my_test.launch
-    
+
 The displayed window should now have the properties you specified in ``my_display.yaml``.
 
 Running the pinhole calibration wizard

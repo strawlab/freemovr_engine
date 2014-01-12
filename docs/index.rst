@@ -23,6 +23,7 @@ FlyVR pipeline overview
 .. toctree::
   :maxdepth: 2
 
+  getting_started.rst
   joystick.rst
 
 .. contents::
