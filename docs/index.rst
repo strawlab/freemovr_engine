@@ -7,8 +7,8 @@
 FlyVR - virtual reality engine
 ******************************
 
-FlyVR is a virtual reality engine built on [ROS](http://ros.org) and
-[OpenSceneGraph](http://openscenegraph.org). It manages multi-computer
+FlyVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
+`OpenSceneGraph <http://openscenegraph.org>`_. It manages multi-computer
 realtime tracking and display with the goal of being useful for
 scientific studies of vision.
 
