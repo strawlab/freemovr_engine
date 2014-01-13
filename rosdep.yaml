@@ -67,3 +67,5 @@ python-ode:
   ubuntu: python-pyode
 python-openexr:
   ubuntu: python-openexr
+python-pymvg:
+  ubuntu: python-pymvg
