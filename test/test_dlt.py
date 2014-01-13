@@ -4,7 +4,7 @@ import numpy as np
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import flyvr.dlt as dlt
-import camera_model
+import pymvg
 
 # some sample data -----------------------
 
@@ -55,7 +55,7 @@ xy = np.array([[ 467.85551727,  663.68835971],
 def test_basic_dlt():
     results = dlt.dlt(XYZ, xy, ransac=False)
     assert results['mean_reprojection_error'] < 6.0
-    c1 = camera_model.CameraModel.load_camera_from_pmat(  results['pmat']  )
+    c1 = pymvg.CameraModel.load_camera_from_M(  results['pmat']  )
 
 def test_ransac_dlt():
     np.random.seed(3) # try to prevent following from failing occasionally

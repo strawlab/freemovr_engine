@@ -12,7 +12,6 @@
   <depend package="dynamic_reconfigure" />
   <depend package="opencv2"/>
   <depend package="camera_calibration"/>
-  <depend package="camera_model"/>
   <depend package="tf" />
   <depend package="tf_conversions" />
   <depend package="rosgobject" />
@@ -36,4 +35,5 @@
   <rosdep name="python-ode"/>
   <rosdep name="python-openexr"/>
   <rosdep name="python-scipy"/>
+  <rosdep name="python-pymvg"/>
 </package>

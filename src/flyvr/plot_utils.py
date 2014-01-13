@@ -2,7 +2,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from camera_model.plot_utils import plot_camera
+from pymvg.plot_utils import plot_camera
 
 def get_3d_verts(geom):
     allw = []

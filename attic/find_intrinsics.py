@@ -4,7 +4,7 @@ import roslib; roslib.load_manifest('flyvr')
 import rospy
 import rosbag
 
-import camera_model
+import pymvg
 
 import numpy as np
 import argparse
@@ -81,7 +81,7 @@ def find_intrinsics(visualize=False):
     mc.cal_fromcorners(good)
     msg = mc.as_message()
 
-    cam = camera_model.CameraModel( intrinsics=msg )
+    cam = pymvg.CameraModel.from_ros_like( intrinsics=msg )
     cam_mirror = cam.get_mirror_camera()
 
     if 1:

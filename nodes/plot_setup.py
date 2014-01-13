@@ -7,7 +7,7 @@
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import rospy
-import camera_model
+import pymvg
 import flyvr.simple_geom as simple_geom
 
 import argparse
@@ -20,7 +20,7 @@ from plot_utils import get_3d_verts, plot_camera
 def plot_setup(geometry_filename,
                display_bagfiles):
     geom = simple_geom.Geometry(geometry_filename)
-    displays = [camera_model.CameraModel.load_camera_from_bagfile(dbf) for dbf in display_bagfiles]
+    displays = [pymvg.CameraModel.load_camera_from_bagfile(dbf) for dbf in display_bagfiles]
 
     print geometry_filename
     print display_bagfiles

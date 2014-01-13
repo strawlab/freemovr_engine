@@ -2,7 +2,6 @@ import roslib; roslib.load_manifest('flyvr')
 
 import flyvr.cvnumpy as cvnumpy
 import numpy as np
-from camera_model.camera_model import is_rotation_matrix
 
 def test_rodrigues_cv():
     for x in np.linspace(-np.pi,np.pi,5):

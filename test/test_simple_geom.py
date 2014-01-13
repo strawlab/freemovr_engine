@@ -4,7 +4,7 @@ import yaml
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import flyvr.simple_geom as simple_geom
-import camera_model
+import pymvg
 
 def get_sample_camera():
     yaml_str = """header:
@@ -64,7 +64,7 @@ roi:
   width: 0
   do_rectify: False"""
     d = yaml.load(yaml_str)
-    cam1 = camera_model.CameraModel.from_dict(d,extrinsics_required=False)
+    cam1 = pymvg.CameraModel.from_dict(d,extrinsics_required=False)
 
     eye = (10,20,30)
     lookat = (11,20,30)

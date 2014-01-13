@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 import os
 
-import roslib; roslib.load_manifest('camera_model')
+import roslib; roslib.load_manifest('flyvr')
 import rosbag
 
 import sensor_msgs.msg
 import geometry_msgs.msg
 
-import camera_model
+import pymvg
 
 import numpy as np
 
@@ -24,14 +24,14 @@ def test_bag():
         bagout.write(topic, intrinsics)
         bagout.close()
 
-    c = camera_model.CameraModel.load_default_camera()
+    c = pymvg.CameraModel.load_camera_simple()
     c.save_to_bagfile('/tmp/testbag.bag')
 
     fname = '/home/stowers/.ros/camera_info/Basler_21220788.yaml'
     assert os.path.exists(fname)
-    c = camera_model.CameraModel.load_camera_from_file(fname)
+    c = pymvg.CameraModel.load_camera_from_file(fname)
     c.get_intrinsics_as_msg()
     c.save_to_bagfile('/tmp/testbag.bag')
 
-    c = camera_model.CameraModel.load_camera_from_file('/tmp/testbag.bag')
+    c = pymvg.CameraModel.load_camera_from_file('/tmp/testbag.bag')
     c.get_intrinsics_as_msg()

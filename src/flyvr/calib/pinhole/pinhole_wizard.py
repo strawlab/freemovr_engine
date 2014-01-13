@@ -25,7 +25,7 @@ from visualization_msgs.msg import MarkerArray
 
 import tf.broadcaster
 
-import camera_model
+import pymvg
 
 import flyvr.rviz_utils
 import flyvr.simple_geom as simple_geom
@@ -79,8 +79,8 @@ VS_PUBLISH_RVIZ = 7
 def pretty_intrinsics_str(cam):
     K = cam.K
     d = cam.distortion
-    dstr = ' '.join(['% 3g'%di for di in d[:,0]])
-    args = tuple(list(K.ravel()) + [dstr])#str(d[:,0])])
+    dstr = ' '.join(['% 3g'%di for di in d])
+    args = tuple(list(K.ravel()) + [dstr])
     result = \
 """K: % 10g % 10g % 10g
    % 10g % 10g % 10g
@@ -142,8 +142,8 @@ def get_camera_for_boards(rows,width=0,height=0):
 
     buf = roslib.message.strify_message(msg)
     obj = yaml.safe_load(buf)
-    cam = camera_model.CameraModel.from_dict(obj,
-                                             extrinsics_required=False)
+    cam = pymvg.CameraModel.from_dict(obj,
+                                      extrinsics_required=False)
     return cam
 
 class CheckerboardPlotWidget(Gtk.DrawingArea):
@@ -1139,10 +1139,10 @@ class UI(object):
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
             r = dlt.dlt(XYZ, xy, ransac=ransac )
-            c1 = camera_model.CameraModel.load_camera_from_pmat( r['pmat'],
-                                                     width=self.dsc.width,
-                                                     height=self.dsc.height,
-                                                     )
+            c1 = pymvg.CameraModel.load_camera_from_M( r['pmat'],
+                                                       width=self.dsc.width,
+                                                       height=self.dsc.height,
+                                                       )
 
             _pump_ui()
 

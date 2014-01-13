@@ -2,7 +2,8 @@
 import roslib; roslib.load_manifest('flyvr')
 
 import scipy.optimize
-import camera_model
+import pymvg
+import pymvg.core
 import flyvr.simple_geom as simple_geom
 import numpy as np
 import os
@@ -155,9 +156,9 @@ class ObjectiveFunction:
             t = params[:3]
             rod = params[3:]
             rmat = rodrigues2matrix( rod )
-            cam_model = camera_model.CameraModel( translation=t,
-                                                  rotation=rmat,
-                                                  intrinsics=self.intrinsics)
+            cam_model = pymvg.CameraModel.from_ros_like( translation=t,
+                                                         rotation=rmat,
+                                                         intrinsics=self.intrinsics)
             return cam_model
 
         C = params[:3]
@@ -165,12 +166,12 @@ class ObjectiveFunction:
         qmag = np.sqrt(np.sum(quat**2))
         quat = quat/qmag
 
-        R,rquat=camera_model.get_rotation_matrix_and_quaternion(quat)
+        R,rquat=pymvg.core.get_rotation_matrix_and_quaternion(quat)
 
         t = -np.dot(R, C)
-        cam_model = camera_model.CameraModel( translation=t,
-                                              rotation=quat,
-                                              intrinsics=self.intrinsics)
+        cam_model = pymvg.CameraModel.from_ros_like( translation=t,
+                                                     rotation=quat,
+                                                     intrinsics=self.intrinsics)
         return cam_model
 
     def err(self, params):
@@ -319,7 +320,7 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     opts = np.array(X3d,dtype=np.float64)
 
     K = np.array(base_cam.get_K(), dtype=np.float64)
-    dist_coeffs = np.array( base_cam.get_D()[:,0], dtype=np.float64)
+    dist_coeffs = np.array( base_cam.get_D(), dtype=np.float64)
 
     retval, rvec, tvec = cv2.solvePnP( opts, ipts,
                                        K,
@@ -329,10 +330,10 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     print 'rvec',rvec
     # we get two possible cameras back, figure out which one has objects in front
     rmata = rodrigues2matrix( rvec )
-    cam_model_a = camera_model.CameraModel( translation=tvec,
-                                            rotation=rmata,
-                                            intrinsics=base_cam.get_intrinsics_as_msg(),
-                                            name=base_cam.name)
+    cam_model_a = pymvg.CameraModel.from_ros_like( translation=tvec,
+                                                   rotation=rmata,
+                                                   intrinsics=base_cam.get_intrinsics_as_msg(),
+                                                   name=base_cam.name)
     mza = np.mean(cam_model_a.project_3d_to_camera_frame(X3d)[:,2])
 
     # don't bother with second - it does not have a valid rotation matrix

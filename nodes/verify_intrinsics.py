@@ -3,7 +3,6 @@
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import rospy
-import camera_model
 import flyvr.simple_geom as simple_geom
 import glob
 import json

@@ -207,8 +207,8 @@ def print_summary(results,n_pts=None):
     np.set_printoptions(precision=6, linewidth=150, suppress=True)
     try:
         if 1:
-            import camera_model
-            camera = camera_model.CameraModel.load_camera_from_pmat( results['pmat'], name='tmp' )
+            import pymvg
+            camera = pymvg.CameraModel.load_camera_from_M( results['pmat'], name='tmp' )
 
             testpts = results['X3d'][:n_pts]
             test2d = camera.project_3d_to_pixel(testpts, distorted=True)
