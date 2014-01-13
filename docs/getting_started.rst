@@ -17,8 +17,12 @@ Getting Started
 Testing the basic installation
 ------------------------------
 
-Once FlyVR is installed, you should be able to run a quick demo by typing:
+Once FlyVR is installed, you should be able to run a quick demo by typing::
 
+    # setup ROS environment variables
+    source /opt/ros/ros-flyvr.electric.boost1.46/setup.bash # from installation script
+
+    # launch the demo
     roslaunch flyvr demo_display_server.launch
 
 If that opens a graphics window showing a 3D scene, FlyVR is installed and running properly.
