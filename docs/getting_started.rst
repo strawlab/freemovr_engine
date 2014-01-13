@@ -10,6 +10,9 @@ As the root user, in the bash command-line in Ubuntu 12.04, run
 :download:`this script <install-flyvr.sh>`. (Also, you can download
 the latest version of this script from `here
 <https://raw.github.com/strawlab/flyvr/master/docs/install-flyvr.sh>`_.)
+From the command line, this should work::
+
+     curl -L https://raw.github.com/strawlab/flyvr/master/docs/install-flyvr.sh | bash
 
 Getting Started
 ===============
