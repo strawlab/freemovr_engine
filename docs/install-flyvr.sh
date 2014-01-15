@@ -27,8 +27,6 @@ fi
 
 # ----- Update our packages ------------
 
-export DEBIAN_FRONTEND=noninteractive
-
 apt-get update --yes
 apt-get install --yes openssh-server git-core python-software-properties
 
@@ -43,7 +41,6 @@ wget -qO - http://debs.strawlab.org/astraw-archive-keyring.gpg | sudo apt-key ad
 add-apt-repository 'deb http://debs.strawlab.org/ precise/'
 
 apt-get update --yes
-apt-get dist-upgrade --yes
 apt-get install --yes python-sh python-grin htop byobu
 
 # ---- install ROS
