@@ -27,6 +27,8 @@ fi
 
 # ----- Update our packages ------------
 
+export DEBIAN_FRONTEND=noninteractive
+
 apt-get update --yes
 apt-get install --yes openssh-server git-core python-software-properties
 
