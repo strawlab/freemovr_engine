@@ -65,7 +65,12 @@ def rosmsg2dict(msg):
                 v = getattr(msg,varname)
                 plain_dict[varname] = convert_attrs(v)
             else:
-                raise ValueError('unknown msg slot type: %s'%vartype)
+                v = getattr(msg,varname)
+                if isinstance(v, roslib.message.Message):
+                    # cannot determine type, try recursive conversion
+                    plain_dict[varname] = rosmsg2dict(v)
+                else:
+                    raise ValueError('unknown msg slot type: %s'%vartype)
     return plain_dict
 
 def fixup_keyname(key_with_meta):
