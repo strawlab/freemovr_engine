@@ -210,10 +210,11 @@ def fixup_config( orig_config_dict ):
     orig_plugins = config_dict.get('stimulus_plugins',[])
     plugins = [ fixup(p) for p in orig_plugins ]
     config_dict['stimulus_plugins'] = plugins
-    config_file = '/tmp/%s.json' % rospy.get_name()
-    with open(config_file,mode='w') as f:
+    config_file = None
+    with tempfile.NamedTemporaryFile(suffix='.json',delete=False) as f:
+        config_file = f.name
         f.write(json.dumps(config_dict))
-
+    rospy.loginfo("converted paths and saved config file to: %s"%config_file)
     return config_dict, config_file
 
 cdef object osg_quat_to_msg_quat(Quat q):
@@ -306,9 +307,9 @@ cdef class MyNode:
             #to a tmp file
             p2g = config_dict.get('p2g',None)
             if isinstance(p2g, xmlrpclib.Binary):
-                exrfile = '/tmp/%s.exr' % rospy.get_name()
-                with open(exrfile, 'wb') as exr:
+                with tempfile.NamedTemporaryFile(suffix='.exr',delete=False) as exr:
                     exr.write(p2g.data)
+                    exrfile = exr.name
                 config_dict['p2g'] = exrfile
                 rospy.loginfo("decoded exr file and saved to %s" % exrfile)
 
