@@ -388,10 +388,10 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                 try {
                     _stimulus_plugins[ plugin_name ] = _stimulus_loader.create(plugin_name);
                 } catch (Poco::Exception& exc) {
-				    std::cerr << "ERROR loading plugin: " << plugin_name << ": " << exc.displayText() << std::endl;
+				    std::cerr << "ERROR loading plugin from file " << lib_name << ": " << plugin_name << ": " << exc.displayText() << std::endl;
 				    throw;
                 } catch (...) {
-                    std::cerr << "ERROR loading plugin: " << plugin_name << std::endl;
+                    std::cerr << "ERROR loading plugin from file " << lib_name << ": " << plugin_name << std::endl;
                     throw;
                 }
 
