@@ -34,6 +34,7 @@ for several poses of a checkerboard.
 
 ::
 
+    rosrun joy joy_node [/dev/input/jsN]
     rosrun flyvr display_server
     rosrun flyvr joystick_cursor
 
