@@ -45,16 +45,16 @@ apt-get install --yes python-sh python-grin htop byobu
 
 # ---- install ROS
 
-export ROS_TARGET="/opt/ros/ros.electric.boost1.46"
-export FLYVR_TARGET="/opt/ros/ros-flyvr.electric.boost1.46"
+export ROS_TARGET="/opt/ros/ros.hydro.boost1.46"
+export FLYVR_TARGET="/opt/ros/ros-flyvr.hydro.boost1.46"
 
-wget https://raw.github.com/strawlab/rosinstall/master/scripts/electric_check_ros.bash -O /tmp/electric_check_ros.bash
-chmod a+x /tmp/electric_check_ros.bash
-/tmp/electric_check_ros.bash
+wget https://raw.github.com/strawlab/rosinstall/master/scripts/hydro_check_ros.bash -O /tmp/hydro_check_ros.bash
+chmod a+x /tmp/hydro_check_ros.bash
+/tmp/hydro_check_ros.bash
 
 
 # ---- install our ROS stuff
 
-wget https://raw.github.com/strawlab/rosinstall/master/scripts/electric_check_flyvr.bash -O /tmp/electric_check_flyvr.bash
-chmod a+x /tmp/electric_check_flyvr.bash
-/tmp/electric_check_flyvr.bash
+wget https://raw.github.com/strawlab/rosinstall/master/scripts/hydro_check_flyvr.bash -O /tmp/hydro_check_flyvr.bash
+chmod a+x /tmp/hydro_check_flyvr.bash
+/tmp/hydro_check_flyvr.bash
