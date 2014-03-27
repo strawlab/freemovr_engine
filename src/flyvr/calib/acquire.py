@@ -107,19 +107,20 @@ class _Runner(object):
             except Queue.Empty:
                 break
 
-    def _is_done(self,rdict,n_per_camera):
+    def _is_done(self,rdict,n_per_camera,verbose=False):
         done=True
         for topic_prefix in rdict.keys():
+            if verbose:
+                rospy.loginfo('  _is_done() has %d frames for %r'%(len(rdict[topic_prefix]), topic_prefix))
             if len(rdict[topic_prefix]) < n_per_camera:
                 done=False
-                break
         return done
 
 class SimultaneousCameraRunner(_Runner):
     def __init__(self,cam_handlers,**kwargs):
         _Runner.__init__(self, cam_handlers,**kwargs)
 
-    def get_images(self,n_per_camera, pre_func=None, pre_func_args=[], post_func=None, post_func_args=[]):
+    def get_images(self,n_per_camera, pre_func=None, pre_func_args=[], post_func=None, post_func_args=[], verbose=False):
         self._result.clear()
         for ch in self.cam_handlers:
             self._result[ch.topic_prefix] = []
@@ -131,7 +132,7 @@ class SimultaneousCameraRunner(_Runner):
         t_latest = time.time() + (self.ros_latency + self.max_cam_latency)*n_per_camera
 
         #wait for the images to arrive
-        while not self._is_done(self._result,n_per_camera):
+        while not self._is_done(self._result,n_per_camera,verbose=verbose):
             try:
                 topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
             except Queue.Empty:
@@ -150,7 +151,7 @@ class SequentialCameraRunner(_Runner):
         self.check_earliest = False
         self.check_latest = False
 
-    def get_images(self,n_per_camera):
+    def get_images(self,n_per_camera,verbose=False):
         self._result.clear()
         for ch in self.cam_handlers:
             self._result[ch.topic_prefix] = []
@@ -159,7 +160,7 @@ class SequentialCameraRunner(_Runner):
         self.clear_queue()
         t_latest = t_earliest + (self.ros_latency + self.max_cam_latency)
 
-        while not self._is_done(self._result,n_per_camera):
+        while not self._is_done(self._result,n_per_camera,verbose=verbose):
             try:
                 topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
             except Queue.Empty:
