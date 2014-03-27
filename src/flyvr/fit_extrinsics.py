@@ -310,11 +310,11 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     assert X3d.ndim==2
     assert X3d.shape[1]==3
 
-    if 1:
+    if 0:
         fname = 'x2d_'+base_cam.name + '.png'
         fname = fname.replace('/','-')
         save_point_image(fname, (base_cam.width, base_cam.height), x2d )
-        print 'saved pt debug image to',fname
+        #print 'saved pt debug image to',fname
 
     ipts = np.array(x2d,dtype=np.float64)
     opts = np.array(X3d,dtype=np.float64)
@@ -327,7 +327,6 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
                                        dist_coeffs)
     assert retval
 
-    print 'rvec',rvec
     # we get two possible cameras back, figure out which one has objects in front
     rmata = rodrigues2matrix( rvec )
     cam_model_a = pymvg.CameraModel.from_ros_like( translation=tvec,
@@ -342,7 +341,6 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
         founda = cam_model_a.project_3d_to_pixel(X3d)
         erra = np.mean(np.sqrt(np.sum((founda-x2d)**2, axis=1)))
 
-        print 'erra',erra
         cam_model = cam_model_a
 
     if 1:
