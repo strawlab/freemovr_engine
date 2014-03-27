@@ -115,7 +115,7 @@ class _Runner(object):
                 break
         return done
 
-class SimultainousCameraRunner(_Runner):
+class SimultaneousCameraRunner(_Runner):
     def __init__(self,cam_handlers,**kwargs):
         _Runner.__init__(self, cam_handlers,**kwargs)
 

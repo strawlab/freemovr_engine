@@ -21,7 +21,7 @@ import flyvr.display_client as display_client
 import std_srvs.srv
 import camera_trigger.srv
 
-from flyvr.calib.acquire import CameraHandler, SimultainousCameraRunner
+from flyvr.calib.acquire import CameraHandler, SimultaneousCameraRunner
 from rosutils.io import decode_url
 
 class GenMasks:
@@ -48,7 +48,7 @@ class GenMasks:
         self.trigger_proxy_rate = rospy.ServiceProxy(trigger+'/set_framerate', camera_trigger.srv.SetFramerate)
         self.trigger_proxy_rate(1.0)
 
-        self.runner = SimultainousCameraRunner(cam_handlers)
+        self.runner = SimultaneousCameraRunner(cam_handlers)
 
         s = rospy.Service('~mask_start', std_srvs.srv.Empty, self._change_mode_start)
         s = rospy.Service('~mask_finish', std_srvs.srv.Empty, self._change_mode_finish)

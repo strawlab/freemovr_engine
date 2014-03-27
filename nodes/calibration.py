@@ -42,7 +42,7 @@ import flyvr.srv
 
 import flyvr.calib.kdtree
 from flyvr.calib.imgproc import add_crosshairs_to_nparr
-from flyvr.calib.acquire import CameraHandler, SimultainousCameraRunner, SequentialCameraRunner
+from flyvr.calib.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
 from flyvr.calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
 from flyvr.calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
 from flyvr.calib.calibrationconstants import *
@@ -394,7 +394,7 @@ class Calib:
             cam_handlers.append(CameraHandler(cam,debug="acquisition" in debug))
             rospy.loginfo("Connecting to cam %s" % cam)
             self._set_bg_mask(cam, fd)
-        self.runner = SimultainousCameraRunner(cam_handlers)
+        self.runner = SimultaneousCameraRunner(cam_handlers)
         
         #laser camera acquisition
         self.laser_camera = laser_camera
