@@ -412,7 +412,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
             } else {
                 std::cerr << "ERROR missing stimulus plugin: " << lib_name << std::endl;
-                throw std::runtime_error("Missing stimulus plugin");
+                throw std::runtime_error("Missing stimulus plugin " + lib_name);
             }
 		}
 	}
