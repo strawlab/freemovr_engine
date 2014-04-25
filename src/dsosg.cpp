@@ -32,7 +32,7 @@
 #include <osgViewer/ViewerEventHandlers>
 
 #ifdef FLYVR_USE_CUDA
-#include <osgCudaInit/Init>
+#include <osgCudaInit/Init> // ubuntu: apt-get install osgcompute
 #endif
 
 #include <stdio.h>
