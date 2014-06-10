@@ -126,7 +126,7 @@ def is_equal(ros_msg, dict_msg):
 
 def rosmsg2json( msg ):
     plain_dict = rosmsg2dict(msg)
-    msg_json = json.dumps( plain_dict )
+    msg_json = json.dumps( plain_dict, allow_nan=False )
     return msg_json
 
 def compare(msg):
@@ -137,8 +137,8 @@ def compare(msg):
 def test_point():
     msg = geometry_msgs.msg.Point()
     msg.x = 1.23456
-    msg.y = np.nan
-    msg.z = -np.inf
+    msg.y = 2.0
+    msg.z = 3.0
     compare(msg)
 
 def test_image():
