@@ -27,5 +27,6 @@ void main(void)
   }
   if (red_max) {
     gl_FragData[0].r = 1.0;
+    gl_FragData[0].g = 0.0;
   }
 }
