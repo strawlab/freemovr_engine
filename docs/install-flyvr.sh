@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 set -e
 
 # ----- Check that we have the supported version of Ubuntu ----------
@@ -21,40 +21,106 @@ fi
 # ----- Check that we have root permissions ----
 
 if [ "$UID" -ne "0" ]; then
-    echo "ERROR: you need to have superuser permissions"
+    echo "ERROR: you need to have superuser permissions. Re-run with 'sudo'."
     exit 1
 fi
 
 # ----- Update our packages ------------
 
 apt-get update --yes
-apt-get install --yes openssh-server git-core python-software-properties
-
-# -------------- add multiverse repository (needed for nvidia-cg-toolkit) ---------------
-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise multiverse'
-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise-updates multiverse'
-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise-security multiverse'
+apt-get install --yes python-software-properties
 
 # -------------- add our repository -----------
 #     add key id=F8DB323D
 wget -qO - http://debs.strawlab.org/astraw-archive-keyring.gpg | sudo apt-key add -
 add-apt-repository 'deb http://debs.strawlab.org/ precise/'
 
+# -------------- add ROS repository -----------
+#     add key id=B01FA116
+wget -qO - http://packages.ros.org/ros.key | sudo apt-key add -
+add-apt-repository 'deb http://packages.ros.org/ros/ubuntu precise main'
+
+# -------------- add multiverse repository (needed for nvidia-cg-toolkit) ---------------
+add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise multiverse'
+add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise-updates multiverse'
+add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise-security multiverse'
+
+
+# -------------- update local package index ----
 apt-get update --yes
-apt-get install --yes python-sh python-grin htop byobu
+apt-get upgrade --yes
 
 # ---- install ROS
 
-export ROS_TARGET="/opt/ros/ros.electric.boost1.46"
-export FLYVR_TARGET="/opt/ros/ros-flyvr.electric.boost1.46"
+DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-hydro-desktop-full make python-sh python-grin htop byobu
 
-wget https://raw.github.com/strawlab/rosinstall/master/scripts/electric_check_ros.bash -O /tmp/electric_check_ros.bash
-chmod a+x /tmp/electric_check_ros.bash
-/tmp/electric_check_ros.bash
+# ------ install our overlay ------------
+ROSINSTALL_SPEC_PATH="/tmp/flyvr.rosinstall"
 
+# ---- create a .rosinstall spec file for this git revision -------------
+cat > ${ROSINSTALL_SPEC_PATH} <<EOF
+- git: {local-name: flyvr, uri: 'https://github.com/strawlab/flyvr.git', version: flyvr-hydro}
+- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: flyvr-hydro}
+EOF
+
+# ---- script to ensure a line in a file ----
+ENSURE_LINE_PATH="/tmp/ensure_line.py"
+
+cat > ${ENSURE_LINE_PATH} <<EOF
+#!/usr/bin/env python
+import argparse
+import os
+
+def ensure_line_in_file( line, filename, create_ok=True ):
+    if not os.path.exists(filename):
+        if not create_ok:
+            raise RuntimeError('the file %r does not exist, but will not create it.')
+        else:
+            fd = open(filename,mode='a+') # do not delete if just created
+            fd.close()
+
+    line_in_file = False
+    with open(filename, mode='r+') as fd:
+        for this_line in fd.readlines():
+            this_line_rstrip = this_line.rstrip()
+            if line==this_line_rstrip:
+                line_in_file = True
+                break
+
+        if not line_in_file:
+            fd.write(line + '\n')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('line', help='the line to be included')
+    parser.add_argument('filename', help='the file in which to include it')
+
+    args = parser.parse_args()
+
+    ensure_line_in_file( args.line, args.filename )
+
+EOF
 
 # ---- install our ROS stuff
+export FLYVR_TARGET="/opt/ros/ros-flyvr.hydro"
+rosinstall ${FLYVR_TARGET} /opt/ros/hydro/.rosinstall ${ROSINSTALL_SPEC_PATH}
 
-wget https://raw.github.com/strawlab/rosinstall/master/scripts/electric_check_flyvr.bash -O /tmp/electric_check_flyvr.bash
-chmod a+x /tmp/electric_check_flyvr.bash
-/tmp/electric_check_flyvr.bash
+source ${FLYVR_TARGET}/setup.bash
+
+if [ -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
+  echo "rosdep already initialized"
+else
+  sudo rosdep init
+fi
+
+chmod a+x ${ENSURE_LINE_PATH}
+${ENSURE_LINE_PATH} "yaml https://raw.github.com/strawlab/rosdistro/hydro/rosdep.yaml" "/etc/ros/rosdep/sources.list.d/20-default.list"
+chmod -R a+rX /etc/ros
+
+rosdep update
+
+rosdep install flyvr --default-yes
+rosmake flyvr
+
+chmod -R a+rX ${FLYMAD_TARGET}
+
