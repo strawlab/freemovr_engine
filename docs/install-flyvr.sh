@@ -122,5 +122,4 @@ rosdep update
 rosdep install flyvr --default-yes
 rosmake flyvr
 
-chmod -R a+rX ${FLYMAD_TARGET}
-
+chmod -R a+rX ${FLYVR_TARGET}
