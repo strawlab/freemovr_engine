@@ -12,7 +12,7 @@ the latest version of this script from `here
 <https://raw.github.com/strawlab/flyvr/master/docs/install-flyvr.sh>`_.)
 From the command line, this should work::
 
-     curl -L https://raw.github.com/strawlab/flyvr/master/docs/install-flyvr.sh | bash
+     curl -sL https://raw.github.com/strawlab/flyvr/master/docs/install-flyvr.sh | sudo bash
 
 Getting Started
 ===============
@@ -23,7 +23,7 @@ Testing the basic installation
 Once FlyVR is installed, you should be able to run a quick demo by typing::
 
     # setup ROS environment variables
-    source /opt/ros/ros-flyvr.electric.boost1.46/setup.bash # from installation script
+    source /opt/ros/ros-flyvr.hydro/setup.bash
 
     # launch the demo
     roslaunch flyvr demo_display_server.launch
