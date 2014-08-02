@@ -27,7 +27,7 @@ import tf.broadcaster
 
 import pymvg
 
-import flyvr.rviz_utils
+import pymvg.rviz_utils
 import flyvr.simple_geom as simple_geom
 import flyvr.dlt as dlt
 import flyvr.display_client as display_client
@@ -1102,7 +1102,7 @@ class UI(object):
                                          '/map',
                                          )
 
-                r = flyvr.rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
+                r = pymvg.rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
                 self.frustum_pub[vdisp].publish(r['markers'])
 
     def on_trigger_cal(self, widget, path):
