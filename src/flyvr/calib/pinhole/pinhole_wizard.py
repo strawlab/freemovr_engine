@@ -1088,7 +1088,8 @@ class UI(object):
             cam_id_base = enum*100 + all_cam_id_base
             if cam is not None and row[VS_PUBLISH_RVIZ]:
 
-                intrinsic_msg = cam.get_intrinsics_as_msg()
+                intrinsics = cam.get_intrinsics_as_bunch()
+                intrinsic_msg = CameraInfo(**intrinsics.__dict__)
                 intrinsic_msg.header.stamp = now
                 intrinsic_msg.header.frame_id = frame_id
                 self.intr_pub[vdisp].publish( intrinsic_msg )

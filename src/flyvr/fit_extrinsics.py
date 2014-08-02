@@ -44,7 +44,7 @@ class ObjectiveFunctionFancy:
         self.base_cam = base_cam
         self.X3d = X3d
         self.x2d = x2d
-        self.intrinsics = self.base_cam.get_intrinsics_as_msg()
+        self.intrinsics = self.base_cam.get_intrinsics_as_bunch()
         self._obj_dist = []
         self.npts = len(self.X3d)
 
@@ -102,7 +102,7 @@ class ObjectiveFunction:
         self.base_cam = base_cam
         self.X3d = X3d
         self.x2d = x2d
-        self.intrinsics = self.base_cam.get_intrinsics_as_msg()
+        self.intrinsics = self.base_cam.get_intrinsics_as_bunch()
         self._obj_dist = []
         self.npts = len(self.X3d)
         if geom is not None:
@@ -331,7 +331,7 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     rmata = rodrigues2matrix( rvec )
     cam_model_a = pymvg.CameraModel.from_ros_like( translation=tvec,
                                                    rotation=rmata,
-                                                   intrinsics=base_cam.get_intrinsics_as_msg(),
+                                                   intrinsics=base_cam.get_intrinsics_as_bunch(),
                                                    name=base_cam.name)
     mza = np.mean(cam_model_a.project_3d_to_camera_frame(X3d)[:,2])
 
