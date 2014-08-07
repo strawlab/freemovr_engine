@@ -45,6 +45,10 @@ def rosmsg2dict(msg):
                                        'stamp':rosmsg2dict(h.stamp),# {'secs':h.stamp.secs,
                                                 # 'nsecs':h.stamp.nsecs},
                                        'frame_id':h.frame_id}
+            elif vartype == 'geometry_msgs/Pose':
+                h = getattr(msg,varname)
+                plain_dict[varname] = {'position':rosmsg2dict(h.position),
+                                       'orientation':rosmsg2dict(h.orientation)}
             elif vartype == 'uint8[]':
                 # since ROS message keys have to be valid Python identifiers, we can put metadata here
                 plain_dict[varname + ' (base64)'] = base64.b64encode( getattr(msg,varname))
@@ -59,6 +63,7 @@ def rosmsg2dict(msg):
                              'geometry_msgs/Quaternion',
                              'geometry_msgs/Vector3',
                              'sensor_msgs/RegionOfInterest',
+                             'std_msgs/ColorRGBA',
                              ]:
                 v = getattr(msg,varname)
                 plain_dict[varname] = convert_attrs(v)
@@ -155,3 +160,4 @@ def test_header():
     msg.stamp.secs = 123
     msg.stamp.nsecs = 456
     compare(msg)
+
