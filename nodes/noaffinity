@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FLYVR_DIR=`python -c "import rospkg; rospack = rospkg.RosPack(); pkg_dir = rospack.get_path('flyvr'); print pkg_dir"`
+FLYVR_DIR=`python -c "import roslib.packages; pkg_dir = roslib.packages.get_pkg_dir('flyvr'); print pkg_dir"`
 
 export LD_PRELOAD=libnoaffinity.so
 export LD_LIBRARY_PATH=$FLYVR_DIR/lib/:$LD_LIBRARY_PATH

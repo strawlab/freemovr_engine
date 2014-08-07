@@ -5,13 +5,12 @@ import yaml
 import scipy
 import tempfile
 
-# ROS imports
+import roslib.packages
+roslib.load_manifest('flyvr')
 import roslib; roslib.load_manifest('flyvr')
-import rospkg
 import flyvr.calib.pinhole.pinhole_wizard as pw
 
-rospack = rospkg.RosPack()
-pkg_dir = rospack.get_path('flyvr')
+pkg_dir = roslib.packages.get_pkg_dir('flyvr')
 data_fname = os.path.join( pkg_dir, 'data/calib_pinhole_sample/pinhole_wizard_sample.yaml')
 
 os.environ['RUNNING_NOSE'] = '1'

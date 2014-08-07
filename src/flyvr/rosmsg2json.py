@@ -2,17 +2,15 @@ import json
 import base64
 import re
 
-ROS_PACKAGE_NAME='flyvr'
-import roslib; roslib.load_manifest(ROS_PACKAGE_NAME)
+import roslib.packages
+roslib.load_manifest('flyvr')
 import flyvr.msg
 import geometry_msgs.msg
 import std_msgs.msg
-import rospkg
 
 import numpy as np
 
 # globals
-rospack = rospkg.RosPack()
 re_ros_path = re.compile(r'\$\(find (.*)\)')
 re_array = re.compile(r'(.+)\[(\d*)\]$')
 
@@ -20,7 +18,7 @@ BASIC_TYPES = ['float64','float32','string','uint32','uint8','bool','int8']
 
 def _findrepl(matchobj):
     ros_pkg_name = matchobj.group(1)
-    return rospack.get_path(ros_pkg_name)
+    return roslib.packages.get_pkg_dir(ros_pkg_name)
 
 def fixup_path( orig_path ):
     return re_ros_path.sub( _findrepl, orig_path )
