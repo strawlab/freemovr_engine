@@ -15,6 +15,5 @@
       "windowDecoration": true,
       "virtualDisplays":[{"id":"vdisp","viewport":[[0, 0], [1024, 0], [1024, 0], [0, 768]]}]
   },
-  "p2c":"p2c.exr",
-  "p2g":"p2g.exr"
+  "p2g":"$(find flyvr)/config/p2g.exr"
 }

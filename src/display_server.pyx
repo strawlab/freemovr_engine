@@ -17,7 +17,7 @@ import flyvr.rosmsg2json as rosmsg2json
 
 import sys
 import time
-import os
+import os.path
 import warnings
 import threading
 import Queue
@@ -278,7 +278,9 @@ cdef class MyNode:
                  'If specified configuration is taken from here, otherwise config is taken from '\
                  'ROS parameters under this node')
         parser.add_argument('--stimulus', type=str, default=None,
-            help='The stimulus to start in (overrides any latched ROS topic')
+            help="The stimulus to start in (overrides any latched ROS topic). "\
+                 "This can be a loaded stimulus name 'StimulusFoo', or a full "\
+                 "path '/path/to/libStimulusFoo.so'")
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
@@ -321,6 +323,19 @@ cdef class MyNode:
             rospy.loginfo("using default config")
             config_file = os.path.join(roslib.packages.get_pkg_dir(ros_package_name),'config','config.json')
             config_dict = json.load(open(config_file,'r'))
+
+            config_dict, config_file = fixup_config( config_dict )
+
+        if args.stimulus and os.path.isfile(args.stimulus):
+            rospy.loginfo("adding stimulus plugin %s" % args.stimulus)
+            dirname,stimname = os.path.split(os.path.abspath(args.stimulus))
+            stimname = os.path.splitext(stimname)[0].replace('lib','')
+            config_dict['stimulus_plugins'].append(
+                dict(path=dirname,
+                     name=stimname))
+            args.stimulus = stimname
+
+            config_dict, config_file = fixup_config( config_dict )
 
         self._config_dict = config_dict
         rospy.loginfo("config_file = %s" % config_file)
