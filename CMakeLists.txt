@@ -112,6 +112,9 @@ IF(BUILD_WITH_ROS)
   rosbuild_add_library(StimulusTemplate src/StimulusTemplate.cpp)
   TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
+  rosbuild_add_library(StimulusSphere src/StimulusSphere.cpp)
+  TARGET_LINK_LIBRARIES(StimulusSphere ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+
   # build the main display server node ----------
   rosbuild_add_executable(display_server display_server.cpp ${DS_SOURCES})
 
