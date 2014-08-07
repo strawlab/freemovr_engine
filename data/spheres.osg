@@ -1,0 +1,82 @@
+Group {
+  UniqueID Group_0
+  nodeMask 0xffffffff
+  cullingActive TRUE
+  num_children 1
+  MatrixTransform {
+    UniqueID MatrixTransform_1
+    nodeMask 0xffffffff
+    cullingActive TRUE
+    description "root node"
+    StateSet {
+      UniqueID StateSet_2
+      rendering_hint DEFAULT_BIN
+      renderBinMode INHERIT
+      GL_LIGHTING OFF
+    }
+    referenceFrame RELATIVE
+    Matrix {
+      1 0 0 0
+      0 1 0 0
+      0 0 1 0
+      0 0 0 1
+    }
+    num_children 2
+    MatrixTransform {
+      name "s1"
+      nodeMask 0xffffffff
+      cullingActive TRUE
+      referenceFrame RELATIVE
+      Matrix {
+        1 0 0 0
+        0 1 0 0
+        0 0 1 0
+        1 0 0 1
+      }
+      num_children 1
+      Geode {
+        nodeMask 0xffffffff
+        cullingActive TRUE
+        num_drawables 1
+        ShapeDrawable {
+          UniqueID ShapeDrawable_3
+          Sphere {
+            Center 0 0 0
+            Radius 0.2
+          }
+          useDisplayList TRUE
+          useVertexBufferObjects FALSE
+          color 1 0 0 1
+        }
+      }
+    }
+    MatrixTransform {
+      name "s2"
+      nodeMask 0xffffffff
+      cullingActive TRUE
+      referenceFrame RELATIVE
+      Matrix {
+        1 0 0 0
+        0 1 0 0
+        0 0 1 0
+        0 1 0 1
+      }
+      num_children 1
+      Geode {
+        nodeMask 0xffffffff
+        cullingActive TRUE
+        num_drawables 1
+        ShapeDrawable {
+          UniqueID ShapeDrawable_4
+          Sphere {
+            Center 0 0 0
+            Radius 0.2
+          }
+          useDisplayList TRUE
+          useVertexBufferObjects FALSE
+          color 0 1 0 1
+        }
+      }
+    }
+  }
+}
