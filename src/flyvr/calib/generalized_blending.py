@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import roslib
+roslib.load_manifest("flyvr")
 import matplotlib.pyplot as plt
 from exr import read_exr, save_exr
 import numpy as np
