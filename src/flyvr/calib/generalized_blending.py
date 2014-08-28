@@ -13,7 +13,7 @@ from cylinder_geometry import cylinder_geometry
 from sphere_geometry import sphere_geometry
 
 
-def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=False, concatenate=False):
+def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=False, concatenate=False, minimum=0.0):
     """calculate blending masks for overlapping projector beam paths
     
     Args:
@@ -129,7 +129,7 @@ def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=Fals
         #  for each pixel inside the beam: distance[beampath]/grad_sum
         # this results in a smooth gradient in the areas overlapping other
         # beam paths in UV and 1 everywhere else inside the beam 
-        K[mask]=np.divide(distance[i][mask], grad_sum[mask]) 
+        K[mask] = np.clip(np.divide(distance[i][mask], grad_sum[mask]) + minimum, 0.0, 1.0)
     
     if visualize:
         plt.figure()
@@ -160,6 +160,8 @@ if __name__ == "__main__":
     parser.add_option("-v", "--visualize",
                       action="store_true", dest="visualize", default=False,
                   help="open window with visualization, waits until closed")
+    parser.add_option("-m", "--min", dest="minimum", default=0.0, type="float",
+                  help="set minimum alpha value for blending", metavar="minimum")
 
     (options, args) = parser.parse_args()
     
@@ -184,7 +186,7 @@ if __name__ == "__main__":
         I=np.array(I).transpose(1,2,0)
         images.append(I)
  
-    result=blend(images, geometry, visualize=options.visualize, verbose=options.verbose, concatenate=options.concatenate)
+    result=blend(images, geometry, visualize=options.visualize, verbose=options.verbose, concatenate=options.concatenate, minimum=options.minimum)
 
     # result can be delivered as one large horizontal (in X) matrix for "desktop spanning mode"
     # or as one image per projector
