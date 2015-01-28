@@ -25,9 +25,10 @@ from visualization_msgs.msg import MarkerArray
 
 import tf.broadcaster
 
-import pymvg
+from pymvg.camera_model import CameraModel
 
-import pymvg.rviz_utils
+import pymvg.extern.ros.rviz_utils as rviz_utils
+import flyvr
 import flyvr.simple_geom as simple_geom
 import flyvr.dlt as dlt
 import flyvr.display_client as display_client
@@ -142,7 +143,7 @@ def get_camera_for_boards(rows,width=0,height=0):
 
     buf = roslib.message.strify_message(msg)
     obj = yaml.safe_load(buf)
-    cam = pymvg.CameraModel.from_dict(obj,
+    cam = CameraModel.from_dict(obj,
                                       extrinsics_required=False)
     return cam
 
@@ -1102,7 +1103,7 @@ class UI(object):
                                          '/map',
                                          )
 
-                r = pymvg.rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
+                r = rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
                 self.frustum_pub[vdisp].publish(r['markers'])
 
     def on_trigger_cal(self, widget, path):
@@ -1140,7 +1141,7 @@ class UI(object):
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
             r = dlt.dlt(XYZ, xy, ransac=ransac )
-            c1 = pymvg.CameraModel.load_camera_from_M( r['pmat'],
+            c1 = CameraModel.load_camera_from_M( r['pmat'],
                                                        width=self.dsc.width,
                                                        height=self.dsc.height,
                                                        )

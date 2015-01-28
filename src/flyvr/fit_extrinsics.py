@@ -2,8 +2,8 @@
 import roslib; roslib.load_manifest('flyvr')
 
 import scipy.optimize
-import pymvg
-import pymvg.core
+from pymvg.camera_model import CameraModel
+from pymvg.util import get_rotation_matrix_and_quaternion
 import flyvr.simple_geom as simple_geom
 import numpy as np
 import os
@@ -156,7 +156,7 @@ class ObjectiveFunction:
             t = params[:3]
             rod = params[3:]
             rmat = rodrigues2matrix( rod )
-            cam_model = pymvg.CameraModel.from_ros_like( translation=t,
+            cam_model = CameraModel._from_parts( translation=t,
                                                          rotation=rmat,
                                                          intrinsics=self.intrinsics)
             return cam_model
@@ -166,10 +166,10 @@ class ObjectiveFunction:
         qmag = np.sqrt(np.sum(quat**2))
         quat = quat/qmag
 
-        R,rquat=pymvg.core.get_rotation_matrix_and_quaternion(quat)
+        R,rquat=get_rotation_matrix_and_quaternion(quat)
 
         t = -np.dot(R, C)
-        cam_model = pymvg.CameraModel.from_ros_like( translation=t,
+        cam_model = CameraModel._from_parts( translation=t,
                                                      rotation=quat,
                                                      intrinsics=self.intrinsics)
         return cam_model
@@ -329,7 +329,7 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
 
     # we get two possible cameras back, figure out which one has objects in front
     rmata = rodrigues2matrix( rvec )
-    cam_model_a = pymvg.CameraModel.from_ros_like( translation=tvec,
+    cam_model_a = CameraModel._from_parts( translation=tvec,
                                                    rotation=rmata,
                                                    intrinsics=base_cam.get_intrinsics_as_bunch(),
                                                    name=base_cam.name)
