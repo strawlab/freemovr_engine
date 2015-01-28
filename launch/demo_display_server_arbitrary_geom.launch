@@ -1,0 +1,11 @@
+<launch>
+
+  <node name="display_server_demo" pkg="flyvr" type="display_server" args="--mode overview">
+    <rosparam command="load" file="$(find flyvr)/config/rosparamconfig.yaml" />
+    <rosparam command="load" file="$(find flyvr)/config/arbitrary_geom.yaml" />
+    <param name="display/windowDecoration" type="bool" value="true" />
+  </node>
+
+  <node name="send_pose" pkg="flyvr" type="send_pose"/>
+
+</launch>

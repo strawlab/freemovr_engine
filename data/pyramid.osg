@@ -1,0 +1,77 @@
+Group {
+  UniqueID osgwriterGroup_131AF80
+  DataVariance DYNAMIC
+  name "osgwriterFile"
+  cullingActive TRUE
+  num_children 1
+  MatrixTransform {
+    DataVariance DYNAMIC
+    cullingActive TRUE
+    referenceFrame RELATIVE_TO_PARENTS
+    name "osgwriterMatrixTransform"
+    Matrix {
+      DataVariance DYNAMIC
+      1.0 0.0 0.0 0.0
+      0.0 1.0 0.0 0.0
+      0.0 0.0 1.0 0.0
+      0.0 0.0 0.0 1.0
+    }
+    num_children 1
+    Geode {
+      DataVariance DYNAMIC
+      cullingActive TRUE
+      StateSet {
+        GL_LIGHTING OFF
+      }
+      num_drawables 1
+      Geometry {
+        StateSet {
+          DataVariance STATIC
+          rendering_hint TRANSPARENT_BIN
+          renderBinMode USE
+          binNumber 10
+          binName DepthSortedBin
+GL_BLEND ON
+          textureUnit 0 {
+            GL_TEXTURE_2D ON
+            Texture2D {
+              DataVariance STATIC
+              file "vienna-morning.jpg"
+              wrap_s REPEAT
+              wrap_t REPEAT
+              wrap_r CLAMP
+              min_filter LINEAR_MIPMAP_LINEAR
+              mag_filter NEAREST
+              maxAnisotropy 1
+              internalFormatMode USE_IMAGE_DATA_FORMAT
+            }
+          }
+        }
+        VertexArray 6 {
+          0.0   0.0  0.0
+          5.0   8.66 0.0
+          10.0  0.0  0.0
+          5.0 2.88675 7.5
+          0.0   0.0  0.0
+          5.0   8.66 0.0
+        }
+        PrimitiveSets 1 {
+          DrawElementsUInt TRIANGLES 4 {
+            0 1 2
+            1 3 2
+            2 3 4
+            3 5 4
+          }
+        }
+        TexCoordArray 0 Vec2Array 6 {
+          0.0  0.0
+          0.2  0.34641
+          0.4  0.0
+          0.6  0.34641
+          0.8  0.0
+          1.0  0.34641
+        }
+      }
+    }
+  }
+}

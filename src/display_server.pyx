@@ -206,6 +206,8 @@ def fixup_config( orig_config_dict ):
         config_dict['p2c'] = rosmsg2json.fixup_path( config_dict['p2c'] )
     if 'p2g' in config_dict:
         config_dict['p2g'] = rosmsg2json.fixup_path( config_dict['p2g'] )
+    if 'geom' in config_dict and 'filename' in config_dict['geom']:
+        config_dict['geom']['filename'] = rosmsg2json.fixup_path( config_dict['geom']['filename'] )
 
     orig_plugins = config_dict.get('stimulus_plugins',[])
     plugins = [ fixup(p) for p in orig_plugins ]

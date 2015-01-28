@@ -12,6 +12,8 @@
 #include <stdexcept>
 #include <sstream>
 
+#include "DisplaySurfaceArbitraryGeometry.h"
+
 class CylinderModel : public GeomModel {
 public:
     CylinderModel(float radius, osg::Vec3 base, osg::Vec3 axis) :
@@ -417,6 +419,13 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
         osg::Vec3 lowerright = parse_vec3( lowerright_json );
 
         _geom = new PlanarRectangleModel(lowerleft, upperleft, lowerright);
+	} else if (model==std::string("from_file") ) {
+        json_t *filename_json = json_object_get(root, "filename");
+        if(!json_is_string(filename_json)){
+            throw std::runtime_error("from_file parsing filename: expected string");
+        }
+        std::string filename = json_string_value( filename_json );
+        _geom = new flyvr::DisplaySurfaceArbitraryGeometry(filename);
     } else {
         std::ostringstream os;
         os << "unknown model " << model;
