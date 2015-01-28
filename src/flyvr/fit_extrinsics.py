@@ -44,7 +44,11 @@ class ObjectiveFunctionFancy:
         self.base_cam = base_cam
         self.X3d = X3d
         self.x2d = x2d
-        self.intrinsics = self.base_cam.get_intrinsics_as_bunch()
+        intrinsics = self.base_cam.to_dict()
+        del intrinsics['Q']
+        del intrinsics['translation']
+        del intrinsics['name']
+        self.intrinsic_dict = intrinsics
         self._obj_dist = []
         self.npts = len(self.X3d)
 
@@ -102,7 +106,11 @@ class ObjectiveFunction:
         self.base_cam = base_cam
         self.X3d = X3d
         self.x2d = x2d
-        self.intrinsics = self.base_cam.get_intrinsics_as_bunch()
+        intrinsics = self.base_cam.to_dict()
+        del intrinsics['Q']
+        del intrinsics['translation']
+        del intrinsics['name']
+        self.intrinsic_dict = intrinsics
         self._obj_dist = []
         self.npts = len(self.X3d)
         if geom is not None:
@@ -156,9 +164,10 @@ class ObjectiveFunction:
             t = params[:3]
             rod = params[3:]
             rmat = rodrigues2matrix( rod )
-            cam_model = CameraModel._from_parts( translation=t,
-                                                         rotation=rmat,
-                                                         intrinsics=self.intrinsics)
+            d = self.intrinsic_dict.copy()
+            d['translation'] = t
+            d['Q'] = rmat
+            cam_model = CameraModel.from_dict(d)
             return cam_model
 
         C = params[:3]
@@ -169,9 +178,11 @@ class ObjectiveFunction:
         R,rquat=get_rotation_matrix_and_quaternion(quat)
 
         t = -np.dot(R, C)
-        cam_model = CameraModel._from_parts( translation=t,
-                                                     rotation=quat,
-                                                     intrinsics=self.intrinsics)
+
+        d = self.intrinsic_dict.copy()
+        d['translation'] = t
+        d['Q'] = R
+        cam_model = CameraModel.from_dict(d)
         return cam_model
 
     def err(self, params):
@@ -329,10 +340,15 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
 
     # we get two possible cameras back, figure out which one has objects in front
     rmata = rodrigues2matrix( rvec )
-    cam_model_a = CameraModel._from_parts( translation=tvec,
-                                                   rotation=rmata,
-                                                   intrinsics=base_cam.get_intrinsics_as_bunch(),
-                                                   name=base_cam.name)
+    intrinsics = base_cam.to_dict()
+    del intrinsics['Q']
+    del intrinsics['translation']
+    del intrinsics['name']
+    d = intrinsics.copy()
+    d['translation'] = tvec
+    d['Q'] = rmata
+    d['name'] = base_cam.name
+    cam_model_a = CameraModel.from_dict(d)
     mza = np.mean(cam_model_a.project_3d_to_camera_frame(X3d)[:,2])
 
     # don't bother with second - it does not have a valid rotation matrix
