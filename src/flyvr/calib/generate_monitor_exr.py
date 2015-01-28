@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 
 import roslib; roslib.load_manifest('flyvr')
-from exr import save_exr
+from flyvr.exr import save_exr
 
 def gen_exr(fname=None, width=None, height=None, luminance=None):
     u = np.linspace( 0.0, 1.0, width )
