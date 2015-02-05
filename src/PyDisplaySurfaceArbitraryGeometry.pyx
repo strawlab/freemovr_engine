@@ -6,6 +6,8 @@ import flyvr.simple_geom
 import numpy as np
 cimport numpy as np
 
+cimport cython
+
 from DisplaySurfaceArbitraryGeometry_wrap cimport DisplaySurfaceArbitraryGeometry as cpp_DisplaySurfaceArbitraryGeometry
 
 cdef class DisplaySurfaceArbitraryGeometry:
@@ -14,23 +16,35 @@ cdef class DisplaySurfaceArbitraryGeometry:
         self.thisptr = new cpp_DisplaySurfaceArbitraryGeometry(filename)
     def __dealloc__(self):
         del self.thisptr
-    def texcoord2worldcoord(self, np.ndarray[np.float_t] u, np.ndarray[np.float_t] v):
-        cdef np.ndarray[np.float_t] x = np.zeros( (u.shape[0],), dtype=np.float)
-        cdef np.ndarray[np.float_t] y = np.zeros( (u.shape[0],), dtype=np.float)
-        cdef np.ndarray[np.float_t] z = np.zeros( (u.shape[0],), dtype=np.float)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def texcoord2worldcoord(self, double[:] uin, double[:] vin):
+        cdef double[::1] u = np.array( uin )
+        cdef double[::1] v = np.array( vin )
+        cdef double[::1] x = np.empty( (u.shape[0],), dtype=np.float)
+        cdef double[::1] y = np.empty( (u.shape[0],), dtype=np.float)
+        cdef double[::1] z = np.empty( (u.shape[0],), dtype=np.float)
         cdef double xi=0, yi=0, zi=0
+        cdef int err
+        cdef cpp_DisplaySurfaceArbitraryGeometry *deref = self.thisptr
         for i in range( u.shape[0] ):
-            err = self.thisptr.texcoord2worldcoord( u[i], v[i], xi, yi, zi )
+            err = deref.texcoord2worldcoord( u[i], v[i], xi, yi, zi )
             if err:
-                raise RuntimeError(
-                    'failed: self.thisptr.texcoord2worldcoord()=%d'%err)
+                break
             x[i] = xi
             y[i] = yi
             z[i] = zi
+        if err:
+            raise RuntimeError(
+                'failed: self.thisptr.texcoord2worldcoord()=%d'%err)
         return x,y,z
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def worldcoord2texcoord(self, np.ndarray[np.float_t] x, np.ndarray[np.float_t] y, np.ndarray[np.float_t] z):
-        cdef np.ndarray[np.float_t] u = np.zeros( (x.shape[0],), dtype=np.float)
-        cdef np.ndarray[np.float_t] v = np.zeros( (x.shape[0],), dtype=np.float)
+        cdef np.ndarray[np.float_t] u = np.empty( (x.shape[0],), dtype=np.float)
+        cdef np.ndarray[np.float_t] v = np.empty( (x.shape[0],), dtype=np.float)
         cdef double ui=0, vi=0
         for i in range( x.shape[0] ):
             err = self.thisptr.worldcoord2texcoord( x[i], y[i], z[i], ui, vi )
