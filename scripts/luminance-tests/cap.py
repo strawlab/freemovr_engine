@@ -15,7 +15,7 @@ roslib.load_manifest('rosbag')
 import rospy
 
 import flyvr.display_client as display_client
-import calib.acquire
+import calibration.correspondance.acquire as acquire
 
 if __name__ == "__main__":
     dsn = "/display_server3"
@@ -31,8 +31,8 @@ if __name__ == "__main__":
     dsc = display_client.DisplayServerProxy(dsn)
     dsc.enter_2dblit_mode()
 
-    runner = calib.acquire.SequentialCameraRunner(
-                                (calib.acquire.CameraHandler(camn),),
+    runner = acquire.SequentialCameraRunner(
+                                (acquire.CameraHandler(camn),),
                                 queue_depth=nimgs)
 
     for g in greys:

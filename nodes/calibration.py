@@ -40,12 +40,12 @@ import std_srvs.srv
 import flycave.srv
 import flyvr.srv
 
-import flyvr.calib.kdtree
-from flyvr.calib.imgproc import add_crosshairs_to_nparr
-from flyvr.calib.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
-from flyvr.calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
+import flyvr.calibration.correspondance.kdtree as kdtree
+from flyvr.calibration.correspondance.imgproc import add_crosshairs_to_nparr
+from flyvr.calibration.correspondance.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
+from flyvr.calibration.correspondance.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
 from flyvr.calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
-from flyvr.calib.calibrationconstants import *
+from flyvr.calibration.correspondance.calibrationconstants import *
 
 from rosutils.io import decode_url
 
@@ -136,7 +136,7 @@ class DataIO:
         self.num_points = 0
         
         self._display_tree = {}
-        self._position_tree = flyvr.calib.kdtree.create(dimensions=3, check_dimensions=False)
+        self._position_tree = kdtree.create(dimensions=3, check_dimensions=False)
         
         self._pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self._pub_mapping = rospy.Publisher('~mapping', CalibMapping)
@@ -211,7 +211,7 @@ class DataIO:
         try:
             self._display_tree[c.display_server]
         except KeyError:
-            self._display_tree[c.display_server] = flyvr.calib.kdtree.create(dimensions=2, check_dimensions=False)
+            self._display_tree[c.display_server] = kdtree.create(dimensions=2, check_dimensions=False)
         finally:
             self._display_tree[c.display_server].add(dcorr)
         
@@ -233,7 +233,7 @@ class DataIO:
             rospy.logwarn(
                 "Unknown error getting correspondence for %r\n%s\nTree:\n\n" %(
                     dcorr,traceback.format_exc()))
-            flyvr.calib.kdtree.visualize(self._display_tree[ds])
+            kdtree.visualize(self._display_tree[ds])
 
 
     def add_mapping(self, **kwargs):
