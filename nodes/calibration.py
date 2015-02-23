@@ -44,8 +44,9 @@ import flyvr.calibration.correspondance.kdtree as kdtree
 from flyvr.calibration.correspondance.imgproc import add_crosshairs_to_nparr
 from flyvr.calibration.correspondance.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
 from flyvr.calibration.correspondance.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
-from flyvr.calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
 from flyvr.calibration.correspondance.calibrationconstants import *
+
+from flyvr.tools.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
 
 from rosutils.io import decode_url
 
