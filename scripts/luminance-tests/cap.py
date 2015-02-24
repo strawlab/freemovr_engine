@@ -15,7 +15,7 @@ roslib.load_manifest('rosbag')
 import rospy
 
 import flyvr.display_client as display_client
-import calibration.simple.acquire as acquire
+import calibration.image_processing.acquire as acquire
 
 if __name__ == "__main__":
     dsn = "/display_server3"

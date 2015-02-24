@@ -40,11 +40,11 @@ import std_srvs.srv
 import flycave.srv
 import flyvr.srv
 
-import flyvr.calibration.simple.kdtree as kdtree
-from flyvr.calibration.simple.imgproc import add_crosshairs_to_nparr
-from flyvr.calibration.simple.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
-from flyvr.calibration.simple.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
-from flyvr.calibration.simple.calibrationconstants import *
+import flyvr.calibration.image_processing.kdtree as kdtree
+from flyvr.calibration.image_processing.imgproc import add_crosshairs_to_nparr
+from flyvr.calibration.image_processing.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
+from flyvr.calibration.image_processing.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
+from flyvr.calibration.image_processing.calibrationconstants import *
 
 from flyvr.tools.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
 
