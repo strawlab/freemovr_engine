@@ -74,7 +74,7 @@ def direct_linear_transform(points_3d, points_2d, denormalize=True):
         normalized_points_3d[i,:] = numpy.dot(U, x)
 
     # get matrix A
-    A = create_matrix_A(hom_points_3d, hom_points_2d)
+    A = create_matrix_A(normalized_points_3d, normalized_points_2d)
 
     # solve via singular value decomposition
     # XXX: in numpy the returned V is already transposed!
