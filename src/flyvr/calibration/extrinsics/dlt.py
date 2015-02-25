@@ -86,7 +86,7 @@ def direct_linear_transform(points_3d, points_2d, denormalize=True):
 
     if denormalize:
         # Denormalize
-        return numpy.dot(numpy.dot(Tinv, P_n), U)
+        return numpy.dot(Tinv, numpy.dot(P_n, U))
     else:
         return Pvec_n, Tinv, U, normalized_points_3d, normalized_points_2d
 
