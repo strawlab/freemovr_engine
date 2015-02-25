@@ -48,19 +48,27 @@ def get_normalize_3d_matrix(points_3d):
     return U
 
 
+def get_homogeneous_coordinates(points):
+    assert points.ndim == 2
+    assert points.shape[1] in [2, 3]
+    if points.shape[1] == 3:
+        assert not numpy.allclose(points[:,2], 1.)
+    return numpy.hstack((points, numpy.ones((points.shape[0], 1))))
+
+
 def direct_linear_transform(points_3d, points_2d, denormalize=True):
 
     # Normalize 2d points and keep transformation matrix
     T = get_normalize_2d_matrix(points_2d)
     Tinv = numpy.linalg.inv(T)
-    hom_points_2d = numpy.hstack((points_2d, numpy.ones((points_2d.shape[0], 1))))
+    hom_points_2d = get_homogeneous_coordinates(points_2d)
     normalized_points_2d = numpy.empty(hom_points_2d.shape)
     for i, x in enumerate(hom_points_2d):
         normalized_points_2d[i,:] = numpy.dot(T, x)
 
     # Normalize 3d points and keep transformation matrix
     U = get_normalize_3d_matrix(points_3d)
-    hom_points_3d = numpy.hstack((points_3d, numpy.ones((points_3d.shape[0], 1))))
+    hom_points_3d = get_homogeneous_coordinates(points_3d)
     normalized_points_3d = numpy.empty(hom_points_3d.shape)
     for i, x in enumerate(hom_points_3d):
         normalized_points_3d[i,:] = numpy.dot(U, x)
