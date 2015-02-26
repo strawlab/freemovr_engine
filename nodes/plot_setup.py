@@ -15,7 +15,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from plot_utils import get_3d_verts, plot_camera
+from pymvg.plot_utils import plot_camera
+
+def get_3d_verts(geom):
+    allw = []
+    res_u = 32
+    res_v = 5
+    for tc1 in np.linspace(0,1,res_v):
+        tc = np.vstack( (
+                np.linspace(0,1.,res_u),
+                tc1*np.ones( (res_u,) ),
+                )).T
+        world = geom.model.texcoord2worldcoord(tc)
+        allw.append(world)
+
+    allw = np.concatenate(allw)
+    return allw
+
 
 def plot_setup(geometry_filename,
                display_bagfiles):
