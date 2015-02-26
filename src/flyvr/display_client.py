@@ -15,7 +15,7 @@ import numpy as np
 import scipy.misc
 
 #re-export the fill polygon helper
-import fill_polygon as fp
+import flyvr.tools.fill_polygon as fp
 fill_polygon = fp.fill_polygon
 
 class DisplayServerProxy(object):
