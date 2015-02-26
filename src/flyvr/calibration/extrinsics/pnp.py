@@ -28,7 +28,9 @@ def pnp_iterative(camera, points_3d, points_2d, extrinsics_guess=None, params={}
     return _cv2_solvepnp(camera, points_3d, points_2d, extrinsics_guess,
                          flags=cv2.CV_ITERATIVE,
                          errmsg="pnp_iterative did not succeed.")
-pnp_iterative.params = {}
+pnp_iterative.params = {
+        'extrinsics_guess_support': True,
+        }
 
 
 def pnp_p3p(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
@@ -40,7 +42,9 @@ def pnp_p3p(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
     return _cv2_solvepnp(camera, points_3d, points_2d, extrinsics_guess,
                          flags=cv2.CV_P3P,
                          errmsg="pnp_p3p did not succeed.")
-pnp_p3p.params = {}
+pnp_p3p.params = {
+        'extrinsics_guess_support': True,
+        }
 
 def pnp_epnp(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
     """Fits the extrinsic matrices for a camera using 3d and 2d correspondences
@@ -51,7 +55,9 @@ def pnp_epnp(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
     return _cv2_solvepnp(camera, points_3d, points_2d, extrinsics_guess,
                          flags=cv2.CV_EPNP,
                          errmsg="pnp_epnp did not succeed.")
-pnp_epnp.params = {}
+pnp_epnp.params = {
+        'extrinsics_guess_support': True,
+        }
 
 
 
@@ -91,6 +97,7 @@ def pnp_ransac_iterative(camera, points_3d, points_2d, extrinsics_guess=None, pa
                                flags=cv2.CV_ITERATIVE,
                                errmsg="pnp_ransac_iterative did not succeed.")
 pnp_ransac_iterative.params = {
+        'extrinsics_guess_support': True,
         'iterations_count': int,
         'reprojection_error': float,
         'min_inliers_count': float
@@ -108,6 +115,7 @@ def pnp_ransac_p3p(camera, points_3d, points_2d, extrinsics_guess=None, params={
                                flags=cv2.CV_P3P,
                                errmsg="pnp_ransac_p3p did not succeed.")
 pnp_ransac_p3p.params = {
+        'extrinsics_guess_support': True,
         'iterations_count': int,
         'reprojection_error': float,
         'min_inliers_count': float
@@ -124,6 +132,7 @@ def pnp_ransac_epnp(camera, points_3d, points_2d, extrinsics_guess=None, params=
                                flags=cv2.CV_EPNP,
                                errmsg="pnp_ransac_epnp did not succeed.")
 pnp_ransac_epnp.params = {
+        'extrinsics_guess_support': True,
         'iterations_count': int,
         'reprojection_error': float,
         'min_inliers_count': float

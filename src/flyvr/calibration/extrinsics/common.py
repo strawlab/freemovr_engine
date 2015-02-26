@@ -1,4 +1,5 @@
 import numpy
+import cv2
 import pymvg
 
 def is_3d_point(point):
@@ -18,9 +19,13 @@ def is_3d_vector(vec):
     return True
 
 def is_rodrigues(vec):
-    # TODO
-    return True
+    return vec.shape == (3,1)
 
+def rotationmatrix_to_rodrigues(mat):
+    return cv2.Rodrigues(mat)[0]
+
+def rodrigues_to_rotationmatrix(rod):
+    return cv2.Rodrigues(rod)[0]
 
 def prepare_input(camera, points_3d, points_2d, extrinsics_guess):
     """prepares the input data for all other fitting functions"""
