@@ -3,7 +3,6 @@
 import os
 import argparse
 import yaml
-import math
 import collections
 import datetime
 import tempfile
@@ -15,7 +14,6 @@ import pkgutil
 import roslib; roslib.load_manifest('flyvr')
 roslib.load_manifest('visualization_msgs')
 roslib.load_manifest('camera_calibration')
-import camera_calibration.calibrator
 
 import rospy
 
@@ -39,8 +37,10 @@ import flyvr.exr as exr
 
 import rosgobject.core
 import rosgobject.wrappers
-import cairo
 from gi.repository import Gtk, GObject
+
+from flyvr.calibration.gui.displayserver_comm import ProxyDisplayClient
+
 
 from intrinsics_widget import get_intrinsics_grid
 
@@ -92,73 +92,6 @@ distortion: %s"""%args
     return result
 
 
-class ProxyDisplayClient(object):
-    def __init__(self):
-        self._dsc = None
-        self._di = None
-        self._gi = None
-        self._file = os.path.join(tempfile.mkdtemp(),"ds.png")
-        self._w = Gtk.Window(title="Display Server Output")
-        self._img = Gtk.Image()
-        self._img.set_from_stock("gtk-missing-image", Gtk.IconSize.DIALOG)
-        self._w.add(self._img)
-        self._w.connect("delete-event", self._on_close)
-
-    def _on_close(self, *args):
-        self._w.hide()
-        return True #stop signal
-
-    def proxy_show_mock(self):
-        self._w.show_all()
-
-    def proxy_set_dsc(self, dsc):
-        self._dsc = dsc
-        if self._dsc is not None:
-            self._dsc.enter_2dblit_mode()
-
-    def proxy_set_display_info(self, di):
-        self._di = di
-
-    def proxy_set_geometry_info(self, gi):
-        self._gi = gi
-
-    def proxy_is_connected(self):
-        return self._dsc is not None
-
-    def __getattr__(self, name):
-        return getattr(self._dsc, name)
-
-    @property
-    def height(self):
-        if self._dsc is not None:
-            return self._dsc.height
-        elif self._di is not None:
-            return self._di['height']
-
-    @property
-    def width(self):
-        if self._dsc is not None:
-            return self._dsc.width
-        elif self._di is not None:
-            return self._di['width']
-
-    def get_display_info(self):
-        if self._dsc is not None:
-            return self._dsc.get_display_info()
-        elif self._di is not None:
-            return self._di
-
-    def get_geometry_info(self):
-        if self._dsc is not None:
-            return self._dsc.get_geometry_info()
-        elif self._gi is not None:
-            return self._gi
-
-    def show_pixels(self,arr):
-        scipy.misc.imsave(self._file, arr)
-        self._img.set_from_file(self._file)
-        if self._dsc is not None:
-            self._dsc.show_pixels(arr)
 
 class UI(object):
     def __init__(self):
