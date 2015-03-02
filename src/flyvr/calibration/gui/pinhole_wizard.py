@@ -42,7 +42,7 @@ import rosgobject.wrappers
 import cairo
 from gi.repository import Gtk, GObject
 
-from .intrinsics_widget import AddCheckerboardDialog
+from .intrinsics_widget import get_intriniscs_grid
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -90,64 +90,6 @@ def pretty_intrinsics_str(cam):
    % 10g % 10g % 10g
 distortion: %s"""%args
     return result
-
-def get_camera_for_boards(rows,width=0,height=0):
-    info_dict = {}
-    for row in rows:
-        r = row[0]
-        info_str = '%d %d %f'%(r['rows'], r['columns'], r['size'])
-        if info_str not in info_dict:
-            # create entry
-            info = camera_calibration.calibrator.ChessboardInfo()
-            info.dim = r['size']
-            info.n_cols = r['columns']
-            info.n_rows = r['rows']
-            info_dict[info_str] = {'info':info,
-                                   'corners':[]}
-        this_list = info_dict[info_str]['corners']
-        this_corners = r['points']
-        assert len(this_corners)==r['rows']*r['columns']
-        this_list.append( this_corners )
-
-    boards = []
-    goodcorners = []
-    mpl_debug = False
-    mpl_lines = []
-    for k in info_dict:
-        info = info_dict[k]['info']
-        for xys in info_dict[k]['corners']:
-            goodcorners.append( (xys,info) )
-
-        if mpl_debug:
-            N = info.n_cols
-            xs = []; ys=[]
-            for (x,y) in xys:
-                xs.append(x); ys.append(y)
-            while len(xs):
-                this_xs = xs[:N]
-                this_ys = ys[:N]
-
-                del xs[:N]
-                del ys[:N]
-
-                mpl_lines.append( (this_xs, this_ys ) )
-
-    if mpl_debug:
-        import matplotlib.pyplot as plt
-        for (this_xs, this_ys) in mpl_lines:
-            plt.plot( this_xs, this_ys )
-        plt.show()
-
-    cal = camera_calibration.calibrator.MonoCalibrator(boards)
-    cal.size = (width,height)
-    r = cal.cal_fromcorners(goodcorners)
-    msg = cal.as_message()
-
-    buf = roslib.message.strify_message(msg)
-    obj = yaml.safe_load(buf)
-    cam = CameraModel.from_dict(obj,
-                                      extrinsics_required=False)
-    return cam
 
 
 class ProxyDisplayClient(object):
@@ -220,7 +162,7 @@ class ProxyDisplayClient(object):
 
 class UI(object):
     def __init__(self):
-        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
+        ui_file_contents = pkgutil.get_data('flyvr.calibration.gui','pinhole-wizard.ui')
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )
         self._build_ui()
@@ -305,8 +247,9 @@ class UI(object):
         nb = Gtk.Notebook()
         window.add(nb)
 
-        nb.append_page(self._ui.get_object('checkerboard_grid'),
-                       Gtk.Label(label='intrinsics'))
+        intrinsics_grid = get_intriniscs_grid(self.dsc, self.on_compute_intrinsics)
+        # XXX: _icb = intrinsics_grid.on_joystick_button
+        nb.append_page(intrinsics_grid, Gtk.Label(label='intrinsics'))
 
         nb.append_page(self._ui.get_object('virtual_display_layout_grid'),
                        Gtk.Label(label='virtual displays'))
@@ -334,44 +277,6 @@ class UI(object):
 
         self._ui.get_object('view_mock_ds_item').connect(
             'activate', self.on_view_mock_ds)
-
-        # setup checkerboard treeview ----------------
-
-        self.checkerboard_store = Gtk.ListStore(object)
-
-        treeview = self._ui.get_object('checkerboard_treeview')
-        treeview.set_model( self.checkerboard_store )
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("rows", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='rows')
-        treeview.append_column(column)
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("columns", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='columns')
-        treeview.append_column(column)
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("size", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='size')
-        treeview.append_column(column)
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("time", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='date_string')
-        treeview.append_column(column)
-
-        self._ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
-        self._ui.get_object('CK_remove_button').connect('clicked', self.on_CK_remove)
-
-        self._ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
-
-        # setup checkerboard dialog ----------------
-        self.add_CK_dialog = AddCheckerboardDialog(self._ui,
-                                nrows=DEFAULT_CHECKER_NROWS,
-                                ncols=DEFAULT_CHECKER_NCOLS,
-                                size=DEFAULT_CHECKER_SIZE)
 
         # setup help->about dialog -----------------
         self.help_about_dialog = Gtk.Dialog(title='About',
@@ -746,27 +651,10 @@ class UI(object):
         if not sel[1] == None:
             self.checkerboard_store.remove( sel[1] )
 
-    def on_compute_intrinsics(self,*args):
-        rows = [r for r in self.checkerboard_store]
-        cam = get_camera_for_boards( rows,
-                                     width=self.dsc.width,
-                                     height=self.dsc.height )
+    def on_compute_intrinsics(self, obj):
+        cam = CameraModel.from_dict(obj, extrinsics_required=False)
         self.display_intrinsic_cam = cam
         self._ui.get_object('intrinsic_status_label').set_text(pretty_intrinsics_str(cam))
-
-        # if 1:
-        #     print 'all ------------------'
-        #     print pretty_intrinsics_str(cam)
-
-        #     for i in range(len(rows)):
-        #         r2 = [r for (j,r) in enumerate(rows) if j!=i]
-
-        #         cam2 = get_camera_for_boards( r2,
-        #                                       width=self.dsc.width,
-        #                                       height=self.dsc.height )
-
-        #         print 'not %d (%s) ------------------'%(i, rows[i][0]['date_string'])
-        #         print pretty_intrinsics_str(cam2)
 
     # Virtual displays ----------------------------------------------
 
