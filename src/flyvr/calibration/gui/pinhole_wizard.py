@@ -27,22 +27,22 @@ import tf.broadcaster
 
 from pymvg.camera_model import CameraModel
 
-import pymvg.extern.ros.rviz_utils as rviz_utils
+#import pymvg.extern.ros.rviz_utils as rviz_utils
 import flyvr
 import flyvr.simple_geom as simple_geom
-import flyvr.dlt as dlt
+#import flyvr.dlt as dlt
 import flyvr.display_client as display_client
-import flyvr.fill_polygon as fill_polygon
+import flyvr.tools.fill_polygon as fill_polygon
 import flyvr.exr as exr
-from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
-from flyvr.calib.pinhole.widgets import CellRendererButton
+#from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
+#from flyvr.calib.pinhole.widgets import CellRendererButton
 
 import rosgobject.core
 import rosgobject.wrappers
 import cairo
 from gi.repository import Gtk, GObject
 
-from .intrinsics_widget import get_intriniscs_grid
+from intrinsics_widget import get_intrinsics_grid
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -165,6 +165,8 @@ class UI(object):
         ui_file_contents = pkgutil.get_data('flyvr.calibration.gui','pinhole-wizard.ui')
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )
+        #initilaize connect to display server widget sensitivity
+        self.dsc = ProxyDisplayClient()
         self._build_ui()
 
         self.display_intrinsic_cam = None
@@ -178,8 +180,6 @@ class UI(object):
         self.exr_filter.set_name("EXR Files")
         self.exr_filter.add_pattern("*.exr")
 
-        #initilaize connect to display server widget sensitivity
-        self.dsc = ProxyDisplayClient()
 
         self.joy_mode='do points'
 
@@ -247,7 +247,7 @@ class UI(object):
         nb = Gtk.Notebook()
         window.add(nb)
 
-        intrinsics_grid = get_intriniscs_grid(self.dsc, self.on_compute_intrinsics)
+        intrinsics_grid = get_intrinsics_grid(self.dsc, self.on_compute_intrinsics)
         # XXX: _icb = intrinsics_grid.on_joystick_button
         nb.append_page(intrinsics_grid, Gtk.Label(label='intrinsics'))
 
@@ -304,16 +304,16 @@ class UI(object):
         column.set_sort_column_id(VS_COUNT)
         treeview.append_column(column)
 
-        renderer = CellRendererButton('Calibrate')
-        renderer.connect("clicked", self.on_trigger_cal)
-        column = Gtk.TreeViewColumn("calibration")
-        column.pack_start(renderer, False)
-        renderer = Gtk.CellRendererSpinner()
-        column.pack_start(renderer, False)
-        column.add_attribute(renderer, "active", VS_CALIBRATION_RUNNING)
-        column.add_attribute(renderer, "pulse", VS_CALIBRATION_PROGRESS)
-        treeview.append_column(column)
-        GObject.timeout_add(100, self._pulse_spinner)
+        #renderer = CellRendererButton('Calibrate')
+        #renderer.connect("clicked", self.on_trigger_cal)
+        #column = Gtk.TreeViewColumn("calibration")
+        #column.pack_start(renderer, False)
+        #renderer = Gtk.CellRendererSpinner()
+        #column.pack_start(renderer, False)
+        #column.add_attribute(renderer, "active", VS_CALIBRATION_RUNNING)
+        #column.add_attribute(renderer, "pulse", VS_CALIBRATION_PROGRESS)
+        #treeview.append_column(column)
+        #GObject.timeout_add(100, self._pulse_spinner)
 
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("mean reproj. error", renderer,
@@ -332,7 +332,7 @@ class UI(object):
         treeview.append_column(column)
 
         # create point treeview -----------------------
-
+#
         self.point_store = Gtk.ListStore(str, float, float, float, float, bool, bool)
 
         treeview = self._ui.get_object('treeview1')
@@ -858,8 +858,8 @@ class UI(object):
                                          '/map',
                                          )
 
-                r = rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
-                self.frustum_pub[vdisp].publish(r['markers'])
+                #r = rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
+                #self.frustum_pub[vdisp].publish(r['markers'])
 
     def on_trigger_cal(self, widget, path):
         vdisp = self.vdisp_store[path][VS_VDISP]
@@ -895,13 +895,13 @@ class UI(object):
 
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
-            r = dlt.dlt(XYZ, xy, ransac=ransac )
-            c1 = CameraModel.load_camera_from_M( r['pmat'],
-                                                       width=self.dsc.width,
-                                                       height=self.dsc.height,
-                                                       )
+            #r = dlt.dlt(XYZ, xy, ransac=ransac )
+            #c1 = CameraModel.load_camera_from_M( r['pmat'],
+            #                                           width=self.dsc.width,
+            #                                           height=self.dsc.height,
+            #                                           )
 
-            _pump_ui()
+            #_pump_ui()
 
             if 0:
                 c2 = c1.get_flipped_camera()
@@ -957,9 +957,11 @@ class UI(object):
             _pump_ui()
 
             if method == 'iterative extrinsic only':
-                result = fit_extrinsics_iterative(cami,XYZ,xy)
+                #result = fit_extrinsics_iterative(cami,XYZ,xy)
+                pass
             else:
-                result = fit_extrinsics(cami,XYZ,xy)
+                #result = fit_extrinsics(cami,XYZ,xy)
+                pass
 
             _pump_ui()
 
