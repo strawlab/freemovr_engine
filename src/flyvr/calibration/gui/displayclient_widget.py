@@ -9,6 +9,8 @@ import roslib
 roslib.load_manifest("flyvr")
 import flyvr.tools.fill_polygon
 
+import time
+
 import platform
 
 # Platform specific import switch
@@ -30,16 +32,42 @@ if platform.system() == "Windows":
     # DEFAULT_DISPLAY_SERVER_NAME = "localhost:1701"
     # def get_display_server_proxy(name):
     #    return flyvr.rosfree.display_client.ROSFreeDisplayServerProxy(name)
+    #
+    # 
 else:
     import flyvr.display_client
     DEFAULT_DISPLAY_SERVER_NAME = "/display_server"
     def get_display_server_proxy(name):
         return flyvr.display_client.DisplayServerProxy(name)
 
+    import rospy
+    import geometry_msgs.msg
+    import flyvr.msg
+
+    sprite_pub = rospy.Publisher('sprite_image', flyvr.msg.FlyVRCompressedImage, latch=True)
+    position_pub = rospy.Publisher('sprite_pose', geometry_msgs.msg.Pose2D)
+
+    def set_sprite_position(x, y):
+        pose2d = geometry_msgs.msg.Pose2D()
+        pose2d.x = x
+        pose2d.y = y
+        position_pub.publish(pose2d)
+
+    def set_sprite_visible(state):
+        _flyvr_dir = roslib.packages.get_pkg_dir('flyvr')
+        if bool(state):
+            fname = os.path.join(_flyvr_dir, "data", "cursor.png")
+        else:
+            fname = os.path.join(_flyvr_dir, "data", "cursorblank.png")
+        image = flyvr.msg.FlyVRCompressedImage()
+        image.format = os.path.splitext(fname)[-1]
+        image.data = open(fname).read()
+        sprite_pub.publish(image)
+
 
 class DisplayClientWidget(GObject.GObject):
 
-    def __init__(self):
+    def __init__(self, interval_ms):
         """This class encapsulates the communication with the display server
 
         And allows the pinhole_wizard to be run without a running display server
@@ -60,12 +88,12 @@ class DisplayClientWidget(GObject.GObject):
         self._fake_window.connect("delete-event", self._on_close)
 
         # internal variables for the draw loop
-        self._draw_array = None
-        self._draw_cursor = []
+        self._draw_cursor = [0, 0]
+        self._draw_cursor_speed = [0, 0]
         self._draw_polygons = []
 
         # Attach the draw loop
-        GObject.timeout_add(20, self.draw)
+        GObject.timeout_add(interval_ms, self.on_background_update)
 
     def _on_close(self, *args):
         # hide the window
@@ -80,12 +108,14 @@ class DisplayClientWidget(GObject.GObject):
         """return True if connected"""
         return self._display_server_proxy is not None
 
-    def proxy_set_display_server_proxy(self, dsp):
+    def proxy_set_display_server_proxy(self, display_server_name=None):
         """connect a DisplayServerProxy to the DisplayclientWidget
         disconnect with dsp=None
         """
-        self._display_server_proxy = dsp
-        if self._display_server_proxy is not None:
+        if display_server_name is None:
+            self._display_server_proxy = None
+        else:
+            self._display_server_proxy = get_display_server_proxy(display_server_name)
             self._display_server_proxy.enter_2dblit_mode()
 
     def proxy_set_display_info(self, display_info):
@@ -135,10 +165,25 @@ class DisplayClientWidget(GObject.GObject):
         if self._display_server_proxy is not None:
             self._display_server_proxy.show_pixels(arr)
 
-    def on_axis(self, widget, msg):
+    def on_cursor_position_change(self, _dummy, msg):
         """this function should be connected to the on-axis signal of a joystick"""
-        if self._draw_cursor:
-            self._draw_cursor = msg.position
+        x, y = msg
+        di = self.get_display_info()
+        if di is not None:
+            height, width = di['height'], di['width']
+            x = msg[0] % width
+            y = msg[1] % height
+        set_sprite_position(x, y)
+
+    def on_background_update(self, *args):
+        start = time.time()
+        if not self._draw_prepare():
+            return
+        if self._draw_polygons:
+            for polygon in self._draw_polygons:
+                self._draw_polygon_func((255,0,0), polygon)
+        self._draw_finish()
+        print "background updated: %fsec" % (time.time() - start)
 
     def _draw_prepare(self, color=(0,0,0)):
         """prepare an empty array for drawing
@@ -172,39 +217,13 @@ class DisplayClientWidget(GObject.GObject):
             mask = mask.astype(np.bool)
             self._draw_array = ((~mask) * self._draw_array) + (mask[:,:,np.newaxis] * color)
 
-    def _draw_cursor_func(self, color, position):
-        """draw a cursor in the draw array
-
-        """
-        color = np.array(color, dtype=np.uint8)
-        x, y = position
-        x, y = int(np.round(x)), int(np.round(y))
-        self._draw_array[x,y,:] = color
-
     def _draw_finish(self):
         """convinience function for the draw loop"""
         self.show_pixels(self._draw_array)
 
-    def draw(self, *args):
-        """the draw function
-
-        this should be called in regular intervals
-        """
-        if not self._draw_prepare():
-            return
-        if self._draw_polygons:
-            for polygon in self._draw_polygons:
-                self._draw_polygon_func((255,0,0), polygon)
-        if self._draw_cursor:
-            self._draw_cursor_func((255,255,255), self._draw_cursor)
-        self._draw_finish()
-
     def set_cursor_draw(self, state):
         """sets if the cursor should be displayed or not"""
-        if bool(state):
-            self._draw_cursor = [self.height/2, self.width/2]
-        else:
-            self._draw_cursor = []
+        set_sprite_visible(state)
 
     def set_polygons_draw(self, list_of_polygons=tuple()):
         """provide a list of polygons to draw on the screen"""
