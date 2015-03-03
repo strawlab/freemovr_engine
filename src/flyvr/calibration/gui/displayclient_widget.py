@@ -37,7 +37,7 @@ else:
         return flyvr.display_client.DisplayServerProxy(name)
 
 
-class DisplayclientWidget(GObject.GObject):
+class DisplayClientWidget(GObject.GObject):
 
     def __init__(self):
         """This class encapsulates the communication with the display server
@@ -72,7 +72,7 @@ class DisplayclientWidget(GObject.GObject):
         self._fake_window.hide()
         return True  # stop signal
 
-    def proxy_show_mock(self):
+    def proxy_show_mock(self, *args):
         """displays the Gtk window, that shows the display_server output"""
         self._fake_window.show_all()
 
@@ -190,14 +190,14 @@ class DisplayclientWidget(GObject.GObject):
 
         this should be called in regular intervals
         """
-        if not self.draw_prepare():
+        if not self._draw_prepare():
             return
         if self._draw_polygons:
             for polygon in self._draw_polygons:
                 self._draw_polygon_func((255,0,0), polygon)
         if self._draw_cursor:
             self._draw_cursor_func((255,255,255), self._draw_cursor)
-        self.draw_finish()
+        self._draw_finish()
 
     def set_cursor_draw(self, state):
         """sets if the cursor should be displayed or not"""
