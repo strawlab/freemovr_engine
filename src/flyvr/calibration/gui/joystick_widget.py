@@ -58,10 +58,10 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
         for i, js in enumerate(self.joysticks):
             js.open()
             js.push_handlers(self)
-        print "found:", len(self.joysticks)
+        print "Joystick: found", len(self.joysticks)
 
-        self.msgcls = collections.namedtuple('Joy', 'buttons axis')
-        self._last = self.msgcls(buttons=(0,)*16, axis=(0,)*6)
+        self.msgcls = collections.namedtuple('Joy', 'buttons axis position')
+        self._last = self.msgcls(buttons=(0,)*16, axis=(0,)*6, position=(0,0))
         self.axis_idx = {
                 'x': 0,
                 'y': 1,
@@ -85,7 +85,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             newbuttons[button] = 1
             newbuttons = tuple(newbuttons)
             oldaxis = self._last.axis
-            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis)
+            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis, position=(0,0))
             self._last = newmsg
         GObject.idle_add(GObject.GObject.emit, self, "on-button-raw", newmsg)
         self.on_button_msg(button)
@@ -96,7 +96,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             newbuttons[button] = 0
             newbuttons = tuple(newbuttons)
             oldaxis = self._last.axis
-            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis)
+            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis, position=(0,0))
             self._last = newmsg
         GObject.idle_add(GObject.GObject.emit, self, "on-button-raw", newmsg)
 
@@ -106,7 +106,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             newaxis = list(self._last.axis)
             newaxis[self.axis_idx[axis]] = value
             newaxis = tuple(newaxis)
-            newmsg = self.msgcls(buttons=oldbuttons, axis=newaxis)
+            newmsg = self.msgcls(buttons=oldbuttons, axis=newaxis, position=(0,0))
             self._last = newmsg
         GObject.idle_add(GObject.GObject.emit, self, "on-axis-raw", newmsg)
         self.on_axis_msg(newmsg)
@@ -115,7 +115,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
         # FIXME: we do not support hat for now...
         warnings.warn("Joystick: hat_x, hat_y is not used.")
 
-    def run(self):
+    def run(self, *args):
         try:
             pyglet.app.run()
         finally:
@@ -164,6 +164,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
     def get_settings(self):
         return self._all_settings
 
+
 class JoystickConfigureDialog(Gtk.Dialog):
 
     def __init__(self, joystickinterface):
@@ -211,7 +212,6 @@ class JoystickConfigureDialog(Gtk.Dialog):
         self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                          Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
 
-        self.show_all()
         self.lastmsg = None
         self.joystickinterface = joystickinterface
 
@@ -270,13 +270,13 @@ class JoystickConfigureDialog(Gtk.Dialog):
             elif self.joystick_types[key] == "switch":
                 entry.set_active(value)
 
-    def run(self, *args, **kwargs):
+    def configure(self, *args, **kwargs):
         current_settings = self.joystickinterface.get_settings()
         self.apply_settings(current_settings)
         connect_handle0 = self.joystickinterface.connect("on-axis-raw", self.on_axis_change)
         connect_handle1 = self.joystickinterface.connect("on-button-raw", self.on_button_press)
         try:
-            retval = super(JoystickConfigureDialog, self).run(*args, **kwargs)
+            retval = super(JoystickConfigureDialog, self).run()
             if retval == Gtk.ResponseType.OK:
                 new_settings = self.get_settings()
                 self.joystickinterface.apply_settings(new_settings)
@@ -284,6 +284,14 @@ class JoystickConfigureDialog(Gtk.Dialog):
         finally:
             self.joystickinterface.disconnect(connect_handle0)
             self.joystickinterface.disconnect(connect_handle1)
+            self.hide()
+            print "Joystick: configured"
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
