@@ -16,17 +16,17 @@ roslib.load_manifest('flyvr')
 DEFAULT_JOYSTICK_SETTINGS = {
     "accept": 0,
     "remove": 1,
-    "nextitem": 4,
-    "previtem": 5,
+    "nextitem": 5,
+    "previtem": 4,
     "lr_axis": 0,
     "ud_axis": 1,
-    "lr_slow_axis": 2,
-    "ud_slow_axis": 3,
+    "lr_slow_axis": 3,
+    "ud_slow_axis": 4,
     "inv_lr": False,
     "inv_ud": False,
     "move_speed": 1.0,
     "move_speed_slow": 0.1,
-    "axis_cutoff": 0.001,
+    "axis_cutoff": 0.2,
     }
 
 
@@ -45,6 +45,9 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             "on-button": (
                 GObject.SignalFlags.RUN_LAST, None, [
                 object]),
+            "on-position-change": (
+                GObject.SignalFlags.RUN_LAST, None, [
+                object]),
             }
 
     def __init__(self):
@@ -60,8 +63,8 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             js.push_handlers(self)
         print "Joystick: found", len(self.joysticks)
 
-        self.msgcls = collections.namedtuple('Joy', 'buttons axis position')
-        self._last = self.msgcls(buttons=(0,)*16, axis=(0,)*6, position=(0,0))
+        self.msgcls = collections.namedtuple('Joy', 'buttons axis')
+        self._last = self.msgcls(buttons=(0,)*16, axis=(0,)*6)
         self.axis_idx = {
                 'x': 0,
                 'y': 1,
@@ -70,12 +73,17 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
                 'ry': 4,
                 'rz': 5
             }
+
+        # Position integration
+        self._position = [0, 0]
+        self._speed = (0, 0)
+        GObject.timeout_add(30, self._position_integrate)
+
         self._lock = threading.Lock()
         # FIXME: load from file if available
         self._all_settings = DEFAULT_JOYSTICK_SETTINGS
         self.apply_settings(self._all_settings)
         self.start()
-
 
     def on_joybutton_press(self, js, button):
         with self._lock:
@@ -85,7 +93,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             newbuttons[button] = 1
             newbuttons = tuple(newbuttons)
             oldaxis = self._last.axis
-            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis, position=(0,0))
+            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis)
             self._last = newmsg
         GObject.idle_add(GObject.GObject.emit, self, "on-button-raw", newmsg)
         self.on_button_msg(button)
@@ -96,7 +104,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             newbuttons[button] = 0
             newbuttons = tuple(newbuttons)
             oldaxis = self._last.axis
-            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis, position=(0,0))
+            newmsg = self.msgcls(buttons=newbuttons, axis=oldaxis)
             self._last = newmsg
         GObject.idle_add(GObject.GObject.emit, self, "on-button-raw", newmsg)
 
@@ -106,7 +114,7 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             newaxis = list(self._last.axis)
             newaxis[self.axis_idx[axis]] = value
             newaxis = tuple(newaxis)
-            newmsg = self.msgcls(buttons=oldbuttons, axis=newaxis, position=(0,0))
+            newmsg = self.msgcls(buttons=oldbuttons, axis=newaxis)
             self._last = newmsg
         GObject.idle_add(GObject.GObject.emit, self, "on-axis-raw", newmsg)
         self.on_axis_msg(newmsg)
@@ -151,15 +159,28 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
         y = inv_ud * (v * self.cutoff(msg.axis[ud])
                     + v_slow * self.cutoff(msg.axis[ud_slow]))
         GObject.idle_add(GObject.GObject.emit, self, "on-axis", (x, y))
+        with self._lock:
+            self._speed = [x, y]
+
+    def _position_integrate(self, *args):
+        with self._lock:
+            vx, vy = self._speed
+        if vx != 0 or vy != 0:
+            self._position[0] += vx
+            self._position[1] += vy
+            print "on:", self._position
+            GObject.idle_add(GObject.GObject.emit, self, "on-position-change", self._position)
+        return True
 
     def apply_settings(self, settings):
         self.settings_button = {}
         self.settings_axis = {}
-        for k, v in self._all_settings.items():
+        for k, v in settings.items():
             if k in ["accept", "remove", "nextitem", "previtem"]:
                 self.settings_button[int(v)] = k
             else:
-                self.settings_axis[k] = v
+                self.settings_axis[k] = settings[k]
+        self._all_settings = settings
 
     def get_settings(self):
         return self._all_settings
