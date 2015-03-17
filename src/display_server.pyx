@@ -243,6 +243,7 @@ cdef class MyNode:
     cdef int _throttle
     cdef object _timer
     cdef object _gamma
+    cdef object _posix_sched_fifo
     cdef object _red_max
     cdef object _config_dict
     cdef object _using_ros_config
@@ -329,6 +330,13 @@ cdef class MyNode:
 
         self._gamma = self._config_dict.get('gamma', 1.0)
         rospy.loginfo("gamma correction: %s" % self._gamma)
+
+        self._posix_sched_fifo = self._config_dict.get('posix_sched_fifo', None)
+        rospy.loginfo("posix scheduler FIFO priority: %s" % self._posix_sched_fifo)
+        if self._posix_sched_fifo is not None:
+            import posix_sched
+            sched_params = posix_sched.SchedParam(self._posix_sched_fifo)
+            posix_sched.setscheduler(0, posix_sched.FIFO, sched_params)
 
         self._red_max = self._config_dict.get('red_max', False)
         rospy.loginfo("red max: %s" % self._red_max)
