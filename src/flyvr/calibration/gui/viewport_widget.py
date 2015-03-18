@@ -90,6 +90,8 @@ class Viewport(object):
 
     def set_active(self, state):
         self._is_active = bool(state)
+        for node in self.nodes:
+            node.interactive = bool(state)
 
     def set_display(self, state):
         self._display = bool(state)
