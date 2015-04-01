@@ -12,6 +12,7 @@ import flyvr.tools.fill_polygon
 import time
 
 import platform
+import traceback
 
 # Platform specific import switch
 #=================================
@@ -115,8 +116,11 @@ class DisplayClientWidget(GObject.GObject):
         if display_server_name is None:
             self._display_server_proxy = None
         else:
-            self._display_server_proxy = get_display_server_proxy(display_server_name)
-            self._display_server_proxy.enter_2dblit_mode()
+            try:
+                self._display_server_proxy = get_display_server_proxy(display_server_name)
+                self._display_server_proxy.enter_2dblit_mode()
+            except:
+                traceback.print_exc()
 
     def proxy_set_display_info(self, display_info):
         """set the display_info dict"""
