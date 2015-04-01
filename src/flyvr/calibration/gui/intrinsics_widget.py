@@ -153,94 +153,99 @@ class AddCheckerboardDialog(Gtk.Dialog):
         return resp
 
 
-def get_intrinsics_grid(displayclient, on_intrinsics_computed):
+class IntrinsicsWidget(Gtk.VBox):
 
-    # Get grid container from ui file
-    ui_file_contents = pkgutil.get_data('flyvr.calibration.gui', 'pinhole-wizard.ui')
-    ui = Gtk.Builder()
-    ui.add_from_string(ui_file_contents)
-    grid = ui.get_object('checkerboard_grid')
+    def __init__(self, displayclient_widget, info_widget):
 
-    # Get treeview for configuration
-    checkerboard_store = Gtk.ListStore(object)
-    treeview = ui.get_object('checkerboard_treeview')
-    treeview.set_model(checkerboard_store)
+        Gtk.VBox.__init__(self)
+
+        self.displayclient_widget = displayclient_widget
+
+        # Get grid container from ui file
+        ui_file_contents = pkgutil.get_data('flyvr.calibration.gui', 'pinhole-wizard.ui')
+        ui = Gtk.Builder()
+        ui.add_from_string(ui_file_contents)
+        grid = ui.get_object('checkerboard_grid')
+        self.add(grid)
+
+        # Get self.treeview for configuration
+        self.checkerboard_store = Gtk.ListStore(object)
+        self.treeview = ui.get_object('checkerboard_treeview')
+        self.treeview.set_model(self.checkerboard_store)
+
+        # configure cell renderes
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("rows", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='rows')
+        self.treeview.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("columns", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='columns')
+        self.treeview.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("size", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='size')
+        self.treeview.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("time", renderer)
+        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='date_string')
+        self.treeview.append_column(column)
+
+        ui.get_object('CK_remove_button').connect('clicked', self.on_CK_remove)
+
+        # setup checkerboard dialog ----------------
+        self.add_CK_dialog = AddCheckerboardDialog(ui,
+                                nrows=DEFAULT_CHECKER_NROWS,
+                                ncols=DEFAULT_CHECKER_NCOLS,
+                                size=DEFAULT_CHECKER_SIZE)
+
+        self._current_checkerboard = {'points': []}
+
+        ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
+        ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
 
     def render_checkerboard_row(self, treeviewcolumn, cell, model, iter, attr):
         # The row rendering function
         rowdict = model.get_value(iter, 0)
         cell.set_property('text', str(rowdict[attr]))
 
-    # configure cell renderes
-    renderer = Gtk.CellRendererText()
-    column = Gtk.TreeViewColumn("rows", renderer)
-    column.set_cell_data_func(renderer, render_checkerboard_row, func_data='rows')
-    treeview.append_column(column)
-
-    renderer = Gtk.CellRendererText()
-    column = Gtk.TreeViewColumn("columns", renderer)
-    column.set_cell_data_func(renderer, render_checkerboard_row, func_data='columns')
-    treeview.append_column(column)
-
-    renderer = Gtk.CellRendererText()
-    column = Gtk.TreeViewColumn("size", renderer)
-    column.set_cell_data_func(renderer, render_checkerboard_row, func_data='size')
-    treeview.append_column(column)
-
-    renderer = Gtk.CellRendererText()
-    column = Gtk.TreeViewColumn("time", renderer)
-    column.set_cell_data_func(renderer, render_checkerboard_row, func_data='date_string')
-    treeview.append_column(column)
-
     # Remove entries function
-    def on_CK_remove(*args):
-        selection = treeview.get_selection()
+    def on_CK_remove(self, *args):
+        selection = self.treeview.get_selection()
         sel = selection.get_selected()
         if not sel[1] == None:
-            checkerboard_store.remove(sel[1])
+            self.checkerboard_store.remove(sel[1])
 
-    ui.get_object('CK_remove_button').connect('clicked', on_CK_remove)
-
-    # setup checkerboard dialog ----------------
-    add_CK_dialog = AddCheckerboardDialog(ui,
-                            nrows=DEFAULT_CHECKER_NROWS,
-                            ncols=DEFAULT_CHECKER_NCOLS,
-                            size=DEFAULT_CHECKER_SIZE)
-
-    _current_checkerboard = {'points': []}
-
-    def on_CK_add(*args):
-        _current_checkerboard = {'points': []}
+    def on_CK_add(self, *args):
+        self._current_checkerboard = {'points': []}
         try:
             #reset current number of collected points, and current point
-            response = add_CK_dialog.run(displayclient)
+            response = self.add_CK_dialog.run(self.displayclient_widget.get_displayclient())
             if response == Gtk.ResponseType.OK:
-                _current_checkerboard['rows'] = add_CK_dialog.get_num_rows()
-                _current_checkerboard['columns'] = add_CK_dialog.get_num_cols()
-                _current_checkerboard['size'] = add_CK_dialog.get_size()
+                self._current_checkerboard['rows'] = self.add_CK_dialog.get_num_rows()
+                self._current_checkerboard['columns'] = self.add_CK_dialog.get_num_cols()
+                self._current_checkerboard['size'] = self.add_CK_dialog.get_size()
                 nowstr = datetime.datetime.now().isoformat(' ')
-                _current_checkerboard['date_string'] = nowstr
-                checkerboard_store.append( [_current_checkerboard] )
+                self._current_checkerboard['date_string'] = nowstr
+                self.checkerboard_store.append( [self._current_checkerboard] )
         finally:
-            _current_checkerboard = {'points': []}
-            add_CK_dialog.hide()
+            self._current_checkerboard = {'points': []}
+            self.add_CK_dialog.hide()
 
-    ui.get_object('CK_add_button').connect('clicked', on_CK_add)
-
-    def on_joystick_button(buttons, axis, position):
-        if add_CK_dialog.is_focus():
+    def on_button(self, buttons, axis, position):
+        if self.add_CK_dialog.is_focus():
             if buttons["accept"]:
-                _current_checkerboard["points"].append(position)
-                npts = len(_current_checkerboard["points"])
-                add_CK_dialog.add_point(npts, position)
+                self._current_checkerboard["points"].append(position)
+                npts = len(self._current_checkerboard["points"])
+                self.add_CK_dialog.add_point(npts, position)
 
-    # Monkey patch grid
-    grid.on_joystick_button = on_joystick_button
-
-    def on_compute_intrinsics(*args):
+    def on_compute_intrinsics(self, *args):
         # We have to convert the rows to the right type for intrinsics calibration
         cornerss, rowss, colss, dims = [], [], [], []
-        for row in checkerboard_store:
+        for row in self.checkerboard_store:
             r = row[0]
             rowss.append(r['rows'])
             colss.append(r['columns'])
@@ -248,13 +253,10 @@ def get_intrinsics_grid(displayclient, on_intrinsics_computed):
             cornerss.append(list(r['points']))
 
         corners_boards = helper_make_corners_boards(cornerss, rowss, colss, dims)
-        intrinsics_yaml = intrinsics_from_checkerboards(corners_boards, displayclient.width,
-                                                                        displayclient.height)
-        on_intrinsics_computed(intrinsics_yaml)
+        intrinsics_yaml = intrinsics_from_checkerboards(corners_boards,
+                                        self.displayclient_widget.get_displayclient_width(),
+                                        self.displayclient_widget.get_displayclient_height())
 
+        # XXX: self.emit(""intrinsics_yaml)
 
-    ui.get_object('compute_intrinsics').connect('clicked', on_compute_intrinsics)
-
-
-    return grid
 
