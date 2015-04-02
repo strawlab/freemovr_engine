@@ -4,6 +4,8 @@ import scipy.optimize
 
 from .common import prepare_input, rotationmatrix_to_rodrigues, rodrigues_to_rotationmatrix
 
+import cv2
+
 def create_matrix_A(hom_points_3d, hom_points_2d):
 
     assert hom_points_3d.ndim == 2 and hom_points_3d.shape[1] == 4
@@ -85,7 +87,7 @@ def _dlt(nhpts3d, nhpts2d):
     _, singular_values, VT = numpy.linalg.svd(A, full_matrices=False)
     sol_idx = numpy.argmin(singular_values)
     assert sol_idx == 11
-    Pvec_n = VT.T[:,sol_idx]  # that's why we need to pick the rows here...
+    Pvec_n = VT.T[:,sol_idx]
 
     return Pvec_n
 
@@ -93,6 +95,10 @@ def _dlt(nhpts3d, nhpts2d):
 def direct_linear_transform(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
 
     points_3d, points_2d, K, distortion, extguess = prepare_input(camera, points_3d, points_2d, extrinsics_guess)
+
+    # Undistort
+    points_2d = cv2.undistort(points_2d.reshape(-1,1,2), camera.get_K(), camera.get_D())
+    points_2d = points_2d.reshape(-1,2)
 
     # Normalize 2d points and keep transformation matrix
     normalized_points_2d, _, Tinv = get_normalized_points_2d(points_2d)
@@ -118,6 +124,10 @@ direct_linear_transform.params = {
 
 
 def hartley_gold_algorithm(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
+
+    # Undistort
+    points_2d = cv2.undistort(points_2d.reshape(-1,1,2), camera.get_K(), camera.get_D())
+    points_2d = points_2d.reshape(-1,2)
 
     # Normalize 2d points and keep transformation matrix
     normalized_points_2d, T, Tinv = get_normalized_points_2d(points_2d)

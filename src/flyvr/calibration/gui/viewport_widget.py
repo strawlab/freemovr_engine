@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 try:
     import roslib
@@ -129,6 +129,12 @@ class Viewport(object):
                                  fill_color=fill_color, stroke_color=stroke_color))
         return vp
 
+    def to_list(self):
+        points = []
+        for node in self.nodes:
+            points.append([node.x, node.y])
+        return points
+
     def set_color(self, fill_color):
         stroke_color = darker_color(fill_color)
         for node in self.nodes:
@@ -204,11 +210,11 @@ class Canvas(Scene):
             viewport.draw_nodes(context)
 
     def on_key_press(self, widget, event):
-        if event.keyval == 65507:
+        if event.keyval == 65507:  # CTRL BUTTON
             self.MODE = "DELETE"
 
     def on_key_release(self, widget, event):
-        if event.keyval == 65507:
+        if event.keyval == 65507:  # CTRL BUTTON
             self.MODE = "ADD"
 
 class CanvasContainer(Gtk.VBox):
@@ -295,11 +301,16 @@ class CanvasContainer(Gtk.VBox):
         self.canvas.set_viewport_size(width, height)
         self.canvas.set_sensitive(True)
 
-
 class ViewportWidget(Gtk.VBox):
+
+    __gsignals__ = {
+            "viewports-saved": (GObject.SignalFlags.RUN_FIRST, None, [object])
+    }
 
     def __init__(self):
         Gtk.VBox.__init__(self)
+
+        self._dsc = None
 
         self.canvas = Canvas()
         self.canvascontainer = CanvasContainer(self.canvas)
@@ -335,27 +346,43 @@ class ViewportWidget(Gtk.VBox):
                 yes_args=(True,),
                 no_args=(False,))
         self._treeview = treeview_gen.get_treeview()
+        self._treeview.set_size_request(-1, 50)
         self._liststore = treeview_gen.get_liststore()
+        # TODO: self._treeview.height_request
 
         hbox.pack_start(self._treeview, False, False, 0)
 
         # Associate Treeview with Canvas with Treeview
         self.canvas.viewport_getter = lambda: list(row[0] for row in self._liststore)
         self.canvas.connect("on-click", self.emit_row_changed_for_all_rows)
+        self.canvas.connect("on-enter-frame", self.update_dsc)
         self._liststore.connect("row-changed", lambda *x: self.canvas.redraw())
 
         # Buttons #
+        button_grid = Gtk.Grid()
+        button_grid.props.column_spacing = 3
+
+        button = Gtk.Button("Use")
+        button.connect("clicked", self.save_viewports)
+        button_grid.attach(button, 4, 1, 1, 1)
+        #hbox.pack_end(button, False, False, 0)
+
         button = Gtk.Button("Clear")
         button.connect("clicked", self.on_clear_viewport)
-        hbox.pack_end(button, False, False, 0)
+        button_grid.attach(button, 3, 1, 1, 1)
+        #hbox.pack_end(button, False, False, 0)
 
-        button = Gtk.Button("Add viewport")
-        button.connect("clicked", self.on_add_viewport)
-        hbox.pack_end(button, False, False, 0)
-
-        button = Gtk.Button("Remove viewport")
+        button = Gtk.Button("Remove")
         button.connect("clicked", self.on_remove_viewport)
-        hbox.pack_end(button, False, False, 0)
+        button_grid.attach(button, 2, 1, 1, 1)
+        #hbox.pack_end(button, False, False, 0)
+
+        button = Gtk.Button("Add")
+        button.connect("clicked", self.on_add_viewport)
+        button_grid.attach(button, 1, 1, 1, 1)
+        #hbox.pack_end(button, False, False, 0)
+        hbox.pack_end(button_grid, True, True, 0)
+
 
     def emit_row_changed_for_all_rows(self, *args):
         self._liststore.foreach(
@@ -397,26 +424,44 @@ class ViewportWidget(Gtk.VBox):
     def set_viewport_size(self, width, height):
         self.canvascontainer.set_viewport_size(width, height)
 
+    def on_displayclient_connect(self, calling_widget, displayclient, load_viewports):
+        self._dsc = calling_widget
+        self.set_viewport_size(displayclient.width, displayclient.height)
+        if load_viewports:
+            print "ViewportWidget TODO: implement load_viewports"
+        if self.is_focus():
+            self.update_dsc()
 
-class BasicWindow:
-    def __init__(self):
-        window = Gtk.Window()
-        window.connect("delete_event", lambda *args: Gtk.main_quit())
+    def on_displayclient_disconnect(self, *args):
+        self._dsc = None
+        print "ViewportWidget: disconnect ", args
 
-        vpw = ViewportWidget()
-        window.add(vpw)
+    def save_viewports(self, *args):
+        self.emit("viewports-saved", self.canvas.viewports)
 
-        window.connect("key_press_event", vpw.on_key_press)
-        window.connect("key_release_event", vpw.on_key_release)
-
-        window.show_all()
-
-        vpw.set_viewport_size(1024, 768)
-
+    def update_dsc(self, *args):
+        if self._dsc is not None:
+            self._dsc.draw_viewports([vp for vp in self.canvas.viewports if len(vp.nodes) >= 3])
 
 if __name__ == "__main__":
-    example = BasicWindow()
-    #test = TestWindow()
     import signal
+
+    class BasicWindow:
+        def __init__(self):
+            window = Gtk.Window()
+            window.connect("delete_event", lambda *args: Gtk.main_quit())
+
+            vpw = ViewportWidget()
+            window.add(vpw)
+
+            window.connect("key_press_event", vpw.on_key_press)
+            window.connect("key_release_event", vpw.on_key_release)
+
+            window.show_all()
+
+            vpw.set_viewport_size(1024, 768)
+
+
+    example = BasicWindow()
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Gtk3 screws up ctrl+c
     Gtk.main()

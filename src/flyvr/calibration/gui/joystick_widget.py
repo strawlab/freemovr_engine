@@ -28,7 +28,7 @@ DEFAULT_JOYSTICK_SETTINGS = {
     "ud_slow_axis": 4,
     "inv_lr": False,
     "inv_ud": False,
-    "move_speed": 1.0,
+    "move_speed": 10.0,
     "move_speed_slow": 0.1,
     "axis_cutoff": 0.2,
     }
@@ -61,11 +61,12 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
 
         self.joysticks = pyglet.input.get_joysticks()
         if not self.joysticks:
-            warnings.warn("No Joysticks were found. Connect Joystick and restart.")
-        for i, js in enumerate(self.joysticks):
-            js.open()
-            js.push_handlers(self)
-        print "Joystick: found", len(self.joysticks)
+            print "[WARNING] JoystickWidget: no joysticks found"
+        else:
+            for i, js in enumerate(self.joysticks):
+                js.open()
+                js.push_handlers(self)
+            print "[INFO] JoystickWidget: %d joysticks found" % len(self.joysticks)
 
         self.msgcls = collections.namedtuple('Joy', 'buttons axis')
         self._last = self.msgcls(buttons=(0,)*16, axis=(0,)*6)
@@ -79,8 +80,8 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
             }
 
         # Position integration
-        self._position = [0, 0]
-        self._speed = (0, 0)
+        self._position = [0.0, 0.0]
+        self._speed = (0.0, 0.0)
         GObject.timeout_add(30, self._position_integrate)
 
         self._lock = threading.Lock()
@@ -172,9 +173,18 @@ class PygletJoystickGObject(GObject.GObject, threading.Thread):
         if vx != 0 or vy != 0:
             self._position[0] += vx
             self._position[1] += vy
-            print "on:", self._position
-            GObject.idle_add(GObject.GObject.emit, self, "on-position-change", self._position)
+            # print "on:", self._position
+            GObject.idle_add(GObject.GObject.emit, self, "on-position-change", tuple(self._position))
         return True
+
+    def on_reset_position(self, dscwidget, dsc, con):
+        x, y = dsc.width/2, dsc.height/2
+        self.reset_position(x, y)
+
+    def reset_position(self, x, y):
+        self._position[0] = x
+        self._position[1] = y
+        GObject.idle_add(GObject.GObject.emit, self, "on-position-change", tuple(self._position))
 
     def apply_settings(self, settings):
         self.settings_button = {}

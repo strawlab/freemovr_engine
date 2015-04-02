@@ -327,7 +327,6 @@ class ClassStoreTreeViewGenerator(object):
             assert type(attr) == types.MethodType, "on_click is not a class method?"
             fun, fun_args = attr, tuple(on_click_args)
         args = (path, spinner, fun, fun_args)
-        print args
         t = threading.Thread(target=self._launch_threaded, args=args)
         t.daemon = True
         t.start()
@@ -350,7 +349,6 @@ class ClassStoreTreeViewGenerator(object):
             spinner.set_property("active", False)
 
     def _launch_threaded(self, path, spinner, fun, fun_args):
-        print "start"
         #GObject.idle_add(self._spinner_start, spinner)
         # start spinner
         #self._spinner_start(spinner)
@@ -364,8 +362,7 @@ class ClassStoreTreeViewGenerator(object):
             # ...
             # stop spinner
             #self._spinner_stop(spinner)
-            print "stop"
-
+            pass
 
 
     def _on_selection_handler(self, func, extra_args, selection):

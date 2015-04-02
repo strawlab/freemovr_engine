@@ -34,19 +34,16 @@ def prepare_input(camera, points_3d, points_2d, extrinsics_guess):
     assert is_2d_point_array(points_2d), "points_2d.shape != (N,2)"
     assert points_3d.shape[0] == points_2d.shape[0], "len(points_3d) != len(points_2d)"
 
-    if extrinsics_guess is None:
-        USE_EXTRINSIC_GUESS = True
-    else:
-        # a guess for the camera position was provided!
+    if extrinsics_guess is not None:
         try:
             rvec, tvec = extrinsics_guess
-        except (ValueError, TypeError):
-            raise ValueError("extrinsics_guess should be [rvec, tvec]")
-
-        assert is_rodrigues(rvec), "rvec is not a rodrigues rotation vector"
-        assert is_3d_vector(tvec), "tvec is not a 3d vector"
-
-        USE_EXTRINSIC_GUESS = False
+            assert is_rodrigues(rvec), "rvec is not a rodrigues rotation vector"
+            assert is_3d_vector(tvec), "tvec is not a 3d vector"
+        except (ValueError, TypeError, AssertionError):
+            print "extrinsics_guess should be [rvec, tvec]"
+            USE_EXTRINSIC_GUESS = True
+        else:
+            USE_EXTRINSIC_GUESS = False
 
     pts2d = numpy.array(points_2d, dtype=numpy.float64)
     pts3d = numpy.array(points_3d, dtype=numpy.float64)

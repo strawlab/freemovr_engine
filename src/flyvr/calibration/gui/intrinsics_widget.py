@@ -81,7 +81,12 @@ class CheckerboardPlotWidget(Gtk.DrawingArea):
                 if (n > 0) and (n < self._ncols):
                     if (m > 0) and (m < self._nrows):
                         ic += 1
-                        if ic == self._currpt:
+                        if ic < self._currpt:
+                            cr.set_source_rgb(0,1,0)
+                            #draw a circle at the corner
+                            cr.arc(x,y,5,0,2*math.pi)
+                            cr.fill()
+                        elif ic == self._currpt:
                             cr.set_source_rgb(1,0,0)
                             #draw a circle at the corner
                             cr.arc(x,y,5,0,2*math.pi)
@@ -104,7 +109,15 @@ class AddCheckerboardDialog(Gtk.Dialog):
 
         self._sze = ui.get_object('CK_size_entry')
         self._nr = ui.get_object('CK_n_rows_spinbutton')
+        self._nr.set_range(1, 256)
         self._nc = ui.get_object('CK_n_cols_spinbutton')
+        self._nc.set_range(1, 256)
+        self._button_ok = self.get_widget_for_response(Gtk.ResponseType.OK)
+        self._button_ok.set_sensitive(False)
+
+        self._colorbutton = ui.get_object('colorbutton1')
+        self._colorbutton.connect("color-set", self.on_color_change)
+        self.on_color_change(self._colorbutton)
 
         self.set_board_size(nrows,ncols,size)
 
@@ -116,6 +129,13 @@ class AddCheckerboardDialog(Gtk.Dialog):
 
         self._dsc = None
         self._dsc_pts = None
+
+    def on_color_change(self, colorbutton):
+        gdkcolor = colorbutton.get_color()
+        self._color = (gdkcolor.red >> 8,
+                       gdkcolor.green >> 8,
+                       gdkcolor.blue >> 8)
+        self.draw_points(None)
 
     def set_board_size(self, nrows, ncols, size):
         self._nr.set_value(nrows)
@@ -130,14 +150,38 @@ class AddCheckerboardDialog(Gtk.Dialog):
     def get_size(self):
         return float(self._sze.get_text())
 
-    def add_point(self, n, pt):
+    def get_max_num_pts(self):
+        return self.get_num_cols()*self.get_num_rows()
+
+    def set_next_point(self, n):
         self._npts_lbl.set_text('%d' % n)
-        self._checker.set_next_point(n+1)
+        self._checker.set_next_point(n + 1)
+        self._nr.set_sensitive(n == 0)
+        self._nc.set_sensitive(n == 0)
+        self._button_ok.set_sensitive(n == self.get_max_num_pts())
+
+    def add_point(self, n, pt):
+        self.set_next_point(n)
 
         if pt is not None and self._dsc is not None:
             x,y = pt
-            self._dsc_arr[y-2:y+2,x-2:x+2,:] = self._dsc.IMAGE_COLOR_WHITE
+            self._dsc_arr[y-2:y+2,x-2:x+2,:] = self._color
             self._dsc.show_pixels(self._dsc_arr)
+
+    def draw_points(self, points):
+        try:
+            if points is not None:
+                self._dsc_pts = points
+            N = len(self._dsc_pts)
+            self.set_next_point(N)
+            if self._dsc is not None:
+                self._dsc_arr[:,:,:] = (0x00, 0x00, 0x00)
+                for point in self._dsc_pts:
+                    x,y = point
+                    self._dsc_arr[y-2:y+2,x-2:x+2,:] = self._color
+                self._dsc.show_pixels(self._dsc_arr)
+        except Exception as e:
+            pass
 
     def run(self, dsc):
         self.add_point(0, None)
@@ -145,7 +189,9 @@ class AddCheckerboardDialog(Gtk.Dialog):
 
         if dsc.proxy_is_connected():
             self._dsc = dsc
-            self._dsc_arr = self._dsc.new_image(self._dsc.IMAGE_COLOR_BLACK)
+            # replace with code that generates an empty black array
+            self._dsc._draw_prepare((0, 0, 0))
+            self._dsc_arr = self._dsc._draw_array
         else:
             self._dsc = None
 
@@ -153,18 +199,25 @@ class AddCheckerboardDialog(Gtk.Dialog):
         resp = Gtk.Dialog.run(self)
 
         if dsc.proxy_is_connected():
-            self._dsc.show_pixels(self._dsc.new_image(self._dsc.IMAGE_COLOR_BLACK))
+            self._dsc._draw_prepare((0, 0, 0))
+            arr = self._dsc._draw_array
+            self._dsc.show_pixels(arr)
 
         return resp
 
 
 class IntrinsicsWidget(Gtk.VBox):
 
-    def __init__(self, displayclient_widget, info_widget):
+    __gsignals__ = {
+            "intrinsics-computed": (GObject.SignalFlags.RUN_FIRST, None, [object])
+    }
+
+    def __init__(self):
 
         Gtk.VBox.__init__(self)
 
-        self.displayclient_widget = displayclient_widget
+        self._dsc_connected = False
+        self._dsc = None
 
         # Get grid container from ui file
         ui_file_contents = pkgutil.get_data('flyvr.calibration.gui', 'pinhole-wizard.ui')
@@ -208,6 +261,7 @@ class IntrinsicsWidget(Gtk.VBox):
                                 size=DEFAULT_CHECKER_SIZE)
 
         self._current_checkerboard = {'points': []}
+        self._point_collection_started = False
 
         ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
         ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
@@ -225,10 +279,13 @@ class IntrinsicsWidget(Gtk.VBox):
             self.checkerboard_store.remove(sel[1])
 
     def on_CK_add(self, *args):
+        if not self._dsc_connected:
+            return
         self._current_checkerboard = {'points': []}
         try:
+            self._point_collection_started = True
             #reset current number of collected points, and current point
-            response = self.add_CK_dialog.run(self.displayclient_widget.get_displayclient())
+            response = self.add_CK_dialog.run(self._dsc)
             if response == Gtk.ResponseType.OK:
                 self._current_checkerboard['rows'] = self.add_CK_dialog.get_num_rows()
                 self._current_checkerboard['columns'] = self.add_CK_dialog.get_num_cols()
@@ -237,17 +294,43 @@ class IntrinsicsWidget(Gtk.VBox):
                 self._current_checkerboard['date_string'] = nowstr
                 self.checkerboard_store.append( [self._current_checkerboard] )
         finally:
+            self._point_collection_started = False
             self._current_checkerboard = {'points': []}
             self.add_CK_dialog.hide()
 
-    def on_button(self, buttons, axis, position):
-        if self.add_CK_dialog.is_focus():
-            if buttons["accept"]:
+    def on_joystick_button(self, joywidget, button):
+        if self._point_collection_started:
+            if button == "accept":
+                if len(self._current_checkerboard["points"]) >= self.add_CK_dialog.get_max_num_pts():
+                    return
+                position = tuple(joywidget._position)
                 self._current_checkerboard["points"].append(position)
-                npts = len(self._current_checkerboard["points"])
-                self.add_CK_dialog.add_point(npts, position)
+                self.add_CK_dialog.draw_points(self._current_checkerboard["points"])
+                #npts = len(self._current_checkerboard["points"])
+                #self.add_CK_dialog.add_point(npts, position)
+            elif button == "remove":
+                self._current_checkerboard["points"] = self._current_checkerboard["points"][:-1]
+                #npts = len(self._current_checkerboard["points"])
+                #self.add_CK_dialog.set_next_point(npts)
+                self.add_CK_dialog.draw_points(self._current_checkerboard["points"])
+            elif button == "nextitem":
+                print "nextitem"
+            elif button == "previtem":
+                print "previtem"
+
+
+    def on_displayclient_connect(self, calling_widget, dsc, load_config):
+        self._dsc = calling_widget
+        self._dsc_connected = True
+        # ACTIVATE BUTTONS
+
+    def on_displayclient_disconnect(self, *args):
+        self._dsc_connected = False
+        # DEACTIVATE BUTTONS
 
     def on_compute_intrinsics(self, *args):
+        if not self._dsc_connected:
+            return
         # We have to convert the rows to the right type for intrinsics calibration
         cornerss, rowss, colss, dims = [], [], [], []
         for row in self.checkerboard_store:
@@ -257,11 +340,9 @@ class IntrinsicsWidget(Gtk.VBox):
             dims.append(r['size'])
             cornerss.append(list(r['points']))
 
-        corners_boards = helper_make_corners_boards(cornerss, rowss, colss, dims)
-        intrinsics_yaml = intrinsics_from_checkerboards(corners_boards,
-                                        self.displayclient_widget.get_displayclient_width(),
-                                        self.displayclient_widget.get_displayclient_height())
+        if cornerss:
+            corners_boards = helper_make_corners_boards(cornerss, rowss, colss, dims)
+            intrinsics_yaml = intrinsics_from_checkerboards(corners_boards, self._dsc.width, self._dsc.height)
 
-        # XXX: self.emit(""intrinsics_yaml)
-
+            self.emit("intrinsics-computed", intrinsics_yaml)
 
