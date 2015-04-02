@@ -332,10 +332,14 @@ cdef class MyNode:
         rospy.loginfo("gamma correction: %s" % self._gamma)
 
         self._posix_sched_fifo = self._config_dict.get('posix_sched_fifo', None)
-        rospy.loginfo("posix scheduler FIFO priority: %s" % self._posix_sched_fifo)
+        rospy.loginfo("requested posix scheduler FIFO priority: %s" % self._posix_sched_fifo)
         if self._posix_sched_fifo is not None:
             import posix_sched
-            sched_params = posix_sched.SchedParam(self._posix_sched_fifo)
+            value = self._posix_sched_fifo
+            if self._posix_sched_fifo == 'max':
+                value = posix_sched.get_priority_max( posix_sched.FIFO )
+            rospy.loginfo("actual posix scheduler FIFO priority: %s" % value)
+            sched_params = posix_sched.SchedParam(value)
             posix_sched.setscheduler(0, posix_sched.FIFO, sched_params)
 
         self._red_max = self._config_dict.get('red_max', False)
