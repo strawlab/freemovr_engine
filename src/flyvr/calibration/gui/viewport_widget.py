@@ -1,9 +1,19 @@
 #!/usr/bin/env python
 from gi.repository import Gtk
-from viewport_widget_lib import Sprite, Scene, Graphics
-from extra_widgets import ClassStoreTreeViewGenerator
+
+try:
+    import roslib
+except ImportError:
+    warnings.warn("Can't import roslib. Make sure that flyvr python package is in your PYTHONPATH.")
+else:
+    roslib.load_manifest("flyvr")
+
+from flyvr.calibration.gui.viewport_widget_lib import Sprite, Scene, Graphics
+from flyvr.calibration.gui.extra_widgets import ClassStoreTreeViewGenerator
+
 import itertools
 import re
+
 
 def darker_color(fill_color):
     assert len(fill_color) == 4

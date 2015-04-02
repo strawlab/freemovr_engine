@@ -3,10 +3,15 @@
 import math
 import pkgutil
 import datetime
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
-import roslib
-roslib.load_manifest("flyvr")
+try:
+    import roslib
+except ImportError:
+    warnings.warn("Can't import roslib. Make sure that flyvr python package is in your PYTHONPATH.")
+else:
+    roslib.load_manifest("flyvr")
+
 from flyvr.calibration.intrinsics import (helper_make_corners_boards,
                                           intrinsics_from_checkerboards)
 

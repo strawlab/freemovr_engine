@@ -6,9 +6,14 @@ import collections
 import numpy as np
 import pkgutil
 
-import roslib; roslib.load_manifest('flyvr')
-roslib.load_manifest('visualization_msgs')
-roslib.load_manifest('camera_calibration')
+try:
+    import roslib
+except ImportError:
+    warnings.warn("Can't import roslib. Make sure that flyvr python package is in your PYTHONPATH.")
+else:
+    roslib.load_manifest("flyvr")
+    roslib.load_manifest('visualization_msgs')
+    roslib.load_manifest('camera_calibration')
 
 import flyvr.simple_geom as simple_geom
 #import flyvr.dlt as dlt

@@ -10,8 +10,12 @@ GObject.threads_init()
 import pyglet
 import threading
 
-import roslib
-roslib.load_manifest('flyvr')
+try:
+    import roslib
+except ImportError:
+    warnings.warn("Can't import roslib. Make sure that flyvr python package is in your PYTHONPATH.")
+else:
+    roslib.load_manifest("flyvr")
 
 DEFAULT_JOYSTICK_SETTINGS = {
     "accept": 0,

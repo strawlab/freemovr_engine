@@ -5,8 +5,12 @@ import scipy.misc
 import warnings
 import yaml
 
-import roslib
-roslib.load_manifest('flyvr')
+try:
+    import roslib
+except ImportError:
+    warnings.warn("Can't import roslib. Make sure that flyvr python package is in your PYTHONPATH.")
+else:
+    roslib.load_manifest("flyvr")
 
 import flyvr.exr as exr
 import flyvr.simple_geom as simple_geom
