@@ -54,6 +54,15 @@ osg::Quat parse_quat(json_t* root) {
     return osg::Quat(x,y,z,w);
 }
 
+bool parse_bool(json_t* root) {
+    json_t *data_json;
+
+    data_json = json_object_get(root, "data");
+    flyvr_assert(json_is_boolean(data_json));
+
+    return json_is_true(data_json);
+}
+
 int parse_int(json_t* root) {
     json_t *data_json;
 
