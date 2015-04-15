@@ -25,6 +25,7 @@ from flyvr.calibration.extrinsics import ExtrinsicsAlgorithms
 
 from pymvg.camera_model import CameraModel
 
+import termcolor
 
 class ViewportExtrinsicCalibration(object):
 
@@ -43,19 +44,17 @@ class ViewportExtrinsicCalibration(object):
         return self.camera is not None
 
     def calibrate(self, camera, method, xy, XYZ):
-        print "Calibrating using:"
-        print "- method:", method
-        print "- xy:"
-        print xy
-        print "- XYZ:"
-        print XYZ
+        print termcolor.colored("Calibrating using:", "red"), termcolor.colored(method, "red")
         method_dict = ExtrinsicsAlgorithms[method]
         calfunc = method_dict['function']
         intrinsics_required = method_dict['requires-intrinsics']
         R, T, _ = calfunc(camera, XYZ, xy, extrinsics_guess=None, params={})
+        print termcolor.colored("got:", "green")
+        print "R:", R
+        print "T:", T
         # camera form ...
-        self.camera = CameraModel.load_camera_from_ROS_tf(translation=T, rotation=R)
-        print "calibrated"
+        # self.camera = CameraModel.load_camera_from_ROS_tf(translation=T, rotation=R)
+        print termcolor.colored("calibrated", "green")
 
     def render_beachball(self, *args):
         pass
@@ -368,6 +367,12 @@ class ExtrinsicsWidget(Gtk.VBox):
                 if show:
                     P2P.append((u,v,x,y))
         return P2P
+
+    def extrinsics_as_list(self):
+        return []
+
+    def extrinsics_from_list(self, data):
+        pass
 
     def on_displayclient_connect(self, calling_widget, dsc, load_config):
         self._dsc = calling_widget

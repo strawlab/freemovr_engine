@@ -63,14 +63,10 @@ class YAMLFileSaveDialog(Gtk.FileChooserDialog):
         # force confirmation when overwriting
         self.set_do_overwrite_confirmation(True)
 
-    def save_yaml(self):
-        # TODO:
-        # should safe:
-        # - checkerboard_store
-        # - point_store
-        # - virtual_displays
-        # - display_geometry
-        pass
+    def save_yaml(self, data):
+        fname = self.get_filename()
+        with open(fname, 'w+') as f:
+            f.write(yaml.safe_dump(data))
 
 
 class EXRFileSaveDialog(Gtk.FileChooserDialog):

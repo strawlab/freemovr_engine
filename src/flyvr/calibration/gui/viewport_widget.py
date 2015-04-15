@@ -126,7 +126,7 @@ class Viewport(object):
         stroke_color = darker_color(fill_color)
         for p in points:
             vp.nodes.append(Node(p[0], p[1],
-                                 fill_color=fill_color, stroke_color=stroke_color))
+                                 fill_color=fill_color))
         return vp
 
     def to_list(self):
@@ -438,6 +438,24 @@ class ViewportWidget(Gtk.VBox):
 
     def save_viewports(self, *args):
         self.emit("viewports-saved", self.canvas.viewports)
+
+    def viewports_as_list(self):
+        OUT = {}
+        for row in self._liststore:
+            vp = row[0]
+            OUT[vp.name] = vp.to_list()
+        return OUT
+
+    def viewports_from_list(self, data):
+        self._liststore.clear()
+        self.canvas.clear()
+        for k, v in sorted(data.items()):
+            vp = Viewport.from_list(v, name=k,
+                    fill_color=viewportcolors.next())
+            vp.set_active(False)
+            self._liststore.append([vp])
+            for node in vp.nodes:
+                self.canvas.add_child(node)
 
     def update_dsc(self, *args):
         if self._dsc is not None:

@@ -2,63 +2,13 @@ import numpy
 import numpy.linalg
 import scipy.optimize
 
-from .common import prepare_input, rotationmatrix_to_rodrigues, rodrigues_to_rotationmatrix
+from .common import prepare_input, rodrigues_to_rotationmatrix
 
-import cv2
-
-def create_matrix_A(hom_points_3d, hom_points_2d):
-
-    assert hom_points_3d.ndim == 2 and hom_points_3d.shape[1] == 4
-    assert hom_points_2d.ndim == 2 and hom_points_2d.shape[1] == 3
-    assert hom_points_3d.shape[0] == hom_points_2d.shape[0]
-
-    N = hom_points_3d.shape[0]
-
-    _A = []
-    for i in range(N):
-        X, Y, Z, S = hom_points_3d[i]
-        u, v, w = hom_points_2d[i]
-
-        _A.append([  0,   0,   0,   0, -w*X, -w*Y, -w*Z, -w*S,  v*X,  v*Y,  v*Z,  v*S])
-        _A.append([w*X, w*Y, w*Z, w*S,    0,    0,    0,    0, -u*X, -u*Y, -u*Z, -u*S])
-
-    A = numpy.array(_A, dtype=numpy.float64)
-    assert A.shape == (2*N, 12)
-    return A
-
-
-def get_normalize_2d_matrix(points_2d):
-    # normalize 2d points to mean 0 and rms sqrt(2)
-    pts_mean = points_2d.mean(axis=0)
-    centered_pts_2d = points_2d - pts_mean
-    s = 1 / numpy.linalg.norm(centered_pts_2d, axis=1).mean()
-    xm, ym = pts_mean
-    T = numpy.array([[s, 0, -s*xm],
-                     [0, s, -s*ym],
-                     [0, 0,  1 ]], dtype=numpy.float64)
-    return T
-
-
-def get_normalize_3d_matrix(points_3d):
-    # normalize 3d points to mean 0 and rms sqrt(2)
-    pts_mean = points_3d.mean(axis=0)
-    centered_pts_3d = points_3d - pts_mean
-    s = 1 / numpy.linalg.norm(centered_pts_3d, axis=1).mean()
-    xm, ym, zm = pts_mean
-    U = numpy.array([[s, 0, 0, -s*xm],
-                     [0, s, 0, -s*ym],
-                     [0, 0, s, -s*zm],
-                     [0, 0, 0,  1 ]], dtype=numpy.float64)
-    return U
-
-
-def get_homogeneous_coordinates(points):
-    assert points.ndim == 2
-    assert points.shape[1] in [2, 3]
-    if points.shape[1] == 3:
-        assert not numpy.allclose(points[:,2], 1.)
-    return numpy.hstack((points, numpy.ones((points.shape[0], 1))))
-
+from pymvg.calibration import (create_matrix_A,
+                               get_normalize_2d_matrix,
+                               get_normalize_3d_matrix,
+                               get_homogeneous_coordinates
+                              )
 
 def get_normalized_points_2d(points_2d):
     T = get_normalize_2d_matrix(points_2d)
@@ -72,6 +22,7 @@ def get_normalized_points_2d(points_2d):
 
 def get_normalized_points_3d(points_3d):
     U = get_normalize_3d_matrix(points_3d)
+    Uinv = numpy.linalg.inv(U)
     hom_points_3d = get_homogeneous_coordinates(points_3d)
     normalized_points_3d = numpy.empty(hom_points_3d.shape)
     for i, x in enumerate(hom_points_3d):
@@ -80,7 +31,7 @@ def get_normalized_points_3d(points_3d):
 
 def _dlt(nhpts3d, nhpts2d):
     # get matrix A
-    A = create_matrix_A(normalized_points_3d, normalized_points_2d)
+    A = create_matrix_A(nhpts3d, nhpts2d)
 
     # solve via singular value decomposition
     # XXX: in numpy the returned V is already transposed!
@@ -97,7 +48,7 @@ def direct_linear_transform(camera, points_3d, points_2d, extrinsics_guess=None,
     points_3d, points_2d, K, distortion, extguess = prepare_input(camera, points_3d, points_2d, extrinsics_guess)
 
     # Undistort
-    points_2d = cv2.undistort(points_2d.reshape(-1,1,2), camera.get_K(), camera.get_D())
+    points_2d = camera.undistort(points_2d.reshape(-1,2))
     points_2d = points_2d.reshape(-1,2)
 
     # Normalize 2d points and keep transformation matrix
@@ -116,7 +67,9 @@ def direct_linear_transform(camera, points_3d, points_2d, extrinsics_guess=None,
     Kinv = numpy.linalg.inv(K)
     RT = numpy.dot(Kinv, P)
     # TODO: RODRIGUES!
-    return rotationmatrix_to_rodrigues(RT[:,:3]), RT[:,3], None
+
+    #return rotationmatrix_to_rodrigues(RT[:,:3]), RT[:,3], None
+    return RT[:,:3], RT[:,3], None
 
 direct_linear_transform.params = {
         'extrinsic_guess_support': False
@@ -126,7 +79,7 @@ direct_linear_transform.params = {
 def hartley_gold_algorithm(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
 
     # Undistort
-    points_2d = cv2.undistort(points_2d.reshape(-1,1,2), camera.get_K(), camera.get_D())
+    points_2d = camera.undistort(points_2d.reshape(-1,2))
     points_2d = points_2d.reshape(-1,2)
 
     # Normalize 2d points and keep transformation matrix
@@ -182,7 +135,8 @@ def hartley_gold_algorithm(camera, points_3d, points_2d, extrinsics_guess=None, 
     Kinv = numpy.linalg.inv(K)
     RT = numpy.dot(Kinv, P)
     # TODO: RODRIGUES!
-    return rotationmatrix_to_rodrigues(RT[:,:3]), RT[:,3], None
+    return RT[:,:3], RT[:,3], None
+    #return rotationmatrix_to_rodrigues(RT[:,:3]), RT[:,3], None
 
 hartley_gold_algorithm.params = {
         'extrinsics_guess_support': True,

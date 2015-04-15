@@ -20,6 +20,7 @@ from flyvr.calibration.gui.viewport_widget import ViewportWidget
 from flyvr.calibration.gui.joystick_widget import JoystickConfigureDialog, PygletJoystickGObject
 from flyvr.calibration.gui.extrinsics_widget import ExtrinsicsWidget
 from flyvr.calibration.gui.info_widget import InfoWidget
+from flyvr.calibration.gui.file_widgets import YAMLFileLoadDialog, YAMLFileSaveDialog
 #from flyvr.calibration.gui.debugplot_widget import DebugplotWidget
 
 
@@ -120,10 +121,11 @@ class PinholeWizard(object):
 
 
         # Add menu items
-        #ui.get_object('file_open_menu_item').connect('activate', self.on_open)
-        #ui.get_object('file_save_menu_item').connect('activate', self.on_save)
-        #ui.get_object('file_saveas_menu_item').connect('activate', self.on_save_as)
-        #ui.get_object('file_quit_menu_item').connect('activate', rosgobject.main_quit)
+        self.fname = None
+        ui.get_object('file_load_config').connect('activate', self.on_load)
+        ui.get_object('file_save_config').connect('activate', self.on_save, self.fname)
+        ui.get_object('file_saveas_config').connect('activate', self.on_save_as, None)
+        ui.get_object('file_quit_menu_item').connect('activate', rosgobject.main_quit)
         #ui.get_object('help_about_menu_item').connect('activate', self.on_help_about)
 
         # Configure the DisplayClientWidget
@@ -134,6 +136,71 @@ class PinholeWizard(object):
         # initializing done.
         self.main_window.show_all()
         print "[INFO] PinholeWizard: initialized"  # TODO: log.
+
+    def on_load(self, *args):
+        print args
+        yaml_file_loader = YAMLFileLoadDialog()
+        try:
+            response = yaml_file_loader.run()
+            if response == Gtk.ResponseType.OK:
+                config = yaml_file_loader.load_yaml()
+                if config.get('intrinsics', False):
+                    self.intrinsics_widget.intrinsics_from_list(config['intrinsics'])
+                if config.get('viewports', False):
+                    self.viewport_widget.viewports_from_list(config['viewports'])
+                if config.get('extrinsics', False):
+                    self.extrinsics_widget.extrinsics_from_list(config['extrinsics'])
+        finally:
+            yaml_file_loader.destroy()
+
+    def on_save(self, *args):
+        print args
+        intrinsics = self.intrinsics_widget.intrinsics_as_list()
+        viewports = self.viewport_widget.viewports_as_list()
+        extrinsics = self.extrinsics_widget.extrinsics_as_list()
+        out_dict = {}
+        if intrinsics:
+            out_dict['intrinsics'] = intrinsics
+        if viewports:
+            out_dict['viewports'] = viewports
+        if extrinsics:
+            out_dict['extrinsics'] = extrinsics
+        if out_dict:
+            yaml_file_saver = YAMLFileSaveDialog()
+            try:
+                response = yaml_file_saver.run()
+                if response == Gtk.ResponseType.OK:
+                    yaml_file_saver.save_yaml(out_dict)
+            finally:
+                yaml_file_saver.destroy()
+        else:
+            pass  # TODO
+
+    def on_save_as(self, *args):
+        print args
+        intrinsics = self.intrinsics_widget.intrinsics_as_list()
+        viewports = self.viewport_widget.viewports_as_list()
+        extrinsics = self.extrinsics_widget.extrinsics_as_list()
+        out_dict = {}
+        if intrinsics:
+            out_dict['intrinsics'] = intrinsics
+        if viewports:
+            out_dict['viewports'] = viewports
+        if extrinsics:
+            out_dict['extrinsics'] = extrinsics
+        if out_dict:
+            yaml_file_saver = YAMLFileSaveDialog()
+            try:
+                response = yaml_file_saver.run()
+                if response == Gtk.ResponseType.OK:
+                    yaml_file_saver.save_yaml(out_dict)
+            finally:
+                yaml_file_saver.destroy()
+        else:
+            pass  # TODO
+
+
+
 
 
 if __name__ == "__main__":

@@ -346,3 +346,11 @@ class IntrinsicsWidget(Gtk.VBox):
 
             self.emit("intrinsics-computed", intrinsics_yaml)
 
+    def intrinsics_as_list(self, *args):
+        return [row[0] for row in self.checkerboard_store]
+
+    def intrinsics_from_list(self, cblist):
+        self.checkerboard_store.clear()
+        for r in cblist:
+            self.checkerboard_store.append([r])
+
