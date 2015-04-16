@@ -4,7 +4,7 @@ import os
 import collections
 import itertools
 
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk
 
 import numpy as np
 import pkgutil
@@ -296,6 +296,7 @@ class ExtrinsicsWidget(Gtk.VBox):
             self.cb_viewports.append(vp.name, vp.name)
             if i == 0:
                 self.cb_viewports.set_active(0)
+        self.on_points_updated(update_display=False)
 
     def on_joystick_button(self, joywidget, button):
         if button == "accept":
@@ -342,7 +343,7 @@ class ExtrinsicsWidget(Gtk.VBox):
                 idx = path.get_indices()[0]
                 self.p2p_treeview.set_cursor(max(0, idx-1))
 
-    def on_points_updated(self, *args):
+    def on_points_updated(self, *args, **kwargs):
         VPS = { vp.viewportname:vp for (vp,) in self.vdisp_store }
         P2P = collections.defaultdict(list)
         for row in self.point_store:
@@ -350,14 +351,9 @@ class ExtrinsicsWidget(Gtk.VBox):
             P2P[vpname].append(((u,v,x,y)))
         for key, vpc in VPS.items():
             vpc.p2p = P2P[key]
-        self.update_bg_image()
+        if kwargs.get('update_display', True):
+            self.update_bg_image()
 
-        #vdisps = collections.defaultdict(int)
-        #for row in point_store:
-        #    vdisps[ row[VDISP] ] += 1
-        #for row in vdisp_store:
-        #    vdisp = row[VS_VDISP]
-        #    row[VS_COUNT] = vdisps[ vdisp ]
 
     def get_p2p_from_viewportname(self, viewportname):
         P2P = []
@@ -369,10 +365,24 @@ class ExtrinsicsWidget(Gtk.VBox):
         return P2P
 
     def extrinsics_as_list(self):
-        return []
+        OUT = []
+        for row in self.point_store:
+            viewport, texU, texV, displayX, displayY, show_point = row
+            point = {
+                'viewport': viewport,
+                'u': texU,
+                'v': texV,
+                'x': displayX,
+                'y': displayY
+               }
+            OUT.append(point)
+        return OUT
 
     def extrinsics_from_list(self, data):
-        pass
+        self.point_store.clear()
+        for d in data:
+            p = [d['viewport'], d['u'], d['v'], d['x'], d['y'], True]
+            self.point_store.append(p)
 
     def on_displayclient_connect(self, calling_widget, dsc, load_config):
         self._dsc = calling_widget
@@ -393,8 +403,6 @@ class ExtrinsicsWidget(Gtk.VBox):
 
     def update_bg_image(self, *args):
 
-        # arr = np.zeros( (dsc.height, dsc.width, 3), dtype=np.uint8 )
-        # di = dsc.get_display_info()
         if not self._dsc_connected:
             return
 
@@ -407,52 +415,20 @@ class ExtrinsicsWidget(Gtk.VBox):
             viewport = row[0]
             if viewport.calibrated and viewport.show_beachball:
                 # IF BEACHBALL
-                """
-                    # FIXME
-                    farr = self.geom.compute_for_camera_view( cam,
-                                                              what='texture_coords' )
+                cam = viewport.camera
+                # generate an array which contains the uv coordinates for each pixel
+                uv_arr = self.geom.compute_for_camera_view(cam, what='texture_coords')
+                # use this array to calculate the beachball coloring
+                bb_arr = simple_geom.tcs_to_beachball(uv_arr)
+                    #u = farr[:,:,0]
+                    #good = ~np.isnan( u )
+                    #arr2 = simple_geom.tcs_to_beachball(farr)
+                mask = np.zeros(bb_arr.shape[:2], dtype=np.uint8)
+                fill_polygon.fill_polygon(viewport.viewport.to_list(), mask)
+                if np.max(mask)==0: # no mask
+                    mask += 1
 
-                    u = farr[:,:,0]
-                    good = ~np.isnan( u )
-                    print 'showing beachball for %r'%row[VS_VDISP]
-                    print '  npix0',np.sum( np.nonzero( good ) )
-
-                    arr2 = simple_geom.tcs_to_beachball(farr)
-
-                    h,w = arr2.shape[:2]
-                    maskarr = np.zeros( (h,w), dtype=np.uint8 )
-                    polygon_verts = d['viewport']
-                    fill_polygon.fill_polygon(polygon_verts, maskarr)
-                    if np.max(maskarr)==0: # no mask
-                        maskarr += 1
-
-                    arr3 = maskarr[:,:,np.newaxis]*arr2
-
-                    print '  npix1',np.sum(np.nonzero(arr2))
-                    arr = arr+arr3
-
-                    print '  npix2',np.sum(np.nonzero(arr))
-
-                # draw individual points ---------------
-
-                showing = []
-                for row in point_store:
-                    if not row[SHOWPT]:
-                        continue
-                    xf,yf = row[DISPLAYX], row[DISPLAYY]
-                    try:
-                        x = int(np.round(xf))
-                        y = int(np.round(yf))
-                    except ValueError:
-                        # Likely cannot convert nan to integer.
-                        continue
-                    if 0 <= x and x < dsc.width:
-                        if 0 <= y and y < dsc.height:
-                            arr[y,x] = 255
-                            showing.append( (x,y) )
-                dsc.show_pixels(arr)
-                return arr
-                """
+                self._dsc_arr += mask[:,:,np.newaxis] * bb_arr
             else:
                 # IF NO BEACHBALL
                 for (_, _, x, y) in self.get_p2p_from_viewportname(viewport.viewportname):
@@ -461,165 +437,3 @@ class ExtrinsicsWidget(Gtk.VBox):
 
         self._dsc.show_pixels(self._dsc_arr)
 
-
-"""
-    # setup vdisp combobox ----------------
-    vdisp_store = Gtk.ListStore(str,int,bool,int,float,bool,object,bool)
-
-    # columns in self.vdisp_store
-    VS_VDISP = 0
-    VS_COUNT = 1
-    VS_CALIBRATION_RUNNING = 2
-    VS_CALIBRATION_PROGRESS = 3
-    VS_MRE = 4
-    VS_SHOW_BEACHBALL = 5
-    VS_CAMERA_OBJECT = 6
-    # create vdisp treeview -----------------------
-
-    treeview = _ui.get_object('vdisp_treeview')
-    treeview.set_model(vdisp_store)
-
-    renderer = Gtk.CellRendererText()
-    column = Gtk.TreeViewColumn("virtual display", renderer, text=VS_VDISP)
-    column.set_sort_column_id(VS_VDISP)
-    treeview.append_column(column)
-
-    renderer = Gtk.CellRendererText()
-    column = Gtk.TreeViewColumn("count", renderer, text=VS_COUNT)
-    column.set_sort_column_id(VS_COUNT)
-    treeview.append_column(column)
-
-    def _pulse_spinner(*args):
-        if vdisp_store:
-            for row in vdisp_store:
-                row[VS_CALIBRATION_PROGRESS] += 1
-        return True
-
-    def launch_calibration(method, vdisp):
-
-        def _pump_ui():
-            if os.environ.get('RUNNING_NOSE') != '1':
-                Gtk.main_iteration_do(False) #run once, no block
-                while Gtk.events_pending():  #run remaining
-                    Gtk.main_iteration()
-
-        orig_data = []
-        for row in point_store:
-            if row[VDISP]==vdisp:
-                orig_data.append( [ row[TEXU], row[TEXV], row[DISPLAYX], row[DISPLAYY] ] )
-        orig_data = np.array(orig_data)
-        uv = orig_data[:,:2]
-        # FIXME:
-        XYZ = self.geom.model.texcoord2worldcoord(uv)
-        xy = orig_data[:,2:4]
-
-        assert method in EXTRINSIC_CALIBRATION_METHODS
-
-        if method in ('DLT','RANSAC DLT'):
-            ransac = method.startswith('RANSAC')
-            #r = dlt.dlt(XYZ, xy, ransac=ransac )
-            #c1 = CameraModel.load_camera_from_M( r['pmat'],
-            #                                           width=self.dsc.width,
-            #                                           height=self.dsc.height,
-            #                                           )
-
-            #_pump_ui()
-
-            if 0:
-                c2 = c1.get_flipped_camera()
-
-                # slightly hacky way to find best camera direction
-                obj = self.geom.model.get_center()
-
-                d1 = np.sqrt( np.sum( (c1.get_lookat() - obj)**2 ))
-                d2 = np.sqrt( np.sum( (c2.get_lookat() - obj)**2 ))
-                if d1 < d2:
-                    #print 'using normal camera'
-                    camera = c1
-                else:
-                    print 'using flipped camera'
-                    camera = c2
-            elif 1:
-                farr = self.geom.compute_for_camera_view( c1,
-                                                          what='texture_coords' )
-
-                _pump_ui()
-
-                u = farr[:,:,0]
-                good = ~np.isnan( u )
-                npix=np.sum( np.nonzero( good ) )
-                if npix==0:
-                    print 'using flipped camera, otherwise npix = 0'
-                    camera = c1.get_flipped_camera()
-                else:
-                    camera = c1
-            else:
-                camera = c1
-        elif method in ['extrinsic only','iterative extrinsic only']:
-            assert self.display_intrinsic_cam is not None, 'need intrinsic calibration'
-
-            di = self.dsc.get_display_info()
-
-            mirror = None
-            if 'virtualDisplays' in di:
-                found = False
-                for d in di['virtualDisplays']:
-                    if d['id'] == vdisp:
-                        found = True
-                        mirror = d.get('mirror',None)
-                        break
-                assert found
-
-
-            if mirror is not None:
-                cami = self.display_intrinsic_cam.get_mirror_camera(axis=mirror)
-            else:
-                cami = self.display_intrinsic_cam
-
-            _pump_ui()
-
-            if method == 'iterative extrinsic only':
-                #result = fit_extrinsics_iterative(cami,XYZ,xy)
-                pass
-            else:
-                #result = fit_extrinsics(cami,XYZ,xy)
-                pass
-
-            _pump_ui()
-
-            c1 = result['cam']
-            if 1:
-                farr = self.geom.compute_for_camera_view( c1,
-                                                          what='texture_coords' )
-
-                _pump_ui()
-
-                u = farr[:,:,0]
-                good = ~np.isnan( u )
-                npix=np.sum( np.nonzero( good ) )
-                if npix==0:
-                    print 'using flipped camera, otherwise npix = 0'
-                    camera = c1.get_flipped_camera()
-                else:
-                    camera = c1
-            else:
-                camera = c1
-            del result
-        else:
-            raise ValueError('unknown calibration method %r'%method)
-
-        _pump_ui()
-
-        projected_points = camera.project_3d_to_pixel( XYZ )
-        reproj_error = np.sum( (projected_points - xy)**2, axis=1)
-        mre = np.mean(reproj_error)
-
-        for row in vdisp_store:
-            if row[VS_VDISP]==vdisp:
-                row[VS_MRE] = mre
-                row[VS_CAMERA_OBJECT] = camera
-
-        _pump_ui()
-        update_bg_image()
-
-"""
