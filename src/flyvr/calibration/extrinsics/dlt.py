@@ -48,8 +48,8 @@ def direct_linear_transform(camera, points_3d, points_2d, extrinsics_guess=None,
     points_3d, points_2d, K, distortion, extguess = prepare_input(camera, points_3d, points_2d, extrinsics_guess)
 
     # Undistort
-    points_2d = camera.undistort(points_2d.reshape(-1,2))
-    points_2d = points_2d.reshape(-1,2)
+    #points_2d = camera.undistort(points_2d.reshape(-1,2))
+    #points_2d = points_2d.reshape(-1,2)
 
     # Normalize 2d points and keep transformation matrix
     normalized_points_2d, _, Tinv = get_normalized_points_2d(points_2d)
@@ -64,12 +64,17 @@ def direct_linear_transform(camera, points_3d, points_2d, extrinsics_guess=None,
     P = numpy.dot(Tinv, numpy.dot(P_n, U))
 
     # Recover rvec and tvec
-    Kinv = numpy.linalg.inv(K)
-    RT = numpy.dot(Kinv, P)
-    # TODO: RODRIGUES!
+    #Kinv = numpy.linalg.inv(K)
+    #RT = numpy.dot(Kinv, P[:,:3])
+
+    #C = numpy.dot(-numpy.linalg.inv(P[:,:3]), P[:,3])
 
     #return rotationmatrix_to_rodrigues(RT[:,:3]), RT[:,3], None
-    return RT[:,:3], RT[:,3], None
+    #print "RT", RT
+    #print numpy.linalg.det(RT)
+    #return RT[:,:], C, None
+
+    return P
 
 direct_linear_transform.params = {
         'extrinsic_guess_support': False
@@ -78,9 +83,11 @@ direct_linear_transform.params = {
 
 def hartley_gold_algorithm(camera, points_3d, points_2d, extrinsics_guess=None, params={}):
 
+    points_3d, points_2d, K, distortion, extguess = prepare_input(camera, points_3d, points_2d, extrinsics_guess)
+
     # Undistort
-    points_2d = camera.undistort(points_2d.reshape(-1,2))
-    points_2d = points_2d.reshape(-1,2)
+    #points_2d = camera.undistort(points_2d.reshape(-1,2))
+    #points_2d = points_2d.reshape(-1,2)
 
     # Normalize 2d points and keep transformation matrix
     normalized_points_2d, T, Tinv = get_normalized_points_2d(points_2d)
@@ -90,7 +97,6 @@ def hartley_gold_algorithm(camera, points_3d, points_2d, extrinsics_guess=None, 
     if extrinsics_guess is None:
         Pvec_n = _dlt(normalized_points_3d, normalized_points_2d)
     else:
-        K = camera.K
         assert extrinsics_guess.shape == (3, 4)
         rvec, tvec = extrinsics_guess
         RT = numpy.hstack((rodrigues_to_rotationmatrix(rvec), tvec.T))
@@ -131,11 +137,12 @@ def hartley_gold_algorithm(camera, points_3d, points_2d, extrinsics_guess=None, 
     P_n = Pvec_n.reshape((3, 4))
     # Denormalize
     P = numpy.dot(Tinv, numpy.dot(P_n, U))
+    return P
     # Recover rvec and tvec
-    Kinv = numpy.linalg.inv(K)
-    RT = numpy.dot(Kinv, P)
+    #Kinv = numpy.linalg.inv(K)
+    #RT = numpy.dot(Kinv, P)
     # TODO: RODRIGUES!
-    return RT[:,:3], RT[:,3], None
+    #return RT[:,:3], RT[:,3], None
     #return rotationmatrix_to_rodrigues(RT[:,:3]), RT[:,3], None
 
 hartley_gold_algorithm.params = {

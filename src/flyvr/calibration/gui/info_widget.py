@@ -65,8 +65,9 @@ class InfoWidget(Gtk.VBox):
             self.viewports_display.set_text("\n".join(VP))
         self.indicator['viewports'].set_from_stock(Gtk.STOCK_YES if VPI else Gtk.STOCK_NO, Gtk.IconSize.BUTTON)
 
-    def on_extrinisics_computed(self, *args):
-        pass
+    def on_extrinsics_computed(self, extrinsicswidget, *args):
+        self.exr_button.connect("clicked", extrinsicswidget.save_exr_file)
+        self.exr_button.set_sensitive(True)
 
     def on_displayclient_connect(self, *args):
         pass

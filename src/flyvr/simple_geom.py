@@ -757,3 +757,18 @@ def tcs_to_beachball(farr):
                          ])
     bbim = colors[ ii ]
     return bbim
+
+    """
+    out = np.zeros(farr.shape[:2] + (3,), dtype=np.uint8)
+
+    u[np.isnan(u)] = 0.
+    v[np.isnan(v)] = 0.
+
+    out[:,:,0] = (u*255)
+    out[:,:,1] = v*255
+
+    out[(v > 0.45) & (v < 0.55),:] = [0, 0, 255]
+
+    return out
+    """
+

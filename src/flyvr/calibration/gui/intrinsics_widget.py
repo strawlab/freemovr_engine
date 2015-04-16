@@ -304,6 +304,7 @@ class IntrinsicsWidget(Gtk.VBox):
                 if len(self._current_checkerboard["points"]) >= self.add_CK_dialog.get_max_num_pts():
                     return
                 position = tuple(joywidget._position)
+                position = (position[0] % self._dsc.width, position[1] % self._dsc.height)
                 self._current_checkerboard["points"].append(position)
                 self.add_CK_dialog.draw_points(self._current_checkerboard["points"])
                 #npts = len(self._current_checkerboard["points"])

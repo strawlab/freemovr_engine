@@ -101,6 +101,7 @@ class PinholeWizard(object):
         # Connect checklist widget
         self.intrinsics_widget.connect("intrinsics-computed", self.info_widget.on_intrinsics_computed)
         self.intrinsics_widget.connect("intrinsics-computed", self.extrinsics_widget.on_intrinsics_computed)
+        self.extrinsics_widget.connect("extrinsics-computed", self.info_widget.on_extrinsics_computed)
         self.viewport_widget.connect("viewports-saved", self.info_widget.on_viewports_saved)
         self.viewport_widget.connect("viewports-saved", self.extrinsics_widget.on_viewports_saved)
         #self.extrinsics_widget.connect("on-calibrated", self.checklist_widget.on_calibrated)
@@ -131,7 +132,7 @@ class PinholeWizard(object):
         # Configure the DisplayClientWidget
         self.displayclient_widget.set_cursor_draw(True)
         ui.get_object('view_mock_ds_item').connect('activate', self.displayclient_widget.proxy_show_mock)
-        self.displayclient_widget.connect_external("/display_server0")
+        self.displayclient_widget.connect_external("/display_server")
 
         # initializing done.
         self.main_window.show_all()

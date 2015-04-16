@@ -39,7 +39,8 @@ def prepare_input(camera, points_3d, points_2d, extrinsics_guess):
         assert is_rodrigues(rvec), "rvec is not a rodrigues rotation vector"
         assert is_3d_vector(tvec), "tvec is not a 3d vector"
     except (ValueError, TypeError, AssertionError, AttributeError):
-        print "extrinsics_guess should be [rvec, tvec]"
+        if extrinsics_guess is not None:
+            print "extrinsics_guess should be [rvec, tvec]"
         USE_EXTRINSIC_GUESS = False
     else:
         USE_EXTRINSIC_GUESS = True
