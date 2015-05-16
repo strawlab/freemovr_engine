@@ -15,40 +15,39 @@ from sphere_geometry import sphere_geometry
 
 def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=False, concatenate=False, minimum=0.0):
     """calculate blending masks for overlapping projector beam paths
-    
+
     Args:
         images: List of input images which map XY projector pixels to UV coordinates of the screen geometry
                 Have to be of the same size and contain 3 channels:
-                channel 0: U coordinate 
+                channel 0: U coordinate
                 channel 1: V coordinate
                 channel 2: sometimes contains measured intensity, is ignored
-                
+
         geometry: Object to calculate distance function on screen geometry, e.g. see "cylinder_geometry.py"
-        
+
     Named Args:
         UV_scale:    resolution of intermediary UV map (magic number depending on geometry and input resolution)
                      ToDo: determine this automatically. As it is, please experiment.
         visualize:   When True, visualizes input images and blend mask interactively in a window. 
                      waits until window is closed manually.
         verbose:     produces additional information on the console when True
-        
+
         concatenate: When True, concatenates the result images along their X dimensions.
-        
+
     Returns:
         If "concatenate==False", returns a list of output images, Channel 0 and 1 are the same as in the input, channel 2 contains blend factor (0..1)
         If "concatenate==True", returns a concatenation of the above images in a single image
-         
+
     """
-     
-    
+
     start=True
     beampaths_count=0
     contours=[]
     if (len(images) < 1 ):
         raise Exception("Need at least one input image")
-        
+
     input_height, input_width, input_channels =images[0].shape
-    
+
     # read & concatenate input maps, determine & label beampaths
     for I in images:
         h,w,ch = I.shape
@@ -56,7 +55,7 @@ def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=Fals
         I=np.nan_to_num(I)
         if (h != input_height) or (w != input_width) or (ch != input_channels):
             raise Exception("Input images must be the same size")
-        
+
         L=np.zeros(np.shape(I[:,:,0]), np.uint8)
         Lpadded=np.zeros(np.add(np.shape(I[:,:,0]), [2, 2]), np.uint8) # pad with 1px border=0
         L[I[:,:,0]>-0.99]=1 # L contains 1s where beampath is valid
@@ -84,7 +83,7 @@ def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=Fals
 
     # now we got all the input maps concatenated in "M"
     # and labeled beam paths in "Label"
-    
+
     # plot a nice overview image
     if visualize:
         plt.figure()
@@ -95,15 +94,15 @@ def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=Fals
         plt.imshow(Label)
         fig = plt.gcf()
         fig.canvas.set_window_title('Beam path classification')
-        
+
         plt.show(block=False)
-    
+
     # extract valid sample values into vectors
     L=M[:,:,0]>-0.99
     U=M[:,:,0][L]
     V=M[:,:,1][L]
     I=M[:,:,2][L] # channel 2 sometimes contains measured intensity, is ignored
-    
+
     # now determine the distance functions for each beam path
     distance=np.zeros([np.shape(contours)[0], np.shape(M)[0], np.shape(M)[1]])
     grad_sum=np.zeros(np.shape(M[:,:,0]))
@@ -119,18 +118,18 @@ def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=Fals
         distance[gi][L]=geometry.calculate_distance(Ub, Vb, UV_scale, U, V)
         grad_sum=np.add(grad_sum, distance[gi]) # sum over all distances in image space
         gi+=1
-        
+
     # calculate the blending masks for all beam paths    
     K=np.zeros(np.shape(M[:,:,0]))
     for i in range(beampaths_count):
         mask=np.logical_and(Label==i+1, grad_sum>0.0) # binary mask for this beampath
-        
+
         # calculate blending mask for this beam path:
         #  for each pixel inside the beam: distance[beampath]/grad_sum
         # this results in a smooth gradient in the areas overlapping other
         # beam paths in UV and 1 everywhere else inside the beam 
         K[mask] = np.clip(np.divide(distance[i][mask], grad_sum[mask]) + minimum, 0.0, 1.0)
-    
+
     if visualize:
         plt.figure()
         plt.imshow(K)
@@ -164,17 +163,17 @@ if __name__ == "__main__":
                   help="set minimum alpha value for blending", metavar="minimum")
 
     (options, args) = parser.parse_args()
-    
+
     if len(args)<2:
         parser.print_usage()
         sys.exit(1)
-        
-    geometry_name=args.pop(0).lower()    
+
+    geometry_name=args.pop(0).lower()
     if (geometry_name=='sphere'):
         geometry=sphere_geometry()
     elif (geometry_name=='cylinder'):
         geometry=cylinder_geometry()
-    else: 
+    else:
         parser.print_usage()
         sys.exit(1)
 
@@ -185,18 +184,18 @@ if __name__ == "__main__":
         I=read_exr(f)
         I=np.array(I).transpose(1,2,0)
         images.append(I)
- 
+
     result=blend(images, geometry, visualize=options.visualize, verbose=options.verbose, concatenate=options.concatenate, minimum=options.minimum)
 
     # result can be delivered as one large horizontal (in X) matrix for "desktop spanning mode"
     # or as one image per projector
     if options.concatenate:
         path, ext = os.path.splitext(args[0])
-        save_exr("%s%s%s"%(path, "_blend_concatenated", ext), 
+        save_exr("%s%s%s"%(path, "_blend_concatenated", ext),
                  result[:,:,0], result[:,:,1], result[:,:,2]) # output one concatenated result image
     else: # split the result in one output image per input image
         for i in range(len(args)):
             path, ext = os.path.splitext(args[i])
-            save_exr("%s%s%s"%(path, "_blend", ext), 
+            save_exr("%s%s%s"%(path, "_blend", ext),
                      result[i][:,:,0], result[i][:,:,1], result[i][:,:,2]) # output one result image per input image
 

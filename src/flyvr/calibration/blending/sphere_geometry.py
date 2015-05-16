@@ -7,20 +7,20 @@ class sphere_geometry:
     def calculate_distance(self, Ub, Vb, UV_scale, U, V):
         """calculate distances to given polygon on a spherical geometry
         takes poles in UV into account
-                
+
         Args:
             Ub, Vb:     polygon as vector of UV coordinates on the cylinder (U=circumference, V=height)
             UV_scale:   scale of internal lookup table for UV
             U, V:       UV coordinates for which distances are going to be calculated
-            
+
         Returns:
             distances to input U,V coords in the same order as the input
             distances are calculated from the inner contour of this polygon (outside=0)
-             
+
         """
 
         R = self.__map_UV_to_XYZ(Ub, Vb)
-        
+
         # calculate mean vector of boundary
         v=np.sum(R, axis=1)/R.shape[1]
         # rotate all point so that mean points to +Z
@@ -28,7 +28,7 @@ class sphere_geometry:
         X,Y = self.__map_to_plane_angular(R, rotation, UV_scale)
 
         img=np.zeros(UV_scale)
-        UV=np.array([np.array((Y,X))]).transpose(2,0,1).astype(np.int32)        
+        UV=np.array([np.array((Y,X))]).transpose(2,0,1).astype(np.int32)
         # fill beam path in UV space with 
         cv2.drawContours(img, [UV], 0, 1, -1)
         img=ndimage.distance_transform_edt(img)
@@ -36,7 +36,7 @@ class sphere_geometry:
         R = self.__map_UV_to_XYZ(U, V) # R contains now XYZ of all pixels with valid UV
         Rp= self.__map_to_plane_angular(R, rotation, UV_scale)
 #       Rp contains now all valid pixels in transformed UV coordinates 
-        
+
         u=Rp[0].astype(int)
         v=Rp[1].astype(int)
         return img[(u,v)]
@@ -48,14 +48,14 @@ class sphere_geometry:
         y = np.cos(lat) * np.sin(lon)
         z = np.sin(lat)
         return np.array([x, y, z])
-    
+
     def __map_UV_to_XYZ(self, U, V):
-        """ map UV to XYZ on unit sphere 
+        """ map UV to XYZ on unit sphere
         """
         azimuth=(U-0.5)*2.0*math.pi;
         elevation=(V-0.5)*math.pi;
         return self.__unitsph2cart(azimuth, elevation)
-    
+
     def __cart2sph(self, x, y, z):
         """ Transform Cartesian coordinates to spherical
         """
@@ -65,25 +65,25 @@ class sphere_geometry:
         elevation = np.arctan2(z,xy)
         radius = np.sqrt(xy2 + np.square(z))
         return (azimuth, elevation, radius)
-    
+
     def __pol2cart(self, theta, rho):
         """Transform polar coordinates to Cartesian
         """
         x = rho * np.cos(theta)
         y = rho * np.sin(theta)
         return x, y
-        
+
     def __map_to_plane_angular(self, x, rotation, UV_scale):
         """ map XYZ on unit sphere to XY plane with rotation & scale
-        
+
          maps one pole of the sphere to [0.5, 0.5]*UV_scale and the other one to the unit
          circle inscribed in the square [0, 0]-[1, 1]*UV_scale
-        
+
          'rotation' normally rotates the 'x' so that [0.5, 0.5]*UV_scale lies
          in the middle of 'x' to avoid singularities in the mappingg of 'x'
         """
         mR=np.matrix(x)
-         
+
         # rotate points so that mean is oriented +Z
         k=np.array(rotation.T*mR)
         (azimuth, elevation, _) = self.__cart2sph(k[0,:], k[1,:], k[2,:])
@@ -97,7 +97,7 @@ class sphere_geometry:
         """
         fromVec = fromVec / np.linalg.norm(fromVec)
         toVec = toVec / np.linalg.norm(toVec)
-    
+
         # calculate rotation axis and angle 
         a = np.cross(fromVec, toVec)
         angle = math.acos(np.dot(fromVec, toVec))
