@@ -1,14 +1,16 @@
 #!/usr/bin/env python
+
 import roslib
 roslib.load_manifest("flyvr")
 from flyvr.exr import read_exr, save_exr
 from optparse import OptionParser
 import os.path
 import sys
+import numpy as np
 
 from flyvr.calibration.blending.cylinder_geometry import cylinder_geometry
 from flyvr.calibration.blending.sphere_geometry import sphere_geometry
-
+from flyvr.calibration.blending.generalized_blending import blend
 
 if __name__ == "__main__":
 
