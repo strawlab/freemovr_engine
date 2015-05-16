@@ -2,15 +2,15 @@
 import roslib
 roslib.load_manifest("flyvr")
 import matplotlib.pyplot as plt
-from exr import read_exr, save_exr
+from flyvr.exr import read_exr, save_exr
 import numpy as np
 import cv2
 from optparse import OptionParser
 import os.path
 import sys
 
-from cylinder_geometry import cylinder_geometry
-from sphere_geometry import sphere_geometry
+from flyvr.calibration.blending.cylinder_geometry import cylinder_geometry
+from flyvr.calibration.blending.sphere_geometry import sphere_geometry
 
 
 def blend(images, geometry, UV_scale=[1000, 1000], visualize=False, verbose=False, concatenate=False, minimum=0.0):
