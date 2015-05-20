@@ -1,4 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4.6)
+
+#set(ROS_BUILD_TYPE Debug)
+
 SET(BUILD_WITH_ROS ON CACHE BOOL "Building with ROS")
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -99,6 +102,9 @@ IF(BUILD_WITH_ROS)
 
   rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
+
+  rosbuild_add_library(StimulusLatencyTimestamp src/StimulusLatencyTimestamp.cpp src/json2osg.cpp src/base64.cpp)
+  TARGET_LINK_LIBRARIES(StimulusLatencyTimestamp ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
   rosbuild_add_library(StimulusStandby src/StimulusStandby.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
