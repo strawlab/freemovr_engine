@@ -87,3 +87,12 @@ projection screen is shown.)
 **Display Surface** - a physical, 2D manifold in 3D space which is
 illuminated by a physical display (either by projection or direct
 illumination like an LCD screen).
+
+Developing
+==========
+
+When developing a stimulus, you can launch the display_server
+with that stimulus loaded like the following
+
+``./bin/display_server --stimulus lib/libStimulusLatencyTimestamp.so``
+
