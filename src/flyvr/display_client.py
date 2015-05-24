@@ -283,13 +283,16 @@ class RenderFrameSlave:
 
         return frame
 
-class OSGFileStimulusSlave:
+class StimulusSlave(object):
 
-    dsc = None
-
-    def __init__(self, dsc, stimulus='StimulusOSGFile'):
+    def __init__(self, dsc, stimulus):
         self.dsc = dsc
         self.dsc.set_mode(stimulus)
+
+class OSGFileStimulusSlave(StimulusSlave):
+
+    def __init__(self, dsc, stimulus='StimulusOSGFile'):
+        StimulusSlave.__init__(self, dsc, stimulus)
 
         self.pub_stimulus_scale = rospy.Publisher(self.dsc.name+'/model_scale',
                                                   geometry_msgs.msg.Vector3,
