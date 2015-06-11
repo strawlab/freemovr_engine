@@ -1,0 +1,7 @@
+<launch>
+  <!-- Spawn the display server. -->
+  <node name="display_server" pkg="flyvr" type="display_server" args="--stimulus=StimulusLatencyTimestamp">
+    <rosparam command="load" file="$(find flyvr)/data/display_server_latency.yaml" />
+  </node>
+
+</launch>
