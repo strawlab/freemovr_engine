@@ -52,7 +52,7 @@ apt-get upgrade --yes
 
 # ---- install ROS
 
-DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-hydro-desktop-full make python-grin htop byobu
+DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-hydro-desktop-full make
 
 # ------ install our overlay ------------
 ROSINSTALL_SPEC_PATH="/tmp/flyvr.rosinstall"
