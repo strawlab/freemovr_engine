@@ -4,6 +4,7 @@ import sys
 import glob
 import argparse
 import os.path
+import subprocess
 
 import roslib
 roslib.load_manifest('flyvr')
@@ -30,7 +31,6 @@ import numpy as np
 import cv2
 
 import pcl
-import sh
 
 X_INDEX = 0
 Y_INDEX = 1
@@ -418,9 +418,8 @@ class Calibrator:
                 dsc.set_geometry(geom)
                 dsc.set_binary_exr(exrpath)
                 rospy.loginfo("updated parameter server")
-                sh.rosnode("kill","/%s"%ds)
+                subprocess.call(["rosnode", "kill", "/%s"%ds])
                 rospy.loginfo("restarted server")
-
 
 
 if __name__ == "__main__":
