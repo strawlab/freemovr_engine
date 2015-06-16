@@ -3,8 +3,8 @@ set -e
 
 # ----- Check that we have the supported version of Ubuntu ----------
 RELEASE=`lsb_release --release | cut -f2`
-if [ ${RELEASE} == "12.04" ]; then
-    echo "OK: using Ubuntu 12.04"
+if [ ${RELEASE} == "14.04" ]; then
+    echo "OK: using Ubuntu 14.04"
 else
     echo "ERROR: release ${RELEASE} not supported"
     exit 1
@@ -38,13 +38,7 @@ add-apt-repository 'deb http://debs.strawlab.org/ precise/'
 # -------------- add ROS repository -----------
 #     add key id=B01FA116
 wget -qO - http://packages.ros.org/ros.key | sudo apt-key add -
-add-apt-repository 'deb http://packages.ros.org/ros/ubuntu precise main'
-
-# -------------- add multiverse repository (needed for nvidia-cg-toolkit) ---------------
-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise multiverse'
-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise-updates multiverse'
-add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ precise-security multiverse'
-
+add-apt-repository 'deb http://packages.ros.org/ros/ubuntu trusty main'
 
 # -------------- update local package index ----
 apt-get update --yes
@@ -52,15 +46,15 @@ apt-get upgrade --yes
 
 # ---- install ROS
 
-DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-hydro-desktop-full make
+DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-indigo-desktop-full make
 
 # ------ install our overlay ------------
 ROSINSTALL_SPEC_PATH="/tmp/flyvr.rosinstall"
 
 # ---- create a .rosinstall spec file for this git revision -------------
 cat > ${ROSINSTALL_SPEC_PATH} <<EOF
-- git: {local-name: flyvr, uri: 'https://github.com/strawlab/flyvr.git', version: flyvr-hydro}
-- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: flyvr-hydro}
+- git: {local-name: flyvr, uri: 'https://github.com/strawlab/flyvr.git', version: flyvr-indigo}
+- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: flyvr-indigo}
 EOF
 
 # ---- script to ensure a line in a file ----
@@ -102,8 +96,8 @@ if __name__ == '__main__':
 EOF
 
 # ---- install our ROS stuff
-export FLYVR_TARGET="/opt/ros/ros-flyvr.hydro"
-rosinstall ${FLYVR_TARGET} /opt/ros/hydro/.rosinstall ${ROSINSTALL_SPEC_PATH}
+export FLYVR_TARGET="/opt/ros/ros-flyvr.indigo"
+rosinstall ${FLYVR_TARGET} /opt/ros/indigo/.rosinstall ${ROSINSTALL_SPEC_PATH}
 
 source ${FLYVR_TARGET}/setup.bash
 
