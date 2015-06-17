@@ -12,6 +12,7 @@ the latest version of this script from `here
 <https://raw.github.com/strawlab/flyvr/master/docs/install-flyvr.sh>`_.)
 From the command line, this should work::
 
+     sudo apt-get install curl
      curl -sL https://raw.github.com/strawlab/flyvr/flyvr-hydro/docs/install-flyvr.sh | sudo bash
 
 Getting Started
