@@ -136,7 +136,7 @@ public:
 
         double r = _radius;
 
-        return osg::Vec3(r*ca*ce, r*sa*ce, r*se);
+        return osg::Vec3(r*ca*ce, r*sa*ce, r*se) + _center;
     }
 
     osg::Vec3 texcoord2normal( osg::Vec2 tc ) {
