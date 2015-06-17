@@ -97,6 +97,9 @@ IF(BUILD_WITH_ROS)
   rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
+  rosbuild_add_library(StimulusAxes src/StimulusAxes.cpp src/util.cpp)
+  TARGET_LINK_LIBRARIES(StimulusAxes ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+
   rosbuild_add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
