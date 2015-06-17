@@ -340,7 +340,7 @@ cdef class MyNode:
         self._config_dict = config_dict
         rospy.loginfo("config_file = %s" % config_file)
 
-        tethered_mode = self._config_dict.get('tethered_mode',True)
+        tethered_mode = self._config_dict.get('tethered_mode',False)
         rospy.loginfo("tethered_mode: %s" % tethered_mode)
 
         self._gamma = self._config_dict.get('gamma', 1.0)
