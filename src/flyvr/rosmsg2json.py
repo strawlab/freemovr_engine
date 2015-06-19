@@ -29,7 +29,7 @@ try:
     MSG_TYPE = roslib.message.Message
 except AttributeError:
     import genpy
-    MSG_TYPE = genpy.message.Message
+    MSG_TYPE = (genpy.message.Message, genpy.rostime.Time)
 
 def _findrepl(matchobj):
     ros_pkg_name = matchobj.group(1)
