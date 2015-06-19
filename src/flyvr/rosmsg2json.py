@@ -4,6 +4,7 @@ import re
 
 import roslib.packages
 roslib.load_manifest('flyvr')
+
 import flyvr.msg
 import geometry_msgs.msg
 import std_msgs.msg
@@ -15,6 +16,20 @@ re_ros_path = re.compile(r'\$\(find (.*)\)')
 re_array = re.compile(r'(.+)\[(\d*)\]$')
 
 BASIC_TYPES = ['float64','float32','string','uint32','uint8','bool','int8','int32']
+
+try:
+    # < hydro
+    TIME_TYPE = roslib.rostime.Time
+except AttributeError:
+    import rospy
+    TIME_TYPE = rospy.rostime.Time
+
+try:
+    # < hydro
+    MSG_TYPE = roslib.message.Message
+except AttributeError:
+    import genpy
+    MSG_TYPE = genpy.message.Message
 
 def _findrepl(matchobj):
     ros_pkg_name = matchobj.group(1)
@@ -28,11 +43,11 @@ def convert_attrs( v ):
 
 def rosmsg2dict(msg):
     plain_dict = {}
-    if isinstance(msg, roslib.rostime.Time):
+    if isinstance(msg, TIME_TYPE):
         plain_dict['secs']=msg.secs
         plain_dict['nsecs']=msg.nsecs
     else:
-        assert isinstance(msg, roslib.message.Message)
+        assert(isinstance(msg, MSG_TYPE))
         for varname, vartype in zip(msg.__slots__, msg._slot_types):
 
             matchobj = re_array.search(vartype)
@@ -64,7 +79,7 @@ def rosmsg2dict(msg):
                 plain_dict[varname] = convert_attrs(v)
             else:
                 v = getattr(msg,varname)
-                if isinstance(v, roslib.message.Message):
+                if isinstance(v, MSG_TYPE):
                     # cannot determine type, try recursive conversion
                     plain_dict[varname] = rosmsg2dict(v)
                 else:
@@ -98,13 +113,13 @@ def is_equal(ros_msg, dict_msg):
         if k != fixup_keyname(k):
             v_dict = fixup_value( dict_msg[k], k )
         if not v_ros == v_dict:
-            if isinstance(v_ros, roslib.message.Message):
+            if isinstance(v_ros, MSG_TYPE):
                 tmp = is_equal(v_ros,v_dict)
                 if not tmp:
                     return False
                 else:
                     continue
-            if isinstance(v_ros, roslib.rostime.Time):
+            if isinstance(v_ros, TIME_TYPE):
                 if not (v_ros.secs == v_dict['secs'] and v_ros.nsecs == v_dict['nsecs']):
                     return False
                 else:
