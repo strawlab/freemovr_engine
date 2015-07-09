@@ -118,7 +118,7 @@ private:
 class SphereModel : public GeomModel {
 public:
     SphereModel(float radius, osg::Vec3 center) :
-        _radius(radius), _center(center), _n_az(20), _n_el(12) {}
+        _radius(radius), _center(center), _n_az(80), _n_el(20) {}
 
     osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) {
         // keep in sync with simple_geom.py
