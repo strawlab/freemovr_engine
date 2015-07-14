@@ -6,6 +6,7 @@
 #include "ResourceLoader.hpp"
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
+#include <flyvr/CallbackHolder.hpp>
 
 class StimulusInterface: public ResourceLoader
 {
@@ -45,6 +46,11 @@ class StimulusInterface: public ResourceLoader
   // and here is the message data, as a JSON message.
   virtual void receive_json_message(const std::string& topic_name, const std::string& json_message) = 0;
 
+  // If you need to change the background color, remember this object
+  // and call its setBackgroundColorImplementation() method when the
+  // background changes.
+  virtual void set_background_color_callback(flyvr::BackgroundColorCallback*) {}
+
  protected:
   // your derived class can call this if you want to add a skybox
   virtual void add_skybox(osg::ref_ptr<osg::Group> top, std::string image_basepath, std::string image_extension);
@@ -53,4 +59,4 @@ class StimulusInterface: public ResourceLoader
   osg::ref_ptr<osg::PositionAttitudeTransform> _skybox_pat;
 };
 
-#endif // StimulusInterface.h
+#endif // StimulusInterface.hpp

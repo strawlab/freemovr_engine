@@ -53,6 +53,7 @@
 
 #include "flyvr/flyvr_assert.h"
 #include "flyvr/ResourceLoader.hpp"
+#include "flyvr/CallbackHolder.hpp"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -220,6 +221,15 @@ private:
   CameraList Cameras;
 };
 
+struct BackgroundCallback : public flyvr::BackgroundColorCallback {
+public:
+    BackgroundCallback(CameraCube* cc) : _camera_cube(cc) {}
+    void setBackgroundColorImplementation(const osg::Vec4& color) const {
+        _camera_cube->set_clear_color( color );
+    }
+private:
+    CameraCube* _camera_cube;
+};
 
 void ObserverPositionCallback::operator() ( osg::Uniform* uniform, osg::NodeVisitor* nv )
 {
@@ -348,6 +358,11 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	json_stimulus = json_object_get(json_config, "stimulus_plugins");
 	json_geom = json_object_get(json_config, "geom");
 
+    _active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
+    _observer_pat = new osg::PositionAttitudeTransform;
+    _cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path);
+    _bg_callback = new BackgroundCallback(_cubemap_maker);
+
     ignore_missing_plugins = json_is_true(json_object_get(json_config, "ignore_missing_stimulus_plugins"));
 
     if (!json_is_array(json_stimulus)) {
@@ -408,6 +423,13 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                     throw;
                 }
 
+                try {
+                    _stimulus_plugins[ plugin_name ]->set_background_color_callback(_bg_callback);
+                } catch (...) {
+                    std::cerr << "ERROR while calling register_background_color_changed_callback() on plugin: " << plugin_name << std::endl;
+                    throw;
+                }
+
                 // ensure we always have a current stimulus
 				if (_current_stimulus == NULL) {
 					_current_stimulus = _stimulus_plugins[ plugin_name ];
@@ -430,7 +452,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 	flyvr_assert(_current_stimulus != NULL);
 	std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
-	_active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
 	_active_3d_world->addChild( _current_stimulus->get_3d_world() );
 
 	_active_2d_hud = new osg::Group; // each (2d) plugin switches the child of this node
@@ -441,7 +462,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 		root->addChild( _active_3d_world );
 	}
 
-    _observer_pat = new osg::PositionAttitudeTransform;
     _observer_pat->addDescription("observer position attitute transform node");
     _observer_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
     _observer_pat->setAttitude(osg::Quat(osg::inDegrees(0.0f),osg::Vec3(0.0f,0.0f,1.0f)));
@@ -476,8 +496,6 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             root->addChild(_observer_pat);
 		}
     }
-
-	_cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path);
 
 	if ( !(_mode==std::string("virtual_world"))) {
 		root->addChild(_cubemap_maker->get_node());

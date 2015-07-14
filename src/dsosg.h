@@ -16,6 +16,7 @@
 #include "Poco/Path.h"
 
 #include "flyvr/StimulusInterface.hpp"
+#include "flyvr/CallbackHolder.hpp"
 
 #include "WindowCaptureCallback.h"
 #include "GeometryTextureToDisplayImagePass.h"
@@ -108,6 +109,7 @@ namespace dsosg{
         GeometryTextureToDisplayImagePass *_g2di;
         OpenThreads::Mutex _osg_capture_mutex;
         std::string        _osg_capture_filename;
+        flyvr::BackgroundColorCallback *_bg_callback;
     };
 
 }
