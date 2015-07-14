@@ -35,7 +35,7 @@ def main():
     fmf_format = fly_movie.get_format()
 
     fmf = fly_movie
-
+    delays = numpy.array([])
     for frame_number in range(n_frames):
         frame,timestamp = fmf.get_frame(frame_number)
 
@@ -64,8 +64,12 @@ def main():
             raise
         except:
             ts = float('nan')
-        print "ds: % 14.6f cam: % 14.6f delay: % 8.6f" % (ts, timestamp, timestamp-ts)
+        delay = timestamp-ts
+        delays = numpy.append(delays,[delay])
+        print "ds: % 14.6f cam: % 14.6f delay: % 8.6f" % (ts, timestamp, delay)
         os.unlink(f)
-
+    print "delay mean: % 8.6f std: % 8.6f" % (delays[~numpy.isnan(delays)].mean(),delays[~numpy.isnan(delays)].std())
+    print "delay max: % 8.6f min: % 8.6f" % (delays[~numpy.isnan(delays)].max(),delays[~numpy.isnan(delays)].min())
+    print "%i of %i frames used" % (len(delays[numpy.isnan(delays)]),len(delays[~numpy.isnan(delays)]))
 if __name__=='__main__':
     main()
