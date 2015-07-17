@@ -93,6 +93,7 @@ namespace dsosg{
         osgViewer::Viewer* _viewer;
         osg::ref_ptr<osg::PositionAttitudeTransform> _observer_pat;
         osg::ref_ptr<osg::PositionAttitudeTransform> _observer_geometry_pat;
+        osg::ref_ptr<osg::PositionAttitudeTransform> _observer_marker_pat;
         ObserverPositionCallback* _observer_cb;
         bool _tethered_mode;
 

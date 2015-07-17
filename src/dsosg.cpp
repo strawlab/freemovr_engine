@@ -469,11 +469,11 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
         _mode==std::string("geometry")) {
 		if (observer_radius != 0.0f) {
-            osg::ref_ptr<osg::PositionAttitudeTransform> obs_pat = new osg::PositionAttitudeTransform;
-            obs_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
+            _observer_marker_pat = new osg::PositionAttitudeTransform;
+            _observer_marker_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
             osg::Quat attitude;
             attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
-            obs_pat->setAttitude(attitude);
+            _observer_marker_pat->setAttitude(attitude);
 
             osg::Shape *shape;
             if (observer_radius > 0) {
@@ -491,8 +491,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             osg::StateSet* ss = geode_1->getOrCreateStateSet();
             ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
             geode_1->addDrawable(shaped);
-            obs_pat->addChild(geode_1);
-            _observer_pat->addChild(obs_pat);
+            _observer_marker_pat->addChild(geode_1);
+            _observer_pat->addChild(_observer_marker_pat);
             root->addChild(_observer_pat);
 		}
     }
@@ -937,6 +937,18 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
         // we let the observer move within the geometry
         _observer_pat->setAttitude(osg::Quat()); // do not rotate the cameras that project onto cubemap
         _observer_cb->setObserverPosition(observer_position); // update the shader that projects cubemap onto geometry
+
+        if (_observer_marker_pat.valid()) {
+            // When not in tethered mode, we do not update any of the
+            // display geometry position or orientation based on the
+            // observer. However, in "overview", "virtual_world" or
+            // "geometry" mode, we want to see the orientation of the
+            // observer correctly.
+            osg::Quat attitude;
+            attitude.makeRotate( osg::PI/2.0, 0, 1, 0);
+            attitude *= observer_orientation;
+            _observer_marker_pat->setAttitude(attitude);
+        }
     }
 
 	if (_current_stimulus != NULL) {
