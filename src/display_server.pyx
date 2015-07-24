@@ -25,6 +25,7 @@ import tempfile
 import json
 import argparse
 import xmlrpclib
+import socket
 
 import numpy as np
 cimport numpy as np
@@ -247,6 +248,7 @@ cdef class MyNode:
     cdef object _red_max
     cdef object _config_dict
     cdef object _using_ros_config
+    cdef object _single_instace_socket
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -289,6 +291,18 @@ cdef class MyNode:
         rospy.init_node("display_server")
 
         rospy.loginfo("slave instance: %s" % args.slave)
+
+        if not args.slave:
+            # check that there is only one master display_server process per machine
+            # and per type
+            # use linux only abstract sockets (prefixed with NULL)
+            # instead of lock files (as sockets are automatically cleaned up
+            # when the process exits
+            self._single_instace_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            try:
+                self._single_instace_socket.bind('\0display_server')
+            except socket.error, e:
+                rospy.logerr('Only one master instance may be running. Pass --slave to other instances')
 
         self._throttle = args.throttle
         rospy.loginfo("throttle framerate: %s" % self._throttle)
