@@ -3,7 +3,7 @@
 import os
 import collections
 import itertools
-
+import time
 from gi.repository import Gtk, GObject, GLib
 
 import numpy as np
@@ -30,75 +30,15 @@ import flyvr.exr
 
 import termcolor
 
-class FakeCameraModel(object):
-
-    def __init__(self, P, width, height):
-        self._width = int(width)
-        self._height = int(height)
-        self._P = P
-        self._c = np.dot(-1*np.linalg.inv(P[:3,:3]), P[:,3])
-        self._Pinv = np.linalg.pinv(P)
-
-    @property
-    def height(self):
-        return self._height
-
-    @property
-    def width(self):
-        return self._width
-
-    def project_pixel_to_3d_ray(self, nparr, distorted=True, distance=1.0):
-        nparr = np.array(nparr)
-        hom2d = np.hstack((nparr, np.ones((nparr.shape[0], 1))))
-        hom3d = np.dot(self._Pinv, hom2d.T).T
-        return hom3d[:,:3] / hom3d[:,3,np.newaxis]
-
-    def camcenter_like(self, nparr):
-        return np.zeros_like(nparr) + self._c
-
-    def get_camcenter(self):
-        return self._c
-
-    def get_lookat(self, distance):
-        return self._c
-
-
-
-
-class mpl:
-    from matplotlib.figure import Figure
-    from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg as FigureCanvas
-    from mpl_toolkits.mplot3d import Axes3D
-
-
-class DebugPlot(Gtk.Window):
-
-    def __init__(self):
-        Gtk.Window.__init__(self, title='debug camera calibration')
-        self.connect("destroy", lambda x: self.hide())
-
-        self.figure = mpl.Figure()
-        self.ax = self.figure.add_subplot(111, projection='3d')
-        self.canvas = mpl.FigureCanvas(self.figure)
-
-        self.add(self.canvas)
-        self.canvas.show()
-
-        GLib.timeout_add(100, self.update_plot)
-
-    def update_plot(self):
-        self.canvas.draw()
-
 
 class ViewportExtrinsicCalibration(object):
 
-    def __init__(self, viewport, debugplot):
+    def __init__(self, viewport):
         self.vp = viewport
         self.p2p = []
         self.camera = None
         self.show_beachball = False
         self.tog = False
-        self.debugplot = debugplot
 
     @property
     def viewportname(self):
@@ -108,176 +48,15 @@ class ViewportExtrinsicCalibration(object):
     def calibrated(self):
         return self.camera is not None
 
-    def _camera_looks_towards_center(self, camera):
-        # checks if the cam looks somewhat towards the center
-        x0, y0, z0 = camera.get_camcenter()
-        R0 = np.sqrt(x0**2 + y0**2)
-        x1, y1, z1 = camera.get_lookat(distance=R0)
-        R1 = np.sqrt(x1**2 + y1**2)
-        #return R1 < R0
-        return True
-
-    def _surface_between_camera_and_center(self, camera, XYZ, return_points=False):
-        x0, y0, z0 = camera.get_camcenter()
-        R0 = np.sqrt(x0**2 + y0**2)
-
-        cosphi = x0/R0
-        sinphi = y0/R0
-
-        R = np.array([[cosphi, -sinphi, 0],
-                      [sinphi,  cosphi, 0],
-                      [     0,       0, 1]], dtype=np.float64)
-        # rotate all 3d points
-        rXYZ = np.dot(XYZ, R)
-        # the X coordinate should now be bigger then 0 otherwise
-        # the camera looks through the center (on the surface from the inside)
-        #print 'CSC DEBUG:\n', rXYZ
-        return True
-        if return_points:
-            return rXYZ
-        if np.any(rXYZ[:,0] < 0.0):
-            return False
-        else:
-            return True
-
-    def _show_points(self, xyz):
-        ax = self.debugplot.ax
-        X, Y, Z = xyz.T
-        ax.scatter(X, Y, Z, c=((0.5,0.5,0.5,0.5),)*xyz.shape[0], s=4)
-
-    def _camera_print_info(self, camera, cc='r'):
-        cam_c = camera.get_camcenter()
-        #, cam_l, cam_u = self.camera.get_view()
-        distance_to_x0y0 = np.sqrt(cam_c[0]**2 + cam_c[1]**2)
-        cam_l = camera.get_lookat(distance=distance_to_x0y0)
-
-        ax = self.debugplot.ax
-        X,Y,Z = cam_c
-        ax.scatter(X,Y,Z, c=[[1.0,0.0,0.0,1.0]], s=10)
-
-        W = camera.width
-        H = camera.height
-        corners = camera.project_pixel_to_3d_ray([[0,0],
-                                                  [W-1,0],
-                                                  [W-1,H-1],
-                                                  [0,H-1]], distance=0.1)
-        for corner in corners:
-            Lx, Ly, Lz = corner
-            ax.plot([X,Lx], [Y,Ly], [Z,Lz], cc)
-
-        print termcolor.colored("got:", "green")
-        print "  center:", cam_c
-        print "  look:  ", cam_l
-
-    def _reprojection_error(self, xy, XYZ, P):
-        hXYZ = np.hstack((XYZ, np.array([[1]]*XYZ.shape[0])))
-        nXY = np.dot(P, hXYZ.T).T
-        nXY = nXY[:,:2] / nXY[:,2,np.newaxis]
-        print "reprojection"
-        print nXY - xy
-
     def calibrate(self, camera, method, xy, XYZ):
         print termcolor.colored("Calibrating using:", "red"), termcolor.colored(method, "red")
-        method_dict = ExtrinsicsAlgorithms[method]
-        calfunc = method_dict['function']
-        #intrinsics_required = method_dict['requires-intrinsics']
-        #if self.viewportname in ['left', 'right']:
-
-        W = camera.width
-        H = camera.height
-        # xy.shape == (N, 2)
-        # XYZ.shape == (N, 3)
-
-        self._show_points(XYZ)
-
-        #K = camera.get_K()
-        #Kinv = np.linalg.inv(K)
-        #hxy = np.dot(Kinv, np.hstack((xy, np.array([[1]]*xy.shape[0]))).T).T
-        #xy = hxy[:,0:2] / hxy[:,2:]
-
-        #out = camera.project_pixel_to_3d_ray(xy, distorted=True, distance=1.0)
-        #xy = out[:,:2] / out[:,2:]
-
-        # Default test:
-        P = calfunc(camera, XYZ, xy, extrinsics_guess=None, params={})
-        print P
-        self._reprojection_error(xy, XYZ, P)
-        P /= np.linalg.norm(P[2,:3])
-        cam_c = np.dot(-1*np.linalg.inv(P[:3,:3]), P[:,3].T)
-        cam_r = P[:3,:3]
-
-        #_new_camera = CameraModel.load_camera_from_M(P, width=W, height=H)
-        #_new_camera = CameraModel._from_parts(camcenter=cam_c,
-        #                                      rotation=cam_r,
-        #                                      intrinsics=camera.get_intrinsics_as_bunch())
-        _new_camera = FakeCameraModel(P, width=W, height=H)
-        CSC = self._surface_between_camera_and_center(_new_camera, XYZ)
-        CLC = self._camera_looks_towards_center(_new_camera)
-
-        if not (CSC and CLC):
-            print termcolor.colored("flags", "yellow"), "CSC", CSC, _new_camera.get_camcenter(), "CLC", CLC, "flipping..."
-            self._camera_print_info(_new_camera)
-            _new_camera = _new_camera.get_flipped_camera()
-        else:
-            self.camera = _new_camera
-            self._camera_print_info(_new_camera, 'g')
-            return
-
-        CSC = self._surface_between_camera_and_center(_new_camera, XYZ)
-        CLC = self._camera_looks_towards_center(_new_camera)
-        if not (CSC and CLC):
-            print termcolor.colored("flags", "yellow"), "CSC", CSC, _new_camera.get_camcenter(), "CLC", CLC, "flipping..."
-            self._camera_print_info(_new_camera)
-        else:
-            self._camera_print_info(_new_camera, 'g')
-            self.camera = _new_camera
-            return
-
-        # flip XYZ
-        mirror_T = np.array([[ -1, 0, 0, 0],
-                             [ 0, 1, 0, 0],
-                             [ 0, 0, 1, 0],
-                             [ 0, 0, 0, 1]], dtype=np.float64)
-        XYZ_orig = XYZ.copy()
-        XYZ = np.dot(mirror_T[:3,:3], XYZ.T).T
-        P = calfunc(camera, XYZ, xy, extrinsics_guess=None, params={})
-        P /= np.linalg.norm(P[3,:3])
-        P = np.dot(P, mirror_T)
-        cam_c = np.dot(-1*np.linalg.inv(P[:3,:3]), P[:,3].T)
-        cam_r = P[:3,:3]
-        #_new_camera = CameraModel.load_camera_from_M(P, width=W, height=H)
-        #_new_camera = CameraModel._from_parts(camcenter=cam_c,
-        #                                      rotation=cam_r,
-        #                                      intrinsics=camera.get_intrinsics_as_bunch())
-        _new_camera = FakeCameraModel(P, width=W, height=H)
-        CSC = self._surface_between_camera_and_center(_new_camera, XYZ_orig)
-        CLC = self._camera_looks_towards_center(_new_camera)
-
-        if not (CSC and CLC):
-            print termcolor.colored("flags", "yellow"), "CSC", CSC, _new_camera.get_camcenter(), "CLC", CLC, "flipping..."
-            self._camera_print_info(_new_camera)
-            _new_camera = _new_camera.get_flipped_camera()
-        else:
-            #view = _new_camera.get_view()
-            #_new_camera = CameraModel.get_view_camera(*view)
-            _new_camera = _new_camera.get_mirror_camera(axis='lr', hold_center=False)
-            self.camera = _new_camera
-            self._camera_print_info(_new_camera,'g')
-            return
-
-        CSC = self._surface_between_camera_and_center(_new_camera, XYZ_orig)
-        CLC = self._camera_looks_towards_center(_new_camera)
-        if not (CSC and CLC):
-            print termcolor.colored("flags", "yellow"), "CSC", CSC, _new_camera.get_camcenter(), "CLC", CLC, "flipping..."
-            self._camera_print_info(_new_camera)
-        else:
-            #view = _new_camera.get_view()
-            #_new_camera = _new_camera.get_view_camera(*view)
-            _new_camera = _new_camera.get_mirror_camera(axis='lr', hold_center=False)
-            self.camera = _new_camera
-            self._camera_print_info(_new_camera, 'g')
-            return
-        print "BOOO"
+        try:
+            calfunc = ExtrinsicsAlgorithms[method]['function']
+            P = calfunc(camera, XYZ, xy, extrinsics_guess=None, params={})
+            self.camera = CameraModel.load_camera_from_M(P, width=camera.width,
+                                                            height=camera.height)
+        except Exception as e:
+            print "Error:", e.message
 
     def render_beachball(self, *args):
         if args:
@@ -296,6 +75,7 @@ class ViewportExtrinsicCalibration(object):
     def reprojection_error(self):
         pass
 
+
 class ExtrinsicsWidget(Gtk.VBox):
 
     __gsignals__ = {
@@ -312,13 +92,11 @@ class ExtrinsicsWidget(Gtk.VBox):
     def __init__(self):
         Gtk.VBox.__init__(self)
 
+        self.BLOCK_UPDATE = False
+
         ui_file_contents = pkgutil.get_data('flyvr.calibration.gui','pinhole-wizard.ui')
         ui = Gtk.Builder()
         ui.add_from_string( ui_file_contents )
-
-
-        self.debugplot = DebugPlot()
-        self.debugplot.show_all()
 
         grid = ui.get_object('corresponding_points_grid')
         self.pack_start(grid, True, True, 0)
@@ -451,6 +229,7 @@ class ExtrinsicsWidget(Gtk.VBox):
 
 
     def on_edit_p2p_viewport_name(self, widget, path, textval, colnum):
+        print "edit_vpname"
         self.point_store[path][colnum] = textval
         self.update_bg_image()
 
@@ -459,21 +238,28 @@ class ExtrinsicsWidget(Gtk.VBox):
         cell.set_property('text', '%g' % float_in)
 
     def on_edit_cell(self, widget, path, textval, colnum):
+        print "on_edit_cell"
         value = float(textval)
         self.point_store[path][colnum] = value
         self.update_bg_image()
 
     def on_toggle_point_show(self, widget, path):
+        print "on_toggle_point"
         self.point_store[path][self._SHOW_POINT] = not self.point_store[path][self._SHOW_POINT]
         self.update_bg_image()
 
     def on_show_all_button(self, *args):
+        print "called show all"
+        self.BLOCK_UPDATE = True
         val = args[-1]
         for row in self.point_store:
             row[self._SHOW_POINT] = val
+        self.BLOCK_UPDATE = False
+        print "exit show all"
         self.update_bg_image()
 
     def _add_p2p(self, viewport, texU, texV, displayX, displayY, show_point=True):
+        print "_add_p2p"
         self.point_store.append([viewport, texU, texV, displayX, displayY, show_point])
         self.update_bg_image()
 
@@ -510,7 +296,7 @@ class ExtrinsicsWidget(Gtk.VBox):
     def calibrate(self, viewportcal):
         try:
             # geom = self.geom_cb.get_active_text()
-            P2P = self.get_p2p_from_viewportname(viewportcal.viewportname)
+            P2P = self.get_p2p_from_viewportname(viewportcal.viewportname, _all=True)
             P2Pnonan = []
             for pp in P2P:
                 if np.isnan(pp).any():
@@ -534,7 +320,7 @@ class ExtrinsicsWidget(Gtk.VBox):
         self.vdisp_store.clear()
         self.cb_viewports.remove_all()
         for i, vp in enumerate([v for v in viewports if len(v.nodes) >= 3]):
-            self.vdisp_store.append([ViewportExtrinsicCalibration(vp, self.debugplot)])
+            self.vdisp_store.append([ViewportExtrinsicCalibration(vp)])
             self.cb_viewports.append(vp.name, vp.name)
             if i == 0:
                 self.cb_viewports.set_active(0)
@@ -586,6 +372,10 @@ class ExtrinsicsWidget(Gtk.VBox):
                 self.p2p_treeview.set_cursor(max(0, idx-1))
 
     def on_points_updated(self, *args, **kwargs):
+        if self.BLOCK_UPDATE:
+            print "shortcutting points_updated"
+            return
+        print "points_updated"
         VPS = { vp.viewportname:vp for (vp,) in self.vdisp_store }
         P2P = collections.defaultdict(list)
         for row in self.point_store:
@@ -594,15 +384,17 @@ class ExtrinsicsWidget(Gtk.VBox):
         for key, vpc in VPS.items():
             vpc.p2p = P2P[key]
         if kwargs.get('update_display', True):
+            if self.BLOCK_UPDATE:
+                return
             self.update_bg_image()
 
 
-    def get_p2p_from_viewportname(self, viewportname):
+    def get_p2p_from_viewportname(self, viewportname, _all=False):
         P2P = []
         for row in self.point_store:
             vpname, u, v, x, y, show = row
             if vpname == viewportname:
-                if show:
+                if _all or show:
                     P2P.append((u,v,x,y))
         return P2P
 
@@ -622,9 +414,11 @@ class ExtrinsicsWidget(Gtk.VBox):
 
     def extrinsics_from_list(self, data):
         self.point_store.clear()
+        self.BLOCK_UPDATE = True
         for d in data:
             p = [d['viewport'], d['u'], d['v'], d['x'], d['y'], True]
             self.point_store.append(p)
+        self.BLOCK_UPDATE = False
 
     def on_displayclient_connect(self, calling_widget, dsc, load_config):
         self._dsc = calling_widget
@@ -645,6 +439,9 @@ class ExtrinsicsWidget(Gtk.VBox):
 
     def update_bg_image(self, *args):
 
+        if self.BLOCK_UPDATE:
+            return
+
         if not self._dsc_connected:
             return
 
@@ -657,34 +454,44 @@ class ExtrinsicsWidget(Gtk.VBox):
             viewport = row[0]
             if viewport.calibrated and viewport.show_beachball:
                 print "showing", viewport.viewportname
+                print "> A", time.time()
                 # IF BEACHBALL
                 cam = viewport.camera
                 # generate an array which contains the uv coordinates for each pixel
                 uv_arr = self.geom.compute_for_camera_view(cam, what='texture_coords')
+                print "> B", time.time()
                 # use this array to calculate the beachball coloring
                 bb_arr = simple_geom.tcs_to_beachball(uv_arr)
+                print "> C", time.time()
                     #u = farr[:,:,0]
                     #good = ~np.isnan( u )
                     #arr2 = simple_geom.tcs_to_beachball(farr)
                 mask = np.zeros(bb_arr.shape[:2], dtype=np.uint8)
+                print "> D", time.time()
                 fill_polygon.fill_polygon(viewport.vp.to_list(), mask)
+                print "> E", time.time()
                 if np.max(mask)==0: # no mask
                     mask += 1
 
                 self._dsc_arr += (mask[:,:,np.newaxis] > 0) * bb_arr
+                print "> F", time.time()
             else:
                 # IF NO BEACHBALL
                 print "dots for", viewport.viewportname
+                print "> a", time.time()
                 for (_, _, x, y) in self.get_p2p_from_viewportname(viewport.viewportname):
                     if not np.isnan(x) and not np.isnan(y):
                         x %= self._dsc.width
                         y %= self._dsc.height
                         self._dsc_arr[y-2:y+2,x-2:x+2,:] = self._color
+                print "> b", time.time()
 
+        print "> X", time.time()
         self._dsc.show_pixels(self._dsc_arr)
         if all(row[0].calibrated for row in self.vdisp_store):
             self.emit("extrinsics-computed", [True])
             pass
+        print "> Y", time.time()
 
 
     def save_exr_file(self, *args, **kwargs):
