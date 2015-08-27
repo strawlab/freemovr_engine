@@ -24,7 +24,7 @@ def send_pose(positionstr, verbose, freq, amplitude):
             x = amplitude*np.sin( t*2*np.pi/5.0 )
             #y = 0.4*np.cos( t*2*np.pi/15.0 )
             y = 0
-            z = 0.5*amplitude*np.cos( t*2*np.pi/15.0 ) + 0.5
+            z = 0.5*amplitude*np.cos( t*2*np.pi/15.0 ) + 0
             position = [x,y,z]
 
         msg = Pose()

@@ -334,7 +334,7 @@ cdef class MyNode:
         rospy.loginfo("red max: %s" % self._red_max)
 
         rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
-        rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        rospy.Subscriber("/stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
         rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
@@ -390,9 +390,6 @@ cdef class MyNode:
         rospy.Service('~get_geometry_info',
                       flyvr.srv.GetDisplayInfo,
                       self.handle_get_geom_info)
-        rospy.Service('~set_display_server_mode',
-                      flyvr.srv.SetDisplayServerMode,
-                      self.handle_set_display_server_mode)
         rospy.Service('~return_to_standby',
                       flyvr.srv.ReturnToStandby,
                       self.handle_return_to_standby)
@@ -451,12 +448,6 @@ cdef class MyNode:
         response = flyvr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
-
-
-    def handle_set_display_server_mode(self, request):
-        with self._mode_lock:
-            self._mode_change = request.mode
-        return flyvr.srv.SetDisplayServerModeResponse()
 
     def handle_return_to_standby(self,request):
         with self._mode_lock:

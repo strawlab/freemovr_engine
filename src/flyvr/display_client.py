@@ -101,6 +101,11 @@ class DisplayServerProxy(object):
         self.set_mode('Stimulus2DBlit')
 
     def set_mode(self,mode):
+        rospy.logwarn('Using deprecated API: `display_client.DisplayServerProxy().set_mode(mode)`. '
+                      'Instead, use display_client.DisplayServerProxy.set_stimulus_mode(mode)`')
+        return DisplayServerProxy.set_stimulus_mode(mode)
+
+    def set_mode_old(self,mode):
         # put server in mode
         if mode == 'display2d':
             warnings.warn("translating stimulus name 'display2d'->'Stimulus2DBlit'",DeprecationWarning)
