@@ -24,7 +24,7 @@
 
 #include <jansson.h>
 
-#define _DEBUG
+//#define _DEBUG
 
 using Poco::format;
 
