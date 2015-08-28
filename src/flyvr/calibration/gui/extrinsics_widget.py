@@ -98,6 +98,7 @@ class ExtrinsicsWidget(Gtk.VBox):
     def __init__(self):
         Gtk.VBox.__init__(self)
 
+        self.BEACHBALL_CACHE = {}
         self.BLOCK_UPDATE = False
 
         ui_file_contents = pkgutil.get_data('flyvr.calibration.gui','pinhole-wizard.ui')
@@ -459,27 +460,34 @@ class ExtrinsicsWidget(Gtk.VBox):
         for row in self.vdisp_store:
             viewport = row[0]
             if viewport.calibrated and viewport.show_beachball:
-                print "showing", viewport.viewportname
-                print "> A", time.time()
-                # IF BEACHBALL
-                cam = viewport.camera
-                # generate an array which contains the uv coordinates for each pixel
-                uv_arr = self.geom.compute_for_camera_view(cam, what='texture_coords')
-                print "> B", time.time()
-                # use this array to calculate the beachball coloring
-                bb_arr = simple_geom.tcs_to_beachball(uv_arr)
-                print "> C", time.time()
-                    #u = farr[:,:,0]
-                    #good = ~np.isnan( u )
-                    #arr2 = simple_geom.tcs_to_beachball(farr)
-                mask = np.zeros(bb_arr.shape[:2], dtype=np.uint8)
-                print "> D", time.time()
-                fill_polygon.fill_polygon(viewport.vp.to_list(), mask)
-                print "> E", time.time()
-                if np.max(mask)==0: # no mask
-                    mask += 1
+                cacheP, cachearr = self.BEACHBALL_CACHE.get(viewport.viewportname, (None, None))
+                if cacheP is not None and np.array_equal(viewport.camera.M, cacheP):
+                    print "showing cached", viewport.viewportname
+                    addarr = cachearr
+                else:
+                    print "showing", viewport.viewportname
+                    print "> A", time.time()
+                    # IF BEACHBALL
+                    cam = viewport.camera
+                    # generate an array which contains the uv coordinates for each pixel
+                    uv_arr = self.geom.compute_for_camera_view(cam, what='texture_coords')
+                    print "> B", time.time()
+                    # use this array to calculate the beachball coloring
+                    bb_arr = simple_geom.tcs_to_beachball(uv_arr)
+                    print "> C", time.time()
+                        #u = farr[:,:,0]
+                        #good = ~np.isnan( u )
+                        #arr2 = simple_geom.tcs_to_beachball(farr)
+                    mask = np.zeros(bb_arr.shape[:2], dtype=np.uint8)
+                    print "> D", time.time()
+                    fill_polygon.fill_polygon(viewport.vp.to_list(), mask)
+                    print "> E", time.time()
+                    if np.max(mask)==0: # no mask
+                        mask += 1
+                    addarr = (mask[:,:,np.newaxis] > 0) * bb_arr
+                    self.BEACHBALL_CACHE[viewport.viewportname] = (cam.M, addarr)
 
-                self._dsc_arr += (mask[:,:,np.newaxis] > 0) * bb_arr
+                self._dsc_arr += addarr
                 print "> F", time.time()
             else:
                 # IF NO BEACHBALL
