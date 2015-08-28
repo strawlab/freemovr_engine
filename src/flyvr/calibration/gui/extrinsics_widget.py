@@ -28,7 +28,13 @@ from pymvg.camera_model import CameraModel
 
 import flyvr.exr
 
-import termcolor
+try:
+    import termcolor
+except ImportError:
+    class termcolor:
+        @staticmethod
+        def colored(*args):
+            print args[0]
 
 
 class ViewportExtrinsicCalibration(object):
