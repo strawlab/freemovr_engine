@@ -5,6 +5,7 @@ import collections
 import itertools
 import time
 from gi.repository import Gtk, GObject, GLib
+import yaml
 
 import numpy as np
 import numpy.linalg
@@ -317,8 +318,8 @@ class ExtrinsicsWidget(Gtk.VBox):
             # GEOMFIX
             XYZ = self.geom.model.texcoord2worldcoord(uv)
             method = self.calibration_cb.get_active_text()
-        except:
-            print "Calibration ERROR"
+        except Exception as e:
+            print "Calibration ERROR:", e.message
         else:
             viewportcal.calibrate(self._cam, method, xy, XYZ)
             self.update_bg_image()

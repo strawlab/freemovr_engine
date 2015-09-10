@@ -378,10 +378,16 @@ class Sphere(ModelBase):
         # point) but the closest one, so the smallest value meeting
         # this criterion.
 
-        tt[tt <= 0] = np.nan # behind camera - invalid
-
-        tmin = np.nanmin(tt, axis=0) # find closest to camera
+        #print "**** DEBUG SPHERE ****\n", [x for x in tt.flatten().tolist() if not np.isnan(x)]
+        if np.nansum(tt) > 0:
+            print "DEBUG: current camera faces towards the screen"
+            tmin = np.nanmin(tt, axis=0) # find closest to camera
+        else:
+            #tt[tt <= 0] = np.nan # behind camera - invalid
+            print "DEBUG: current camera faces away from the screen"
+            tmin = np.nanmax(tt, axis=0) # find closest to camera
         return tmin
+
 
     def get_first_surface(self,a,b):
         """return point on surface closest to point a in direction of point b.

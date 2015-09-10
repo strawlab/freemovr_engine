@@ -68,6 +68,7 @@ class InfoWidget(Gtk.VBox):
     def on_extrinsics_computed(self, extrinsicswidget, *args):
         self.exr_button.connect("clicked", extrinsicswidget.save_exr_file)
         self.exr_button.set_sensitive(True)
+        # TODO: set indicator if all calibrated
 
     def on_displayclient_connect(self, *args):
         pass
