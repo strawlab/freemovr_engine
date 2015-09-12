@@ -360,8 +360,8 @@ cdef class MyNode:
         self._red_max = self._config_dict.get('red_max', False)
         rospy.loginfo("red max: %s" % self._red_max)
 
-        rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
-        rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        rospy.Subscriber("/pose", geometry_msgs.msg.Pose, self.pose_callback)
+        rospy.Subscriber("/stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
         rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
