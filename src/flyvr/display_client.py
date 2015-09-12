@@ -101,6 +101,15 @@ class DisplayServerProxy(object):
         self.set_mode('Stimulus2DBlit')
 
     def set_mode(self,mode):
+        """Set the stimulus_mode of this particular display server.
+
+        This call blocks until the stimulus_mode is switched
+        registered on the display server.
+
+        NOTE: typically one wants to set the stimulus_mode of all
+        display servers simultaneously. In that case, call
+        `DisplayServerProxy.set_stimulus_mode(mode)`.
+        """
         # put server in mode
         if mode == 'display2d':
             warnings.warn("translating stimulus name 'display2d'->'Stimulus2DBlit'",DeprecationWarning)
