@@ -102,7 +102,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int two_pass,
               int show_geom_coords,
               int tethered_mode,
-              int slave
+              int slave,
+              unsigned int cubemap_resolution
               ) nogil except +
         void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
         void update( double, Vec3, Quat )
@@ -271,6 +272,7 @@ cdef class MyNode:
         parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
         parser.add_argument('--pbuffer', default=False, action='store_true')
         parser.add_argument('--two_pass', default=False, action='store_true')
+        parser.add_argument('--cubemap-resolution', default=512, type=int, choices=(256,512,1024,2048))
         parser.add_argument('--throttle', default=False, action='store_true')
         parser.add_argument('--slave', default=False, action='store_true',
             help='In a multiprocess VR setup, this is a slave')
@@ -306,6 +308,10 @@ cdef class MyNode:
 
         self._throttle = args.throttle
         rospy.loginfo("throttle framerate: %s" % self._throttle)
+
+        rospy.loginfo("rendering %dpx cubemap, %s pass, %s pbuffer" % (args.cubemap_resolution,
+                                                                     "2" if args.two_pass else "1",
+                                                                     "with" if args.pbuffer else "without"))
 
         self._using_ros_config = False
         config_dict = rospy.get_param('~',{})
@@ -411,7 +417,8 @@ cdef class MyNode:
                                args.two_pass,
                                args.show_geom_coords,
                                tethered_mode,
-                               args.slave
+                               args.slave,
+                               args.cubemap_resolution
                                )
         #these subscribers access self.dsosg
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_image_callback)
