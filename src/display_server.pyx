@@ -269,14 +269,14 @@ cdef class MyNode:
         parser.add_argument('--mode',
                             choices=['virtual_world','cubemap','overview','geometry','geometry_texture','vr_display'],
                             default='vr_display')
-        parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
+        parser.add_argument('--observer-radius', default=0.01, type=float) # 1cm if units are meters
         parser.add_argument('--pbuffer', default=False, action='store_true')
-        parser.add_argument('--two_pass', default=False, action='store_true')
-        parser.add_argument('--cubemap-resolution', default=512, type=int, choices=(256,512,1024,2048))
+        parser.add_argument('--two-pass', default=False, action='store_true')
+        parser.add_argument('--cubemap-resolution', default=512, type=int, choices=(512,256,1024,2048))
         parser.add_argument('--throttle', default=False, action='store_true')
         parser.add_argument('--slave', default=False, action='store_true',
             help='In a multiprocess VR setup, this is a slave')
-        parser.add_argument('--show_geom_coords', default=False, action='store_true')
+        parser.add_argument('--show-geom-coords', default=False, action='store_true')
         parser.add_argument('--config', type=str,
             help='JSON configuration file describing the setup. '\
                  'If specified configuration is taken from here, otherwise config is taken from '\
