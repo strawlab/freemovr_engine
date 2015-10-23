@@ -292,7 +292,7 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture, Poco::Path shader_path){
 // constructor
 DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
-             bool tethered_mode, bool slave) :
+             bool tethered_mode, bool slave, unsigned int cubemap_resolution) :
     _current_stimulus(NULL), _mode(mode),
     _flyvr_basepath(flyvr_basepath),
     _config_file_path(config_fname),
@@ -361,7 +361,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
     _active_3d_world = new osg::Group; // each (3d) plugin switches the child of this node
     _observer_pat = new osg::PositionAttitudeTransform;
-    _cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path);
+    _cubemap_maker = new CameraCube( _active_3d_world, _observer_pat, shader_path, cubemap_resolution, cubemap_resolution);
     _bg_callback = new BackgroundCallback(_cubemap_maker);
 
     ignore_missing_plugins = json_is_true(json_object_get(json_config, "ignore_missing_stimulus_plugins"));

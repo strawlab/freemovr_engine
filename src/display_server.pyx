@@ -25,6 +25,7 @@ import tempfile
 import json
 import argparse
 import xmlrpclib
+import socket
 
 import numpy as np
 cimport numpy as np
@@ -101,7 +102,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
               int two_pass,
               int show_geom_coords,
               int tethered_mode,
-              int slave
+              int slave,
+              unsigned int cubemap_resolution
               ) nogil except +
         void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
         void update( double, Vec3, Quat )
@@ -247,6 +249,7 @@ cdef class MyNode:
     cdef object _red_max
     cdef object _config_dict
     cdef object _using_ros_config
+    cdef object _single_instace_socket
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -266,13 +269,14 @@ cdef class MyNode:
         parser.add_argument('--mode',
                             choices=['virtual_world','cubemap','overview','geometry','geometry_texture','vr_display'],
                             default='vr_display')
-        parser.add_argument('--observer_radius', default=0.01, type=float) # 1cm if units are meters
+        parser.add_argument('--observer-radius', default=0.01, type=float) # 1cm if units are meters
         parser.add_argument('--pbuffer', default=False, action='store_true')
-        parser.add_argument('--two_pass', default=False, action='store_true')
+        parser.add_argument('--two-pass', default=False, action='store_true')
+        parser.add_argument('--cubemap-resolution', default=512, type=int, choices=(512,256,1024,2048))
         parser.add_argument('--throttle', default=False, action='store_true')
         parser.add_argument('--slave', default=False, action='store_true',
             help='In a multiprocess VR setup, this is a slave')
-        parser.add_argument('--show_geom_coords', default=False, action='store_true')
+        parser.add_argument('--show-geom-coords', default=False, action='store_true')
         parser.add_argument('--config', type=str,
             help='JSON configuration file describing the setup. '\
                  'If specified configuration is taken from here, otherwise config is taken from '\
@@ -290,8 +294,24 @@ cdef class MyNode:
 
         rospy.loginfo("slave instance: %s" % args.slave)
 
+        if not args.slave:
+            # check that there is only one master display_server process per machine
+            # and per type
+            # use linux only abstract sockets (prefixed with NULL)
+            # instead of lock files (as sockets are automatically cleaned up
+            # when the process exits
+            self._single_instace_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            try:
+                self._single_instace_socket.bind('\0display_server')
+            except socket.error, e:
+                rospy.logerr('Only one master instance may be running. Pass --slave to other instances')
+
         self._throttle = args.throttle
         rospy.loginfo("throttle framerate: %s" % self._throttle)
+
+        rospy.loginfo("rendering %dpx cubemap, %s pass, %s pbuffer" % (args.cubemap_resolution,
+                                                                     "2" if args.two_pass else "1",
+                                                                     "with" if args.pbuffer else "without"))
 
         self._using_ros_config = False
         config_dict = rospy.get_param('~',{})
@@ -360,8 +380,8 @@ cdef class MyNode:
         self._red_max = self._config_dict.get('red_max', False)
         rospy.loginfo("red max: %s" % self._red_max)
 
-        rospy.Subscriber("pose", geometry_msgs.msg.Pose, self.pose_callback)
-        rospy.Subscriber("stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        rospy.Subscriber("/pose", geometry_msgs.msg.Pose, self.pose_callback)
+        rospy.Subscriber("/stimulus_mode", std_msgs.msg.String, self.mode_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
         rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
@@ -397,7 +417,8 @@ cdef class MyNode:
                                args.two_pass,
                                args.show_geom_coords,
                                tethered_mode,
-                               args.slave
+                               args.slave,
+                               args.cubemap_resolution
                                )
         #these subscribers access self.dsosg
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_image_callback)
