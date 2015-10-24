@@ -84,8 +84,7 @@ def nan_shape_allclose( a,b, **kwargs):
     bb = b[good_b]
     return np.allclose( aa, bb, **kwargs)
 
-def test_worldcoord_roundtrip():
-
+def test_models():
     # PlanarRectangle
     ll = {'x':0, 'y':0, 'z':0}
     lr = {'x':1, 'y':0, 'z':0}
@@ -97,7 +96,7 @@ def test_worldcoord_roundtrip():
     radius = 1
 
     # Sphere
-    center = {'x':0, 'y':0, 'z':0}
+    center = {'x':1.23, 'y':4.56, 'z':7.89}
     radius = 1
 
     inputs = [ (simple_geom.PlanarRectangle, dict(lowerleft=ll, upperleft=ul, lowerright=lr)),
@@ -106,6 +105,30 @@ def test_worldcoord_roundtrip():
                ]
     for klass, kwargs in inputs:
         yield check_worldcoord_roundtrip, klass, kwargs
+        yield check_surface_intersection, klass, kwargs
+
+def check_surface_intersection(klass,kwargs):
+    model = klass(**kwargs)
+
+    a = np.array([[  0,   0,    0],
+                  [100, 100,    0],
+                  [100,   0, -100],
+                  [  0,   0,    1],
+                  ])
+    b = np.array([ model.get_center() ]*len(a))
+    surf = model.get_first_surface(a,b)
+    rel_dist = model.get_relative_distance_to_first_surface(a,b)
+    s = b-a
+    dist = np.sqrt(np.sum((rel_dist[:,np.newaxis]*s)**2,axis=1))
+    dist_actual = np.sqrt(np.sum((a-surf)**2,axis=1))
+
+    bad_idxs1 = np.isnan(dist)
+    bad_idxs2 = np.isnan(dist_actual)
+    assert np.allclose(bad_idxs1, bad_idxs2)
+    good_idxs = ~bad_idxs1
+    dist = dist[good_idxs]
+    dist_actual = dist_actual[good_idxs]
+    assert np.allclose(dist,dist_actual)
 
 def check_worldcoord_roundtrip(klass,kwargs):
     model = klass(**kwargs)
