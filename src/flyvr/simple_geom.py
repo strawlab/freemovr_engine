@@ -29,13 +29,16 @@ def range_0_2pi(angle):
     return np.fmod((np.fmod(angle,pi2) + pi2),pi2)
 
 class ModelBase(object):
-    def get_distance_to_first_surface(self, a, b):
-        """return distance surface from point a in direction of point b.
+    def get_relative_distance_to_first_surface(self, a, b):
+        """return relative distance to surface from point a in direction of point b.
 
         a is Nx3 array of points
         b is Nx3 array of points
 
-        return length N vector of points
+        Given point A and point B, the vector S is B-A. Find t such
+        that tS + A is on the surface of the model.
+
+        return length N vector of relative distances
         """
         raise NotImplementedError
 
@@ -140,14 +143,7 @@ class Cylinder(ModelBase):
         result = np.vstack( (x0/r, y0/r, z*0) )
         return result.T
 
-    def get_distance_to_first_surface(self, a, b):
-        """return distance surface from point a in direction of point b.
-
-        a is Nx3 array of points
-        b is Nx3 array of points
-
-        return length N vector of points
-        """
+    def get_relative_distance_to_first_surface(self, a, b):
         a = np.array(a,copy=False)
         assert a.ndim==2
         assert a.shape[1]==3
@@ -203,6 +199,7 @@ class Cylinder(ModelBase):
 
         tmin = np.nanmin(tt, axis=0) # find closest to camera
         return tmin
+    get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
 
     def get_first_surface(self,a,b):
         """return point on surface closest to point a in direction of point b.
@@ -212,7 +209,7 @@ class Cylinder(ModelBase):
 
         return Nx3 array of points
         """
-        tmin = self.get_distance_to_first_surface(a,b)
+        tmin = self.get_relative_distance_to_first_surface(a,b)
 
         a = np.array(a,copy=False)
         b = np.array(b,copy=False)
@@ -328,14 +325,7 @@ class Sphere(ModelBase):
         result = np.vstack( (x0/r, y0/r, z0/r) )
         return result.T
 
-    def get_distance_to_first_surface(self, a, b):
-        """return distance surface from point a in direction of point b.
-
-        a is Nx3 array of points
-        b is Nx3 array of points
-
-        return length N vector of points
-        """
+    def get_relative_distance_to_first_surface(self, a, b):
         a = np.array(a,copy=False)
         assert a.ndim==2
         assert a.shape[1]==3
@@ -382,6 +372,7 @@ class Sphere(ModelBase):
 
         tmin = np.nanmin(tt, axis=0) # find closest to camera
         return tmin
+    get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
 
     def get_first_surface(self,a,b):
         """return point on surface closest to point a in direction of point b.
@@ -391,7 +382,7 @@ class Sphere(ModelBase):
 
         return Nx3 array of points
         """
-        tmin = self.get_distance_to_first_surface(a,b)
+        tmin = self.get_relative_distance_to_first_surface(a,b)
 
         a = np.array(a,copy=False)
         inshape = a.shape
@@ -508,14 +499,7 @@ class PlanarRectangle(ModelBase):
         result[bad] = np.nan
         return result
 
-    def get_distance_to_first_surface(self, a, b):
-        """return distance surface from point a in direction of point b.
-
-        a is Nx3 array of points
-        b is Nx3 array of points
-
-        return length N vector of points
-        """
+    def get_relative_distance_to_first_surface(self, a, b):
         a = np.array(a,copy=False)
         assert a.ndim==2
         assert a.shape[1]==3
@@ -546,6 +530,7 @@ class PlanarRectangle(ModelBase):
         d[d<0] = np.nan # don't look backwards, either
         np.seterr(**old_settings)
         return d
+    get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
 
     def get_first_surface(self,a,b):
         """return point on surface closest to point a in direction of point b.
@@ -555,7 +540,7 @@ class PlanarRectangle(ModelBase):
 
         return Nx3 array of points
         """
-        d = self.get_distance_to_first_surface(a,b)
+        d = self.get_relative_distance_to_first_surface(a,b)
 
         a = np.array(a,copy=False)
         assert a.ndim==2
@@ -695,7 +680,7 @@ class Geometry:
             assert output.shape == (camera.height, camera.width, 2)
 
         elif what == 'distance':
-            distance = self.model.get_distance_to_first_surface(camcenter,ray)
+            distance = self.model.get_relative_distance_to_first_surface(camcenter,ray)
             distance.shape = (camera.height, camera.width)
             output = distance
 
