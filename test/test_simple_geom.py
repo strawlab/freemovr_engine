@@ -4,7 +4,9 @@ import yaml
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import flyvr.simple_geom as simple_geom
+import PyDisplaySurfaceArbitraryGeometry as pdsag
 from pymvg.camera_model import CameraModel
+import flyvr.rosmsg2json as rosmsg2json
 
 def get_sample_camera():
     yaml_str = """header:
@@ -99,9 +101,13 @@ def _get_inputs():
     center = {'x':1.23, 'y':4.56, 'z':7.89}
     radius = 1
 
+    # ArbitraryGeometry
+    filename = rosmsg2json.fixup_path( '$(find flyvr)/data/pyramid.osg' )
+
     inputs = [ (simple_geom.PlanarRectangle, dict(lowerleft=ll, upperleft=ul, lowerright=lr)),
                (simple_geom.Cylinder, dict(base=base, axis=axis, radius=radius)),
                (simple_geom.Sphere, dict(center=center, radius=radius)),
+               (pdsag.ArbitraryGeometry, dict(filename=filename, eps=1e-5)),
                ]
     return inputs
 
@@ -117,7 +123,7 @@ def check_surface_intersection(klass,kwargs):
                   [100, 100,    0],
                   [100,   0, -100],
                   [  0,   0,    1],
-                  ])
+                  ], dtype=np.float)
     b = np.array([ model.get_center() ]*len(a))
     surf = model.get_first_surface(a,b)
     rel_dist = model.get_relative_distance_to_first_surface(a,b)

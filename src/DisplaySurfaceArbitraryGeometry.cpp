@@ -1,5 +1,6 @@
 #include "DisplaySurfaceArbitraryGeometry.h"
 #include <stdexcept>
+#include <limits>
 
 #include <osg/TriangleFunctor>
 #include <osg/TriangleIndexFunctor>
@@ -131,6 +132,33 @@ int DisplaySurfaceArbitraryGeometry::worldcoord2texcoord( double x, double y, do
   double w;
   return invert_coord(  x, y, z,     u, v, w, _geom_with_triangles_node, false);
 }
+
+int DisplaySurfaceArbitraryGeometry::get_first_surface( double ax, double ay, double az,
+                                                        double bx, double by, double bz,
+                                                        double &sx, double &sy, double &sz ) {
+  static const int SUCCESS = 0;
+  osg::Vec3 a = osg::Vec3( ax, ay, az );
+  osg::Vec3 b = osg::Vec3( bx, by, bz );
+
+  osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector = new osgUtil::LineSegmentIntersector(a,b);
+  osgUtil::IntersectionVisitor iv = osgUtil::IntersectionVisitor(intersector.get());
+  _geom_with_triangles_node->accept(iv);
+
+  bool linehit = intersector->containsIntersections();
+  if (!linehit) {
+    sx = sy = sz = std::numeric_limits<double>::quiet_NaN();
+    return SUCCESS;
+  }
+
+  osgUtil::LineSegmentIntersector::Intersection intersection = intersector->getFirstIntersection();
+
+  osg::Vec3 s = intersection.getLocalIntersectPoint();
+  sx = s[0];
+  sy = s[1];
+  sz = s[2];
+  return SUCCESS;
+}
+
 
 int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, double in2,
                                        double& out0, double &out1, double &out2,
