@@ -411,7 +411,7 @@ class Sphere(ModelBase):
         y = ay+sy*tmin
         z = az+sz*tmin
 
-        result = np.vstack((x,y,z)).T
+        result = np.vstack((x+self.center.x,y+self.center.y,z+self.center.z)).T
         assert result.shape==inshape
         return result
 
