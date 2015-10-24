@@ -137,6 +137,17 @@ int DisplaySurfaceArbitraryGeometry::get_first_surface( double ax, double ay, do
                                                         double bx, double by, double bz,
                                                         double &sx, double &sy, double &sz ) {
   static const int SUCCESS = 0;
+
+  if (isnan(ax) || isnan(bx)) {
+    // If these are nan, the result will be, too. Therefore, just
+    // shortcircuit the calls to OSG. (Do not bother checking ay, az
+    // or by, bz as only in an unexpected situations would their
+    // NaN-ness differ from ax or bx. And in such an unexpected
+    // situation, this function will still return correct results.)
+    sx = sy = sz = std::numeric_limits<double>::quiet_NaN();
+    return SUCCESS;
+  }
+
   osg::Vec3 a = osg::Vec3( ax, ay, az );
   osg::Vec3 b = osg::Vec3( bx, by, bz );
 
