@@ -1,5 +1,6 @@
 #include "DisplaySurfaceArbitraryGeometry.h"
 #include <stdexcept>
+#include <limits>
 
 #include <osg/TriangleFunctor>
 #include <osg/TriangleIndexFunctor>
@@ -20,7 +21,7 @@ typedef osg::TriangleIndexFunctor<CollectTriangleOperator> CollectTriangleIndexF
 
 using namespace flyvr;
 
-DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename) {
+DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename,double precision) : _precision(precision) {
   std::vector<std::string> filenames = std::vector<std::string>();
   filenames.push_back(filename);
   osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFiles(filenames);
@@ -71,9 +72,8 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
   // ----------------------------------------------------
 
   _lineseg_starters = new osg::Vec3Array;
-  double eps = 1e-6;
-  _lineseg_starters->push_back( osg::Vec3(0.0, 0.0, eps) );
-  _lineseg_starters->push_back( osg::Vec3(eps, 0.0, 0.0) );
+  _lineseg_starters->push_back( osg::Vec3(0.0, 0.0, _precision) );
+  _lineseg_starters->push_back( osg::Vec3(_precision, 0.0, 0.0) );
 }
 
 osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texcoord_colors) {
@@ -133,6 +133,44 @@ int DisplaySurfaceArbitraryGeometry::worldcoord2texcoord( double x, double y, do
   return invert_coord(  x, y, z,     u, v, w, _geom_with_triangles_node, false);
 }
 
+int DisplaySurfaceArbitraryGeometry::get_first_surface( double ax, double ay, double az,
+                                                        double bx, double by, double bz,
+                                                        double &sx, double &sy, double &sz ) {
+  static const int SUCCESS = 0;
+
+  if (isnan(ax) || isnan(bx)) {
+    // If these are nan, the result will be, too. Therefore, just
+    // shortcircuit the calls to OSG. (Do not bother checking ay, az
+    // or by, bz as only in an unexpected situations would their
+    // NaN-ness differ from ax or bx. And in such an unexpected
+    // situation, this function will still return correct results.)
+    sx = sy = sz = std::numeric_limits<double>::quiet_NaN();
+    return SUCCESS;
+  }
+
+  osg::Vec3 a = osg::Vec3( ax, ay, az );
+  osg::Vec3 b = osg::Vec3( bx, by, bz );
+
+  osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector = new osgUtil::LineSegmentIntersector(a,b);
+  osgUtil::IntersectionVisitor iv = osgUtil::IntersectionVisitor(intersector.get());
+  _geom_with_triangles_node->accept(iv);
+
+  bool linehit = intersector->containsIntersections();
+  if (!linehit) {
+    sx = sy = sz = std::numeric_limits<double>::quiet_NaN();
+    return SUCCESS;
+  }
+
+  osgUtil::LineSegmentIntersector::Intersection intersection = intersector->getFirstIntersection();
+
+  osg::Vec3 s = intersection.getLocalIntersectPoint();
+  sx = s[0];
+  sy = s[1];
+  sz = s[2];
+  return SUCCESS;
+}
+
+
 int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, double in2,
                                        double& out0, double &out1, double &out2,
                                        osg::ref_ptr<osg::Node> in_node,
@@ -141,12 +179,8 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
   static const int ERROR_NOT_3_RATIOS = 1;
   static const int ERROR_INVALID_SOURCE = 2;
 
-  static const double mynan = 0.0/0.0;
-  static const double myinf = 1.0/0.0;
-  static const double eps = 1e-6;
-
   if (isnan(in0) || isnan(in1) || isnan(in2)) {
-    out0 = mynan; out1 = mynan; out2 = mynan;
+    out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
 
@@ -154,7 +188,7 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
 
 
   // compute all potential intersections, remember the best --------------------
-  double best_dist2 = myinf;
+  double best_dist2 = std::numeric_limits<double>::infinity();
   osgUtil::LineSegmentIntersector::Intersection tmp;
   osgUtil::LineSegmentIntersector::Intersection& best_intersection = tmp;
   bool found_any = false;
@@ -182,12 +216,12 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
 
   if (!found_any) {
     // No intersection. Give up.
-    out0 = mynan; out1 = mynan; out2 = mynan;
+    out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
 
-  if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > eps) {
-    out0 = mynan; out1 = mynan; out2 = mynan;
+  if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > _precision) {
+    out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
 
