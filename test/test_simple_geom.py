@@ -122,13 +122,7 @@ def check_surface_intersection(klass,kwargs):
     dist = np.sqrt(np.sum((rel_dist[:,np.newaxis]*s)**2,axis=1))
     dist_actual = np.sqrt(np.sum((a-surf)**2,axis=1))
 
-    bad_idxs1 = np.isnan(dist)
-    bad_idxs2 = np.isnan(dist_actual)
-    assert np.allclose(bad_idxs1, bad_idxs2)
-    good_idxs = ~bad_idxs1
-    dist = dist[good_idxs]
-    dist_actual = dist_actual[good_idxs]
-    assert np.allclose(dist,dist_actual)
+    assert nan_shape_allclose( dist, dist_actual)
 
 def check_worldcoord_roundtrip(klass,kwargs):
     model = klass(**kwargs)
