@@ -84,7 +84,7 @@ def nan_shape_allclose( a,b, **kwargs):
     bb = b[good_b]
     return np.allclose( aa, bb, **kwargs)
 
-def test_models():
+def _get_inputs():
     # PlanarRectangle
     ll = {'x':0, 'y':0, 'z':0}
     lr = {'x':1, 'y':0, 'z':0}
@@ -103,8 +103,11 @@ def test_models():
                (simple_geom.Cylinder, dict(base=base, axis=axis, radius=radius)),
                (simple_geom.Sphere, dict(center=center, radius=radius)),
                ]
+    return inputs
+
+def test_surface_intersection():
+    inputs = _get_inputs()
     for klass, kwargs in inputs:
-        yield check_worldcoord_roundtrip, klass, kwargs
         yield check_surface_intersection, klass, kwargs
 
 def check_surface_intersection(klass,kwargs):
@@ -123,6 +126,11 @@ def check_surface_intersection(klass,kwargs):
     dist_actual = np.sqrt(np.sum((a-surf)**2,axis=1))
 
     assert nan_shape_allclose( dist, dist_actual)
+
+def test_worldcoord_roundtrip():
+    inputs = _get_inputs()
+    for klass, kwargs in inputs:
+        yield check_worldcoord_roundtrip, klass, kwargs
 
 def check_worldcoord_roundtrip(klass,kwargs):
     model = klass(**kwargs)
