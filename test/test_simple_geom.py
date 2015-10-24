@@ -128,17 +128,21 @@ def check_worldcoord_roundtrip(klass,kwargs):
     model = klass(**kwargs)
 
     eps = 0.001 # avoid 0-2pi wrapping issues on sphere and cylinder
-    tc1 = np.array( [[eps,eps],
-                     [eps,1-eps],
-                     [1-eps,1-eps],
-                     [1-eps,eps],
-                     [0.5,eps],
-                     [eps, 0.5]] )
+    u = np.expand_dims(np.linspace(eps,1-eps,20.),1)
+    v = np.expand_dims(np.linspace(eps,1-eps,20.),0)
+    U, V = np.broadcast_arrays(u,v)
+    tc1 = np.vstack((U.flatten(),V.flatten())).T
     wc1 = model.texcoord2worldcoord(tc1)
     tc2 = model.worldcoord2texcoord(wc1)
     wc2 = model.texcoord2worldcoord(tc2)
-    assert nan_shape_allclose( tc1, tc2)
-    assert nan_shape_allclose( wc1, wc2 )
+
+    # for some models, not every texcoord is valid
+    bad = np.isnan(wc1[:,0])
+    tc1_valid = np.array( tc1, copy=True )
+    tc1_valid[ bad, : ] = np.nan
+
+    assert nan_shape_allclose( tc1_valid, tc2 )
+    assert nan_shape_allclose( wc1, wc2, atol=1e-7)
 
 def test_rect():
     ll = {'x':0, 'y':0, 'z':0}
