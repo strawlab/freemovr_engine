@@ -437,6 +437,7 @@ class PlanarRectangle(ModelBase):
 
         self._dir_u = self._right_lower_corner - self._left_lower_corner
         self._dir_v = self._left_upper_corner - self._left_lower_corner
+        self.center_arr = self._left_lower_corner + 0.5*self._dir_u + 0.5*self._dir_v
         self._normal = np.cross( self._dir_u, self._dir_v )
         super(PlanarRectangle,self).__init__()
 
