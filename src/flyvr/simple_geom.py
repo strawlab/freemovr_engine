@@ -144,6 +144,7 @@ class Cylinder(ModelBase):
         return result.T
 
     def get_relative_distance_to_first_surface(self, a, b):
+        # See ModelBase.get_relative_distance_to_first_surface for docstring
         a = np.array(a,copy=False)
         assert a.ndim==2
         assert a.shape[1]==3
@@ -202,13 +203,7 @@ class Cylinder(ModelBase):
     get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
 
     def get_first_surface(self,a,b):
-        """return point on surface closest to point a in direction of point b.
-
-        a is Nx3 array of points
-        b is Nx3 array of points
-
-        return Nx3 array of points
-        """
+        # See ModelBase.get_first_surface for docstring
         tmin = self.get_relative_distance_to_first_surface(a,b)
 
         a = np.array(a,copy=False)
@@ -241,6 +236,7 @@ class Cylinder(ModelBase):
         result = np.vstack((x,y,z)).T
         assert result.shape==inshape
         return result
+    get_first_surface.__doc__ = ModelBase.get_first_surface.__doc__ # inherit docstring
 
 class Sphere(ModelBase):
     def __init__(self, center=None, radius=None):
@@ -326,6 +322,7 @@ class Sphere(ModelBase):
         return result.T
 
     def get_relative_distance_to_first_surface(self, a, b):
+        # See ModelBase.get_relative_distance_to_first_surface for docstring
         a = np.array(a,copy=False)
         assert a.ndim==2
         assert a.shape[1]==3
@@ -375,13 +372,7 @@ class Sphere(ModelBase):
     get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
 
     def get_first_surface(self,a,b):
-        """return point on surface closest to point a in direction of point b.
-
-        a is Nx3 array of points
-        b is Nx3 array of points
-
-        return Nx3 array of points
-        """
+        # See ModelBase.get_first_surface for docstring
         tmin = self.get_relative_distance_to_first_surface(a,b)
 
         a = np.array(a,copy=False)
@@ -414,6 +405,7 @@ class Sphere(ModelBase):
         result = np.vstack((x+self.center.x,y+self.center.y,z+self.center.z)).T
         assert result.shape==inshape
         return result
+    get_first_surface.__doc__ = ModelBase.get_first_surface.__doc__ # inherit docstring
 
 class PlanarRectangle(ModelBase):
     def __init__(self, lowerleft=None, upperleft=None, lowerright=None):
@@ -501,6 +493,7 @@ class PlanarRectangle(ModelBase):
         return result
 
     def get_relative_distance_to_first_surface(self, a, b):
+        # See ModelBase.get_relative_distance_to_first_surface for docstring
         a = np.array(a,copy=False)
         assert a.ndim==2
         assert a.shape[1]==3
@@ -534,13 +527,7 @@ class PlanarRectangle(ModelBase):
     get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
 
     def get_first_surface(self,a,b):
-        """return point on surface closest to point a in direction of point b.
-
-        a is Nx3 array of points
-        b is Nx3 array of points
-
-        return Nx3 array of points
-        """
+        # See ModelBase.get_first_surface for docstring
         d = self.get_relative_distance_to_first_surface(a,b)
 
         a = np.array(a,copy=False)
@@ -558,6 +545,7 @@ class PlanarRectangle(ModelBase):
         d = d[:,np.newaxis]
         pt = d*l+l0
         return pt
+    get_first_surface.__doc__ = ModelBase.get_first_surface.__doc__ # inherit docstring
 
 def get_distance_between_point_and_ray( c, a, b ):
     """return distance between point c and ray from a in direction of point b.
