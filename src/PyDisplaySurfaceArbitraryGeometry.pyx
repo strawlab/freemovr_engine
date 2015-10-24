@@ -19,6 +19,7 @@ cdef class DisplaySurfaceArbitraryGeometry:
         cdef np.ndarray[np.float_t] y = np.zeros( (u.shape[0],), dtype=np.float)
         cdef np.ndarray[np.float_t] z = np.zeros( (u.shape[0],), dtype=np.float)
         cdef double xi=0, yi=0, zi=0
+        cdef int err
         for i in range( u.shape[0] ):
             err = self.thisptr.texcoord2worldcoord( u[i], v[i], xi, yi, zi )
             if err:
@@ -32,6 +33,7 @@ cdef class DisplaySurfaceArbitraryGeometry:
         cdef np.ndarray[np.float_t] u = np.zeros( (x.shape[0],), dtype=np.float)
         cdef np.ndarray[np.float_t] v = np.zeros( (x.shape[0],), dtype=np.float)
         cdef double ui=0, vi=0
+        cdef int err
         for i in range( x.shape[0] ):
             err = self.thisptr.worldcoord2texcoord( x[i], y[i], z[i], ui, vi )
             if err:

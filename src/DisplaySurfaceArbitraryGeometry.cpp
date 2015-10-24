@@ -168,11 +168,8 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
   static const int ERROR_NOT_3_RATIOS = 1;
   static const int ERROR_INVALID_SOURCE = 2;
 
-  static const double mynan = 0.0/0.0;
-  static const double myinf = 1.0/0.0;
-
   if (isnan(in0) || isnan(in1) || isnan(in2)) {
-    out0 = mynan; out1 = mynan; out2 = mynan;
+    out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
 
@@ -180,7 +177,7 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
 
 
   // compute all potential intersections, remember the best --------------------
-  double best_dist2 = myinf;
+  double best_dist2 = std::numeric_limits<double>::infinity();
   osgUtil::LineSegmentIntersector::Intersection tmp;
   osgUtil::LineSegmentIntersector::Intersection& best_intersection = tmp;
   bool found_any = false;
@@ -208,12 +205,12 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
 
   if (!found_any) {
     // No intersection. Give up.
-    out0 = mynan; out1 = mynan; out2 = mynan;
+    out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
 
   if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > _eps) {
-    out0 = mynan; out1 = mynan; out2 = mynan;
+    out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
 
