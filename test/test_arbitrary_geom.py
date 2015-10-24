@@ -9,7 +9,7 @@ import flyvr.rosmsg2json as rosmsg2json
 
 def test_arbitrary_geom():
     filename = rosmsg2json.fixup_path( '$(find flyvr)/data/pyramid.osg' )
-    model = PyDisplaySurfaceArbitraryGeometry.ArbitraryGeometry(filename=filename,eps=1e-6)
+    model = PyDisplaySurfaceArbitraryGeometry.ArbitraryGeometry(filename=filename,precision=1e-6)
 
     # Use a few special texcoords because not all in range [0,1] are
     # valid for arbitrary geometries.

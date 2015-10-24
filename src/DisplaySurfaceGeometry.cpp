@@ -426,13 +426,13 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
         }
         std::string filename = json_string_value( filename_json );
 
-        json_t *eps_json = json_object_get(root, "eps");
-        if(!json_is_number(eps_json)){
-            throw std::runtime_error("DisplaySurfaceArbitraryGeometry parsing eps: expected number");
+        json_t *precision_json = json_object_get(root, "precision");
+        if(!json_is_number(precision_json)){
+            throw std::runtime_error("DisplaySurfaceArbitraryGeometry parsing precision: expected number");
         }
-        double eps = json_number_value( eps_json );
+        double precision = json_number_value( precision_json );
 
-        _geom = new flyvr::DisplaySurfaceArbitraryGeometry(filename,eps);
+        _geom = new flyvr::DisplaySurfaceArbitraryGeometry(filename,precision);
     } else {
         std::ostringstream os;
         os << "unknown model " << model;

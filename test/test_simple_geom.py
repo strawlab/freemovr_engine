@@ -107,7 +107,7 @@ def _get_inputs():
     inputs = [ (simple_geom.PlanarRectangle, dict(lowerleft=ll, upperleft=ul, lowerright=lr)),
                (simple_geom.Cylinder, dict(base=base, axis=axis, radius=radius)),
                (simple_geom.Sphere, dict(center=center, radius=radius)),
-               (pdsag.ArbitraryGeometry, dict(filename=filename, eps=1e-5)),
+               (pdsag.ArbitraryGeometry, dict(filename=filename, precision=1e-5)),
                ]
     return inputs
 

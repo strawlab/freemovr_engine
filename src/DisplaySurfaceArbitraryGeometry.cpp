@@ -21,7 +21,7 @@ typedef osg::TriangleIndexFunctor<CollectTriangleOperator> CollectTriangleIndexF
 
 using namespace flyvr;
 
-DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename,double eps) : _eps(eps) {
+DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename,double precision) : _precision(precision) {
   std::vector<std::string> filenames = std::vector<std::string>();
   filenames.push_back(filename);
   osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFiles(filenames);
@@ -72,8 +72,8 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
   // ----------------------------------------------------
 
   _lineseg_starters = new osg::Vec3Array;
-  _lineseg_starters->push_back( osg::Vec3(0.0, 0.0, _eps) );
-  _lineseg_starters->push_back( osg::Vec3(_eps, 0.0, 0.0) );
+  _lineseg_starters->push_back( osg::Vec3(0.0, 0.0, _precision) );
+  _lineseg_starters->push_back( osg::Vec3(_precision, 0.0, 0.0) );
 }
 
 osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texcoord_colors) {
@@ -209,7 +209,7 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
     return SUCCESS;
   }
 
-  if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > _eps) {
+  if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > _precision) {
     out0 = out1 = out2 = std::numeric_limits<double>::quiet_NaN();
     return SUCCESS;
   }
