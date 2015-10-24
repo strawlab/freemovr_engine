@@ -20,7 +20,7 @@ typedef osg::TriangleIndexFunctor<CollectTriangleOperator> CollectTriangleIndexF
 
 using namespace flyvr;
 
-DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename) {
+DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename,double eps) : _eps(eps) {
   std::vector<std::string> filenames = std::vector<std::string>();
   filenames.push_back(filename);
   osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFiles(filenames);
@@ -71,9 +71,8 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
   // ----------------------------------------------------
 
   _lineseg_starters = new osg::Vec3Array;
-  double eps = 1e-6;
-  _lineseg_starters->push_back( osg::Vec3(0.0, 0.0, eps) );
-  _lineseg_starters->push_back( osg::Vec3(eps, 0.0, 0.0) );
+  _lineseg_starters->push_back( osg::Vec3(0.0, 0.0, _eps) );
+  _lineseg_starters->push_back( osg::Vec3(_eps, 0.0, 0.0) );
 }
 
 osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texcoord_colors) {
@@ -143,7 +142,6 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
 
   static const double mynan = 0.0/0.0;
   static const double myinf = 1.0/0.0;
-  static const double eps = 1e-6;
 
   if (isnan(in0) || isnan(in1) || isnan(in2)) {
     out0 = mynan; out1 = mynan; out2 = mynan;
@@ -186,7 +184,7 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
     return SUCCESS;
   }
 
-  if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > eps) {
+  if ((best_intersection.getLocalIntersectPoint() - in_vert).length() > _eps) {
     out0 = mynan; out1 = mynan; out2 = mynan;
     return SUCCESS;
   }

@@ -10,8 +10,8 @@ from DisplaySurfaceArbitraryGeometry_wrap cimport DisplaySurfaceArbitraryGeometr
 
 cdef class DisplaySurfaceArbitraryGeometry:
     cdef cpp_DisplaySurfaceArbitraryGeometry *thisptr
-    def __cinit__(self, string filename):
-        self.thisptr = new cpp_DisplaySurfaceArbitraryGeometry(filename)
+    def __cinit__(self, string filename, double eps):
+        self.thisptr = new cpp_DisplaySurfaceArbitraryGeometry(filename,eps)
     def __dealloc__(self):
         del self.thisptr
     def texcoord2worldcoord(self, np.ndarray[np.float_t] u, np.ndarray[np.float_t] v):
@@ -42,8 +42,8 @@ cdef class DisplaySurfaceArbitraryGeometry:
         return u,v
 
 class ArbitraryGeometry(flyvr.simple_geom.ModelBase):
-    def __init__(self, string filename):
-        self.geom = DisplaySurfaceArbitraryGeometry(filename)
+    def __init__(self, string filename, double eps):
+        self.geom = DisplaySurfaceArbitraryGeometry(filename,eps)
         super(ArbitraryGeometry,self).__init__()
 
     def texcoord2worldcoord(self,tc):
