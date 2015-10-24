@@ -157,7 +157,7 @@ private:
 
 class CameraCube {
 public:
-	CameraCube(osg::Node* input_node, osg::Node* observer_node, Poco::Path shader_path, unsigned int tex_width=512, unsigned int tex_height=512) {
+	CameraCube(osg::Node* input_node, osg::Node* observer_node, Poco::Path shader_path, unsigned int tex_width, unsigned int tex_height) {
     _texture = new osg::TextureCubeMap;
     _top = new osg::Group; _top->addDescription("CameraCube top node");
 
