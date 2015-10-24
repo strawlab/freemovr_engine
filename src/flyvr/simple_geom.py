@@ -40,7 +40,8 @@ class ModelBase(object):
 
         return length N vector of relative distances
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            'derived class must provide implementation in %r'%self)
 
     def get_first_surface(self, a, b):
         """return point on surface closest to point a in direction of point b.
@@ -50,10 +51,12 @@ class ModelBase(object):
 
         return Nx3 array of points
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            'derived class must provide implementation in %r'%self)
 
     def to_geom_dict(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            'derived class must provide implementation in %r'%self)
 
     def get_center(self):
         return self.center_arr
