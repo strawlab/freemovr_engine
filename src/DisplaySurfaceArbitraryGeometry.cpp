@@ -1,6 +1,7 @@
 #include "DisplaySurfaceArbitraryGeometry.h"
 #include <stdexcept>
 #include <limits>
+#include <sstream>
 
 #include <osg/TriangleFunctor>
 #include <osg/TriangleIndexFunctor>
@@ -26,8 +27,9 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
   filenames.push_back(filename);
   osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFiles(filenames);
   if (!loadedModel.valid()) {
-    std::cerr << "failed filename: " << filename << std::endl;
-    throw std::runtime_error("error opening file");
+    std::stringstream ss;
+    ss << "error opening file '" << filename << "'";
+    throw std::runtime_error(ss.str());
   }
 
   // fill the variables _triangle_indices and _geom_with_triangles
