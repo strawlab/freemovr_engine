@@ -35,6 +35,9 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
   // fill the variables _triangle_indices and _geom_with_triangles
   traverse( loadedModel );
 
+  // find bounding sphere
+  _bound = loadedModel->getBound();
+
   if (_triangle_indices.size()==0) {
     throw std::runtime_error("No geometry was found.");
   }
@@ -151,7 +154,15 @@ int DisplaySurfaceArbitraryGeometry::get_first_surface( double ax, double ay, do
   }
 
   osg::Vec3 a = osg::Vec3( ax, ay, az );
-  osg::Vec3 b = osg::Vec3( bx, by, bz );
+  osg::Vec3 b0 = osg::Vec3( bx, by, bz );
+
+  // Calculate the maximum distance that the surface could be.
+  osg::Vec3 direction = b0-a;
+
+  double max_dist = (_bound.center()-a).length() + _bound.radius();
+
+  // Now calculate the endpoint for surface testing.
+  osg::Vec3 b = a + direction*max_dist;
 
   osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector = new osgUtil::LineSegmentIntersector(a,b);
   osgUtil::IntersectionVisitor iv = osgUtil::IntersectionVisitor(intersector.get());

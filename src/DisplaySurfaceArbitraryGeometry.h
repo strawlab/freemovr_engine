@@ -50,6 +50,7 @@ private:
   osg::ref_ptr<osg::Geometry> _texcoords_with_triangles; // vertices are actually original texcoords
   osg::ref_ptr<osg::Geode> _texcoords_with_triangles_node;
   double _precision;
+  osg::BoundingSphere _bound;
 };
 
 }
