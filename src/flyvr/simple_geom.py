@@ -628,6 +628,12 @@ class Geometry:
             kwargs = geom_dict.copy()
             del kwargs['model']
             self.model = PlanarRectangle(**kwargs)
+        elif geom_dict['model']=='from_file':
+            import PyDisplaySurfaceArbitraryGeometry as pdsag
+            import flyvr.rosmsg2json as rosmsg2json
+            self.model = pdsag.ArbitraryGeometry(
+                filename=rosmsg2json.fixup_path( geom_dict['filename'] ),
+                precision=geom_dict.get('precision',1e-6))
         else:
             raise ValueError("unknown model type: %s"%geom_dict['model'])
 
