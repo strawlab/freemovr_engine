@@ -23,9 +23,7 @@ typedef osg::TriangleIndexFunctor<CollectTriangleOperator> CollectTriangleIndexF
 using namespace flyvr;
 
 DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename,double precision) : _precision(precision) {
-  std::vector<std::string> filenames = std::vector<std::string>();
-  filenames.push_back(filename);
-  osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFiles(filenames);
+  osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFile(filename);
   if (!loadedModel.valid()) {
     std::stringstream ss;
     ss << "error opening file '" << filename << "'";
