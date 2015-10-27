@@ -68,6 +68,8 @@ cdef class DisplaySurfaceArbitraryGeometry:
 
 class ArbitraryGeometry(flyvr.simple_geom.ModelBase):
     def __init__(self, string filename, double precision):
+        self._filename = filename
+        self._precision = precision
         self.geom = DisplaySurfaceArbitraryGeometry(filename,precision)
 
         u = np.expand_dims(np.linspace(0.0,1.0,20.),1)
@@ -77,6 +79,10 @@ class ArbitraryGeometry(flyvr.simple_geom.ModelBase):
         wcs = self.texcoord2worldcoord(tcs)
         self.center_arr = np.mean(wcs,axis=0)
         super(ArbitraryGeometry,self).__init__()
+
+    def __repr__(self):
+        return '<PyDisplaySurfaceArbitraryGeometry.ArbitraryGeometry filename=%r precision=%s>'%(
+            self._filename,self._precision)
 
     def texcoord2worldcoord(self,tc):
         # Parse inputs
