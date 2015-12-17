@@ -22,10 +22,13 @@ struct TriangleIndex {
 
 class DisplaySurfaceArbitraryGeometry : public GeomModel {
 public:
-  DisplaySurfaceArbitraryGeometry(std::string filename);
+  DisplaySurfaceArbitraryGeometry(std::string filename,double precision);
 
   int texcoord2worldcoord( double u, double v, double& x, double &y, double &z);
   int worldcoord2texcoord( double x, double y, double z, double &u, double &v);
+  int get_first_surface( double ax, double ay, double az,
+                         double bx, double by, double bz,
+                         double &sx, double &sy, double &sz );
 
   osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors=false);
 
@@ -46,6 +49,8 @@ private:
   osg::ref_ptr<osg::Geode> _geom_with_triangles_node;
   osg::ref_ptr<osg::Geometry> _texcoords_with_triangles; // vertices are actually original texcoords
   osg::ref_ptr<osg::Geode> _texcoords_with_triangles_node;
+  double _precision;
+  osg::BoundingSphere _bound;
 };
 
 }

@@ -4,7 +4,9 @@ import yaml
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import flyvr.simple_geom as simple_geom
+import PyDisplaySurfaceArbitraryGeometry as pdsag
 from pymvg.camera_model import CameraModel
+import flyvr.rosmsg2json as rosmsg2json
 
 def get_sample_camera():
     yaml_str = """header:
@@ -84,8 +86,7 @@ def nan_shape_allclose( a,b, **kwargs):
     bb = b[good_b]
     return np.allclose( aa, bb, **kwargs)
 
-def test_worldcoord_roundtrip():
-
+def _get_inputs():
     # PlanarRectangle
     ll = {'x':0, 'y':0, 'z':0}
     lr = {'x':1, 'y':0, 'z':0}
@@ -97,13 +98,43 @@ def test_worldcoord_roundtrip():
     radius = 1
 
     # Sphere
-    center = {'x':0, 'y':0, 'z':0}
+    center = {'x':1.23, 'y':4.56, 'z':7.89}
     radius = 1
+
+    # ArbitraryGeometry
+    filename = rosmsg2json.fixup_path( '$(find flyvr)/data/pyramid.osg' )
 
     inputs = [ (simple_geom.PlanarRectangle, dict(lowerleft=ll, upperleft=ul, lowerright=lr)),
                (simple_geom.Cylinder, dict(base=base, axis=axis, radius=radius)),
                (simple_geom.Sphere, dict(center=center, radius=radius)),
+               (pdsag.ArbitraryGeometry, dict(filename=filename, precision=1e-5)),
                ]
+    return inputs
+
+def test_surface_intersection():
+    inputs = _get_inputs()
+    for klass, kwargs in inputs:
+        yield check_surface_intersection, klass, kwargs
+
+def check_surface_intersection(klass,kwargs):
+    model = klass(**kwargs)
+
+    a = np.array([[  0,   0,    0],
+                  [100, 100,    0],
+                  [100,   0, -100],
+                  [  0,   0,    1],
+                  ], dtype=np.float)
+    b = np.array([ model.get_center() ]*len(a))
+    surf = model.get_first_surface(a,b)
+    rel_dist = model.get_relative_distance_to_first_surface(a,b)
+    s = b-a
+    dist = np.sqrt(np.sum((rel_dist[:,np.newaxis]*s)**2,axis=1))
+    dist_actual = np.sqrt(np.sum((a-surf)**2,axis=1))
+
+    assert nan_shape_allclose( dist, dist_actual)
+
+def test_worldcoord_roundtrip():
+    inputs = _get_inputs()
     for klass, kwargs in inputs:
         yield check_worldcoord_roundtrip, klass, kwargs
 
@@ -111,17 +142,21 @@ def check_worldcoord_roundtrip(klass,kwargs):
     model = klass(**kwargs)
 
     eps = 0.001 # avoid 0-2pi wrapping issues on sphere and cylinder
-    tc1 = np.array( [[eps,eps],
-                     [eps,1-eps],
-                     [1-eps,1-eps],
-                     [1-eps,eps],
-                     [0.5,eps],
-                     [eps, 0.5]] )
+    u = np.expand_dims(np.linspace(eps,1-eps,20.),1)
+    v = np.expand_dims(np.linspace(eps,1-eps,20.),0)
+    U, V = np.broadcast_arrays(u,v)
+    tc1 = np.vstack((U.flatten(),V.flatten())).T
     wc1 = model.texcoord2worldcoord(tc1)
     tc2 = model.worldcoord2texcoord(wc1)
     wc2 = model.texcoord2worldcoord(tc2)
-    assert nan_shape_allclose( tc1, tc2)
-    assert nan_shape_allclose( wc1, wc2 )
+
+    # for some models, not every texcoord is valid
+    bad = np.isnan(wc1[:,0])
+    tc1_valid = np.array( tc1, copy=True )
+    tc1_valid[ bad, : ] = np.nan
+
+    assert nan_shape_allclose( tc1_valid, tc2 )
+    assert nan_shape_allclose( wc1, wc2, atol=1e-7)
 
 def test_rect():
     ll = {'x':0, 'y':0, 'z':0}
