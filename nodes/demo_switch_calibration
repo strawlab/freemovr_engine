@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+import numpy as np
+import argparse
+
+import roslib; roslib.load_manifest('flyvr')
+import rospy
+import flyvr.display_client as display_client
+from std_msgs.msg import String
+
+def switch_calibration(period):
+    pub = rospy.Publisher('p2g_calibration_filename', String)
+    filenames = ['$(find flyvr)/config/p2g.exr',
+                 '$(find flyvr)/data/monitor_1920x1080.exr',
+                 ]
+    current_index = 0
+    while not rospy.is_shutdown():
+        t = rospy.get_time()
+
+        msg = String(filenames[current_index])
+        pub.publish(msg)
+        rospy.sleep(period)
+        current_index = (current_index+1)%len(filenames)
+
+if __name__ == '__main__':
+    rospy.init_node('demo_switch_calibration')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--period', type=float, help='period at which to switch calibration (default: 5)', default=5)
+
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    switch_calibration(period=args.period)
+
