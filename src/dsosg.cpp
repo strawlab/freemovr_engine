@@ -296,7 +296,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     _current_stimulus(NULL), _mode(mode),
     _flyvr_basepath(flyvr_basepath),
     _config_file_path(config_fname),
-    _tethered_mode(tethered_mode), _wcc(NULL), _g2di(NULL)
+    _tethered_mode(tethered_mode), _wcc(NULL), _g2di(NULL), _two_pass(two_pass)
 
 {
     json_error_t json_error;
@@ -322,16 +322,16 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
     _observer_cb = new ObserverPositionCallback();
 
-    osg::ref_ptr<osg::Group> root = new osg::Group; root->addDescription("root node");
-    osg::Camera* debug_hud_cam = createHUD();
-    root->addChild( debug_hud_cam );
+    _root = new osg::Group; _root->addDescription("root node");
+    _debug_hud_cam = createHUD();
+    _root->addChild( _debug_hud_cam );
 
     osg::LightModel* lightmodel = new osg::LightModel;
     lightmodel->setLocalViewer(true);
-    root->getOrCreateStateSet()->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
+    _root->getOrCreateStateSet()->setAttributeAndModes(lightmodel, osg::StateAttribute::ON);
 
     _hud_cam = create_HUD_cam(512,512);
-    root->addChild( _hud_cam );
+    _root->addChild( _hud_cam );
 
     std::string geom_filename;
     std::vector<std::string> stimulus_plugin_paths;
@@ -460,7 +460,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     _hud_cam->addChild(_active_2d_hud);
 
     if ( _mode==std::string("virtual_world") || _mode==std::string("overview")) {
-        root->addChild( _active_3d_world );
+        _root->addChild( _active_3d_world );
     }
 
     _observer_pat->addDescription("observer position attitute transform node");
@@ -494,18 +494,18 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             geode_1->addDrawable(shaped);
             _observer_marker_pat->addChild(geode_1);
             _observer_pat->addChild(_observer_marker_pat);
-            root->addChild(_observer_pat);
+            _root->addChild(_observer_pat);
         }
     }
 
     if ( !(_mode==std::string("virtual_world"))) {
-        root->addChild(_cubemap_maker->get_node());
+        _root->addChild(_cubemap_maker->get_node());
     }
 
     if (_mode==std::string("cubemap")) {
         // create On Screen Display for debugging
         osg::ref_ptr<osg::Group> debug_osd = ShowCubemap(_cubemap_maker->get_cubemap(),shader_path);
-        root->addChild(debug_osd.get());
+        _root->addChild(debug_osd.get());
     }
 
     if (!json_is_object(json_geom)) {
@@ -521,53 +521,53 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     } else {
         _observer_geometry_pat->setPosition(osg::Vec3(0.0,0.0,0.0));
     }
-    root->addChild( _observer_geometry_pat );
+    _root->addChild( _observer_geometry_pat );
 
     // render cubemap onto geometry
-    ProjectCubemapToGeometryPass *pctcp =new ProjectCubemapToGeometryPass(_flyvr_basepath.toString(),
-                                                                          _cubemap_maker->get_cubemap(),
-                                                                          _observer_cb,
-                                                                          geometry_parameters);
-    root->addChild(pctcp->get_top().get());
+    _pctcp = new ProjectCubemapToGeometryPass(_flyvr_basepath.toString(),
+                                              _cubemap_maker->get_cubemap(),
+                                              _observer_cb,
+                                              geometry_parameters);
+    _root->addChild(_pctcp->get_top().get());
     if (_mode==std::string("overview")||_mode==std::string("geometry")) {
         // XXX should make the geometry itself move in tethered mode?
-        _observer_geometry_pat->addChild( pctcp->get_textured_geometry() );
+        _observer_geometry_pat->addChild( _pctcp->get_textured_geometry() );
     }
 
     if (_mode==std::string("geometry_texture")) {
-        osg::Texture2D* geomtex = pctcp->get_output_texture();
+        osg::Texture2D* geomtex = _pctcp->get_output_texture();
         osg::Group* g = make_textured_quad(geomtex,
                                            -1.0,
                                            1.0,
                                            1.0,
                                            0, 0, 1.0, 1.0);
-        debug_hud_cam->addChild(g);
+        _debug_hud_cam->addChild(g);
     }
 
     if (_mode==std::string("overview")||_mode==std::string("vr_display")) {
 
-        if (two_pass) {
+        if (_two_pass) {
             CameraModel* cam1_params = make_real_camera_parameters();
             osg::ref_ptr<osg::Group> g;
             if (show_geom_coords) {
                 throw std::runtime_error("have not implemented this again");
                 //g = geometry_parameters->make_texcoord_group(shader_path);
             } else {
-                g = pctcp->get_textured_geometry();
+                g = _pctcp->get_textured_geometry();
             }
 
             TexturedGeometryToCameraImagePass *tg2ci=new TexturedGeometryToCameraImagePass(g,
                                                                                            cam1_params);
-            root->addChild(tg2ci->get_top().get());
+            _root->addChild(tg2ci->get_top().get());
             osg::Texture* mytex;
             mytex = tg2ci->get_output_texture();
             if (_mode==std::string("overview")) {
-                root->addChild( cam1_params->make_rendering(1) );
+                _root->addChild( cam1_params->make_rendering(1) );
                 osg::Group* g = make_textured_quad(mytex,
                                                    -1.0,
                                                    1.0, 1.0,
                                                    0, 0, 0.3, 0.3);
-                debug_hud_cam->addChild(g);
+                _debug_hud_cam->addChild(g);
             }
 
 
@@ -579,7 +579,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             CameraImageToDisplayImagePass *ci2di = new CameraImageToDisplayImagePass(shader_path,
                                                                                      mytex,
                                                                                      p2c_filename);
-            root->addChild(ci2di->get_top().get());
+            _root->addChild(ci2di->get_top().get());
             {
                 bool show_hud = false;
                 float l,b,w,h;
@@ -596,52 +596,79 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                                                        -1.0,
                                                        1.0, 1.0,
                                                        l,b,w,h);
-                    debug_hud_cam->addChild(g);
+                    _debug_hud_cam->addChild(g);
                 }
             }
         } else {
-
             json_t *p2g_json = json_object_get(json_config, "p2g");
             flyvr_assert(p2g_json != NULL);
-
             Poco::Path p2g_path = _config_file_path.parent().resolve(
                                     Poco::Path(json_string_value(p2g_json)));
             std::string p2g_filename = p2g_path.toString();
             std::cerr << "p2g file: " << p2g_filename << "\n";
-            _g2di = new GeometryTextureToDisplayImagePass(shader_path,
-                                                          pctcp->get_output_texture(),
-                                                          p2g_filename,
-                                                          show_geom_coords);
-            root->addChild(_g2di->get_top().get());
-            {
-                bool show_hud = false;
-                float w,h;
-                w=1.0; h=1.0;
-                if (_mode==std::string("overview")) {
-                    show_hud=true;
-                    w=0.3; h=0.3;
-                }
-                if (_mode==std::string("vr_display")) {
-                    show_hud=true;
-                }
-                if (show_hud) {
-                    osg::Group* g = make_textured_quad(_g2di->get_output_texture(),
-                                                       -1.0,
-                                                       1.0, 1.0,
-                                                       0.0,0.0,w,h);
-                    debug_hud_cam->addChild(g);
-                }
-            }
+
+            loadDisplayCalibrationFile(p2g_filename,
+                                       show_geom_coords);
         }
     }
 
     _viewer = new osgViewer::Viewer;
-    _viewer->setSceneData(root.get());
+    _viewer->setSceneData(_root.get());
     _viewer->getViewerStats()->collectStats("frame_rate",true);
 
     json_decref(json_config);
 
-    //osgDB::writeNodeFile(*(root.get()), _mode + std::string(".osg"));
+    //osgDB::writeNodeFile(*(_root.get()), _mode + std::string(".osg"));
+}
+
+void DSOSG::loadDisplayCalibrationFile(std::string p2g_filename,
+                                       bool show_geom_coords) {
+
+    flyvr_assert_msg((_mode==std::string("overview") ||
+                      _mode==std::string("vr_display")),
+                     "must be in 'overview' or 'vr_display' mode");
+    flyvr_assert_msg(!_two_pass,
+                     "NotImplemented: loadDisplayCalibrationFile() two-pass");
+
+    Poco::Path shader_path(_flyvr_basepath);
+    shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
+
+    if (_g2di != NULL) {
+        _root->removeChild(_g2di->get_top().get());
+        delete _g2di;
+    }
+
+    if (_g2d_hud_cam_root != NULL) {
+        flyvr_assert(_debug_hud_cam!=NULL);
+        _debug_hud_cam->removeChild( _g2d_hud_cam_root );
+        // delete _g2d_hud_cam_root; // TODO: why won't gcc let me do this?
+    }
+
+    _g2di = new GeometryTextureToDisplayImagePass(shader_path,
+                                                  _pctcp->get_output_texture(),
+                                                  p2g_filename,
+                                                  show_geom_coords);
+
+    _root->addChild(_g2di->get_top().get());
+    {
+        bool show_hud = false;
+        float w,h;
+        w=1.0; h=1.0;
+        if (_mode==std::string("overview")) {
+            show_hud=true;
+            w=0.3; h=0.3;
+        }
+        if (_mode==std::string("vr_display")) {
+            show_hud=true;
+        }
+        if (show_hud) {
+            _g2d_hud_cam_root = make_textured_quad(_g2di->get_output_texture(),
+                                                   -1.0,
+                                                   1.0, 1.0,
+                                                   0.0,0.0,w,h);
+            _debug_hud_cam->addChild(_g2d_hud_cam_root);
+        }
+    }
 }
 
 std::vector<std::string> DSOSG::get_stimulus_plugin_names() {

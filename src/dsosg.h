@@ -20,6 +20,7 @@
 
 #include "WindowCaptureCallback.h"
 #include "GeometryTextureToDisplayImagePass.h"
+#include "ProjectCubemapToGeometryPass.h"
 
 namespace dsosg{
 
@@ -75,6 +76,9 @@ namespace dsosg{
         void setCaptureImageFilename(std::string name);
         void setCaptureOSGFilename(std::string name);
 
+        void loadDisplayCalibrationFile(std::string p2g_filename,
+                                        bool show_geom_coords);
+
         TrackballManipulatorState getTrackballManipulatorState();
         void setTrackballManipulatorState(TrackballManipulatorState s);
 
@@ -111,6 +115,11 @@ namespace dsosg{
         OpenThreads::Mutex _osg_capture_mutex;
         std::string        _osg_capture_filename;
         flyvr::BackgroundColorCallback *_bg_callback;
+        ProjectCubemapToGeometryPass* _pctcp;
+        osg::Camera* _debug_hud_cam;
+        osg::ref_ptr<osg::Group> _root;
+        osg::Group* _g2d_hud_cam_root;
+        bool _two_pass;
     };
 
 }
