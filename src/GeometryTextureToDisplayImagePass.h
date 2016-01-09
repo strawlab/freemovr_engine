@@ -18,14 +18,14 @@ public:
 									  bool show_geom_coords=false,
 									  float display_gamma=1.0,
                                       bool red_max=false);
-									  
+
 	osg::ref_ptr<osg::Group> get_top() { return _top; }
 	osg::ref_ptr<osg::Texture2D> get_output_texture() { return _out_texture; }
 	int get_display_width() {return _display_width; }
 	int get_display_height() {return _display_height; }
     void set_gamma(float g);
     void set_red_max(bool r);
-	
+
 private:
 	void create_output_texture();
 	void setup_camera();
