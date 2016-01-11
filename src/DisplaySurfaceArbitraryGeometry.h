@@ -30,7 +30,7 @@ public:
                          double bx, double by, double bz,
                          double &sx, double &sy, double &sz );
 
-  osg::ref_ptr<osg::Geometry> const make_geom(bool texcoord_colors=false);
+  osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors=false) const;
 
 
   void addTriangle(unsigned int p1,unsigned int p2,unsigned int p3);

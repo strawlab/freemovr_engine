@@ -79,7 +79,7 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
   _lineseg_starters->push_back( osg::Vec3(_precision, 0.0, 0.0) );
 }
 
-osg::ref_ptr<osg::Geometry> const DisplaySurfaceArbitraryGeometry::make_geom(bool texcoord_colors) {
+osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texcoord_colors) const {
   // Make copy of geometry for drawing. Use only triangles.
   osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
   {
