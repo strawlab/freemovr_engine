@@ -51,7 +51,7 @@ public:
         return osg::Vec3(c,s,0)*_matrix;
     }
 
-    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+    osg::ref_ptr<osg::Geometry> const make_geom(bool texcoord_colors) {
         osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
         {
             double fracDelta = 1.0/(double)_n_segments;
@@ -155,7 +155,7 @@ public:
         return osg::Vec3(ca*ce, sa*ce, se);
     }
 
-    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+    osg::ref_ptr<osg::Geometry> const make_geom(bool texcoord_colors) {
         osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
         {
             double frac_az_Delta = 1.0/(double)_n_az;
@@ -259,7 +259,7 @@ public:
         return _normal;
     }
 
-    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+    osg::ref_ptr<osg::Geometry> const make_geom(bool texcoord_colors) {
         osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
 
             osg::Vec3Array* vertices = new osg::Vec3Array;
@@ -445,6 +445,6 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
     json_decref(root);
 }
 
-osg::ref_ptr<osg::Geometry> DisplaySurfaceGeometry::make_geom(bool texcoord_colors) {
+osg::ref_ptr<osg::Geometry> const DisplaySurfaceGeometry::make_geom(bool texcoord_colors) {
     return _geom->make_geom(texcoord_colors);
 };
