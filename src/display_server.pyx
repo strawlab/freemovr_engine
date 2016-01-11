@@ -126,6 +126,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
         void setCaptureOSGFilename(std_string name) nogil except +
         void setGamma(float gamma) nogil except +
         void setRedMax(int red_max) nogil except +
+        void loadDisplayCalibrationFile(std_string p2g_filename,
+                                        int show_geom_coords) nogil except +
 
         TrackballManipulatorState getTrackballManipulatorState() nogil except +
         void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
@@ -244,12 +246,14 @@ cdef class MyNode:
     cdef object _subscription_mode
     cdef int _throttle
     cdef object _timer
-    cdef object _gamma
+    cdef public object _gamma
     cdef object _posix_sched_fifo
-    cdef object _red_max
+    cdef public object _red_max
+    cdef public object _p2g_filename
     cdef object _config_dict
     cdef object _using_ros_config
     cdef object _single_instace_socket
+    cdef object _cross_thread_lock
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
@@ -257,6 +261,7 @@ cdef class MyNode:
         self._commands_lock = threading.Lock()
         self._pose_lock = threading.Lock()
         self._mode_lock = threading.Lock()
+        self._cross_thread_lock = threading.Lock()
         self._mode_change =  None
         self._pose_position = new Vec3(0,0,0)
         self._pose_orientation = new Quat(0,0,0,1)
@@ -380,8 +385,12 @@ cdef class MyNode:
         self._red_max = self._config_dict.get('red_max', False)
         rospy.loginfo("red max: %s" % self._red_max)
 
+        self._p2g_filename = None
+
         rospy.Subscriber("/pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("/stimulus_mode", std_msgs.msg.String, self.mode_callback)
+        rospy.Subscriber("p2g_calibration_filename", std_msgs.msg.String,
+                         self.p2g_calibration_filename_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
         rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
@@ -559,10 +568,14 @@ cdef class MyNode:
             self._pose_orientation = new_orientation
 
     def gamma_callback(self, msg):
-        self._gamma = msg.data
+        self.set_var('_gamma', msg.data)
 
     def red_max_callback(self, msg):
-        self._red_max = msg.data
+        self.set_var('_red_max', msg.data)
+
+    def p2g_calibration_filename_callback(self, msg):
+        p2g_filename = rosmsg2json.fixup_path(msg.data)
+        self.set_var('_p2g_filename', p2g_filename)
 
     def capture_image_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
@@ -618,6 +631,18 @@ cdef class MyNode:
                                callback=self.stimulus_plugin_callback, callback_args=(plugin,topic_name))
         self._current_subscribers.append(sub)
 
+    def get_and_clear_var(self,attr):
+        """prevent race conditions when retreiving variable"""
+        with self._cross_thread_lock:
+            result = getattr(self,attr)
+            setattr(self,attr,None)
+        return result
+
+    def set_var(self,attr,value):
+        """prevent race conditions when setting variable"""
+        with self._cross_thread_lock:
+            setattr(self,attr,value)
+
     def run(self):
         cdef int do_shutdown
         cdef Vec3 position
@@ -666,12 +691,15 @@ cdef class MyNode:
                 self.dsosg.update( now, deref(self._pose_position), deref(self._pose_orientation))
 
             if self._gamma is not None:
-                self.dsosg.setGamma(self._gamma)
-                self._gamma = None
+                self.dsosg.setGamma(self.get_and_clear_var('_gamma'))
 
             if self._red_max is not None:
-                self.dsosg.setRedMax(self._red_max)
-                self._red_max = None
+                self.dsosg.setRedMax(self.get_and_clear_var('_red_max'))
+
+            if self._p2g_filename is not None:
+                self.dsosg.loadDisplayCalibrationFile(
+                    self.get_and_clear_var('_p2g_filename'),
+                    0)
 
             with nogil:
                 self.dsosg.frame()
