@@ -29,7 +29,7 @@ public:
         _height = _axis.length();
     }
 
-    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) {
+    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) const {
         // keep in sync with simple_geom.py
         double frac_theta = tc[0];
         double frac_height = tc[1];
@@ -42,7 +42,7 @@ public:
         return (osg::Vec3(c*r,s*r,frac_height*_height))*_matrix + _base;
     }
 
-    osg::Vec3 texcoord2normal( osg::Vec2 tc ) {
+    osg::Vec3 texcoord2normal( osg::Vec2 tc ) const {
         double frac_theta = tc[0];
 
         double angle = frac_theta * 2.0*osg::PI;
@@ -51,7 +51,7 @@ public:
         return osg::Vec3(c,s,0)*_matrix;
     }
 
-    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) const {
         osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
         {
             double fracDelta = 1.0/(double)_n_segments;
@@ -120,7 +120,7 @@ public:
     SphereModel(float radius, osg::Vec3 center) :
         _radius(radius), _center(center), _n_az(80), _n_el(20) {}
 
-    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) {
+    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) const {
         // keep in sync with simple_geom.py
         double frac_az = tc[0];
         double frac_el = tc[1];
@@ -139,7 +139,7 @@ public:
         return osg::Vec3(r*ca*ce, r*sa*ce, r*se) + _center;
     }
 
-    osg::Vec3 texcoord2normal( osg::Vec2 tc ) {
+    osg::Vec3 texcoord2normal( osg::Vec2 tc ) const {
         double frac_az = tc[0];
         double frac_el = tc[1];
 
@@ -155,7 +155,7 @@ public:
         return osg::Vec3(ca*ce, sa*ce, se);
     }
 
-    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) const {
         osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
         {
             double frac_az_Delta = 1.0/(double)_n_az;
@@ -249,17 +249,17 @@ public:
         _normal = _dir_u ^ _dir_v;
     }
 
-    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) {
+    osg::Vec3 texcoord2worldcoord( osg::Vec2 tc ) const {
         // keep in sync with simple_geom.py
 
         return _left_lower_corner + _dir_u * tc.x() + _dir_v * tc.y();
     }
 
-    osg::Vec3 texcoord2normal( osg::Vec2 tc ) {
+    osg::Vec3 texcoord2normal( osg::Vec2 tc ) const {
         return _normal;
     }
 
-    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) {
+    osg::ref_ptr<osg::Geometry> make_geom(bool texcoord_colors) const {
         osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry;
 
             osg::Vec3Array* vertices = new osg::Vec3Array;
@@ -445,6 +445,6 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
     json_decref(root);
 }
 
-osg::ref_ptr<osg::Geometry> DisplaySurfaceGeometry::make_geom(bool texcoord_colors) {
+osg::ref_ptr<osg::Geometry> DisplaySurfaceGeometry::make_geom(bool texcoord_colors) const {
     return _geom->make_geom(texcoord_colors);
 };
