@@ -45,8 +45,8 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
 
   _camera = new osg::Camera;
   setup_camera();
-  _geometry = create_textured_geometry();
-  _camera->addChild( _geometry.get() );
+  _private_geometry = create_textured_geometry();
+  _camera->addChild( _private_geometry.get() );
   _top->addChild( _camera );
 
   set_shader( "ProjectCubemapToGeometryPass.vert",
