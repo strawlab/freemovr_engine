@@ -143,7 +143,12 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
 // show texture on geometry
 osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::get_textured_geometry()
 {
-    osg::ref_ptr<osg::Group> top_group = new osg::Group;
+    if (_public_geometry.valid()) {
+      return _public_geometry;
+    }
+
+    _public_geometry = new osg::Group;
+    osg::ref_ptr<osg::Group> top_group = _public_geometry;
   top_group->addDescription("ProjectCubemapToGeometryPass output textured geometry top node");
 
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;

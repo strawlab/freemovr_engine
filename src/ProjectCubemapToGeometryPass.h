@@ -37,6 +37,7 @@ private:
 	osg::Uniform::Callback* _observer_position_callback;
 	osg::ref_ptr<osg::TextureCubeMap> _in_texture_cubemap;
 	osg::ref_ptr<osg::Group> _private_geometry;
+	osg::ref_ptr<osg::Group> _public_geometry;
 
 	osg::ref_ptr<osg::Group> _output_quad;
 	osg::ref_ptr<osg::Texture2D> _out_texture;
