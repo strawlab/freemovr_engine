@@ -1,25 +1,35 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
+import json
 
 import roslib; roslib.load_manifest('flyvr')
 import rospy
 import flyvr.display_client as display_client
 from std_msgs.msg import String
 
+
 def switch_calibration(period):
-    pub = rospy.Publisher('p2g_calibration_filename', String)
-    filenames = ['$(find flyvr)/config/p2g.exr',
-                 '$(find flyvr)/data/monitor_1920x1080.exr',
-                 ]
+    filename_pub = rospy.Publisher('p2g_calibration_filename', String)
+    geom_json_buf_pub = rospy.Publisher('geom_json_buf', String)
+    geom_buf1 = json.dumps({"model": "cylinder",
+                            "base": {"y": 0.0, "x": 0.0, "z": 0.0},
+                            "radius": 0.046,
+                            "axis": {"y": 0.0, "x": 0.0, "z": 0.144}})
+    geom_buf2 = json.dumps({'model': 'from_file',
+                            'filename': '$(find flyvr)/data/flycube.osg'})
+    filename_and_geom_list = [('$(find flyvr)/config/p2g.exr',geom_buf1),
+                              ('$(find flyvr)/data/monitor_1920x1080.exr',geom_buf2)
+                             ]
     current_index = 0
     while not rospy.is_shutdown():
         t = rospy.get_time()
 
-        msg = String(filenames[current_index])
-        pub.publish(msg)
+        filename, geom_json_buf = filename_and_geom_list[current_index]
+        filename_pub.publish(String(filename))
+        geom_json_buf_pub.publish(String(geom_json_buf))
         rospy.sleep(period)
-        current_index = (current_index+1)%len(filenames)
+        current_index = (current_index+1)%len(filename_and_geom_list)
 
 if __name__ == '__main__':
     rospy.init_node('demo_switch_calibration')
@@ -31,4 +41,3 @@ if __name__ == '__main__':
     args = parser.parse_args(argv[1:])
 
     switch_calibration(period=args.period)
-

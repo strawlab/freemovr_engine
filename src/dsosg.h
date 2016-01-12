@@ -78,6 +78,7 @@ namespace dsosg{
 
         void loadDisplayCalibrationFile(std::string p2g_filename,
                                         bool show_geom_coords);
+        void loadDisplayGeomJSON(std::string geom_json_buf);
 
         TrackballManipulatorState getTrackballManipulatorState();
         void setTrackballManipulatorState(TrackballManipulatorState s);
