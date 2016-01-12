@@ -45,5 +45,6 @@ private:
     osg::ref_ptr<osg::Texture2D> _out_texture;
     osg::ref_ptr<osg::Program> _program;
     osg::ref_ptr<osg::StateSet> _state_set;
+    osg::Uniform* _observerPositionUniform;
 };
 #endif
