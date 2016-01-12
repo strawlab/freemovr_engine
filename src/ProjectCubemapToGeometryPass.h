@@ -21,6 +21,7 @@ public:
     osg::ref_ptr<osg::Group> get_top() { return _top; }
     osg::ref_ptr<osg::Texture2D> get_output_texture() { return _out_texture; }
     osg::ref_ptr<osg::Group> get_textured_geometry() const;
+    void replace_display_surface_geometry( DisplaySurfaceGeometry* geometry_parameters );
 
 private:
     void create_output_texture();
