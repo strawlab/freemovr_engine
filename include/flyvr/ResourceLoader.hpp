@@ -18,11 +18,11 @@ class ResourceLoader
   // This is called when initializing the plugin to tell it its path
   virtual void set_plugin_path(std::string path, bool popdir=true);
 
-  virtual std::string get_plugin_shader_path(std::string name);
-  virtual std::string get_plugin_data_path(std::string name);
-  virtual osg::Node* load_osg_file(std::string name, bool throw_on_failure=true);
-  virtual osg::Image* load_image_file(std::string name, bool throw_on_failure=true);
-  virtual void load_shader_source(osg::Shader* shader, std::string name);
+  virtual std::string get_plugin_shader_path(std::string name) const;
+  virtual std::string get_plugin_data_path(std::string name) const;
+  virtual osg::Node* load_osg_file(std::string name, bool throw_on_failure=true) const;
+  virtual osg::Image* load_image_file(std::string name, bool throw_on_failure=true) const;
+  virtual void load_shader_source(osg::Shader* shader, std::string name) const;
 
 protected:
 
