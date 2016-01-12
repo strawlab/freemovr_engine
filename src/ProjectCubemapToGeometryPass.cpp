@@ -59,8 +59,8 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
     _state_set->addUniform(_observerPositionUniform);
 
     _program = set_shader( _state_set,
-                                                 "ProjectCubemapToGeometryPass.vert",
-                                                 "ProjectCubemapToGeometryPass.frag");
+                           "ProjectCubemapToGeometryPass.vert",
+                           "ProjectCubemapToGeometryPass.frag");
 }
 
 void ProjectCubemapToGeometryPass::create_output_texture() {
