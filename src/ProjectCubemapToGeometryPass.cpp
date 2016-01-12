@@ -41,6 +41,12 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
     _top->addDescription("ProjectCubemapToGeometryPass top node");
     _in_texture_cubemap = texture;
 
+    _observerPositionUniform = new osg::Uniform( "ObserverPosition",
+                                                 osg::Vec3(0.22f, 0.22f, 0.9f) );
+    if (_observer_position_callback!=NULL) {
+      _observerPositionUniform->setUpdateCallback(_observer_position_callback);
+    }
+
     create_output_texture();
 
     _camera = new osg::Camera;
@@ -50,6 +56,7 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
     _top->addChild( _camera );
 
     _state_set = _private_geometry->getOrCreateStateSet();
+    _state_set->addUniform(_observerPositionUniform);
 
     _program = set_shader( _state_set,
                                                  "ProjectCubemapToGeometryPass.vert",
@@ -132,16 +139,9 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
     observerViewCubeUniformSampler->set(0);
     state_set->addUniform(observerViewCubeUniformSampler);
 
-    osg::Uniform* observerPositionUniform = new osg::Uniform( "ObserverPosition",
-                                                                osg::Vec3(0.22f, 0.22f, 0.9f) );
-    if (_observer_position_callback!=NULL) {
-        observerPositionUniform->setUpdateCallback(_observer_position_callback);
-    }
-    state_set->addUniform(observerPositionUniform);
-
-        geode->addDrawable(this_geom.get());
-        top_group->addChild(geode.get());
-        return top_group;
+    geode->addDrawable(this_geom.get());
+    top_group->addChild(geode.get());
+    return top_group;
 }
 
 // show texture on geometry
