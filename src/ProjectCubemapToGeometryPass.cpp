@@ -49,8 +49,11 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
   _camera->addChild( _private_geometry.get() );
   _top->addChild( _camera );
 
-  set_shader( "ProjectCubemapToGeometryPass.vert",
-              "ProjectCubemapToGeometryPass.frag");
+  _state_set = _private_geometry->getOrCreateStateSet();
+
+  _program = set_shader( _state_set,
+                         "ProjectCubemapToGeometryPass.vert",
+                         "ProjectCubemapToGeometryPass.frag");
 }
 
 void ProjectCubemapToGeometryPass::create_output_texture() {
@@ -87,7 +90,7 @@ void ProjectCubemapToGeometryPass::setup_camera()
 
 }
 
-void ProjectCubemapToGeometryPass::set_shader(std::string vert_filename, std::string frag_filename)
+osg::ref_ptr<osg::Program> ProjectCubemapToGeometryPass::set_shader(osg::ref_ptr<osg::StateSet> state_set, std::string vert_filename, std::string frag_filename) const
 {
   osg::ref_ptr<osg::Shader> vshader = new osg::Shader( osg::Shader::VERTEX );
   osg::ref_ptr<osg::Shader> fshader = new osg::Shader( osg::Shader::FRAGMENT );
@@ -95,16 +98,17 @@ void ProjectCubemapToGeometryPass::set_shader(std::string vert_filename, std::st
   load_shader_source( vshader, vert_filename );
   load_shader_source( fshader, frag_filename );
 
-  _program = new osg::Program;
+  osg::ref_ptr<osg::Program> program = new osg::Program;
 
-  _program->addShader(vshader.get());
-  _program->addShader(fshader.get());
+  program->addShader(vshader.get());
+  program->addShader(fshader.get());
 
-  _state_set->setAttributeAndModes(_program.get(), osg::StateAttribute::ON);// | osg::StateAttribute::OVERRIDE );
+  state_set->setAttributeAndModes(program.get(), osg::StateAttribute::ON);// | osg::StateAttribute::OVERRIDE );
+  return program;
 }
 
 // use shaders to generate a texture
-osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry()
+osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry() const
 {
     osg::ref_ptr<osg::Group> top_group = new osg::Group;
   top_group->addDescription("ProjectCubemapToGeometryPass textured geometry top node");
@@ -118,22 +122,22 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
         new InvalidBoundsCallback();
   this_geom->setComputeBoundingBoxCallback(no_bounds_callback);
 
-    _state_set = this_geom->getOrCreateStateSet();
-    _state_set->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
-    _state_set->setTextureAttributeAndModes(0, _in_texture_cubemap.get(), osg::StateAttribute::ON);
-  _state_set->setMode(GL_BLEND, osg::StateAttribute::ON);
+  osg::ref_ptr<osg::StateSet> state_set = this_geom->getOrCreateStateSet();
+  state_set->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+  state_set->setTextureAttributeAndModes(0, _in_texture_cubemap.get(), osg::StateAttribute::ON);
+  state_set->setMode(GL_BLEND, osg::StateAttribute::ON);
 
   osg::Uniform* observerViewCubeUniformSampler = new osg::Uniform(osg::Uniform::SAMPLER_CUBE,
                                   "observerViewCube" );
   observerViewCubeUniformSampler->set(0);
-    _state_set->addUniform(observerViewCubeUniformSampler);
+  state_set->addUniform(observerViewCubeUniformSampler);
 
   osg::Uniform* observerPositionUniform = new osg::Uniform( "ObserverPosition",
                                 osg::Vec3(0.22f, 0.22f, 0.9f) );
   if (_observer_position_callback!=NULL) {
     observerPositionUniform->setUpdateCallback(_observer_position_callback);
   }
-  _state_set->addUniform(observerPositionUniform);
+  state_set->addUniform(observerPositionUniform);
 
     geode->addDrawable(this_geom.get());
     top_group->addChild(geode.get());
