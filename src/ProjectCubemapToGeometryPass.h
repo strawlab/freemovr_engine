@@ -25,9 +25,11 @@ public:
 private:
     void create_output_texture();
     void setup_camera();
-    osg::ref_ptr<osg::Group> create_textured_geometry();
+    osg::ref_ptr<osg::Group> create_textured_geometry() const;
     osg::ref_ptr<osg::Group> create_output_textured_quad();
-    void set_shader(std::string vert_filename, std::string frag_filename);
+    osg::ref_ptr<osg::Program> set_shader(osg::ref_ptr<osg::StateSet> state_set,
+                                          std::string vert_filename,
+                                          std::string frag_filename) const;
 
     DisplaySurfaceGeometry* _geometry_parameters;
     unsigned int _tex_width;
