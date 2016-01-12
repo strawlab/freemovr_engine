@@ -16,7 +16,7 @@ ResourceLoader::ResourceLoader()
 {
 }
 
-std::string ResourceLoader::get_plugin_shader_path(std::string name)
+std::string ResourceLoader::get_plugin_shader_path(std::string name) const
 {
     Poco::Path path(_plugin_path);
     path.makeDirectory();
@@ -29,7 +29,7 @@ std::string ResourceLoader::get_plugin_shader_path(std::string name)
     return path.absolute().toString();
 }
 
-std::string ResourceLoader::get_plugin_data_path(std::string name)
+std::string ResourceLoader::get_plugin_data_path(std::string name) const
 {
     Poco::Path path(_plugin_path);
     path.makeDirectory();
@@ -42,7 +42,7 @@ std::string ResourceLoader::get_plugin_data_path(std::string name)
     return path.absolute().toString();
 }
 
-osg::Node* ResourceLoader::load_osg_file(std::string name, bool throw_on_failure)
+osg::Node* ResourceLoader::load_osg_file(std::string name, bool throw_on_failure) const
 {
     // FIXME: We should do this (and load_shader_source) using the osgDB resource
     //        framework. When set_xxx_path is called, add the appropriate subdirs
@@ -66,7 +66,7 @@ osg::Node* ResourceLoader::load_osg_file(std::string name, bool throw_on_failure
     return result;
 }
 
-osg::Image* ResourceLoader::load_image_file(std::string name, bool throw_on_failure)
+osg::Image* ResourceLoader::load_image_file(std::string name, bool throw_on_failure) const
 {
     // FIXME: We should do this (and load_shader_source) using the osgDB resource
     //        framework. When set_xxx_path is called, add the appropriate subdirs
@@ -90,7 +90,7 @@ osg::Image* ResourceLoader::load_image_file(std::string name, bool throw_on_fail
     return result;
 }
 
-void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name)
+void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name) const
 {
     Poco::Path path(get_plugin_shader_path(name));
     if (!Poco::File(path).exists()) {
