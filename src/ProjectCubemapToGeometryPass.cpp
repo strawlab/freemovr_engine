@@ -61,6 +61,12 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
     _program = set_shader( _state_set,
                            "ProjectCubemapToGeometryPass.vert",
                            "ProjectCubemapToGeometryPass.frag");
+
+    _public_geometry = new osg::Group;
+    _public_geometry->addDescription("ProjectCubemapToGeometryPass output textured geometry top node");
+
+    _inner_geode = _create_textured_geometry_inner_geode();
+    _public_geometry->addChild(_inner_geode.get());
 }
 
 void ProjectCubemapToGeometryPass::create_output_texture() {
@@ -145,24 +151,22 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
 }
 
 // show texture on geometry
-osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::get_textured_geometry()
+osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::get_textured_geometry() const
 {
-        if (_public_geometry.valid()) {
-            return _public_geometry;
-        }
+    flyvr_assert(_public_geometry.valid());
+    return _public_geometry;
+}
 
-        _public_geometry = new osg::Group;
-        osg::ref_ptr<osg::Group> top_group = _public_geometry;
-    top_group->addDescription("ProjectCubemapToGeometryPass output textured geometry top node");
-
-        osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+// show texture on geometry inner
+osg::ref_ptr<osg::Geode> ProjectCubemapToGeometryPass::_create_textured_geometry_inner_geode() const
+{
+    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     osg::ref_ptr<osg::Geometry> this_geom = _geometry_parameters->make_geom();
 
     osg::StateSet* ss = this_geom->getOrCreateStateSet();
-        ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
-        ss->setTextureAttributeAndModes(0, _out_texture, osg::StateAttribute::ON);
+    ss->setMode(GL_LIGHTING,osg::StateAttribute::OFF);
+    ss->setTextureAttributeAndModes(0, _out_texture, osg::StateAttribute::ON);
 
-        geode->addDrawable(this_geom.get());
-        top_group->addChild(geode.get());
-        return top_group;
+    geode->addDrawable(this_geom.get());
+    return geode;
 }
