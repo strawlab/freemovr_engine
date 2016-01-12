@@ -671,6 +671,23 @@ void DSOSG::loadDisplayCalibrationFile(std::string p2g_filename,
     }
 }
 
+void DSOSG::loadDisplayGeomJSON(std::string geom_json_buf) {
+    json_t *json_geom;
+    json_error_t error;
+
+    json_geom = json_loads(geom_json_buf.c_str(), 0, &error);
+
+    if(!json_geom) {
+        fprintf(stderr, "error: in %s(%d) on json line %d: %s\n", __FILE__, __LINE__, error.line, error.text);
+        throw std::runtime_error("error in json");
+    }
+
+    flyvr_assert_msg(json_is_object(json_geom),"valid projector geometry not found");
+
+    DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
+    _pctcp->replace_display_surface_geometry( geometry_parameters );
+}
+
 std::vector<std::string> DSOSG::get_stimulus_plugin_names() {
     std::vector<std::string> result;
     for (std::map<std::string, StimulusInterface*>::const_iterator i=_stimulus_plugins.begin();
@@ -1072,4 +1089,3 @@ bool DSOSG::is_CUDA_available() {
 }
 
 }
-

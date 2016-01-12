@@ -128,6 +128,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         void setRedMax(int red_max) nogil except +
         void loadDisplayCalibrationFile(std_string p2g_filename,
                                         int show_geom_coords) nogil except +
+        void loadDisplayGeomJSON(std_string geom_json_buf) nogil except +
 
         TrackballManipulatorState getTrackballManipulatorState() nogil except +
         void setTrackballManipulatorState(TrackballManipulatorState s) nogil except +
@@ -250,6 +251,7 @@ cdef class MyNode:
     cdef object _posix_sched_fifo
     cdef public object _red_max
     cdef public object _p2g_filename
+    cdef public object _geom_json_buf
     cdef object _config_dict
     cdef object _using_ros_config
     cdef object _single_instace_socket
@@ -386,11 +388,14 @@ cdef class MyNode:
         rospy.loginfo("red max: %s" % self._red_max)
 
         self._p2g_filename = None
+        self._geom_json_buf = None
 
         rospy.Subscriber("/pose", geometry_msgs.msg.Pose, self.pose_callback)
         rospy.Subscriber("/stimulus_mode", std_msgs.msg.String, self.mode_callback)
         rospy.Subscriber("p2g_calibration_filename", std_msgs.msg.String,
                          self.p2g_calibration_filename_callback)
+        rospy.Subscriber("geom_json_buf", std_msgs.msg.String,
+                         self.geom_json_buf_callback)
 
         rospy.Subscriber("~gamma", std_msgs.msg.Float32, self.gamma_callback)
         rospy.Subscriber("~red_max", std_msgs.msg.Bool, self.red_max_callback)
@@ -577,6 +582,14 @@ cdef class MyNode:
         p2g_filename = rosmsg2json.fixup_path(msg.data)
         self.set_var('_p2g_filename', p2g_filename)
 
+    def geom_json_buf_callback(self, msg):
+        geom_json_buf = msg.data
+        geom_dict = json.loads( geom_json_buf )
+        if geom_dict['model'] == 'from_file':
+            geom_dict['filename'] = rosmsg2json.fixup_path(geom_dict['filename'])
+        geom_json_buf_fixed = json.dumps(geom_dict)
+        self.set_var('_geom_json_buf', geom_json_buf_fixed)
+
     def capture_image_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
@@ -700,6 +713,11 @@ cdef class MyNode:
                 self.dsosg.loadDisplayCalibrationFile(
                     self.get_and_clear_var('_p2g_filename'),
                     0)
+
+            if self._geom_json_buf is not None:
+                self.dsosg.loadDisplayGeomJSON(
+                    self.get_and_clear_var('_geom_json_buf')
+                    )
 
             with nogil:
                 self.dsosg.frame()
