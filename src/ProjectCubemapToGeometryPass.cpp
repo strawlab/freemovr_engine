@@ -69,6 +69,41 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
     _public_geometry->addChild(_inner_geode.get());
 }
 
+void ProjectCubemapToGeometryPass::replace_display_surface_geometry( DisplaySurfaceGeometry* geometry_parameters ) {
+    flyvr_assert( geometry_parameters!=NULL );
+
+    // Tear down usage of previous display surface geometry.
+    if (_state_set.valid()) {
+      if (_observerPositionUniform != NULL) {
+        _state_set->removeUniform(_observerPositionUniform);
+      }
+    }
+
+    if (_private_geometry.valid()) {
+      _camera->removeChild( _private_geometry.get() );
+    }
+
+    if (_inner_geode.valid()) {
+      _public_geometry->removeChild(_inner_geode.get());
+    }
+
+    // Use new display surface geometry.
+    _geometry_parameters = geometry_parameters;
+
+    _private_geometry = create_textured_geometry();
+    _camera->addChild( _private_geometry.get() );
+
+    _state_set = _private_geometry->getOrCreateStateSet();
+    _state_set->addUniform(_observerPositionUniform);
+    _program = set_shader( _state_set,
+                           "ProjectCubemapToGeometryPass.vert",
+                           "ProjectCubemapToGeometryPass.frag");
+
+    _inner_geode = _create_textured_geometry_inner_geode();
+    _public_geometry->addChild(_inner_geode.get());
+
+}
+
 void ProjectCubemapToGeometryPass::create_output_texture() {
     _out_texture = new osg::Texture2D;
     _out_texture->setDataVariance(osg::Object::DYNAMIC);
