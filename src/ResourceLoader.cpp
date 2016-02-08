@@ -34,10 +34,15 @@ std::string ResourceLoader::get_plugin_data_path(std::string name) const
 
 osg::Node* ResourceLoader::load_osg_file(std::string name, bool throw_on_failure) const
 {
-    // FIXME: We should do this (and load_shader_source) using the osgDB resource
-    //        framework. When set_xxx_path is called, add the appropriate subdirs
-    //        (data and src/shaders) to the osgDB, and then query them here
-    Poco::Path path(get_plugin_data_path(name));
+    Poco::Path path(name);
+    if (!path.isAbsolute()) {
+        // look in the plugin data dir
+        // FIXME: We should do this (and load_shader_source) using the osgDB resource
+        //        framework. When set_xxx_path is called, add the appropriate subdirs
+        //        (data and src/shaders) to the osgDB, and then query them here
+        path.assign(get_plugin_data_path(name));
+    }
+
     if (throw_on_failure) {
       if (!Poco::File(path).exists()) {
         std::ostringstream os;
@@ -45,6 +50,7 @@ osg::Node* ResourceLoader::load_osg_file(std::string name, bool throw_on_failure
         throw std::runtime_error(os.str());
       }
     }
+
     osg::Node* result = osgDB::readNodeFile(path.absolute().toString());
     if (throw_on_failure) {
       if (result==NULL) {
