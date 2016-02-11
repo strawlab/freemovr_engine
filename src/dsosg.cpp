@@ -37,6 +37,7 @@
 
 #include <stdio.h>
 #include <stdexcept>
+#include <limits>
 
 #include "Poco/Exception.h"
 #include "Poco/Path.h"
@@ -970,7 +971,7 @@ void DSOSG::resized(const int& width, const int& height) {
 
 }
 
-void DSOSG::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
+double DSOSG::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
     // ignoring orientation for now...
     _observer_pat->setPosition(observer_position); // update the location of the cameras that project onto cubemap
     if (_tethered_mode) {
@@ -997,8 +998,9 @@ void DSOSG::update( const double& time, const osg::Vec3& observer_position, cons
     }
 
     if (_current_stimulus != NULL) {
-        _current_stimulus->update( time, observer_position, observer_orientation );
+        return _current_stimulus->update( time, observer_position, observer_orientation );
     }
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 void DSOSG::frame() {

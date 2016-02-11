@@ -106,7 +106,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
               unsigned int cubemap_resolution
               ) nogil except +
         void setup_viewer(std_string viewer_window_name, std_string json_config, int pbuffer) nogil except +
-        void update( double, Vec3, Quat )
+        double update( double, Vec3, Quat )
         void frame() nogil except +
         int done() nogil except +
 
@@ -242,6 +242,7 @@ cdef class MyNode:
     cdef object _mode_change
     cdef object _pub_fps
     cdef object _pub_mode
+    cdef object _pub_stim
     cdef Vec3* _pose_position
     cdef Quat* _pose_orientation
     cdef object _subscription_mode
@@ -469,6 +470,8 @@ cdef class MyNode:
         self._pub_fps.publish(0)
         self._pub_mode = rospy.Publisher('~stimulus_mode', std_msgs.msg.String, latch=True)
         self._pub_mode.publish(self._mode_change)
+        self._pub_stim = rospy.Publisher('~stimulus_hack_value', std_msgs.msg.Float64)
+        self._pub_stim.publish(float('nan'))
 
         plugin_names = self.dsosg.get_stimulus_plugin_names()
         for i in range( plugin_names.size() ):
@@ -698,10 +701,12 @@ cdef class MyNode:
 
                     self._mode_change = None
 
-
+            stim_val = float('nan')
             with self._pose_lock:
                 now = rospy.get_time()
-                self.dsosg.update( now, deref(self._pose_position), deref(self._pose_orientation))
+                stim_val = self.dsosg.update( now, deref(self._pose_position), deref(self._pose_orientation))
+            if not np.isnan(stim_val):
+                self._pub_stim.publish(stim_val)
 
             if self._gamma is not None:
                 self.dsosg.setGamma(self.get_and_clear_var('_gamma'))

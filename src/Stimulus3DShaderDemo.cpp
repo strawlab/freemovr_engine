@@ -6,6 +6,7 @@
 #include "Poco/NamedMutex.h"
 
 #include <iostream>
+#include <limits>
 
 #include <osg/MatrixTransform>
 #include <osg/ShapeDrawable>
@@ -35,7 +36,7 @@ public:
     void receive_json_message(const std::string& topic_name, const std::string& json_message);
     std::string get_message_type(const std::string& topic_name) const;
 
-    void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
+    double update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
 
 private:
     osg::ref_ptr<osg::Group> _group;
@@ -128,7 +129,7 @@ std::string Stimulus3DShaderDemo::get_message_type(const std::string& topic_name
     return result;
 }
 
-void Stimulus3DShaderDemo::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation )
+double Stimulus3DShaderDemo::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation )
 {
     Poco::NamedMutex::ScopedLock lock(_memlock);
     if (!_slave) {
@@ -136,6 +137,7 @@ void Stimulus3DShaderDemo::update( const double& time, const osg::Vec3& observer
       *_mem.begin() = (old % 'z') == 0 ? 'a' : old + 1;
     }
     //std::cerr << *_mem.begin() << "\n";
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 POCO_BEGIN_MANIFEST(StimulusInterface)

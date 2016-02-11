@@ -21,6 +21,7 @@
 #include <osgText/Text>
 
 #include <stdexcept>
+#include <limits>
 
 #include <jansson.h>
 
@@ -33,7 +34,7 @@ public:
 
     void post_init(bool);
     void resized(int width,int height);
-    void update(const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation);
+    double update(const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation);
 
     std::vector<std::string> get_topic_names() const { return std::vector<std::string>(); }
     std::string get_message_type(const std::string& topic_name) const { throw std::runtime_error("no message types to get"); }
@@ -65,9 +66,10 @@ void StimulusLatencyTimestamp::resized(int width,int height) {
     _bg_geom->setTexCoordArray(0,texcoords);
 }
 
-void StimulusLatencyTimestamp::update(const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation) {
+double StimulusLatencyTimestamp::update(const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation) {
     std::string s = Poco::NumberFormatter::format(time);
     _text->setText("*"+s+"*");
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 void StimulusLatencyTimestamp::post_init(bool) {

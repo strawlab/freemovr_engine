@@ -60,7 +60,7 @@ namespace dsosg{
         void setup_viewer(const std::string& viewer_window_name, const std::string& json_config, bool pbuffer=false);
         void resized(const int& width, const int& height);
 
-        void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
+        double update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
         void frame();
         bool done();
 

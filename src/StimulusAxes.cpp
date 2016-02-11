@@ -4,6 +4,7 @@
 #include "Poco/ClassLibrary.h"
 
 #include <iostream>
+#include <limits>
 
 #include <osg/MatrixTransform>
 #include <osg/TextureCubeMap>
@@ -32,8 +33,9 @@ virtual void post_init(bool slave) {
 void resized(int width,int height) {
 }
 
-void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
+double update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
     _virtual_world->setPosition(observer_position);
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 osg::ref_ptr<osg::Group> get_3d_world() {

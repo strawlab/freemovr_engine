@@ -35,7 +35,7 @@ class StimulusInterface: public ResourceLoader
   // The plugin returns the color with which to clear the screen here.
   virtual osg::Vec4 get_clear_color() const;
 
-  virtual void update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
+  virtual double update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation );
 
   // what topics does the plugin subscribe to?
   virtual std::vector<std::string> get_topic_names() const = 0;

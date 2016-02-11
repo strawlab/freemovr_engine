@@ -22,6 +22,7 @@
 #include "InvalidBoundsCallback.h"
 
 #include <stdexcept>
+#include <limits>
 
 StimulusInterface::StimulusInterface() :  _skybox_pat(NULL)
 {
@@ -39,11 +40,12 @@ bool StimulusInterface::is_CUDA_available() {
 #endif
 }
 
-void StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
+double StimulusInterface::update( const double& time, const osg::Vec3& observer_position, const osg::Quat& observer_orientation ) {
   if (_skybox_pat.valid()) {
     // this is a skybox - don't update the orientation with the observer
     _skybox_pat->setPosition(observer_position);
   }
+  return std::numeric_limits<double>::quiet_NaN();
 }
 
 void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
