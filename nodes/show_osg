@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+import os.path
+
+import roslib; roslib.load_manifest('flyvr')
+import rospy
+
+import flyvr.srv
+import flyvr.display_client as display_client
+import std_msgs.msg
+
+def show_osg(ds,fname):
+    rospy.init_node('show_osg')
+
+    rospy.sleep(1)
+
+    pub_filename = rospy.Publisher('osg_filename', std_msgs.msg.String)
+
+    dsc = display_client.DisplayServerProxy(ds,wait=True)
+    dsc.set_stimulus_mode('StimulusOSG')
+
+    rospy.sleep(1)
+
+    pub_filename.publish(fname)
+
+    rospy.sleep(1)
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fname',nargs=1)
+    parser.add_argument(
+        '--display-server', type=str, metavar='/display_server', required=True, help=\
+        'the path of the display server to configure')
+    
+    argv = rospy.myargv()
+    args = parser.parse_args(argv[1:])
+
+    fname = os.path.abspath(os.path.expanduser(args.fname[0]))
+    if not os.path.isfile(fname):
+        raise ValueError('file %s not found' % fname)
+
+    show_osg(args.display_server, fname)
+
+if __name__=='__main__':
+    main()
