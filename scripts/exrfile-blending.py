@@ -61,6 +61,7 @@ if __name__ == "__main__":
     else: # split the result in one output image per input image
         for i in range(len(args)):
             path, ext = os.path.splitext(args[i])
+            print "writing", "%s%s%s"%(path, "_blend", ext)
             save_exr("%s%s%s"%(path, "_blend", ext),
                      result[i][:,:,0], result[i][:,:,1], result[i][:,:,2]) # output one result image per input image
 
