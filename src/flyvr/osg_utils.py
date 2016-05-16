@@ -1,11 +1,16 @@
 import subprocess
 
 import roslib
+roslib.load_manifest('rospy')
+roslib.load_manifest('std_msgs')
+roslib.load_manifest('geometry_msgs')
+import rospy
+import std_msgs.msg
+import geometry_msgs.msg
+
 roslib.load_manifest('flyvr')
 import flyvr.display_client as display_client
 
-import geometry_msgs.msg
-import std_msgs.msg
 
 def build_move_node_message(name, x=0, y=0, z=0, scale=1, hidden=False, orientation_x=0, orientation_y=0, orientation_z=0):
     p = geometry_msgs.msg.PoseStamped()
