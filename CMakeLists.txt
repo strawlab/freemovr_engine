@@ -136,6 +136,12 @@ IF(BUILD_WITH_ROS)
       ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
       ${OSG_COMPUTE_LIBRARIES} DisplaySurfaceArbitraryGeometry)
 
+  # build another small executable for parsing osg files for animations
+  rosbuild_add_executable(parseosg src/parseosg.cpp)
+  INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
+  INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
+  TARGET_LINK_LIBRARIES(parseosg ${OSG_LIBS})
+
   install(TARGETS display_server freemovr_engine Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo
     Stimulus2DBlit StimulusLatencyTimestamp StimulusStandby StimulusTemplate StimulusOSG
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
