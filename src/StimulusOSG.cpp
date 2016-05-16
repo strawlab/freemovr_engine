@@ -17,6 +17,9 @@
 #include <osg/Light>
 #include <osg/LightSource>
 #include <osg/LightModel>
+#include <osgAnimation/AnimationManagerBase>
+#include <osgAnimation/BasicAnimationManager>
+#include <osgAnimation/Bone>
 
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
@@ -27,6 +30,126 @@
 //#define _DEBUG
 
 using Poco::format;
+
+class AnimController 
+{
+public:
+    typedef std::vector<std::string> AnimationMapVector;
+
+    AnimController():
+        _model(0),
+        _focus(0) {}
+
+    bool setModel(osgAnimation::BasicAnimationManager* model) 
+    {
+        _model = model;
+        _map.clear();
+        _amv.clear();
+
+        for (osgAnimation::AnimationList::const_iterator it = _model->getAnimationList().begin(); it != _model->getAnimationList().end(); it++)
+            _map[(*it)->getName()] = *it;
+
+        for(osgAnimation::AnimationMap::iterator it = _map.begin(); it != _map.end(); it++)
+            _amv.push_back(it->first);
+
+        return true;
+    }
+
+    bool list(std::ostream &output) 
+    {
+        for(osgAnimation::AnimationMap::iterator it = _map.begin(); it != _map.end(); it++)
+            output << "Animation=\"" << it->first << "\"" << std::endl;
+        return true;
+    }
+
+    bool play() 
+    {
+        if(_focus < _amv.size()) 
+        {
+            //std::cout << "Play " << _amv[_focus] << std::endl;
+            _model->playAnimation(_map[_amv[_focus]].get());
+            return true;
+        }
+
+        return false;
+    }
+
+    bool play(const std::string& name) 
+    {
+        for(unsigned int i = 0; i < _amv.size(); i++) if(_amv[i] == name) _focus = i;
+        _model->playAnimation(_map[name].get());
+        return true;
+    }
+
+    bool stop() 
+    {
+        if(_focus < _amv.size()) 
+        {
+            //std::cout << "Stop " << _amv[_focus] << std::endl;
+            _model->stopAnimation(_map[_amv[_focus]].get());
+            return true;
+        }
+        return false;
+    }
+
+    bool stop(const std::string& name) 
+    {
+        for(unsigned int i = 0; i < _amv.size(); i++) if(_amv[i] == name) _focus = i;
+        _model->stopAnimation(_map[name].get());
+        return true;
+    }    
+
+    bool next() 
+    {
+        _focus = (_focus + 1) % _map.size();
+        //std::cout << "Current now is " << _amv[_focus] << std::endl;
+        return true;
+    }
+
+    bool previous() 
+    {
+        _focus = (_map.size() + _focus - 1) % _map.size();
+        //std::cout << "Current now is " << _amv[_focus] << std::endl;
+        return true;
+    }
+
+    const std::string& getCurrentAnimationName() const 
+    {
+        return _amv[_focus];
+    }
+
+    const AnimationMapVector& getAnimationMap() const 
+    {
+        return _amv;
+    }
+
+private:
+    osg::ref_ptr<osgAnimation::BasicAnimationManager> _model;
+    osgAnimation::AnimationMap _map;
+    AnimationMapVector _amv;
+    unsigned int _focus;
+
+};
+
+
+struct AnimationManagerFinder : public osg::NodeVisitor
+{
+    osg::ref_ptr<osgAnimation::BasicAnimationManager> _am;
+    AnimationManagerFinder() : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
+    void apply(osg::Node& node) {
+        if (_am.valid())
+            return;
+        if (node.getUpdateCallback()) {
+            osgAnimation::AnimationManagerBase* b = dynamic_cast<osgAnimation::AnimationManagerBase*>(node.getUpdateCallback());
+            if (b) {
+                _am = new osgAnimation::BasicAnimationManager(*b);
+                return;
+            }
+        }
+        traverse(node);
+    }
+};
+
 
 class StimulusOSG: public StimulusInterface
 {
@@ -44,10 +167,10 @@ std::string name() const {
 }
 
 // Derive a class from NodeVisitor to find all MatrixNodes
-class FindMatrixNodes : public osg::NodeVisitor
+class MatrixNodeFinder : public osg::NodeVisitor
 {
 public:
-    FindMatrixNodes( void )
+    MatrixNodeFinder( void )
       : osg::NodeVisitor( // Traverse all children.
                 osg::NodeVisitor::TRAVERSE_ALL_CHILDREN )
         {}
@@ -94,7 +217,7 @@ void _load_stimulus_filename( std::string osg_filename ) {
     std::cerr << "Loaded " << osg_filename << "\n";
 
     // Find all "MatrixNode"s
-    FindMatrixNodes fmn;
+    MatrixNodeFinder fmn;
     tmp->accept( fmn );
     osg::NodeList* nl = fmn.getNodeList();
 
@@ -105,6 +228,17 @@ void _load_stimulus_filename( std::string osg_filename ) {
         SubmodelMap[it->get()->getName()] = it->get();
     }
     std::cerr << std::endl;
+
+    // Find all animations
+    AnimationManagerFinder finder;
+    tmp->accept(finder);
+    if (finder._am.valid()) {
+        tmp->setUpdateCallback(finder._am.get());
+        _anim.setModel(finder._am.get());
+        _anim.list(std::cout);
+    } else {
+        osg::notify(osg::WARN) << "no osgAnimation::AnimationManagerBase found in the subgraph, no animations available" << std::endl;
+    }
 }
 
 void _load_skybox_basename( std::string basename ) {
@@ -181,6 +315,8 @@ osg::ref_ptr<osg::Group> get_2d_hud() {
 std::vector<std::string> get_topic_names() const {
     std::vector<std::string> result;
     result.push_back("osg_filename");
+    result.push_back("osg_animation_start");
+    result.push_back("osg_animation_stop");
     result.push_back("osg_skybox_basename");
     result.push_back("osg_model_pose");
     result.push_back("osg_submodel_pose");
@@ -198,6 +334,10 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 
     if (topic_name=="osg_filename") {
         _load_stimulus_filename( parse_string(root) );
+    } else if (topic_name=="osg_animation_start") {
+        _anim.play( parse_string(root) );
+    } else if (topic_name=="osg_animation_stop") {
+        _anim.stop( parse_string(root) );
     } else if (topic_name=="osg_background_color") {
         json_t *data_json;
         data_json = json_object_get(root, "r");
@@ -273,6 +413,10 @@ std::string get_message_type(const std::string& topic_name) const {
 
     if (topic_name=="osg_filename") {
         result = "std_msgs/String";
+    } else if (topic_name=="osg_animation_start") {
+        result = "std_msgs/String";
+    } else if (topic_name=="osg_animation_stop") {
+        result = "std_msgs/String";
     } else if (topic_name=="osg_skybox_basename") {
         result = "std_msgs/String";
     } else if (topic_name=="osg_model_pose") {
@@ -301,6 +445,7 @@ private:
     osg::Quat model_attitude;
     osg::ref_ptr<osg::MatrixTransform> skybox_node;
     std::map<std::string, osg::ref_ptr<osg::Node> > SubmodelMap;
+    AnimController _anim;
 };
 
 
