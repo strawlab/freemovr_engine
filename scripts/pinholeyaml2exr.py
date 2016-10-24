@@ -77,9 +77,9 @@ def create_interpolated_array_uv_alpha_cylindrical(screensize, vpdata, method='l
 
         grid_y, grid_x = np.mgrid[0:(sY-1):(sY*1j), 0:(sX-1):(sX*1j)]
 
-        grid_u = scipy.interpolate.griddata(np.vstack((x,y)).T, u,
+        grid_u = griddata(np.vstack((x,y)).T, u,
                                             (grid_x, grid_y), method=method) % 1.0
-        grid_v = scipy.interpolate.griddata(np.vstack((x,y)).T, v,
+        grid_v = griddata(np.vstack((x,y)).T, v,
                                             (grid_x, grid_y), method=method)
         grid_a = np.ones_like(grid_u)
 
