@@ -7,6 +7,8 @@ roslib.load_manifest('flyvr')
 import flyvr.msg
 import geometry_msgs.msg
 import std_msgs.msg
+import genpy
+import roslib.message
 
 import numpy as np
 
@@ -28,7 +30,7 @@ def convert_attrs( v ):
 
 def rosmsg2dict(msg):
     plain_dict = {}
-    if isinstance(msg, roslib.rostime.Time):
+    if isinstance(msg, genpy.rostime.Time):
         plain_dict['secs']=msg.secs
         plain_dict['nsecs']=msg.nsecs
     else:
@@ -109,7 +111,7 @@ def is_equal(ros_msg, dict_msg):
                     return False
                 else:
                     continue
-            if isinstance(v_ros, roslib.rostime.Time):
+            if isinstance(v_ros, genpy.rostime.Time):
                 if not (v_ros.secs == v_dict['secs'] and v_ros.nsecs == v_dict['nsecs']):
                     return False
                 else:
@@ -160,4 +162,3 @@ def test_header():
     msg.stamp.secs = 123
     msg.stamp.nsecs = 456
     compare(msg)
-
