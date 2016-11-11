@@ -173,3 +173,8 @@ def test_header():
     msg.stamp.secs = 123
     msg.stamp.nsecs = 456
     compare(msg)
+
+if __name__=='__main__':
+    test_point()
+    test_image()
+    test_header()
