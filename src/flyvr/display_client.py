@@ -15,7 +15,7 @@ import numpy as np
 import scipy.misc
 
 #re-export the fill polygon helper
-import fill_polygon as fp
+import flyvr.tools.fill_polygon as fp
 fill_polygon = fp.fill_polygon
 
 class DisplayServerProxy(object):
@@ -110,6 +110,11 @@ class DisplayServerProxy(object):
         display servers simultaneously. In that case, call
         `DisplayServerProxy.set_stimulus_mode(mode)`.
         """
+        rospy.logwarn('Using deprecated API: `display_client.DisplayServerProxy().set_mode(mode)`. '
+                      'Instead, use display_client.DisplayServerProxy.set_stimulus_mode(mode)`')
+        return DisplayServerProxy.set_stimulus_mode(mode)
+
+    def set_mode_old(self,mode):
         # put server in mode
         if mode == 'display2d':
             warnings.warn("translating stimulus name 'display2d'->'Stimulus2DBlit'",DeprecationWarning)

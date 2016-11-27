@@ -21,7 +21,7 @@ import flyvr.display_client as display_client
 import std_srvs.srv
 import camera_trigger.srv
 
-from flyvr.calib.acquire import CameraHandler, SimultaneousCameraRunner
+from flyvr.calibration.image_processing.acquire import CameraHandler, SimultaneousCameraRunner
 from rosutils.io import decode_url
 
 class GenMasks:

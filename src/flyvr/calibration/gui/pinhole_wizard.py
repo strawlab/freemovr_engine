@@ -3,7 +3,6 @@
 import os
 import argparse
 import yaml
-import math
 import collections
 import datetime
 import tempfile
@@ -15,7 +14,6 @@ import pkgutil
 import roslib; roslib.load_manifest('flyvr')
 roslib.load_manifest('visualization_msgs')
 roslib.load_manifest('camera_calibration')
-import camera_calibration.calibrator
 
 import rospy
 
@@ -27,20 +25,24 @@ import tf.broadcaster
 
 from pymvg.camera_model import CameraModel
 
-import pymvg.extern.ros.rviz_utils as rviz_utils
+#import pymvg.extern.ros.rviz_utils as rviz_utils
 import flyvr
 import flyvr.simple_geom as simple_geom
-import flyvr.dlt as dlt
+#import flyvr.dlt as dlt
 import flyvr.display_client as display_client
-import flyvr.fill_polygon as fill_polygon
+import flyvr.tools.fill_polygon as fill_polygon
 import flyvr.exr as exr
-from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
-from flyvr.calib.pinhole.widgets import CellRendererButton
+#from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
+#from flyvr.calib.pinhole.widgets import CellRendererButton
 
 import rosgobject.core
 import rosgobject.wrappers
-import cairo
 from gi.repository import Gtk, GObject
+
+from flyvr.calibration.gui.displayserver_comm import ProxyDisplayClient
+
+
+from intrinsics_widget import get_intrinsics_grid
 
 def nice_float_fmt(treeviewcolumn, cell, model, iter, column):
     float_in = model.get_value(iter, column)
@@ -89,273 +91,15 @@ def pretty_intrinsics_str(cam):
 distortion: %s"""%args
     return result
 
-def get_camera_for_boards(rows,width=0,height=0):
-    info_dict = {}
-    for row in rows:
-        r = row[0]
-        info_str = '%d %d %f'%(r['rows'], r['columns'], r['size'])
-        if info_str not in info_dict:
-            # create entry
-            info = camera_calibration.calibrator.ChessboardInfo()
-            info.dim = r['size']
-            info.n_cols = r['columns']
-            info.n_rows = r['rows']
-            info_dict[info_str] = {'info':info,
-                                   'corners':[]}
-        this_list = info_dict[info_str]['corners']
-        this_corners = r['points']
-        assert len(this_corners)==r['rows']*r['columns']
-        this_list.append( this_corners )
 
-    boards = []
-    goodcorners = []
-    mpl_debug = False
-    mpl_lines = []
-    for k in info_dict:
-        info = info_dict[k]['info']
-        for xys in info_dict[k]['corners']:
-            goodcorners.append( (xys,info) )
-
-        if mpl_debug:
-            N = info.n_cols
-            xs = []; ys=[]
-            for (x,y) in xys:
-                xs.append(x); ys.append(y)
-            while len(xs):
-                this_xs = xs[:N]
-                this_ys = ys[:N]
-
-                del xs[:N]
-                del ys[:N]
-
-                mpl_lines.append( (this_xs, this_ys ) )
-
-    if mpl_debug:
-        import matplotlib.pyplot as plt
-        for (this_xs, this_ys) in mpl_lines:
-            plt.plot( this_xs, this_ys )
-        plt.show()
-
-    cal = camera_calibration.calibrator.MonoCalibrator(boards)
-    cal.size = (width,height)
-    r = cal.cal_fromcorners(goodcorners)
-    msg = cal.as_message()
-
-    buf = roslib.message.strify_message(msg)
-    obj = yaml.safe_load(buf)
-    cam = CameraModel.from_dict(obj,
-                                      extrinsics_required=False)
-    return cam
-
-class CheckerboardPlotWidget(Gtk.DrawingArea):
-
-    SZ = 50
-
-    def __init__(self):
-        Gtk.DrawingArea.__init__(self)
-        self._nrows = 2
-        self._ncols = 2
-        self._currpt = 0
-
-    def set_next_point(self, n):
-        self._currpt = n
-        self.queue_draw()
-
-    def set_board_size_num_corners(self, row, col):
-        self.set_board_size(
-                None if row is None else row+1,
-                None if col is None else col+1)
-
-    def set_board_size(self, row, col):
-        self._nrows = self._nrows if row is None else row
-        self._ncols = self._ncols if col is None else col
-        self.set_size_request(
-                1.2*self._ncols*self.SZ,
-                1.2*self._nrows*self.SZ
-        )
-        self.queue_draw()
-
-    def do_draw(self, cr):
-        SZ,W,H = self.SZ,int(self._ncols),int(self._nrows)
-
-        x0 = (self.get_allocation().width - (W*SZ)) // 2
-        y0 = (self.get_allocation().height - (H*SZ)) // 2
-
-        #the internal corner number
-        ic = 0
-
-        #row
-        for m,_y in enumerate(range(0,H*SZ,SZ)):
-            #col
-            for n,_x in enumerate(range(0,W*SZ,SZ)):
-                #ensure columns start with alternating colors
-                black = ((m % 2) + n) % 2
-
-                #centre the board
-                x = _x+x0
-                y = _y+y0
-
-                cr.rectangle(x, y, SZ,  SZ)
-                if black:
-                    colour = (0, 0, 0)
-                else:
-                    colour = (1, 1, 1)
-
-                cr.set_source_rgb(*colour)
-                cr.fill()
-
-                if (n > 0) and (n < self._ncols):
-                    if (m > 0) and (m < self._nrows):
-                        ic += 1
-                        if ic == self._currpt:
-                            cr.set_source_rgb(1,0,0)
-                            #draw a circle at the corner
-                            cr.arc(x,y,5,0,2*math.pi)
-                            cr.fill()
-                        #always draw text
-                        #cr.move_to(x, y)
-                        #cr.show_text("%d" % ic)
-
-
-class AddCheckerboardDialog(Gtk.Dialog):
-    def __init__(self, ui, nrows, ncols, size, **kwargs):
-        Gtk.Dialog.__init__(self, title="Add checkerboard",
-                                  buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK,
-                                           Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL),
-                                  **kwargs)
-        self.get_content_area().add(ui.get_object('add_CK_dialog_grid'))
-        self._npts_lbl = ui.get_object('N_CKB_points_label')
-        self._checker = CheckerboardPlotWidget()
-        ui.get_object('checkerboard_plot_box').pack_start(self._checker, True, True, 0)
-
-        self._sze = ui.get_object('CK_size_entry')
-        self._nr = ui.get_object('CK_n_rows_spinbutton')
-        self._nc = ui.get_object('CK_n_cols_spinbutton')
-
-        self.set_board_size(nrows,ncols,size)
-
-        #connect the spinbuttons to change the checkerboard
-        self._nr.connect('value-changed',
-                    lambda sbr: self._checker.set_board_size_num_corners(sbr.get_value(), None))
-        self._nc.connect('value-changed',
-                    lambda sbc: self._checker.set_board_size_num_corners(None, sbc.get_value()))
-
-        self._dsc = None
-        self._dsc_pts = None
-
-    def set_board_size(self, nrows, ncols, size):
-        self._nr.set_value(nrows)
-        self._nc.set_value(ncols)
-        self._sze.set_text(str(size))
-        self._checker.set_board_size_num_corners(nrows,ncols)
-
-    def get_num_rows(self):
-        return int(self._nr.get_value())
-    def get_num_cols(self):
-        return int(self._nc.get_value())
-    def get_size(self):
-        return float(self._sze.get_text())
-
-    def add_point(self, n, pt):
-        self._npts_lbl.set_text('%d' % n)
-        self._checker.set_next_point(n+1)
-
-        if pt is not None and self._dsc is not None:
-            x,y = pt
-            self._dsc_arr[y-2:y+2,x-2:x+2,:] = self._dsc.IMAGE_COLOR_WHITE
-            self._dsc.show_pixels(self._dsc_arr)
-
-    def run(self, dsc):
-        self.add_point(0, None)
-        self._dsc_pts = []
-
-        if dsc.proxy_is_connected():
-            self._dsc = dsc
-            self._dsc_arr = self._dsc.new_image(self._dsc.IMAGE_COLOR_BLACK)
-        else:
-            self._dsc = None
-
-        self.show_all()
-        resp = Gtk.Dialog.run(self)
-
-        if dsc.proxy_is_connected():
-            self._dsc.show_pixels(self._dsc.new_image(self._dsc.IMAGE_COLOR_BLACK))
-
-        return resp
-
-class ProxyDisplayClient(object):
-    def __init__(self):
-        self._dsc = None
-        self._di = None
-        self._gi = None
-        self._file = os.path.join(tempfile.mkdtemp(),"ds.png")
-        self._w = Gtk.Window(title="Display Server Output")
-        self._img = Gtk.Image()
-        self._img.set_from_stock("gtk-missing-image", Gtk.IconSize.DIALOG)
-        self._w.add(self._img)
-        self._w.connect("delete-event", self._on_close)
-
-    def _on_close(self, *args):
-        self._w.hide()
-        return True #stop signal
-
-    def proxy_show_mock(self):
-        self._w.show_all()
-
-    def proxy_set_dsc(self, dsc):
-        self._dsc = dsc
-        if self._dsc is not None:
-            self._dsc.enter_2dblit_mode()
-
-    def proxy_set_display_info(self, di):
-        self._di = di
-
-    def proxy_set_geometry_info(self, gi):
-        self._gi = gi
-
-    def proxy_is_connected(self):
-        return self._dsc is not None
-
-    def __getattr__(self, name):
-        return getattr(self._dsc, name)
-
-    @property
-    def height(self):
-        if self._dsc is not None:
-            return self._dsc.height
-        elif self._di is not None:
-            return self._di['height']
-
-    @property
-    def width(self):
-        if self._dsc is not None:
-            return self._dsc.width
-        elif self._di is not None:
-            return self._di['width']
-
-    def get_display_info(self):
-        if self._dsc is not None:
-            return self._dsc.get_display_info()
-        elif self._di is not None:
-            return self._di
-
-    def get_geometry_info(self):
-        if self._dsc is not None:
-            return self._dsc.get_geometry_info()
-        elif self._gi is not None:
-            return self._gi
-
-    def show_pixels(self,arr):
-        scipy.misc.imsave(self._file, arr)
-        self._img.set_from_file(self._file)
-        if self._dsc is not None:
-            self._dsc.show_pixels(arr)
 
 class UI(object):
     def __init__(self):
-        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
+        ui_file_contents = pkgutil.get_data('flyvr.calibration.gui','pinhole-wizard.ui')
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )
+        #initilaize connect to display server widget sensitivity
+        self.dsc = ProxyDisplayClient()
         self._build_ui()
 
         self.display_intrinsic_cam = None
@@ -369,8 +113,6 @@ class UI(object):
         self.exr_filter.set_name("EXR Files")
         self.exr_filter.add_pattern("*.exr")
 
-        #initilaize connect to display server widget sensitivity
-        self.dsc = ProxyDisplayClient()
 
         self.joy_mode='do points'
 
@@ -438,8 +180,9 @@ class UI(object):
         nb = Gtk.Notebook()
         window.add(nb)
 
-        nb.append_page(self._ui.get_object('checkerboard_grid'),
-                       Gtk.Label(label='intrinsics'))
+        intrinsics_grid = get_intrinsics_grid(self.dsc, self.on_compute_intrinsics)
+        # XXX: _icb = intrinsics_grid.on_joystick_button
+        nb.append_page(intrinsics_grid, Gtk.Label(label='intrinsics'))
 
         nb.append_page(self._ui.get_object('virtual_display_layout_grid'),
                        Gtk.Label(label='virtual displays'))
@@ -468,44 +211,6 @@ class UI(object):
         self._ui.get_object('view_mock_ds_item').connect(
             'activate', self.on_view_mock_ds)
 
-        # setup checkerboard treeview ----------------
-
-        self.checkerboard_store = Gtk.ListStore(object)
-
-        treeview = self._ui.get_object('checkerboard_treeview')
-        treeview.set_model( self.checkerboard_store )
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("rows", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='rows')
-        treeview.append_column(column)
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("columns", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='columns')
-        treeview.append_column(column)
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("size", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='size')
-        treeview.append_column(column)
-
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("time", renderer)
-        column.set_cell_data_func(renderer, self.render_checkerboard_row, func_data='date_string')
-        treeview.append_column(column)
-
-        self._ui.get_object('CK_add_button').connect('clicked', self.on_CK_add)
-        self._ui.get_object('CK_remove_button').connect('clicked', self.on_CK_remove)
-
-        self._ui.get_object('compute_intrinsics').connect('clicked', self.on_compute_intrinsics)
-
-        # setup checkerboard dialog ----------------
-        self.add_CK_dialog = AddCheckerboardDialog(self._ui,
-                                nrows=DEFAULT_CHECKER_NROWS,
-                                ncols=DEFAULT_CHECKER_NCOLS,
-                                size=DEFAULT_CHECKER_SIZE)
-
         # setup help->about dialog -----------------
         self.help_about_dialog = Gtk.Dialog(title='About',
                                             parent=None,
@@ -532,16 +237,16 @@ class UI(object):
         column.set_sort_column_id(VS_COUNT)
         treeview.append_column(column)
 
-        renderer = CellRendererButton('Calibrate')
-        renderer.connect("clicked", self.on_trigger_cal)
-        column = Gtk.TreeViewColumn("calibration")
-        column.pack_start(renderer, False)
-        renderer = Gtk.CellRendererSpinner()
-        column.pack_start(renderer, False)
-        column.add_attribute(renderer, "active", VS_CALIBRATION_RUNNING)
-        column.add_attribute(renderer, "pulse", VS_CALIBRATION_PROGRESS)
-        treeview.append_column(column)
-        GObject.timeout_add(100, self._pulse_spinner)
+        #renderer = CellRendererButton('Calibrate')
+        #renderer.connect("clicked", self.on_trigger_cal)
+        #column = Gtk.TreeViewColumn("calibration")
+        #column.pack_start(renderer, False)
+        #renderer = Gtk.CellRendererSpinner()
+        #column.pack_start(renderer, False)
+        #column.add_attribute(renderer, "active", VS_CALIBRATION_RUNNING)
+        #column.add_attribute(renderer, "pulse", VS_CALIBRATION_PROGRESS)
+        #treeview.append_column(column)
+        #GObject.timeout_add(100, self._pulse_spinner)
 
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("mean reproj. error", renderer,
@@ -560,7 +265,7 @@ class UI(object):
         treeview.append_column(column)
 
         # create point treeview -----------------------
-
+#
         self.point_store = Gtk.ListStore(str, float, float, float, float, bool, bool)
 
         treeview = self._ui.get_object('treeview1')
@@ -879,27 +584,10 @@ class UI(object):
         if not sel[1] == None:
             self.checkerboard_store.remove( sel[1] )
 
-    def on_compute_intrinsics(self,*args):
-        rows = [r for r in self.checkerboard_store]
-        cam = get_camera_for_boards( rows,
-                                     width=self.dsc.width,
-                                     height=self.dsc.height )
+    def on_compute_intrinsics(self, obj):
+        cam = CameraModel.from_dict(obj, extrinsics_required=False)
         self.display_intrinsic_cam = cam
         self._ui.get_object('intrinsic_status_label').set_text(pretty_intrinsics_str(cam))
-
-        # if 1:
-        #     print 'all ------------------'
-        #     print pretty_intrinsics_str(cam)
-
-        #     for i in range(len(rows)):
-        #         r2 = [r for (j,r) in enumerate(rows) if j!=i]
-
-        #         cam2 = get_camera_for_boards( r2,
-        #                                       width=self.dsc.width,
-        #                                       height=self.dsc.height )
-
-        #         print 'not %d (%s) ------------------'%(i, rows[i][0]['date_string'])
-        #         print pretty_intrinsics_str(cam2)
 
     # Virtual displays ----------------------------------------------
 
@@ -1103,8 +791,8 @@ class UI(object):
                                          '/map',
                                          )
 
-                r = rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
-                self.frustum_pub[vdisp].publish(r['markers'])
+                #r = rviz_utils.get_frustum_markers( cam, id_base=cam_id_base, scale=1.0, stamp=now )
+                #self.frustum_pub[vdisp].publish(r['markers'])
 
     def on_trigger_cal(self, widget, path):
         vdisp = self.vdisp_store[path][VS_VDISP]
@@ -1140,13 +828,13 @@ class UI(object):
 
         if method in ('DLT','RANSAC DLT'):
             ransac = method.startswith('RANSAC')
-            r = dlt.dlt(XYZ, xy, ransac=ransac )
-            c1 = CameraModel.load_camera_from_M( r['pmat'],
-                                                       width=self.dsc.width,
-                                                       height=self.dsc.height,
-                                                       )
+            #r = dlt.dlt(XYZ, xy, ransac=ransac )
+            #c1 = CameraModel.load_camera_from_M( r['pmat'],
+            #                                           width=self.dsc.width,
+            #                                           height=self.dsc.height,
+            #                                           )
 
-            _pump_ui()
+            #_pump_ui()
 
             if 0:
                 c2 = c1.get_flipped_camera()
@@ -1202,9 +890,11 @@ class UI(object):
             _pump_ui()
 
             if method == 'iterative extrinsic only':
-                result = fit_extrinsics_iterative(cami,XYZ,xy)
+                #result = fit_extrinsics_iterative(cami,XYZ,xy)
+                pass
             else:
-                result = fit_extrinsics(cami,XYZ,xy)
+                #result = fit_extrinsics(cami,XYZ,xy)
+                pass
 
             _pump_ui()
 

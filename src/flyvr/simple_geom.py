@@ -7,6 +7,7 @@ import rosbag
 # standard Python stuff
 import json
 import numpy as np
+import itertools
 
 class Vec3:
     def __init__(self,x=0, y=0, z=0):
@@ -368,11 +369,17 @@ class Sphere(ModelBase):
         # point) but the closest one, so the smallest value meeting
         # this criterion.
 
-        tt[tt <= 0] = np.nan # behind camera - invalid
-
-        tmin = np.nanmin(tt, axis=0) # find closest to camera
+        #print "**** DEBUG SPHERE ****\n", [x for x in tt.flatten().tolist() if not np.isnan(x)]
+        if np.nansum(tt) > 0:
+            print "DEBUG: current camera faces towards the screen"
+            tmin = np.nanmin(tt, axis=0) # find closest to camera
+        else:
+            #tt[tt <= 0] = np.nan # behind camera - invalid
+            print "DEBUG: current camera faces away from the screen"
+            tmin = np.nanmax(tt, axis=0) # find closest to camera
         return tmin
     get_relative_distance_to_first_surface.__doc__ = ModelBase.get_relative_distance_to_first_surface.__doc__ # inherit docstring
+
 
     def get_first_surface(self,a,b):
         # See ModelBase.get_first_surface for docstring
@@ -701,11 +708,15 @@ def angle_between_vectors(v1, v2):
         return 0
     return np.arccos(dot / (len_a * len_b))
 
-def tcs_to_beachball(farr):
+def tcs_to_beachball(farr, N_U=18, N_V=10):
     assert farr.ndim == 3
     assert farr.shape[2] == 2
     u = farr[:,:,0]
     v = farr[:,:,1]
+
+    N_U = int(N_U)
+    N_V = int(N_V)
+
 
     good = ~np.isnan( u )
     assert np.allclose( good, ~np.isnan(v) )
@@ -715,28 +726,41 @@ def tcs_to_beachball(farr):
     assert np.all( v[good] >= 0 )
     assert np.all( v[good] <= 1 )
 
-    hf = u*4 # horiz float
-    vf = v*2 # vert float
+    hf = u*N_U # horiz float
+    vf = v*N_V # vert float
 
-    hi = np.floor( hf ) # horiz int (0,1,2,3)
-    hi[hi==4.0] = 3.0
-    vi = np.floor( vf ) # vert int  (0,1)
-    vi[vi==2.0] = 1.0
+    hi = np.floor( hf ) # horiz int (0,1,...,N_U-1)
+    hi[hi==float(N_U)] = float(N_U) - 1
+    vi = np.floor( vf ) # vert int  (0,1,...,N_V-1)
+    vi[vi==float(N_V)] = float(N_V) - 1
 
-    iif = hi + 4*vi + 1 # (1,2,3,4,5,6,7,8)
+    iif = hi + N_U*vi + 1 # (1,2,...,N_U*N_V)
     ii = iif.astype( np.uint8 ) # nan -> 0
 
-    colors = np.array( [ (0,0,0), # black
+    colors = np.array(list(itertools.islice(
+                itertools.chain(
+                    [(0, 0, 0)],
+                    itertools.cycle(
+                        [(255, 0, 0),
+                        (0, 255, 0),
+                        (0, 0, 255),
+                        (255, 0, 255)])
+                        ), 0, ((N_U*N_V)+1))))
 
-                         (255,0,0), # red
-                         (0,255,0), # green
-                         (0, 0, 255), # blue
-                         (255, 0, 255),
-
-                         (255, 0, 255),
-                         (255,0,0), # red
-                         (0,255,0), # green
-                         (0, 0, 255), # blue
-                         ])
     bbim = colors[ ii ]
     return bbim
+
+    """
+    out = np.zeros(farr.shape[:2] + (3,), dtype=np.uint8)
+
+    u[np.isnan(u)] = 0.
+    v[np.isnan(v)] = 0.
+
+    out[:,:,0] = (u*255)
+    out[:,:,1] = v*255
+
+    out[(v > 0.45) & (v < 0.55),:] = [0, 0, 255]
+
+    return out
+    """
+

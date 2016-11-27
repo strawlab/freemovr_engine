@@ -5,7 +5,7 @@ import os
 # ROS imports
 import roslib; roslib.load_manifest('flyvr')
 import tf.transformations
-from flyvr.calib.fit_shapes import fit_cylinder
+from flyvr.tools.fit_shapes import fit_cylinder
 
 PLOT=int(os.environ.get('PLOT',0))
 if PLOT:
