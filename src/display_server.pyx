@@ -117,6 +117,10 @@ cdef extern from "dsosg.h" namespace "dsosg":
         vector[std_string] stimulus_get_topic_names(std_string) nogil except +
         std_string stimulus_get_message_type(std_string, std_string) nogil except +
 
+        std_string stimulus_get_output_topic_name(std_string) nogil except +
+        std_string stimulus_get_output_message_type(std_string) nogil except +
+        std_string get_output_message_json() nogil except +
+
         int getXSize() nogil except +
         int getYSize() nogil except +
 
@@ -237,6 +241,9 @@ cdef class MyNode:
     cdef object _commands
     cdef object _commands_lock
     cdef object _current_subscribers
+    cdef object _current_publishers
+    cdef object _current_publisher
+    cdef object _publish_output
     cdef object _pose_lock
     cdef object _mode_lock
     cdef object _mode_change
@@ -259,6 +266,9 @@ cdef class MyNode:
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
+        self._current_publishers = {}
+        self._current_publisher = None
+        self._publish_output = False
         self._commands = Queue.Queue()
         self._commands_lock = threading.Lock()
         self._pose_lock = threading.Lock()
@@ -476,6 +486,7 @@ cdef class MyNode:
             rospy.loginfo('loaded plugin: %s' % name)
             if self._subscription_mode == 'always':
                 self.register_subscribers(name)
+                self.register_publishers(name)
 
         rospy.loginfo("CUDA available: %s" % bool(self.dsosg.is_CUDA_available()))
 
@@ -644,6 +655,18 @@ cdef class MyNode:
                                callback=self.stimulus_plugin_callback, callback_args=(plugin,topic_name))
         self._current_subscribers.append(sub)
 
+    def register_publishers(self, plugin):
+        # establish new topic name publisher
+        tn = self.dsosg.stimulus_get_output_topic_name(std_string(plugin))
+        msg_type = self.dsosg.stimulus_get_output_message_type(std_string(plugin))
+        if str(tn) != "" and str(msg_type) != "":
+            self.create_publisher(plugin, tn.c_str(), msg_type.c_str() )
+
+    def create_publisher(self, plugin, topic_name, message_type_name ):
+        message_type = _import_message_name( message_type_name )
+        pub = rospy.Publisher(topic_name, message_type, latch=True)
+        self._current_publishers[plugin] = pub
+
     def get_and_clear_var(self,attr):
         """prevent race conditions when retreiving variable"""
         with self._cross_thread_lock:
@@ -684,6 +707,9 @@ cdef class MyNode:
                         while len(self._current_subscribers):
                             sub = self._current_subscribers.pop()
                             sub.unregister()
+                        while len(self._current_publishers):
+                            _plugin, pub = self._current_publishers.popitem()
+                            pub.unregister()
 
                     # activate plugin
                     rospy.loginfo("Setting stimulus plugin %s" % self._mode_change)
@@ -692,9 +718,15 @@ cdef class MyNode:
                     if self._subscription_mode == 'current_only':
                         plugin = self.dsosg.get_current_stimulus_plugin_name()
                         self.register_subscribers(plugin.c_str())
+                        self.register_publishers(plugin.c_str())
 
                     #publish the mode change
                     self._pub_mode.publish(self._mode_change)
+
+                    # does stimulus return output json?
+                    self._publish_output = self._mode_change in self._current_publishers
+                    if self._publish_output:
+                        self._current_publisher = self._current_publishers[self._mode_change]
 
                     self._mode_change = None
 
@@ -702,6 +734,11 @@ cdef class MyNode:
             with self._pose_lock:
                 now = rospy.get_time()
                 self.dsosg.update( now, deref(self._pose_position), deref(self._pose_orientation))
+
+            if self._publish_output:
+                output_json = self.dsosg.get_output_message_json()
+                output_dict = json.loads(output_json)
+                self._current_publisher.publish(**output_dict)
 
             if self._gamma is not None:
                 self.dsosg.setGamma(self.get_and_clear_var('_gamma'))

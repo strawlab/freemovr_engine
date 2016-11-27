@@ -46,6 +46,15 @@ class StimulusInterface: public ResourceLoader
   // and here is the message data, as a JSON message.
   virtual void receive_json_message(const std::string& topic_name, const std::string& json_message) = 0;
 
+  // what topic does the plugin publish to (default: doesn't publish)?
+  virtual std::string get_output_topic_name() {return std::string();}
+
+  // what is its message type? (e.g. "std_msgs/Float64")
+  virtual std::string get_output_message_type() {return std::string();}
+
+  // The plugin returns a json encoded string which is published as a rosmsg via the output publisher
+  virtual std::string get_output_message_json() {return std::string();}
+
   // If you need to change the background color, remember this object
   // and call its setBackgroundColorImplementation() method when the
   // background changes.
