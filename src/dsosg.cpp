@@ -752,6 +752,26 @@ void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const 
     stimulus->receive_json_message( topic_name, json_message );
 }
 
+std::string DSOSG::stimulus_get_output_topic_name(const std::string& plugin_name) {
+    StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
+    flyvr_assert(stimulus!=NULL);
+    return stimulus->get_output_topic_name();
+}
+
+std::string DSOSG::stimulus_get_output_message_type(const std::string& plugin_name) {
+    StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
+    flyvr_assert(stimulus!=NULL);
+    return stimulus->get_output_message_type();
+}
+
+std::string DSOSG::get_output_message_json() {
+    if (_current_stimulus != NULL) {
+        return _current_stimulus->get_output_message_json();
+    } else {
+        return std::string();
+    }
+}
+
 void replaceAll(std::string& str, const std::string& from, const std::string& to) {
     if(from.empty())
         return;
