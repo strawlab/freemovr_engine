@@ -1,10 +1,9 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4.6)
-
-#set(ROS_BUILD_TYPE Debug)
+cmake_minimum_required(VERSION 2.8)
+project(freemoovr)
 
 SET(BUILD_WITH_ROS ON CACHE BOOL "Building with ROS")
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/freemoovr/cmake/Modules/")
 SET(CUDA_TOOLKIT_ROOT "/usr/local/cuda")
 
 FIND_PACKAGE(OpenThreads)
@@ -62,98 +61,80 @@ SET(CYTHON_EXECUTABLE cython) # hack. Should use CMAKE_FIND_PROGRAM, but that ig
 
 IF(BUILD_WITH_ROS)
   MESSAGE("Building With ROS")
+  find_package(catkin REQUIRED message_generation sensor_msgs geometry_msgs roscpp)
 
-  INCLUDE($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+  add_message_files()
+  add_service_files()
 
-  # Set the build type.  Options are:
-  #  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-  #  Debug          : w/ debug symbols, w/o optimization
-  #  Release        : w/o debug symbols, w/ optimization
-  #  RelWithDebInfo : w/ debug symbols, w/ optimization
-  #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-  #set(ROS_BUILD_TYPE RelWithDebInfo)
+  catkin_python_setup()
 
-  rosbuild_init()
+  generate_messages(DEPENDENCIES sensor_msgs geometry_msgs)
 
-  #set the default path for built executables to the "bin" directory
-  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-  #set the default path for built libraries to the "lib" directory
-  SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+  # see http://wiki.ros.org/ROS/Tutorials/Using%20a%20C%2B%2B%20class%20in%20Python
+  catkin_package(
+    INCLUDE_DIRS include
+    # LIBRARIES add_two_ints _add_two_ints_wrapper_cpp
+    CATKIN_DEPENDS roscpp message_runtime geometry_msgs
+    #  DEPENDS system_lib
+    )
 
-  rosbuild_genmsg()
-  rosbuild_gensrv()
+  include_directories(
+    include
+    ${catkin_INCLUDE_DIRS}
+    ${PYTHON_INCLUDE_DIRS}
+    )
 
-  # Add display_server
-  ADD_CUSTOM_COMMAND(OUTPUT display_server.cpp
-    COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
+  catkin_install_python(PROGRAMS nodes/calibration.py nodes/calibration_generate_exr.py
+    nodes/demo_switch_calibration nodes/generate_masks.py
+    # TODO add the rest of the programs in nodes/
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+
 
   # the flyvr library (for building stimulus plugins) --------------------
-  rosbuild_add_library(flyvr src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
+  add_library(flyvr src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
   TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
-  rosbuild_add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
+  add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(StimulusAxes src/StimulusAxes.cpp src/util.cpp)
+  add_library(StimulusAxes src/StimulusAxes.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(StimulusAxes ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
+  add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
   TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
+  add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
-  rosbuild_add_library(StimulusLatencyTimestamp src/StimulusLatencyTimestamp.cpp src/json2osg.cpp src/base64.cpp)
+  add_library(StimulusLatencyTimestamp src/StimulusLatencyTimestamp.cpp src/json2osg.cpp src/base64.cpp)
   TARGET_LINK_LIBRARIES(StimulusLatencyTimestamp ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
 
-  rosbuild_add_library(StimulusStandby src/StimulusStandby.cpp)
+  add_library(StimulusStandby src/StimulusStandby.cpp)
   TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(StimulusTemplate src/StimulusTemplate.cpp)
+  add_library(StimulusTemplate src/StimulusTemplate.cpp)
   TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
-  rosbuild_add_library(StimulusOSG src/StimulusOSG.cpp)
+  add_library(StimulusOSG src/StimulusOSG.cpp)
   TARGET_LINK_LIBRARIES(StimulusOSG ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
-  rosbuild_add_executable(display_server display_server.cpp ${DS_SOURCES})
+  ADD_EXECUTABLE(display_server display_server.cpp ${DS_SOURCES})
 
-  FIND_PACKAGE(PythonLibs REQUIRED)
+  find_package(PythonLibs 2.7 REQUIRED)
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
   INCLUDE_DIRECTORIES(
     ${OSG_COMPUTE_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS}
   )
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
-    ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
-    ${OSG_COMPUTE_LIBRARIES} DisplaySurfaceArbitraryGeometry)
+      ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
+      ${OSG_COMPUTE_LIBRARIES} DisplaySurfaceArbitraryGeometry)
 
-  # add dynamic reconfigure api
-  rosbuild_find_ros_package(dynamic_reconfigure)
 ELSE(BUILD_WITH_ROS)
   MESSAGE("Building Without ROS")
-
-  SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-  SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-
-  # the flyvr library (for building stimulus plugins) --------------------
-  ADD_LIBRARY(flyvr SHARED src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
-  TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
-
-  # default stimulus plugins --------------------
-  ADD_LIBRARY(Stimulus3DDemo SHARED src/Stimulus3DDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
-
-  ADD_LIBRARY(Stimulus3DShaderDemo SHARED src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
-
-  ADD_LIBRARY(Stimulus2DBlit SHARED src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
-
-  ADD_LIBRARY(StimulusStandby SHARED src/StimulusStandby.cpp)
-  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
   ADD_EXECUTABLE(display_server src/main.cpp ${DS_SOURCES})
@@ -161,12 +142,18 @@ ELSE(BUILD_WITH_ROS)
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
   INCLUDE_DIRECTORIES(
     ${OSG_COMPUTE_INCLUDE_PATHS} ${OPENEXR_INCLUDE_PATHS}
-  )
+    )
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
     ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
     ${OSG_COMPUTE_LIBRARIES})
 
 ENDIF(BUILD_WITH_ROS)
+
+# Add display_server
+ADD_CUSTOM_COMMAND(OUTPUT display_server.cpp
+  COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
+
 
 # build non-ROS programs  ----------
 ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
