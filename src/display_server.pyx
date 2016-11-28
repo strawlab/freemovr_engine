@@ -737,8 +737,12 @@ cdef class MyNode:
 
             if self._publish_output:
                 output_json = self.dsosg.get_output_message_json()
-                output_dict = json.loads(output_json)
-                self._current_publisher.publish(**output_dict)
+                try:
+                    output_dict = json.loads(output_json)
+                except ValueError:
+                    pass
+                else:
+                    self._current_publisher.publish(**output_dict)
 
             if self._gamma is not None:
                 self.dsosg.setGamma(self.get_and_clear_var('_gamma'))
