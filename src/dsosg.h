@@ -46,7 +46,7 @@ namespace dsosg{
 
     class DSOSG {
     public:
-        DSOSG(std::string freemoovr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
+        DSOSG(std::string libdir, std::string freemoovr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
               bool show_geom_coords=false, bool tethered_mode=false, bool slave=false, unsigned int cubemap_resolution=512);
 
         std::vector<std::string> get_stimulus_plugin_names();

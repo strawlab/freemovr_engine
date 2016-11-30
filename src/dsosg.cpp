@@ -290,11 +290,11 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture, Poco::Path shader_path){
 }
 
 // constructor
-DSOSG::DSOSG(std::string freemoovr_basepath, std::string mode, float observer_radius,
+DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
              bool tethered_mode, bool slave, unsigned int cubemap_resolution) :
     _current_stimulus(NULL), _mode(mode),
-    _freemoovr_basepath(freemoovr_basepath),
+    _freemoovr_basepath(datadir),
     _config_file_path(config_fname),
     _tethered_mode(tethered_mode), _wcc(NULL), _g2di(NULL), _two_pass(two_pass)
 
@@ -340,8 +340,7 @@ DSOSG::DSOSG(std::string freemoovr_basepath, std::string mode, float observer_ra
     std::string config_data_dir = _config_file_path.parent().toString();
 
     // Add the freemoovr defaut stimulus plugins
-    Poco::Path default_plugin_path = _freemoovr_basepath;
-    default_plugin_path.pushDirectory("lib");
+    Poco::Path default_plugin_path = libdir;
     std::string default_lib_dir = default_plugin_path.toString();
 
     stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DDemo");
@@ -415,7 +414,6 @@ DSOSG::DSOSG(std::string freemoovr_basepath, std::string mode, float observer_ra
                 }
 
                 _stimulus_plugins[ plugin_name ]->set_freemoovr_base_path(_freemoovr_basepath.toString());
-                _stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
 
                 try {
                     _stimulus_plugins[ plugin_name ]->post_init(slave);

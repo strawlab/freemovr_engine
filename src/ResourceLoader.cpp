@@ -18,26 +18,16 @@ ResourceLoader::ResourceLoader()
 
 std::string ResourceLoader::get_plugin_shader_path(std::string name) const
 {
-    Poco::Path path(_plugin_path);
+    Poco::Path path(_freemoovr_base_path);
     path.makeDirectory();
-    if (_popdir) {
-      freemoovr_assert_msg( path.depth() > 0,
-                       "_plugin_path does not include directory. (Is it set?)" );
-      path.popDirectory();
-    }
     path.append("src").append("shaders").append(name);
     return path.absolute().toString();
 }
 
 std::string ResourceLoader::get_plugin_data_path(std::string name) const
 {
-    Poco::Path path(_plugin_path);
+    Poco::Path path(_freemoovr_base_path);
     path.makeDirectory();
-    if (_popdir) {
-      freemoovr_assert_msg( path.depth() > 0,
-                       "_plugin_path does not include directory. (Is it set?)" );
-      path.popDirectory();
-    }
     path.append("data").append(name);
     return path.absolute().toString();
 }
@@ -103,9 +93,4 @@ void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name) c
 
 void ResourceLoader::set_freemoovr_base_path(std::string path) {
   _freemoovr_base_path = path;
-}
-
-void ResourceLoader::set_plugin_path(std::string path,bool popdir) {
-  _plugin_path = path;
-  _popdir = popdir;
 }

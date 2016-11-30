@@ -2,8 +2,6 @@
 
 ROS_PACKAGE_NAME = 'freemoovr'
 import roslib
-roslib.load_manifest(ROS_PACKAGE_NAME)
-roslib.load_manifest('std_msgs')
 import rospy
 
 import freemoovr.srv
@@ -95,7 +93,8 @@ cdef extern from "dsosg.h" namespace "dsosg":
         double distance
 
     cdef cppclass DSOSG:
-        DSOSG(std_string freemoovr_basepath,
+        DSOSG(std_string libdir,
+              std_string datadir,
               std_string mode,
               float observer_radius,
               std_string config_data_dir,
@@ -148,12 +147,8 @@ def _import_message_name( message_type_name ):
     try:
         __import__( dotpackages)
     except ImportError:
-        roslib.load_manifest(packages[0])
-        try:
-            __import__( dotpackages)
-        except ImportError:
-            dotpackages = '.'.join(packages[:-1])
-            __import__( dotpackages)
+        dotpackages = '.'.join(packages[:-1])
+        __import__( dotpackages)
     real_module = sys.modules[dotpackages]
     message_type = getattr(real_module,name)
     return message_type
@@ -423,8 +418,20 @@ cdef class MyNode:
 
         rospy.loginfo('selecting initial simulus mode %s' % self._mode_change)
 
-        freemoovr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
-        self.dsosg = new DSOSG(std_string(freemoovr_basepath),
+        my_bin_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+        plugin_lib_dir = os.path.abspath(os.path.join(my_bin_dir,'..'))
+        if plugin_lib_dir.endswith('/devel/lib'):
+            # This seems a hacky way of checking if we are in catkin devel mode.
+            # devel_mode
+            plugin_data_dir = roslib.packages.get_pkg_dir(ros_package_name)
+        else:
+            assert plugin_lib_dir.endswith('/install/lib')
+            # install mode
+            plugin_data_dir = os.path.abspath(os.path.join(plugin_lib_dir,'..','share',ros_package_name))
+        print 'plugin_data_dir',plugin_data_dir
+        self.dsosg = new DSOSG(std_string(plugin_lib_dir),
+                               std_string(plugin_data_dir),
                                std_string(args.mode),
                                args.observer_radius,
                                std_string(config_file),

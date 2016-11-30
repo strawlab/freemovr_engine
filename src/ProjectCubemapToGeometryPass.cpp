@@ -35,7 +35,6 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string freemoovr
      freemoovr_assert( geometry_parameters!=NULL );
 
      set_freemoovr_base_path(freemoovr_basepath);
-     set_plugin_path(freemoovr_basepath,false);
 
     _top = new osg::Group;
     _top->addDescription("ProjectCubemapToGeometryPass top node");

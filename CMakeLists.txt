@@ -76,6 +76,8 @@ IF(BUILD_WITH_ROS)
     # LIBRARIES add_two_ints _add_two_ints_wrapper_cpp
     CATKIN_DEPENDS roscpp message_runtime geometry_msgs
     #  DEPENDS system_lib
+    LIBRARIES freemoovr Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo Stimulus2DBlit
+      StimulusLatencyTimestamp StimulusStandby StimulusTemplate StimulusOSG
     )
 
   include_directories(
@@ -132,6 +134,21 @@ IF(BUILD_WITH_ROS)
   TARGET_LINK_LIBRARIES(display_server ${OSG_LIBS} ${PYTHON_LIBRARIES}
       ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
       ${OSG_COMPUTE_LIBRARIES} DisplaySurfaceArbitraryGeometry)
+
+  install(TARGETS display_server freemoovr Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo
+    Stimulus2DBlit StimulusLatencyTimestamp StimulusStandby StimulusTemplate StimulusOSG
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+  install(DIRECTORY include/${PROJECT_NAME}/
+    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+
+  install(DIRECTORY data
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+  install(DIRECTORY src/shaders
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/src)
 
 ELSE(BUILD_WITH_ROS)
   MESSAGE("Building Without ROS")
