@@ -36,7 +36,6 @@
   <run_depend>camera_calibration</run_depend>
   <run_depend>python-yaml</run_depend>
   <run_depend>python-ode</run_depend>
-  <run_depend>python-openexr</run_depend>
   <run_depend>python-scipy</run_depend>
   <run_depend>python-pymvg</run_depend>
   
