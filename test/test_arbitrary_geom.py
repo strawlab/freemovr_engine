@@ -3,12 +3,12 @@ import numpy as np
 from test_simple_geom import nan_shape_allclose
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import PyDisplaySurfaceArbitraryGeometry
-import flyvr.rosmsg2json as rosmsg2json
+import freemoovr.rosmsg2json as rosmsg2json
 
 def test_arbitrary_geom():
-    filename = rosmsg2json.fixup_path( '$(find flyvr)/data/pyramid.osg' )
+    filename = rosmsg2json.fixup_path( '$(find freemoovr)/data/pyramid.osg' )
     model = PyDisplaySurfaceArbitraryGeometry.ArbitraryGeometry(filename=filename,precision=1e-6)
 
     # Use a few special texcoords because not all in range [0,1] are

@@ -4,7 +4,7 @@ import sys
 import json
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('std_msgs')
 import rospy
 

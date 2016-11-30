@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# FlyVR documentation build configuration file, created by
+# FreemooVR documentation build configuration file, created by
 # sphinx-quickstart on Fri Jan  6 15:52:13 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,8 +40,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'FlyVR'
-copyright = u'2012-2014, FlyVR authors'
+project = u'FreemooVR'
+copyright = u'2012-2014, FreemooVR authors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -164,7 +164,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'FlyVRdoc'
+htmlhelp_basename = 'FreemooVRdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -183,7 +183,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'FlyVR.tex', u'FlyVR Documentation',
+  ('index', 'FreemooVR.tex', u'FreemooVR Documentation',
    u'Andrew Straw', 'manual'),
 ]
 
@@ -213,7 +213,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'flyvr', u'FlyVR Documentation',
+    ('index', 'freemoovr', u'FreemooVR Documentation',
      [u'Andrew Straw'], 1)
 ]
 
@@ -227,8 +227,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'FlyVR', u'FlyVR Documentation',
-   u'Andrew Straw', 'FlyVR', 'One line description of project.',
+  ('index', 'FreemooVR', u'FreemooVR Documentation',
+   u'Andrew Straw', 'FreemooVR', 'One line description of project.',
    'Miscellaneous'),
 ]
 

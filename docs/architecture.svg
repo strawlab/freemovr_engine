@@ -169,7 +169,7 @@
          id="tspan2987"
          x="22.857143"
          y="58.076458"
-         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">FlyVR display_server architecture overview</tspan></text>
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">FreemooVR display_server architecture overview</tspan></text>
     <image
        
        xlink:href="images/architecture_virtual_world.jpg"

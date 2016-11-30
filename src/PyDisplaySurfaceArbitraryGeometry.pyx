@@ -1,7 +1,7 @@
 from libcpp.string cimport string
-import flyvr
+import freemoovr
 import sys
-import flyvr.simple_geom
+import freemoovr.simple_geom
 
 import numpy as np
 cimport numpy as np
@@ -66,7 +66,7 @@ cdef class DisplaySurfaceArbitraryGeometry:
             sz[i] = szi
         return sx,sy,sz
 
-class ArbitraryGeometry(flyvr.simple_geom.ModelBase):
+class ArbitraryGeometry(freemoovr.simple_geom.ModelBase):
     def __init__(self, string filename, double precision):
         self._filename = filename
         self._precision = precision

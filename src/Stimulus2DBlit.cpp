@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#include "flyvr/StimulusInterface.hpp"
+#include "freemoovr/StimulusInterface.hpp"
 #include "util.h"
 #include "json2osg.hpp"
 #include "base64.h"
@@ -19,7 +19,7 @@
 
 #include <jansson.h>
 
-#include "flyvr/flyvr_assert.h"
+#include "freemoovr/freemoovr_assert.h"
 
 osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int height) {
     osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
@@ -162,9 +162,9 @@ std::vector<std::string> get_topic_names() const {
 
 std::string get_message_type(const std::string& topic_name) const {
     if (topic_name=="blit_images") {
-        return "flyvr.msg.FlyVRCompressedImage";
+        return "freemoovr.msg.FreemooVRCompressedImage";
     } else if (topic_name=="sprite_image") {
-        return "flyvr.msg.FlyVRCompressedImage";
+        return "freemoovr.msg.FreemooVRCompressedImage";
     } else if  (topic_name=="sprite_pose") {
         return "geometry_msgs.msg.Pose2D";
     }
@@ -187,9 +187,9 @@ void receive_json_message(const std::string& topic_name, const std::string& json
             image_format = image_format.substr(1);
         }
         osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
-        flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
+        freemoovr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
         osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
-        flyvr_assert_msg( rr.success(), "bad image read");
+        freemoovr_assert_msg( rr.success(), "bad image read");
         image = rr.takeImage();
         osg::ref_ptr<osg::Texture> texture = new osg::TextureRectangle(image);
         osg::ref_ptr<osg::StateSet> ss = _group->getOrCreateStateSet();
@@ -208,9 +208,9 @@ void receive_json_message(const std::string& topic_name, const std::string& json
             image_format = image_format.substr(1);
         }
         osgDB::ReaderWriter* rw = osgDB::Registry::instance()->getReaderWriterForExtension(image_format);
-        flyvr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
+        freemoovr_assert_msg( rw!=NULL, "no ReaderWriter for image_format" );
         osgDB::ReaderWriter::ReadResult rr = rw->readImage(iss);
-        flyvr_assert_msg( rr.success(), "bad image read");
+        freemoovr_assert_msg( rr.success(), "bad image read");
         image = rr.takeImage();
         _load_sprite_image(image);
     } else if (topic_name=="sprite_pose") {
@@ -218,7 +218,7 @@ void receive_json_message(const std::string& topic_name, const std::string& json
         json_error_t error;
 
         root = json_loads(json_message.c_str(), 0, &error);
-        flyvr_assert_msg(root!=NULL,"error in JSON");
+        freemoovr_assert_msg(root!=NULL,"error in JSON");
 
         json_t *data_json;
 

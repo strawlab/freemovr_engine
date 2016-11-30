@@ -5,10 +5,10 @@
 # the "camera" calibration for the display.
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 import pymvg
-import flyvr.simple_geom as simple_geom
+import freemoovr.simple_geom as simple_geom
 
 import argparse
 import numpy as np

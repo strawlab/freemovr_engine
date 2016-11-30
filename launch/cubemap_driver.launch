@@ -1,5 +1,5 @@
 <launch>
-  <node name="ds" pkg="flyvr" type="display_server" args="--mode=cubemap"/>
+  <node name="ds" pkg="freemoovr" type="display_server" args="--mode=cubemap"/>
   <node name="browser_joy" pkg="browser_joystick" type="web_control.py"/>
-  <node name="joypose" pkg="flyvr" type="joypose"/>
+  <node name="joypose" pkg="freemoovr" type="joypose"/>
 </launch>

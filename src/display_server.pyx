@@ -1,19 +1,19 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 
-ROS_PACKAGE_NAME = 'flyvr'
+ROS_PACKAGE_NAME = 'freemoovr'
 import roslib
 roslib.load_manifest(ROS_PACKAGE_NAME)
 roslib.load_manifest('std_msgs')
 import rospy
 
-import flyvr.srv
+import freemoovr.srv
 import geometry_msgs.msg
 import std_msgs.msg
-from flyvr.msg import ROSPath
-import flyvr.msg
+from freemoovr.msg import ROSPath
+import freemoovr.msg
 from geometry_msgs.msg import Quaternion, Point
 
-import flyvr.rosmsg2json as rosmsg2json
+import freemoovr.rosmsg2json as rosmsg2json
 
 import sys
 import time
@@ -95,7 +95,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
         double distance
 
     cdef cppclass DSOSG:
-        DSOSG(std_string flyvr_basepath,
+        DSOSG(std_string freemoovr_basepath,
               std_string mode,
               float observer_radius,
               std_string config_data_dir,
@@ -423,8 +423,8 @@ cdef class MyNode:
 
         rospy.loginfo('selecting initial simulus mode %s' % self._mode_change)
 
-        flyvr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
-        self.dsosg = new DSOSG(std_string(flyvr_basepath),
+        freemoovr_basepath = roslib.packages.get_pkg_dir(ros_package_name)
+        self.dsosg = new DSOSG(std_string(freemoovr_basepath),
                                std_string(args.mode),
                                args.observer_radius,
                                std_string(config_file),
@@ -438,7 +438,7 @@ cdef class MyNode:
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_image_callback)
         rospy.Subscriber("~capture_osg_to_path", ROSPath, self.capture_osg_callback)
         rospy.Subscriber("~trackball_manipulator_state",
-                         flyvr.msg.TrackballManipulatorState,
+                         freemoovr.msg.TrackballManipulatorState,
                          self.manipulator_callback)
 
         display_window_name = rospy.get_name();
@@ -447,22 +447,22 @@ cdef class MyNode:
                                 args.pbuffer)
 
         rospy.Service('~get_display_info',
-                      flyvr.srv.GetDisplayInfo,
+                      freemoovr.srv.GetDisplayInfo,
                       self.handle_get_display_info)
         rospy.Service('~get_geometry_info',
-                      flyvr.srv.GetDisplayInfo,
+                      freemoovr.srv.GetDisplayInfo,
                       self.handle_get_geom_info)
         rospy.Service('~set_display_server_mode',
-                      flyvr.srv.SetDisplayServerMode,
+                      freemoovr.srv.SetDisplayServerMode,
                       self.handle_set_display_server_mode)
         rospy.Service('~return_to_standby',
-                      flyvr.srv.ReturnToStandby,
+                      freemoovr.srv.ReturnToStandby,
                       self.handle_return_to_standby)
         rospy.Service('~blit_compressed_image',
-                      flyvr.srv.BlitCompressedImage,
+                      freemoovr.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
         rospy.Service('~get_trackball_manipulator_state',
-                      flyvr.srv.GetTrackballManipulatorState,
+                      freemoovr.srv.GetTrackballManipulatorState,
                       self.handle_get_trackball_manipulator_state)
 
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
@@ -497,7 +497,7 @@ cdef class MyNode:
 
         result['virtualDisplays'] = virtualDisplays
 
-        response = flyvr.srv.GetDisplayInfoResponse()
+        response = freemoovr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
 
@@ -510,7 +510,7 @@ cdef class MyNode:
         except KeyError:
             result = {}
 
-        response = flyvr.srv.GetDisplayInfoResponse()
+        response = freemoovr.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
 
@@ -518,12 +518,12 @@ cdef class MyNode:
     def handle_set_display_server_mode(self, request):
         with self._mode_lock:
             self._mode_change = request.mode
-        return flyvr.srv.SetDisplayServerModeResponse()
+        return freemoovr.srv.SetDisplayServerModeResponse()
 
     def handle_return_to_standby(self,request):
         with self._mode_lock:
             self._mode_change = 'StimulusStandby'
-        return flyvr.srv.ReturnToStandbyResponse()
+        return freemoovr.srv.ReturnToStandbyResponse()
 
     def handle_blit_compressed_image(self,request):
         # this is called in some callback thread by ROS
@@ -542,14 +542,14 @@ cdef class MyNode:
                                 'plugin': plugin,
                                 'topic_name': 'blit_images',
                                 'msg_json': json_image})
-        return flyvr.srv.BlitCompressedImageResponse()
+        return freemoovr.srv.BlitCompressedImageResponse()
 
     def handle_get_trackball_manipulator_state(self,request):
         # This is called in some callback thread by ROS.
         # (Should it be handled in draw thread?)
         cdef TrackballManipulatorState ts
 
-        response = flyvr.srv.GetTrackballManipulatorStateResponse()
+        response = freemoovr.srv.GetTrackballManipulatorStateResponse()
         result = response.data
         ts = self.dsosg.getTrackballManipulatorState()
         result.rotation = osg_quat_to_msg_quat(ts.rotation)

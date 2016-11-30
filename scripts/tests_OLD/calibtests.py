@@ -1,7 +1,7 @@
 import tempfile
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('motmot_ros_utils')
 import rospy
 

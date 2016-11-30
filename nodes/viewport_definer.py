@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 
-import flyvr.srv
-import flyvr.msg
-import flyvr.display_client as display_client
+import freemoovr.srv
+import freemoovr.msg
+import freemoovr.display_client as display_client
 
 import json
 import argparse

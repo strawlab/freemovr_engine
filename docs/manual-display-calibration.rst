@@ -35,8 +35,8 @@ for several poses of a checkerboard.
 ::
 
     rosrun joy joy_node [/dev/input/jsN]
-    rosrun flyvr display_server
-    rosrun flyvr joystick_cursor
+    rosrun freemoovr display_server
+    rosrun freemoovr joystick_cursor
 
 This will print a bunch coordinates each time you click the
 mouse. Save the coordinates from left-to-right, top-to-bottom order
@@ -44,7 +44,7 @@ mouse. Save the coordinates from left-to-right, top-to-bottom order
 of the projector, but it's good to get points near the edge.
 
 Here's an example of data from several such checkerboards, plotted
-with the example program in ``flyvr/homelab/picop-corners.py``.
+with the example program in ``freemoovr/homelab/picop-corners.py``.
 
 .. image:: images/picop-camcal-points.png
   :width: 406
@@ -53,7 +53,7 @@ with the example program in ``flyvr/homelab/picop-corners.py``.
 Run the calibration
 -------------------
 
-The example program in ``flyvr/homelab/picop-corners.py`` run's
+The example program in ``freemoovr/homelab/picop-corners.py`` run's
 OpenCV's calibration routine (by way of ROS's camera_calibration
 package). It emits the calibration in a file called
 ``display-intrinsic-cal-picop.bag``, which is a valid ROS Bag file
@@ -66,7 +66,7 @@ parameters. You can view it with::
 **Important note for displaying through mirrors:** If your (virtual)
 display is illuminated through a mirror, make sure that the name of
 your display has "mirror" in it. If you are using the
-``flyvr/homelab/picop-corners.py`` example program, this will
+``freemoovr/homelab/picop-corners.py`` example program, this will
 ensure that saved intrinsic calibration flips the X coordinate.
 
 Finding the extrinsic parameters
@@ -86,10 +86,10 @@ Now, in other window, launch the program that projects the geometry
 model.::
 
     # for the (entire) physical display
-    rosrun flyvr caldc4_manual_camera_calibration --image /tmp/display_server.json --geometry ../homelab/geom.json --camera picop
+    rosrun freemoovr caldc4_manual_camera_calibration --image /tmp/display_server.json --geometry ../homelab/geom.json --camera picop
 
     # for a virtual display
-    rosrun flyvr caldc4_manual_camera_calibration --image /tmp/display_server.json --geometry ../homelab/geom.json --camera picop/vdisp
+    rosrun freemoovr caldc4_manual_camera_calibration --image /tmp/display_server.json --geometry ../homelab/geom.json --camera picop/vdisp
 
 If you're not getting good alignment, make sure your geometry model is
 accurate that that the geometry projection program has loaded the
@@ -98,7 +98,7 @@ intrinsic parameters.
 Once you have obtained a good alignment, save the results.::
 
     # for the (entire) physical display
-    CAMERA=picop rosrun flyvr record_camcal.sh
+    CAMERA=picop rosrun freemoovr record_camcal.sh
 
     # for a virtual display
     rosbag record /picop/vdisp/camera_info /picop/vdisp/tf -l1 -O picop-vdisp-camcal
@@ -116,17 +116,17 @@ Mapping display pixels to geometry coordinates
 
 Now we have all the data we need. Create the texture coordinates::
 
-    rosrun flyvr caldc6_create_display2tcs.py geom.json picop-camcal.bag
+    rosrun freemoovr caldc6_create_display2tcs.py geom.json picop-camcal.bag
 
 This will emit the file ``display2tcs-picop-tcs-lowres.png`` as well as a similarly named ``.exr``.
 You can verify the results by viewing the file. Quit
 ``caldc4_manual_camera_calibration`` if it still running and launch the display server.::
 
-    rosrun flyvr display_server
+    rosrun freemoovr display_server
 
 Now, show our new image.::
 
-    rosrun flyvr show_image.py display2tcs-picop-tcs-lowres.png
+    rosrun freemoovr show_image.py display2tcs-picop-tcs-lowres.png
 
 Or, you can view the ``.exr`` image using the ``exrdisplay`` utility::
 

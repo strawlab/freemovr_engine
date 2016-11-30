@@ -49,7 +49,7 @@ SET(DS_SOURCES
 
 IF(OSG_COMPUTE_FOUND)
   MESSAGE("Building With CUDA support")
-  add_definitions( -DFLYVR_USE_CUDA )
+  add_definitions( -DFREEMOOVR_USE_CUDA )
 ELSE(OSG_COMPUTE_FOUND)
   MESSAGE("Building Without CUDA support")
 ENDIF(OSG_COMPUTE_FOUND)
@@ -91,34 +91,34 @@ IF(BUILD_WITH_ROS)
 
 
 
-  # the flyvr library (for building stimulus plugins) --------------------
-  add_library(flyvr src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
-  TARGET_LINK_LIBRARIES(flyvr ${POCO_LIBRARIES})
+  # the freemoovr library (for building stimulus plugins) --------------------
+  add_library(freemoovr src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
+  TARGET_LINK_LIBRARIES(freemoovr ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
   add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
 
   add_library(StimulusAxes src/StimulusAxes.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(StimulusAxes ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(StimulusAxes ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
 
   add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
 
   add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} freemoovr)
 
   add_library(StimulusLatencyTimestamp src/StimulusLatencyTimestamp.cpp src/json2osg.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(StimulusLatencyTimestamp ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(StimulusLatencyTimestamp ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} freemoovr)
 
   add_library(StimulusStandby src/StimulusStandby.cpp)
-  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
 
   add_library(StimulusTemplate src/StimulusTemplate.cpp)
-  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
 
   add_library(StimulusOSG src/StimulusOSG.cpp)
-  TARGET_LINK_LIBRARIES(StimulusOSG ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
+  TARGET_LINK_LIBRARIES(StimulusOSG ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
 
   # build the main display server node ----------
   ADD_EXECUTABLE(display_server display_server.cpp ${DS_SOURCES})

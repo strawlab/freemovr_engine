@@ -4,7 +4,7 @@
 # the real program (which does not depend on ROS).
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 import sys, subprocess
 import json
@@ -33,4 +33,4 @@ if __name__=='__main__':
     fd = open(fname,mode='w')
     fd.write( json_config )
     fd.close()
-    sys.exit(subprocess.call("rosrun flyvr caldc4_manual_camera_calibration --cfg "+fname, shell=True))
+    sys.exit(subprocess.call("rosrun freemoovr caldc4_manual_camera_calibration --cfg "+fname, shell=True))

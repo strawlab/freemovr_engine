@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#include "flyvr/StimulusInterface.hpp"
+#include "freemoovr/StimulusInterface.hpp"
 #include "util.h"
 #include "json2osg.hpp"
 #include "base64.h"
@@ -24,7 +24,7 @@
 
 #include <jansson.h>
 
-#include "flyvr/flyvr_assert.h"
+#include "freemoovr/freemoovr_assert.h"
 
 class StimulusLatencyTimestamp: public StimulusInterface
 {

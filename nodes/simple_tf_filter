@@ -2,7 +2,7 @@
 """filter ROS transform into simple Transform message"""
 import argparse
 
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 import tf
 from tf.msg import tfMessage

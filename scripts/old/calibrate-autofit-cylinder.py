@@ -7,11 +7,11 @@ from scipy.optimize import fmin
 import flydra.reconstruct
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 from calib.reconstruct import PointCloudTransformer
 from calib.io import MultiCalSelfCam, save_ascii_matrix
 import tf
-from flyvr.simple_geom import Cylinder
+from freemoovr.simple_geom import Cylinder
 
 class Autofitter:
     def __init__(self, filename, orig_flydra_R, out_fname=None):

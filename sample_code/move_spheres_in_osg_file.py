@@ -1,10 +1,10 @@
 import roslib
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 
 import rospy
 import geometry_msgs.msg
 import std_msgs.msg
-import flyvr.display_client as display_client
+import freemoovr.display_client as display_client
 
 from math import sin, cos
 

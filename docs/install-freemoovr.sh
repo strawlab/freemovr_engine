@@ -55,12 +55,12 @@ apt-get upgrade --yes
 DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-hydro-desktop-full make
 
 # ------ install our overlay ------------
-ROSINSTALL_SPEC_PATH="/tmp/flyvr.rosinstall"
+ROSINSTALL_SPEC_PATH="/tmp/freemoovr.rosinstall"
 
 # ---- create a .rosinstall spec file for this git revision -------------
 cat > ${ROSINSTALL_SPEC_PATH} <<EOF
-- git: {local-name: flyvr, uri: 'https://github.com/strawlab/flyvr.git', version: flyvr-hydro}
-- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: flyvr-hydro}
+- git: {local-name: freemoovr, uri: 'https://github.com/strawlab/freemoovr.git', version: freemoovr-hydro}
+- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: freemoovr-hydro}
 EOF
 
 # ---- script to ensure a line in a file ----
@@ -102,10 +102,10 @@ if __name__ == '__main__':
 EOF
 
 # ---- install our ROS stuff
-export FLYVR_TARGET="/opt/ros/ros-flyvr.hydro"
-rosinstall ${FLYVR_TARGET} /opt/ros/hydro/.rosinstall ${ROSINSTALL_SPEC_PATH}
+export FREEMOOVR_TARGET="/opt/ros/ros-freemoovr.hydro"
+rosinstall ${FREEMOOVR_TARGET} /opt/ros/hydro/.rosinstall ${ROSINSTALL_SPEC_PATH}
 
-source ${FLYVR_TARGET}/setup.bash
+source ${FREEMOOVR_TARGET}/setup.bash
 
 if [ -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
   echo "rosdep already initialized"
@@ -119,7 +119,7 @@ chmod -R a+rX /etc/ros
 
 rosdep update
 
-rosdep install flyvr --default-yes
-rosmake flyvr
+rosdep install freemoovr --default-yes
+rosmake freemoovr
 
-chmod -R a+rX ${FLYVR_TARGET}
+chmod -R a+rX ${FREEMOOVR_TARGET}

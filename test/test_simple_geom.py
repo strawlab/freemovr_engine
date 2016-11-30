@@ -2,11 +2,11 @@ import numpy as np
 import yaml
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
-import flyvr.simple_geom as simple_geom
+import roslib; roslib.load_manifest('freemoovr')
+import freemoovr.simple_geom as simple_geom
 import PyDisplaySurfaceArbitraryGeometry as pdsag
 from pymvg.camera_model import CameraModel
-import flyvr.rosmsg2json as rosmsg2json
+import freemoovr.rosmsg2json as rosmsg2json
 
 def get_sample_camera():
     yaml_str = """header:
@@ -102,7 +102,7 @@ def _get_inputs():
     radius = 1
 
     # ArbitraryGeometry
-    filename = rosmsg2json.fixup_path( '$(find flyvr)/data/pyramid.osg' )
+    filename = rosmsg2json.fixup_path( '$(find freemoovr)/data/pyramid.osg' )
 
     inputs = [ (simple_geom.PlanarRectangle, dict(lowerleft=ll, upperleft=ul, lowerright=lr)),
                (simple_geom.Cylinder, dict(base=base, axis=axis, radius=radius)),

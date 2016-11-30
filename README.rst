@@ -1,13 +1,13 @@
-.. image:: http://flyvr.org/assets/FlyVR-airplane-640.png
-    :alt: FlyVR
+.. image:: http://freemoovr.org/assets/FreemooVR-airplane-640.png
+    :alt: FreemooVR
     :width: 640
     :height: 263
 
 ******************************
-FlyVR - virtual reality engine
+FreemooVR - virtual reality engine
 ******************************
 
-FlyVR is a virtual reality engine built on [ROS](http://ros.org) and
+FreemooVR is a virtual reality engine built on [ROS](http://ros.org) and
 [OpenSceneGraph](http://www.openscenegraph.org). It manages
 multi-computer realtime tracking and display with the goal of being
 useful for scientific studies of vision.
@@ -17,7 +17,7 @@ useful for scientific studies of vision.
 * `installation and getting started <docs/getting_started.rst>`_
 * `using the joystick for input <docs/joystick.rst>`_
 
-FlyVR architecture overview
+FreemooVR architecture overview
 ***************************
 
 Theory of operation
@@ -33,20 +33,20 @@ This cube map is then projected onto a 3D shape model of the display
 surface. From there, this image is warped to the physical display
 output.
 
-flyvr nodes
+freemoovr nodes
 ===========
 
-display_server - the FlyVR display server
+display_server - the FreemooVR display server
 ----------------------------------------
 
-The FlyVR display server node runs locally on the computer(s) connected
+The FreemooVR display server node runs locally on the computer(s) connected
 to the physical display. During a typical experiment, it will be
 running an experiment plugin. Each experiment plugin updates the
 graphics engine on the basis of the fly's current position. Given the
 scenegraph and the calibrated screen layout, the node will compute the
 images shown on the projectors.
 
-viewport_definer.py - FlyVR viewport definer
+viewport_definer.py - FreemooVR viewport definer
 -------------------------------------------
 
 Runs a GUI program that allows the user to interactively define the
@@ -80,7 +80,7 @@ effectively create multiple projections.
 
 **Viewport** - vertices of polygon defining projection region in
 display coordinates (x0,y0,x1,y1,...). It is used to limit the region
-of the physical display used to illuminate a surface. (The FlyVR
+of the physical display used to illuminate a surface. (The FreemooVR
 Viewport corresponds to a 2D polygon onto which the image of the
 projection screen is shown.)
 

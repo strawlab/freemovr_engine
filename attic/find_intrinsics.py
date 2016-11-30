@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 import rosbag
 

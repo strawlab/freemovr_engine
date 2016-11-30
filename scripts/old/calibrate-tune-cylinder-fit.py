@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('rosgobject')
 

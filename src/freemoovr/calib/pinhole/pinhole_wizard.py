@@ -12,7 +12,7 @@ import numpy as np
 import scipy.misc
 import pkgutil
 
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 roslib.load_manifest('visualization_msgs')
 roslib.load_manifest('camera_calibration')
 import camera_calibration.calibrator
@@ -28,14 +28,14 @@ import tf.broadcaster
 from pymvg.camera_model import CameraModel
 
 import pymvg.extern.ros.rviz_utils as rviz_utils
-import flyvr
-import flyvr.simple_geom as simple_geom
-import flyvr.dlt as dlt
-import flyvr.display_client as display_client
-import flyvr.fill_polygon as fill_polygon
-import flyvr.exr as exr
-from flyvr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
-from flyvr.calib.pinhole.widgets import CellRendererButton
+import freemoovr
+import freemoovr.simple_geom as simple_geom
+import freemoovr.dlt as dlt
+import freemoovr.display_client as display_client
+import freemoovr.fill_polygon as fill_polygon
+import freemoovr.exr as exr
+from freemoovr.fit_extrinsics import fit_extrinsics, fit_extrinsics_iterative
+from freemoovr.calib.pinhole.widgets import CellRendererButton
 
 import rosgobject.core
 import rosgobject.wrappers
@@ -353,7 +353,7 @@ class ProxyDisplayClient(object):
 
 class UI(object):
     def __init__(self):
-        ui_file_contents = pkgutil.get_data('flyvr.calib.pinhole','pinhole-wizard.ui')
+        ui_file_contents = pkgutil.get_data('freemoovr.calib.pinhole','pinhole-wizard.ui')
         self._ui = Gtk.Builder()
         self._ui.add_from_string( ui_file_contents )
         self._build_ui()
@@ -511,7 +511,7 @@ class UI(object):
                                             parent=None,
                                             buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.help_about_dialog.get_content_area().add(self._ui.get_object('help_about_dialog_grid'))
-        version_str = getattr(flyvr,'__version__','0.0')
+        version_str = getattr(freemoovr,'__version__','0.0')
         self._ui.get_object('version_label').set_text(version_str)
 
         # setup vdisp combobox ----------------

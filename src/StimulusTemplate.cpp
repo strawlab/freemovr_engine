@@ -7,7 +7,7 @@
 
  */
 
-#include "flyvr/StimulusInterface.hpp"
+#include "freemoovr/StimulusInterface.hpp"
 #include "Poco/ClassLibrary.h"
 #include <stdexcept>
 

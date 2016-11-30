@@ -9,6 +9,6 @@ Vagrant::Config.run do |config|
   config.vm.customize ["modifyvm", :id, "--memory", 8000]
   config.vm.customize ["modifyvm", :id, "--cpus", 2]
 
-  config.vm.provision :shell, :path => "docs/install-flyvr.sh"
+  config.vm.provision :shell, :path => "docs/install-freemoovr.sh"
 
 end

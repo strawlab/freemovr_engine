@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 
 import os
@@ -9,8 +9,8 @@ import argparse
 import numpy as np
 import scipy.misc
 
-import flyvr.srv
-import flyvr.display_client as display_client
+import freemoovr.srv
+import freemoovr.display_client as display_client
 
 def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     rospy.init_node('show_image')
@@ -72,7 +72,7 @@ def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     dsc.show_pixels(arr)
 
 def main():
-    wd = roslib.packages.get_pkg_dir('flyvr')
+    wd = roslib.packages.get_pkg_dir('freemoovr')
     default_fname = os.path.join(wd,'data','vienna-morning.jpg')
 
     parser = argparse.ArgumentParser()

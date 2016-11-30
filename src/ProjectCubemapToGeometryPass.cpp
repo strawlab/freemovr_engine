@@ -21,9 +21,9 @@
 #include "ProjectCubemapToGeometryPass.h"
 #include "InvalidBoundsCallback.h"
 
-#include "flyvr/flyvr_assert.h"
+#include "freemoovr/freemoovr_assert.h"
 
-ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_basepath,
+ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string freemoovr_basepath,
                                                              osg::TextureCubeMap* texture,
                                                              osg::Uniform::Callback* observer_position_cb,
                                                              DisplaySurfaceGeometry* geometry_parameters,
@@ -31,11 +31,11 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
                                                              unsigned int tex_height) :
     _geometry_parameters( geometry_parameters), _tex_width(tex_width), _tex_height(tex_height), _observer_position_callback(observer_position_cb)
  {
-     flyvr_assert( texture!=NULL );
-     flyvr_assert( geometry_parameters!=NULL );
+     freemoovr_assert( texture!=NULL );
+     freemoovr_assert( geometry_parameters!=NULL );
 
-     set_flyvr_base_path(flyvr_basepath);
-     set_plugin_path(flyvr_basepath,false);
+     set_freemoovr_base_path(freemoovr_basepath);
+     set_plugin_path(freemoovr_basepath,false);
 
     _top = new osg::Group;
     _top->addDescription("ProjectCubemapToGeometryPass top node");
@@ -70,7 +70,7 @@ ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string flyvr_bas
 }
 
 void ProjectCubemapToGeometryPass::replace_display_surface_geometry( DisplaySurfaceGeometry* geometry_parameters ) {
-    flyvr_assert( geometry_parameters!=NULL );
+    freemoovr_assert( geometry_parameters!=NULL );
 
     // Tear down usage of previous display surface geometry.
     if (_state_set.valid()) {
@@ -188,7 +188,7 @@ osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry(
 // show texture on geometry
 osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::get_textured_geometry() const
 {
-    flyvr_assert(_public_geometry.valid());
+    freemoovr_assert(_public_geometry.valid());
     return _public_geometry;
 }
 

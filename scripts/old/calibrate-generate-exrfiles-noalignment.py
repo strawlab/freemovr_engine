@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import argparse
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 import rospy
 
-import flyvr.simple_geom as simple_geom
+import freemoovr.simple_geom as simple_geom
 
 from calib.io import MultiCalSelfCam, AllPointPickle
 from calib.visualization import create_pcd_file_from_points, \
@@ -26,7 +26,7 @@ import flydra.reconstruct
 import flydra.align
 
 import exr
-import flyvr.display_client as display_client
+import freemoovr.display_client as display_client
 
 X_INDEX = 0
 Y_INDEX = 1

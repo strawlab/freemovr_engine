@@ -8,7 +8,7 @@ import pcl
 import argparse
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('motmot_ros_utils')
 import rospy
 
@@ -24,7 +24,7 @@ import flydra.reconstruct
 import flydra.align
 
 import exr
-import flyvr.display_client as display_client
+import freemoovr.display_client as display_client
 
 X_INDEX = 0
 Y_INDEX = 1

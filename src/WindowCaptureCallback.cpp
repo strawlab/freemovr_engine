@@ -1,7 +1,7 @@
 #include "WindowCaptureCallback.h"
 #include <iostream>
 #include <osgDB/WriteFile>
-#include "flyvr/flyvr_assert.h"
+#include "freemoovr/freemoovr_assert.h"
 
 WindowCaptureCallback::WindowCaptureCallback() : _gc(NULL) {
   _image = new osg::Image;
@@ -19,7 +19,7 @@ void WindowCaptureCallback::operator () (osg::RenderInfo& renderInfo) const {
     _gc=gc;
   }
 
-  flyvr_assert(_gc==gc); // only a single GraphicsContext supported
+  freemoovr_assert(_gc==gc); // only a single GraphicsContext supported
 
   OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_mutex);
 

@@ -1,7 +1,7 @@
 import json
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('tf')
 import tf
 
@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate
 
-import flyvr.simple_geom as simple_geom
+import freemoovr.simple_geom as simple_geom
 
 class PointCloudTransformer(object):
     def __init__(self, scale=None, translate=None, rotate=None):

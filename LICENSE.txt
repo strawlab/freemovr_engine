@@ -1,13 +1,13 @@
-flyvr
+freemoovr
 ============
 
-The flyvr package was written by Andrew Straw at the Research
+The freemoovr package was written by Andrew Straw at the Research
 Institute of Molecular Pathology (IMP), Vienna, Austria.
 
 other parts
 ===========
 
-The flyvr package includes the following other parts.
+The freemoovr package includes the following other parts.
 
 src/base64.cpp and src/base64.h
 -------------------------------

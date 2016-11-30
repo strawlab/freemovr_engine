@@ -1,7 +1,7 @@
 Using the joystick for input
 ****************************
 
-Several FlyVR programs use a joystick for input (e.g. ``joypose``,
+Several FreemooVR programs use a joystick for input (e.g. ``joypose``,
 ``joystick_cursor``, ``spacenav_pose``, ``pinhole_wizard.py``). Specifically,
 they listen to the ROS ``/joy`` topic. To ensure that your joystick is running,
 you can do this from the command line:

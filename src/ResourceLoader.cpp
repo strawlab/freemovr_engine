@@ -1,4 +1,4 @@
-#include "flyvr/ResourceLoader.hpp"
+#include "freemoovr/ResourceLoader.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
-#include "flyvr/flyvr_assert.h"
+#include "freemoovr/freemoovr_assert.h"
 
 ResourceLoader::ResourceLoader()
 {
@@ -21,7 +21,7 @@ std::string ResourceLoader::get_plugin_shader_path(std::string name) const
     Poco::Path path(_plugin_path);
     path.makeDirectory();
     if (_popdir) {
-      flyvr_assert_msg( path.depth() > 0,
+      freemoovr_assert_msg( path.depth() > 0,
                        "_plugin_path does not include directory. (Is it set?)" );
       path.popDirectory();
     }
@@ -34,7 +34,7 @@ std::string ResourceLoader::get_plugin_data_path(std::string name) const
     Poco::Path path(_plugin_path);
     path.makeDirectory();
     if (_popdir) {
-      flyvr_assert_msg( path.depth() > 0,
+      freemoovr_assert_msg( path.depth() > 0,
                        "_plugin_path does not include directory. (Is it set?)" );
       path.popDirectory();
     }
@@ -101,8 +101,8 @@ void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name) c
     shader->loadShaderSourceFromFile(path.absolute().toString());
 }
 
-void ResourceLoader::set_flyvr_base_path(std::string path) {
-  _flyvr_base_path = path;
+void ResourceLoader::set_freemoovr_base_path(std::string path) {
+  _freemoovr_base_path = path;
 }
 
 void ResourceLoader::set_plugin_path(std::string path,bool popdir) {

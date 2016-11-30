@@ -5,7 +5,7 @@ import scipy.misc
 import time
 
 import roslib;
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('camera_trigger')
 roslib.load_manifest('flycave')
 roslib.load_manifest('std_srvs')
@@ -14,7 +14,7 @@ roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('rosbag')
 import rospy
 
-import flyvr.display_client as display_client
+import freemoovr.display_client as display_client
 import calib.acquire
 
 if __name__ == "__main__":

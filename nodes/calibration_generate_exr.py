@@ -7,21 +7,21 @@ import os.path
 import subprocess
 
 import roslib
-roslib.load_manifest('flyvr')
+roslib.load_manifest('freemoovr')
 roslib.load_manifest('rosbag')
 roslib.load_manifest('motmot_ros_utils')
 import rosbag
 import rospy
 
-import flyvr.simple_geom as simple_geom
-import flyvr.display_client as display_client
-import flyvr.exr as exr
-import flyvr.calib.blend as blend
+import freemoovr.simple_geom as simple_geom
+import freemoovr.display_client as display_client
+import freemoovr.exr as exr
+import freemoovr.calib.blend as blend
 
-from flyvr.calib.imgproc import add_crosshairs_to_nparr
-from flyvr.calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
-from flyvr.calib.reconstruct import interpolate_pixel_cords
-from flyvr.calib.calibrationconstants import CALIB_MAPPING_TOPIC
+from freemoovr.calib.imgproc import add_crosshairs_to_nparr
+from freemoovr.calib.visualization import create_pcd_file_from_points, create_point_cloud_message_publisher, show_pointcloud_3d_plot, create_cylinder_publisher, create_point_publisher
+from freemoovr.calib.reconstruct import interpolate_pixel_cords
+from freemoovr.calib.calibrationconstants import CALIB_MAPPING_TOPIC
 
 from rosutils.io import decode_url
 import flydra.reconstruct

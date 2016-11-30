@@ -2,18 +2,18 @@
 # /* -*- Mode: Python; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 import argparse
 
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 
-import flyvr.msg
+import freemoovr.msg
 from geometry_msgs.msg import Pose2D
 from sensor_msgs.msg import Joy
 
-import flyvr.display_client as display_client
+import freemoovr.display_client as display_client
 
 import os
 
-_pkg_dir = roslib.packages.get_pkg_dir('flyvr')
+_pkg_dir = roslib.packages.get_pkg_dir('freemoovr')
 
 class App:
     def __init__(self,button=0):
@@ -46,10 +46,10 @@ class App:
 
     def _show_cursor(self):
         publisher = rospy.Publisher('sprite_image',
-                                    flyvr.msg.FlyVRCompressedImage,
+                                    freemoovr.msg.FreemooVRCompressedImage,
                                     latch=True)
         fname = os.path.join(_pkg_dir,"data","cursor.png")
-        image = flyvr.msg.FlyVRCompressedImage()
+        image = freemoovr.msg.FreemooVRCompressedImage()
         image.format = os.path.splitext(fname)[-1]
         image.data = open(fname).read()
         publisher.publish(image)

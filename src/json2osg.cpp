@@ -1,5 +1,5 @@
 #include "json2osg.hpp"
-#include "flyvr/flyvr_assert.h"
+#include "freemoovr/freemoovr_assert.h"
 
 #include "base64.h"
 #include <stdexcept>
@@ -10,18 +10,18 @@ osg::Vec3 parse_vec3(json_t* root) {
     double x,y,z;
 
     data_json = json_object_get(root, "x");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     x = json_number_value( data_json );
 
     data_json = json_object_get(root, "y");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     y = json_number_value( data_json );
 
     data_json = json_object_get(root, "z");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     z = json_number_value( data_json );
 
     return osg::Vec3(x,y,z);
@@ -32,23 +32,23 @@ osg::Quat parse_quat(json_t* root) {
     double x,y,z,w;
 
     data_json = json_object_get(root, "x");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     x = json_number_value( data_json );
 
     data_json = json_object_get(root, "y");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     y = json_number_value( data_json );
 
     data_json = json_object_get(root, "z");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     z = json_number_value( data_json );
 
     data_json = json_object_get(root, "w");
-    flyvr_assert(data_json != NULL);
-    flyvr_assert(json_is_number(data_json));
+    freemoovr_assert(data_json != NULL);
+    freemoovr_assert(json_is_number(data_json));
     w = json_number_value( data_json );
 
     return osg::Quat(x,y,z,w);
@@ -58,7 +58,7 @@ bool parse_bool(json_t* root) {
     json_t *data_json;
 
     data_json = json_object_get(root, "data");
-    flyvr_assert(json_is_boolean(data_json));
+    freemoovr_assert(json_is_boolean(data_json));
 
     return json_is_true(data_json);
 }
@@ -67,7 +67,7 @@ int parse_int(json_t* root) {
     json_t *data_json;
 
     data_json = json_object_get(root, "data");
-    flyvr_assert(json_is_integer(data_json));
+    freemoovr_assert(json_is_integer(data_json));
 
     return json_integer_value(data_json);
 }
@@ -76,7 +76,7 @@ float parse_float(json_t* root) {
     json_t *data_json;
 
     data_json = json_object_get(root, "data");
-    flyvr_assert(json_is_real(data_json));
+    freemoovr_assert(json_is_real(data_json));
 
     return json_real_value(data_json);
 }
@@ -85,7 +85,7 @@ std::string parse_string(json_t* root) {
     json_t *data_json;
 
     data_json = json_object_get(root, "data");
-    flyvr_assert(json_is_string(data_json));
+    freemoovr_assert(json_is_string(data_json));
 
     return json_string_value(data_json);
 }
@@ -94,11 +94,11 @@ std::vector<double> parse_vector_double(json_t* root) {
    json_t *data_json;
    std::vector<double> result;
 
-   flyvr_assert(json_is_array(root));
+   freemoovr_assert(json_is_array(root));
 
    for (size_t i=0; i<json_array_size(root); i++) {
      data_json = json_array_get( root, i );
-     flyvr_assert(json_is_real(data_json));
+     freemoovr_assert(json_is_real(data_json));
      double val = json_real_value(data_json);
      result.push_back(val);
    }

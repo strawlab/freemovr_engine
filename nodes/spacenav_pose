@@ -2,7 +2,7 @@
 import ode
 import numpy as np
 
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
 
 from geometry_msgs.msg import Pose

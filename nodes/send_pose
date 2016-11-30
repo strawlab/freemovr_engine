@@ -2,9 +2,9 @@
 import numpy as np
 import argparse
 
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
-import flyvr.display_client as display_client
+import freemoovr.display_client as display_client
 from geometry_msgs.msg import Pose
 import tf.transformations
 

@@ -15,8 +15,8 @@
 #include "Poco/Manifest.h"
 #include "Poco/Path.h"
 
-#include "flyvr/StimulusInterface.hpp"
-#include "flyvr/CallbackHolder.hpp"
+#include "freemoovr/StimulusInterface.hpp"
+#include "freemoovr/CallbackHolder.hpp"
 
 #include "WindowCaptureCallback.h"
 #include "GeometryTextureToDisplayImagePass.h"
@@ -46,7 +46,7 @@ namespace dsosg{
 
     class DSOSG {
     public:
-        DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
+        DSOSG(std::string freemoovr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
               bool show_geom_coords=false, bool tethered_mode=false, bool slave=false, unsigned int cubemap_resolution=512);
 
         std::vector<std::string> get_stimulus_plugin_names();
@@ -92,7 +92,7 @@ namespace dsosg{
         StimulusInterface* _current_stimulus;
         std::string _mode;
 
-        Poco::Path _flyvr_basepath;
+        Poco::Path _freemoovr_basepath;
         Poco::Path _config_file_path;
 
         osgViewer::Viewer* _viewer;
@@ -115,7 +115,7 @@ namespace dsosg{
         GeometryTextureToDisplayImagePass *_g2di;
         OpenThreads::Mutex _osg_capture_mutex;
         std::string        _osg_capture_filename;
-        flyvr::BackgroundColorCallback *_bg_callback;
+        freemoovr::BackgroundColorCallback *_bg_callback;
         ProjectCubemapToGeometryPass* _pctcp;
         osg::Camera* _debug_hud_cam;
         osg::ref_ptr<osg::Group> _root;

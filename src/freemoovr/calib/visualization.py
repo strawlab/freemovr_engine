@@ -21,7 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d
 
-import flyvr.simple_geom as simple_geom
+import freemoovr.simple_geom as simple_geom
 
 def _points_check(points, ensure_ndarray=False):
     if len(points):

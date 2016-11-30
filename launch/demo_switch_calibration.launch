@@ -1,12 +1,12 @@
 <launch>
 
-  <node name="display_server_demo" pkg="flyvr" type="display_server" args="--mode overview">
-    <rosparam command="load" file="$(find flyvr)/config/rosparamconfig.yaml" />
-    <param name="p2g" type="str" value="$(find flyvr)/config/p2g.exr" />
+  <node name="display_server_demo" pkg="freemoovr" type="display_server" args="--mode overview">
+    <rosparam command="load" file="$(find freemoovr)/config/rosparamconfig.yaml" />
+    <param name="p2g" type="str" value="$(find freemoovr)/config/p2g.exr" />
     <param name="display/windowDecoration" type="bool" value="true" />
   </node>
 
-  <node name="send_pose" pkg="flyvr" type="send_pose"/>
-  <node name="demo_switch_calibration" pkg="flyvr" type="demo_switch_calibration"/>
+  <node name="send_pose" pkg="freemoovr" type="send_pose"/>
+  <node name="demo_switch_calibration" pkg="freemoovr" type="demo_switch_calibration"/>
 
 </launch>

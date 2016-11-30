@@ -31,7 +31,7 @@
 
 #include <osgViewer/ViewerEventHandlers>
 
-#ifdef FLYVR_USE_CUDA
+#ifdef FREEMOOVR_USE_CUDA
 #include <osgCudaInit/Init> // ubuntu: apt-get install osgcompute
 #endif
 
@@ -51,9 +51,9 @@
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
 
-#include "flyvr/flyvr_assert.h"
-#include "flyvr/ResourceLoader.hpp"
-#include "flyvr/CallbackHolder.hpp"
+#include "freemoovr/freemoovr_assert.h"
+#include "freemoovr/ResourceLoader.hpp"
+#include "freemoovr/CallbackHolder.hpp"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -221,7 +221,7 @@ private:
   CameraList Cameras;
 };
 
-struct BackgroundCallback : public flyvr::BackgroundColorCallback {
+struct BackgroundCallback : public freemoovr::BackgroundColorCallback {
 public:
     BackgroundCallback(CameraCube* cc) : _camera_cube(cc) {}
     void setBackgroundColorImplementation(const osg::Vec4& color) const {
@@ -290,11 +290,11 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture, Poco::Path shader_path){
 }
 
 // constructor
-DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius,
+DSOSG::DSOSG(std::string freemoovr_basepath, std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
              bool tethered_mode, bool slave, unsigned int cubemap_resolution) :
     _current_stimulus(NULL), _mode(mode),
-    _flyvr_basepath(flyvr_basepath),
+    _freemoovr_basepath(freemoovr_basepath),
     _config_file_path(config_fname),
     _tethered_mode(tethered_mode), _wcc(NULL), _g2di(NULL), _two_pass(two_pass)
 
@@ -305,11 +305,11 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     bool ignore_missing_plugins = false;
 
     // ensure we interpret this as a directory (ensure trailing slash)
-    _flyvr_basepath.makeAbsolute(); _flyvr_basepath.makeDirectory();
+    _freemoovr_basepath.makeAbsolute(); _freemoovr_basepath.makeDirectory();
     // ensure we interpret this as a file
     _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
-    Poco::Path shader_path(_flyvr_basepath);
+    Poco::Path shader_path(_freemoovr_basepath);
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
 
     // Check the mode is valid.
@@ -339,8 +339,8 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 
     std::string config_data_dir = _config_file_path.parent().toString();
 
-    // Add the flyvr defaut stimulus plugins
-    Poco::Path default_plugin_path = _flyvr_basepath;
+    // Add the freemoovr defaut stimulus plugins
+    Poco::Path default_plugin_path = _freemoovr_basepath;
     default_plugin_path.pushDirectory("lib");
     std::string default_lib_dir = default_plugin_path.toString();
 
@@ -414,7 +414,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
                     throw;
                 }
 
-                _stimulus_plugins[ plugin_name ]->set_flyvr_base_path(_flyvr_basepath.toString());
+                _stimulus_plugins[ plugin_name ]->set_freemoovr_base_path(_freemoovr_basepath.toString());
                 _stimulus_plugins[ plugin_name ]->set_plugin_path(path_parent.toString());
 
                 try {
@@ -450,7 +450,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
         _current_stimulus = _stimulus_plugins["Stimulus3DDemo"];
     }
 
-    flyvr_assert(_current_stimulus != NULL);
+    freemoovr_assert(_current_stimulus != NULL);
     std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
     _active_3d_world->addChild( _current_stimulus->get_3d_world() );
@@ -524,7 +524,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
     _root->addChild( _observer_geometry_pat );
 
     // render cubemap onto geometry
-    _pctcp = new ProjectCubemapToGeometryPass(_flyvr_basepath.toString(),
+    _pctcp = new ProjectCubemapToGeometryPass(_freemoovr_basepath.toString(),
                                               _cubemap_maker->get_cubemap(),
                                               _observer_cb,
                                               geometry_parameters);
@@ -601,7 +601,7 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
             }
         } else {
             json_t *p2g_json = json_object_get(json_config, "p2g");
-            flyvr_assert(p2g_json != NULL);
+            freemoovr_assert(p2g_json != NULL);
             Poco::Path p2g_path = _config_file_path.parent().resolve(
                                     Poco::Path(json_string_value(p2g_json)));
             std::string p2g_filename = p2g_path.toString();
@@ -624,13 +624,13 @@ DSOSG::DSOSG(std::string flyvr_basepath, std::string mode, float observer_radius
 void DSOSG::loadDisplayCalibrationFile(std::string p2g_filename,
                                        bool show_geom_coords) {
 
-    flyvr_assert_msg((_mode==std::string("overview") ||
+    freemoovr_assert_msg((_mode==std::string("overview") ||
                       _mode==std::string("vr_display")),
                      "must be in 'overview' or 'vr_display' mode");
-    flyvr_assert_msg(!_two_pass,
+    freemoovr_assert_msg(!_two_pass,
                      "NotImplemented: loadDisplayCalibrationFile() two-pass");
 
-    Poco::Path shader_path(_flyvr_basepath);
+    Poco::Path shader_path(_freemoovr_basepath);
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
 
     if (_g2di != NULL) {
@@ -639,7 +639,7 @@ void DSOSG::loadDisplayCalibrationFile(std::string p2g_filename,
     }
 
     if (_g2d_hud_cam_root != NULL) {
-        flyvr_assert(_debug_hud_cam!=NULL);
+        freemoovr_assert(_debug_hud_cam!=NULL);
         _debug_hud_cam->removeChild( _g2d_hud_cam_root );
         // delete _g2d_hud_cam_root; // TODO: why won't gcc let me do this?
     }
@@ -682,7 +682,7 @@ void DSOSG::loadDisplayGeomJSON(std::string geom_json_buf) {
         throw std::runtime_error("error in json");
     }
 
-    flyvr_assert_msg(json_is_object(json_geom),"valid projector geometry not found");
+    freemoovr_assert_msg(json_is_object(json_geom),"valid projector geometry not found");
 
     DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
     _pctcp->replace_display_surface_geometry( geometry_parameters );
@@ -731,13 +731,13 @@ void DSOSG::set_stimulus_plugin(const std::string& name) {
 
 std::vector<std::string> DSOSG::stimulus_get_topic_names(const std::string& plugin_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    flyvr_assert(stimulus!=NULL);
+    freemoovr_assert(stimulus!=NULL);
     return stimulus->get_topic_names();
 }
 
 std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    flyvr_assert(stimulus!=NULL);
+    freemoovr_assert(stimulus!=NULL);
     try {
         return stimulus->get_message_type( topic_name );
     } catch (...) {
@@ -748,7 +748,7 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
 
 void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    flyvr_assert(stimulus!=NULL);
+    freemoovr_assert(stimulus!=NULL);
     stimulus->receive_json_message( topic_name, json_message );
 }
 
@@ -852,7 +852,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
     if (use_pbuffer) {
         pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-        flyvr_assert(pbuffer.valid());
+        freemoovr_assert(pbuffer.valid());
     }
 
     _viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
@@ -896,7 +896,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
         osg::ref_ptr<osg::GraphicsContext> gc;
         gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-        flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
+        freemoovr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
         _viewer->getCamera()->setGraphicsContext(gc.get());
         _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.3f, 0.0f)); // clear dark gray
 
@@ -921,7 +921,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
     else if (_mode==std::string("vr_display")) {
         osg::ref_ptr<osg::GraphicsContext> gc;
         gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-        flyvr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
+        freemoovr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
         _viewer->getCamera()->setGraphicsContext(gc.get());
         _viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
         GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
@@ -950,7 +950,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
     setWindowName(viewer_window_name);
     resized(width, height); // notify listeners that we have a new size
 
-#ifdef FLYVR_USE_CUDA
+#ifdef FREEMOOVR_USE_CUDA
     osgCuda::setupOsgCudaAndViewer( *_viewer );
 #endif
 
@@ -1040,7 +1040,7 @@ void DSOSG::setWindowName(std::string name) {
 };
 
 void DSOSG::setCaptureImageFilename(std::string name) {
-    flyvr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
+    freemoovr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
     _wcc->set_next_filename( name );
 }
 
@@ -1050,7 +1050,7 @@ void DSOSG::setCaptureOSGFilename(std::string name) {
 }
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
-    flyvr_assert(_cameraManipulator.valid());
+    freemoovr_assert(_cameraManipulator.valid());
     TrackballManipulatorState result;
     result.rotation = _cameraManipulator->getRotation();
     result.center =  _cameraManipulator->getCenter();
@@ -1081,7 +1081,7 @@ void DSOSG::setRedMax(bool red_max) {
 }
 
 bool DSOSG::is_CUDA_available() {
-#ifdef FLYVR_USE_CUDA
+#ifdef FREEMOOVR_USE_CUDA
   return true;
 #else
   return false;

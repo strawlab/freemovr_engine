@@ -2,9 +2,9 @@
 import numpy as np
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import tf.transformations
-from flyvr.coord_system import body_frame_to_camera_frame, \
+from freemoovr.coord_system import body_frame_to_camera_frame, \
      get_body_frame_to_camera_frame_mat
 
 def test_coord_system_mat():

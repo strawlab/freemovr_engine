@@ -3,9 +3,9 @@ import numpy as np
 import os
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import tf.transformations
-from flyvr.calib.fit_shapes import fit_cylinder
+from freemoovr.calib.fit_shapes import fit_cylinder
 
 PLOT=int(os.environ.get('PLOT',0))
 if PLOT:

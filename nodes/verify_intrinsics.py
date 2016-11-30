@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rospy
-import flyvr.simple_geom as simple_geom
+import freemoovr.simple_geom as simple_geom
 import glob
 import json
 from fit_extrinsics import fit_extrinsics

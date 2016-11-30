@@ -1,7 +1,7 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 
 # ROS imports
-import roslib; roslib.load_manifest('flyvr')
+import roslib; roslib.load_manifest('freemoovr')
 import rosbag
 
 # standard Python stuff
@@ -630,7 +630,7 @@ class Geometry:
             self.model = PlanarRectangle(**kwargs)
         elif geom_dict['model']=='from_file':
             import PyDisplaySurfaceArbitraryGeometry as pdsag
-            import flyvr.rosmsg2json as rosmsg2json
+            import freemoovr.rosmsg2json as rosmsg2json
             self.model = pdsag.ArbitraryGeometry(
                 filename=rosmsg2json.fixup_path( geom_dict['filename'] ),
                 precision=geom_dict.get('precision',1e-6))
