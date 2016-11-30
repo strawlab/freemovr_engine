@@ -25,7 +25,7 @@ std::string mkfname(std::string basepath, std::string middle, std::string extens
 osg::TextureCubeMap* load_cubemap(std::string basepath, std::string extension) {
     std::string example = mkfname(basepath,"posx",extension);
     if (!Poco::File(Poco::Path(example)).exists()) {
-      std::cerr << "skymap file like " << example << "do not exist" << std::endl;
+      std::cerr << "skymap file like " << example << " does not exist" << std::endl;
     }
 
 	  osg::Image* posx = osgDB::readImageFile(mkfname(basepath,"posx",extension));
