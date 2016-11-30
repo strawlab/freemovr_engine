@@ -11,7 +11,6 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>python</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
