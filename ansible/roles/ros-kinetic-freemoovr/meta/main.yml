@@ -1,0 +1,4 @@
+---
+dependencies:
+- { role: ros-kinetic }
+- { role: strawlab-public-debs }

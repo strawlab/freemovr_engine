@@ -1,0 +1,19 @@
+- name: Ensure rosdep sources dir exists
+  file: path=/etc/ros/rosdep/sources.list.d state=directory mode=0755 owner=root group=root
+
+- name: Ensure strawlab rosdep URL is included into rosdep sources
+  copy: src=40-strawlab-kinetic.list dest=/etc/ros/rosdep/sources.list.d/40-strawlab-kinetic.list owner=root group=root mode=0644
+
+- name: Ensure freemoovr-kinetic.rosinstall is available
+  copy: src=freemoovr-kinetic.rosinstall dest=/etc/ros/freemoovr-kinetic.rosinstall owner=root group=root mode=0644
+
+- name: install sudo command
+  # This is required by `rosdep install`
+  apt: name=sudo state=installed
+
+- name: install wstool command
+  # This is required for `wstool`
+  apt: name=python-wstool state=installed
+
+- name: copy installer script
+  copy: src=user-install-ros-kinetic-freemoovr.sh dest=/opt/ros/user-install-ros-kinetic-freemoovr.sh owner=root group=root mode=0755

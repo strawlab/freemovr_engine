@@ -1,0 +1,4 @@
+---
+- hosts: localhost
+  roles:
+    - ros-kinetic-freemoovr
