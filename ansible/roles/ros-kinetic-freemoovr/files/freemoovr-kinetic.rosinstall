@@ -1,2 +1,0 @@
-# This rosinstall file can be used to create a catkin workspace with FreemooVR.
-- git: {local-name: freemoovr, uri: 'https://github.com/freemoovr/freemoovr.git', version: kinetic}

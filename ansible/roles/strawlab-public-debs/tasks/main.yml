@@ -1,5 +1,0 @@
-- name: get strawlab apt signing key
-  apt_key: id=F8DB323D url=https://strawlab.org/assets/astraw-archive-keyring.gpg state=present
-
-- name: get strawlab public apt repo
-  apt_repository: repo='deb http://debs.strawlab.org/ {{ ansible_lsb.codename }}/'
