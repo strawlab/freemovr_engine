@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
-project(freemoovr)
+project(freemoovr_engine)
 
 SET(BUILD_WITH_ROS ON CACHE BOOL "Building with ROS")
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/freemoovr/cmake/Modules/")
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/freemoovr_engine/cmake/Modules/")
 SET(CUDA_TOOLKIT_ROOT "/usr/local/cuda")
 
 FIND_PACKAGE(OpenThreads)
@@ -76,7 +76,7 @@ IF(BUILD_WITH_ROS)
     # LIBRARIES add_two_ints _add_two_ints_wrapper_cpp
     CATKIN_DEPENDS roscpp message_runtime geometry_msgs
     #  DEPENDS system_lib
-    LIBRARIES freemoovr Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo Stimulus2DBlit
+    LIBRARIES freemoovr_engine Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo Stimulus2DBlit
       StimulusLatencyTimestamp StimulusStandby StimulusTemplate StimulusOSG
     )
 
@@ -94,33 +94,33 @@ IF(BUILD_WITH_ROS)
 
 
   # the freemoovr library (for building stimulus plugins) --------------------
-  add_library(freemoovr src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
-  TARGET_LINK_LIBRARIES(freemoovr ${POCO_LIBRARIES})
+  add_library(freemoovr_engine src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
+  TARGET_LINK_LIBRARIES(freemoovr_engine ${POCO_LIBRARIES})
 
   # default stimulus plugins --------------------
   add_library(Stimulus3DDemo src/Stimulus3DDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(Stimulus3DDemo ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr_engine)
 
   add_library(StimulusAxes src/StimulusAxes.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(StimulusAxes ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(StimulusAxes ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr_engine)
 
   add_library(Stimulus3DShaderDemo src/Stimulus3DShaderDemo.cpp src/util.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(Stimulus3DShaderDemo ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr_engine)
 
   add_library(Stimulus2DBlit src/Stimulus2DBlit.cpp src/json2osg.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(Stimulus2DBlit ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} freemoovr_engine)
 
   add_library(StimulusLatencyTimestamp src/StimulusLatencyTimestamp.cpp src/json2osg.cpp src/base64.cpp)
-  TARGET_LINK_LIBRARIES(StimulusLatencyTimestamp ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(StimulusLatencyTimestamp ${OSG_LIBS} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES} freemoovr_engine)
 
   add_library(StimulusStandby src/StimulusStandby.cpp)
-  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(StimulusStandby ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr_engine)
 
   add_library(StimulusTemplate src/StimulusTemplate.cpp)
-  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(StimulusTemplate ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr_engine)
 
   add_library(StimulusOSG src/StimulusOSG.cpp)
-  TARGET_LINK_LIBRARIES(StimulusOSG ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr)
+  TARGET_LINK_LIBRARIES(StimulusOSG ${OSG_LIBS} ${POCO_LIBRARIES} freemoovr_engine)
 
   # build the main display server node ----------
   ADD_EXECUTABLE(display_server display_server.cpp ${DS_SOURCES})
@@ -135,7 +135,7 @@ IF(BUILD_WITH_ROS)
       ${OPENEXR_LIBRARIES} ${POCO_LIBRARIES} ${JANSSON_LIBRARIES}
       ${OSG_COMPUTE_LIBRARIES} DisplaySurfaceArbitraryGeometry)
 
-  install(TARGETS display_server freemoovr Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo
+  install(TARGETS display_server freemoovr_engine Stimulus3DDemo StimulusAxes Stimulus3DShaderDemo
     Stimulus2DBlit StimulusLatencyTimestamp StimulusStandby StimulusTemplate StimulusOSG
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

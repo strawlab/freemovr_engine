@@ -1,8 +1,8 @@
 <package>
-  <name>freemoovr</name>
+  <name>freemoovr_engine</name>
   <version>0.0.1</version>
   <description>
-    freemoovr
+    freemoovr_engine
   </description>
   <author>Andrew Straw</author>
   <maintainer email="strawman@astraw.com">Andrew Straw</maintainer>
@@ -40,7 +40,7 @@
   <run_depend>python-pymvg</run_depend>
   
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lfreemoovr"/>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lfreemoovr_engine"/>
   </export>
 
 </package>
