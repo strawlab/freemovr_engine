@@ -1,18 +1,7 @@
-Installation and Getting Started
-********************************
+Getting Started
+***************
 
-FreemooVR is developed and tested on Ubuntu 12.04 on the amd64 architecture using NVIDIA graphics.
-
-Installation
-============
-
-As the root user, in the bash command-line in Ubuntu 12.04, run
-:download:`this script <install-freemoovr_engine.sh>`. (Also, you can download
-the latest version of this script from `here
-<https://raw.github.com/strawlab/freemoovr_engine/master/docs/install-freemoovr_engine.sh>`_.)
-From the command line, this should work::
-
-     curl -sL https://raw.github.com/strawlab/freemoovr_engine/master/docs/install-freemoovr_engine.sh | sudo bash
+FreemooVR is developed and tested on Ubuntu 16.04 on the amd64 architecture using NVIDIA graphics.
 
 Getting Started
 ===============
@@ -23,7 +12,6 @@ Testing the basic installation
 Once FreemooVR is installed, you should be able to run a quick demo by typing::
 
     # setup ROS environment variables
-    source /opt/ros/ros-freemoovr_engine.hydro/setup.bash
 
     # launch the demo
     roslaunch freemoovr_engine demo_display_server.launch
