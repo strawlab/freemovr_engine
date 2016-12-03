@@ -9,7 +9,7 @@
 #include <osg/Texture2D>
 
 #include "DisplaySurfaceGeometry.hpp"
-#include "freemoovr/ResourceLoader.hpp"
+#include "freemoovr_engine/ResourceLoader.hpp"
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {
 public:

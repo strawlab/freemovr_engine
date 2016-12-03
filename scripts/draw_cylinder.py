@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 import roslib
-roslib.load_manifest('freemoovr')
-from freemoovr.simple_geom import Cylinder, Vec3
+roslib.load_manifest('freemoovr_engine')
+from freemoovr_engine.simple_geom import Cylinder, Vec3
 
 def vec3(a,b,c):
     return dict(x=a, y=b, z=c)

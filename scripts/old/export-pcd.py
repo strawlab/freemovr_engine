@@ -5,7 +5,7 @@ import numpy as np
 import flydra.reconstruct
 
 import roslib
-roslib.load_manifest('freemoovr')
+roslib.load_manifest('freemoovr_engine')
 
 from calib.visualization import create_pcd_file_from_points
 from calib.io import AllPointPickle

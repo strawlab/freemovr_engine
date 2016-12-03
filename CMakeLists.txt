@@ -93,7 +93,7 @@ IF(BUILD_WITH_ROS)
 
 
 
-  # the freemoovr library (for building stimulus plugins) --------------------
+  # the freemoovr_engine library (for building stimulus plugins) --------------------
   add_library(freemoovr_engine src/ResourceLoader.cpp src/StimulusInterface.cpp src/InvalidBoundsCallback.cpp src/load_cubemap.cpp)
   TARGET_LINK_LIBRARIES(freemoovr_engine ${POCO_LIBRARIES})
 

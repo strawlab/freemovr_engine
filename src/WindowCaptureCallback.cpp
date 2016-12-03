@@ -1,7 +1,7 @@
 #include "WindowCaptureCallback.h"
 #include <iostream>
 #include <osgDB/WriteFile>
-#include "freemoovr/freemoovr_assert.h"
+#include "freemoovr_engine/freemoovr_assert.h"
 
 WindowCaptureCallback::WindowCaptureCallback() : _gc(NULL) {
   _image = new osg::Image;

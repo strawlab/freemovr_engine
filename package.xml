@@ -7,7 +7,7 @@
   <author>Andrew Straw</author>
   <maintainer email="strawman@astraw.com">Andrew Straw</maintainer>
   <license>TODO</license>
-  <url>https://strawlab.org/freemoovr</url>
+  <url>https://strawlab.org/freemoovr_engine</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 

@@ -3,9 +3,9 @@ import numpy as np
 import argparse
 import json
 
-import roslib; roslib.load_manifest('freemoovr')
+import roslib; roslib.load_manifest('freemoovr_engine')
 import rospy
-import freemoovr.display_client as display_client
+import freemoovr_engine.display_client as display_client
 from std_msgs.msg import String
 
 
@@ -17,9 +17,9 @@ def switch_calibration(period):
                             "radius": 0.046,
                             "axis": {"y": 0.0, "x": 0.0, "z": 0.144}})
     geom_buf2 = json.dumps({'model': 'from_file',
-                            'filename': '$(find freemoovr)/data/flycube.osg'})
-    filename_and_geom_list = [('$(find freemoovr)/config/p2g.exr',geom_buf1),
-                              ('$(find freemoovr)/data/monitor_1920x1080.exr',geom_buf2)
+                            'filename': '$(find freemoovr_engine)/data/flycube.osg'})
+    filename_and_geom_list = [('$(find freemoovr_engine)/config/p2g.exr',geom_buf1),
+                              ('$(find freemoovr_engine)/data/monitor_1920x1080.exr',geom_buf2)
                              ]
     current_index = 0
     while not rospy.is_shutdown():

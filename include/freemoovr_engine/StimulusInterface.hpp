@@ -6,7 +6,7 @@
 #include "ResourceLoader.hpp"
 #include <osg/Group>
 #include <osg/PositionAttitudeTransform>
-#include <freemoovr/CallbackHolder.hpp>
+#include <freemoovr_engine/CallbackHolder.hpp>
 
 class StimulusInterface: public ResourceLoader
 {
@@ -49,7 +49,7 @@ class StimulusInterface: public ResourceLoader
   // If you need to change the background color, remember this object
   // and call its setBackgroundColorImplementation() method when the
   // background changes.
-  virtual void set_background_color_callback(freemoovr::BackgroundColorCallback*) {}
+  virtual void set_background_color_callback(freemoovr_engine::BackgroundColorCallback*) {}
 
  protected:
   // your derived class can call this if you want to add a skybox

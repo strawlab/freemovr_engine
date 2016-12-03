@@ -1,4 +1,4 @@
-#include "freemoovr/ResourceLoader.hpp"
+#include "freemoovr_engine/ResourceLoader.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
-#include "freemoovr/freemoovr_assert.h"
+#include "freemoovr_engine/freemoovr_assert.h"
 
 ResourceLoader::ResourceLoader()
 {

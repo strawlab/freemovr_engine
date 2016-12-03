@@ -7,7 +7,7 @@
 
  */
 
-#include "freemoovr/StimulusInterface.hpp"
+#include "freemoovr_engine/StimulusInterface.hpp"
 #include "Poco/ClassLibrary.h"
 #include <stdexcept>
 

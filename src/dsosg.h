@@ -15,8 +15,8 @@
 #include "Poco/Manifest.h"
 #include "Poco/Path.h"
 
-#include "freemoovr/StimulusInterface.hpp"
-#include "freemoovr/CallbackHolder.hpp"
+#include "freemoovr_engine/StimulusInterface.hpp"
+#include "freemoovr_engine/CallbackHolder.hpp"
 
 #include "WindowCaptureCallback.h"
 #include "GeometryTextureToDisplayImagePass.h"
@@ -115,7 +115,7 @@ namespace dsosg{
         GeometryTextureToDisplayImagePass *_g2di;
         OpenThreads::Mutex _osg_capture_mutex;
         std::string        _osg_capture_filename;
-        freemoovr::BackgroundColorCallback *_bg_callback;
+        freemoovr_engine::BackgroundColorCallback *_bg_callback;
         ProjectCubemapToGeometryPass* _pctcp;
         osg::Camera* _debug_hud_cam;
         osg::ref_ptr<osg::Group> _root;

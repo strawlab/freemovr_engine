@@ -23,7 +23,7 @@ import random
 
 # ROS imports
 import roslib;
-roslib.load_manifest('freemoovr')
+roslib.load_manifest('freemoovr_engine')
 roslib.load_manifest('camera_trigger')
 roslib.load_manifest('flycave')
 roslib.load_manifest('std_srvs')
@@ -33,25 +33,25 @@ roslib.load_manifest('rosbag')
 import rospy
 import rosbag
 
-# local freemoovr imports
-import freemoovr.display_client as display_client
+# local freemoovr_engine imports
+import freemoovr_engine.display_client as display_client
 import camera_trigger.srv
 import std_srvs.srv
 import flycave.srv
-import freemoovr.srv
+import freemoovr_engine.srv
 
-import freemoovr.calib.kdtree
-from freemoovr.calib.imgproc import add_crosshairs_to_nparr
-from freemoovr.calib.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
-from freemoovr.calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
-from freemoovr.calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
-from freemoovr.calib.calibrationconstants import *
+import freemoovr_engine.calib.kdtree
+from freemoovr_engine.calib.imgproc import add_crosshairs_to_nparr
+from freemoovr_engine.calib.acquire import CameraHandler, SimultaneousCameraRunner, SequentialCameraRunner
+from freemoovr_engine.calib.imgproc import DotBGFeatureDetector, load_mask_image, add_crosshairs_to_nparr
+from freemoovr_engine.calib.sampling import gen_horiz_snake, gen_vert_snake, gen_spiral_snake
+from freemoovr_engine.calib.calibrationconstants import *
 
 from rosutils.io import decode_url
 
 import flydra.reconstruct
 
-from freemoovr.msg import Calib2DPoint, CalibMapping
+from freemoovr_engine.msg import Calib2DPoint, CalibMapping
 from geometry_msgs.msg import Point32
 from std_msgs.msg import UInt32, String
 
@@ -136,7 +136,7 @@ class DataIO:
         self.num_points = 0
         
         self._display_tree = {}
-        self._position_tree = freemoovr.calib.kdtree.create(dimensions=3, check_dimensions=False)
+        self._position_tree = freemoovr_engine.calib.kdtree.create(dimensions=3, check_dimensions=False)
         
         self._pub_num_pts = rospy.Publisher('~num_points', UInt32)
         self._pub_mapping = rospy.Publisher('~mapping', CalibMapping)
@@ -211,7 +211,7 @@ class DataIO:
         try:
             self._display_tree[c.display_server]
         except KeyError:
-            self._display_tree[c.display_server] = freemoovr.calib.kdtree.create(dimensions=2, check_dimensions=False)
+            self._display_tree[c.display_server] = freemoovr_engine.calib.kdtree.create(dimensions=2, check_dimensions=False)
         finally:
             self._display_tree[c.display_server].add(dcorr)
         
@@ -233,7 +233,7 @@ class DataIO:
             rospy.logwarn(
                 "Unknown error getting correspondence for %r\n%s\nTree:\n\n" %(
                     dcorr,traceback.format_exc()))
-            freemoovr.calib.kdtree.visualize(self._display_tree[ds])
+            freemoovr_engine.calib.kdtree.visualize(self._display_tree[ds])
 
 
     def add_mapping(self, **kwargs):
@@ -452,8 +452,8 @@ class Calib:
                 rospy.logerr("could not find requested calibration to load")
 
         s = rospy.Service('~clear_kdtree', std_srvs.srv.Empty, self._on_clear_kdtree)
-        s = rospy.Service('~calib_change_mode', freemoovr.srv.CalibMode, self._on_change_mode)
-        s = rospy.Service('~set_visual_threshold', freemoovr.srv.CalibSetFloat, self._on_set_visual_threshold)
+        s = rospy.Service('~calib_change_mode', freemoovr_engine.srv.CalibMode, self._on_change_mode)
+        s = rospy.Service('~set_visual_threshold', freemoovr_engine.srv.CalibSetFloat, self._on_set_visual_threshold)
 
         self.change_mode(CALIB_MODE_SLEEP)
 
@@ -485,11 +485,11 @@ class Calib:
         old = self.visible_thresh
         self.visible_thresh = int(req.data)
         rospy.loginfo("updating visible thresh = %s (was %s)" % (self.visible_thresh, old))
-        return freemoovr.srv.CalibSetFloatResponse()
+        return freemoovr_engine.srv.CalibSetFloatResponse()
 
     def _on_change_mode(self, req):
         self.change_mode(req.mode, req.sa, req.fa, req.fb, req.fc)
-        return freemoovr.srv.CalibModeResponse()
+        return freemoovr_engine.srv.CalibModeResponse()
 
     def _calculate_background(self):
         rospy.loginfo("Collecting backgrounds")
@@ -1255,7 +1255,7 @@ if __name__ == '__main__':
         help='path to calibration configuration yaml file')
     parser.add_argument(
         '--save-dir', type=str,
-        default=os.path.expanduser('~/FLYDRA/freemoovr-calibration/%s' % datetime.datetime.now().strftime("%b")),
+        default=os.path.expanduser('~/FLYDRA/freemoovr_engine-calibration/%s' % datetime.datetime.now().strftime("%b")),
         help='path to save calibration data')
     parser.add_argument(
         '--continue-calibration', type=str,

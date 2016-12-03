@@ -1,14 +1,14 @@
 <launch>
-  <node name="ds_virtual_world" pkg="freemoovr" type="display_server" args="--mode=virtual_world">
-    <rosparam command="load" file="$(find freemoovr)/sample_code/render_trajectory/display_config.yaml" />
+  <node name="ds_virtual_world" pkg="freemoovr_engine" type="display_server" args="--mode=virtual_world">
+    <rosparam command="load" file="$(find freemoovr_engine)/sample_code/render_trajectory/display_config.yaml" />
   </node>
 
-  <node name="ds_geometry" pkg="freemoovr" type="display_server" args="--mode=geometry">
-    <rosparam command="load" file="$(find freemoovr)/sample_code/render_trajectory/display_config.yaml" />
+  <node name="ds_geometry" pkg="freemoovr_engine" type="display_server" args="--mode=geometry">
+    <rosparam command="load" file="$(find freemoovr_engine)/sample_code/render_trajectory/display_config.yaml" />
   </node>
 
-  <node name="ds_cubemap" pkg="freemoovr" type="display_server" args="--mode=cubemap">
-    <rosparam command="load" file="$(find freemoovr)/sample_code/render_trajectory/display_config.yaml" />
+  <node name="ds_cubemap" pkg="freemoovr_engine" type="display_server" args="--mode=cubemap">
+    <rosparam command="load" file="$(find freemoovr_engine)/sample_code/render_trajectory/display_config.yaml" />
   </node>
 
 </launch>

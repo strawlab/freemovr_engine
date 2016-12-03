@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#include "freemoovr/StimulusInterface.hpp"
+#include "freemoovr_engine/StimulusInterface.hpp"
 
 #include "Poco/ClassLibrary.h"
 #include "Poco/SharedMemory.h"

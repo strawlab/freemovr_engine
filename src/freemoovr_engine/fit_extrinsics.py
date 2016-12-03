@@ -1,10 +1,10 @@
 # ROS imports
-import roslib; roslib.load_manifest('freemoovr')
+import roslib; roslib.load_manifest('freemoovr_engine')
 
 import scipy.optimize
 from pymvg.camera_model import CameraModel
 from pymvg.util import get_rotation_matrix_and_quaternion
-import freemoovr.simple_geom as simple_geom
+import freemoovr_engine.simple_geom as simple_geom
 import numpy as np
 import os
 import cv2
@@ -15,11 +15,11 @@ if PLOT:
     from mpl_toolkits.mplot3d import Axes3D
     from plot_utils import get_3d_verts, plot_camera
 
-import roslib; roslib.load_manifest('freemoovr')
+import roslib; roslib.load_manifest('freemoovr_engine')
 from tf.transformations import quaternion_from_matrix, \
     quaternion_matrix, rotation_from_matrix, rotation_matrix, \
     quaternion_about_axis
-from freemoovr.cvnumpy import rodrigues2matrix, matrix2rodrigues
+from freemoovr_engine.cvnumpy import rodrigues2matrix, matrix2rodrigues
 
 def matrix2quaternion( R ):
     rnew = np.eye(4)

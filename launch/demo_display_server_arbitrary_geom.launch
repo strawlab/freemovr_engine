@@ -1,11 +1,11 @@
 <launch>
 
-  <node name="display_server_demo" pkg="freemoovr" type="display_server" args="--mode overview">
-    <rosparam command="load" file="$(find freemoovr)/config/rosparamconfig.yaml" />
-    <rosparam command="load" file="$(find freemoovr)/config/arbitrary_geom.yaml" />
+  <node name="display_server_demo" pkg="freemoovr_engine" type="display_server" args="--mode overview">
+    <rosparam command="load" file="$(find freemoovr_engine)/config/rosparamconfig.yaml" />
+    <rosparam command="load" file="$(find freemoovr_engine)/config/arbitrary_geom.yaml" />
     <param name="display/windowDecoration" type="bool" value="true" />
   </node>
 
-  <node name="send_pose" pkg="freemoovr" type="send_pose"/>
+  <node name="send_pose" pkg="freemoovr_engine" type="send_pose"/>
 
 </launch>

@@ -5,7 +5,7 @@
 #include <osg/MatrixTransform>
 
 #include <stdexcept>
-#include "freemoovr/freemoovr_assert.h"
+#include "freemoovr_engine/freemoovr_assert.h"
 
 CameraModel::CameraModel(unsigned int width, unsigned int height, bool y_up)  :
 	_width(width), _height(height), _y_up(y_up), intrinsic_valid(false), extrinsic_valid(false)

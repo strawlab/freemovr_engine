@@ -11,7 +11,7 @@
 
 #include "DisplaySurfaceGeometry.hpp"
 
-namespace freemoovr {
+namespace freemoovr_engine {
 
 struct TriangleIndex {
   TriangleIndex( unsigned int p1, unsigned int p2, unsigned int p3) : _p1(p1), _p2(p2), _p3(p3) {}

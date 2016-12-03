@@ -11,7 +11,7 @@ import OpenEXR, Imath  # pip install OpenEXR
 FREEMOOVR_EXR_PIXEL_TYPE = Imath.PixelType(OpenEXR.FLOAT)
 
 def save_exr( fname, r=None, g=None, b=None, comments=''):
-    """saves exr file. Copied from freemoovr.exr"""
+    """saves exr file. Copied from freemoovr_engine.exr"""
     r = np.array(r); assert r.ndim==2
     g = np.array(g); assert g.ndim==2; assert g.shape==r.shape
     b = np.array(b); assert b.ndim==2; assert b.shape==r.shape

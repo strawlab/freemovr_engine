@@ -1,5 +1,5 @@
 #include "json2osg.hpp"
-#include "freemoovr/freemoovr_assert.h"
+#include "freemoovr_engine/freemoovr_assert.h"
 
 #include "base64.h"
 #include <stdexcept>

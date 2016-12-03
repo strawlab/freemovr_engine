@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # ROS imports
-import roslib; roslib.load_manifest('freemoovr')
+import roslib; roslib.load_manifest('freemoovr_engine')
 import rospy
 import dynamic_reconfigure.client
 
-import freemoovr.srv
-import freemoovr.msg
-import freemoovr.display_client as display_client
+import freemoovr_engine.srv
+import freemoovr_engine.msg
+import freemoovr_engine.display_client as display_client
 
 import json
 import argparse
@@ -175,7 +175,7 @@ class GenerateProjectorCalibration(HasTraits):
         fname = tempfile.mktemp('.png')
         try:
             scipy.misc.imsave(fname, self._image )
-            image = freemoovr.msg.FreemooVRCompressedImage()
+            image = freemoovr_engine.msg.FreemooVRCompressedImage()
             image.format = 'png'
             image.data = open(fname).read()
             self.blit_compressed_image_proxy(image)
@@ -212,7 +212,7 @@ def main():
                 display_id,display_info['id']))
 
     blit_compressed_image_proxy = rospy.ServiceProxy(display_server.get_fullname('blit_compressed_image'),
-                                                     freemoovr.srv.BlitCompressedImage)
+                                                     freemoovr_engine.srv.BlitCompressedImage)
 
     demo = GenerateProjectorCalibration(display_coords_filename=args.filename,
                                         display_id=display_id,

@@ -213,7 +213,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'freemoovr', u'FreemooVR Documentation',
+    ('index', 'freemoovr_engine', u'FreemooVR Documentation',
      [u'Andrew Straw'], 1)
 ]
 

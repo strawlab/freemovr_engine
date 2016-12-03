@@ -2,7 +2,7 @@ import os.path
 import contextlib
 
 import roslib;
-roslib.load_manifest('freemoovr')
+roslib.load_manifest('freemoovr_engine')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('tf')
 import rospy
@@ -13,7 +13,7 @@ import numpy as np
 
 import calib.reconstruct
 import calib.visualization
-import freemoovr.simple_geom as simple_geom
+import freemoovr_engine.simple_geom as simple_geom
 
 import pcl
 

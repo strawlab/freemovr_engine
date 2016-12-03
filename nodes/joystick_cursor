@@ -2,18 +2,18 @@
 # /* -*- Mode: Python; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 import argparse
 
-import roslib; roslib.load_manifest('freemoovr')
+import roslib; roslib.load_manifest('freemoovr_engine')
 import rospy
 
-import freemoovr.msg
+import freemoovr_engine.msg
 from geometry_msgs.msg import Pose2D
 from sensor_msgs.msg import Joy
 
-import freemoovr.display_client as display_client
+import freemoovr_engine.display_client as display_client
 
 import os
 
-_pkg_dir = roslib.packages.get_pkg_dir('freemoovr')
+_pkg_dir = roslib.packages.get_pkg_dir('freemoovr_engine')
 
 class App:
     def __init__(self,button=0):
@@ -46,10 +46,10 @@ class App:
 
     def _show_cursor(self):
         publisher = rospy.Publisher('sprite_image',
-                                    freemoovr.msg.FreemooVRCompressedImage,
+                                    freemoovr_engine.msg.FreemooVRCompressedImage,
                                     latch=True)
         fname = os.path.join(_pkg_dir,"data","cursor.png")
-        image = freemoovr.msg.FreemooVRCompressedImage()
+        image = freemoovr_engine.msg.FreemooVRCompressedImage()
         image.format = os.path.splitext(fname)[-1]
         image.data = open(fname).read()
         publisher.publish(image)

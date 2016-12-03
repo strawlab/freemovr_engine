@@ -3,8 +3,8 @@ import base64
 import re
 
 import roslib.packages
-roslib.load_manifest('freemoovr')
-import freemoovr.msg
+roslib.load_manifest('freemoovr_engine')
+import freemoovr_engine.msg
 import geometry_msgs.msg
 import std_msgs.msg
 
@@ -70,7 +70,7 @@ def rosmsg2dict(msg):
                 plain_dict[varname] = getattr(msg,varname)
             elif vartype == 'time':
                 plain_dict[varname] = rosmsg2dict(getattr(msg,varname))
-            elif vartype == 'freemoovr/ROSPath':
+            elif vartype == 'freemoovr_engine/ROSPath':
                 plain_dict[varname] = fixup_path(getattr(msg,varname).data)
             elif vartype in ['geometry_msgs/Point',
                              'geometry_msgs/Quaternion',
@@ -158,7 +158,7 @@ def test_point():
     compare(msg)
 
 def test_image():
-    msg = freemoovr.msg.FreemooVRCompressedImage()
+    msg = freemoovr_engine.msg.FreemooVRCompressedImage()
     msg.format = '.png'
     # Smallest PNG image. ( See http://garethrees.org/2007/11/14/pngcrush/ )
     msg.data = ('\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06'

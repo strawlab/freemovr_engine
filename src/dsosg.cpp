@@ -51,9 +51,9 @@
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
 
-#include "freemoovr/freemoovr_assert.h"
-#include "freemoovr/ResourceLoader.hpp"
-#include "freemoovr/CallbackHolder.hpp"
+#include "freemoovr_engine/freemoovr_assert.h"
+#include "freemoovr_engine/ResourceLoader.hpp"
+#include "freemoovr_engine/CallbackHolder.hpp"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -221,7 +221,7 @@ private:
   CameraList Cameras;
 };
 
-struct BackgroundCallback : public freemoovr::BackgroundColorCallback {
+struct BackgroundCallback : public freemoovr_engine::BackgroundColorCallback {
 public:
     BackgroundCallback(CameraCube* cc) : _camera_cube(cc) {}
     void setBackgroundColorImplementation(const osg::Vec4& color) const {
@@ -339,7 +339,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
 
     std::string config_data_dir = _config_file_path.parent().toString();
 
-    // Add the freemoovr defaut stimulus plugins
+    // Add the freemoovr_engine defaut stimulus plugins
     Poco::Path default_plugin_path = libdir;
     std::string default_lib_dir = default_plugin_path.toString();
 

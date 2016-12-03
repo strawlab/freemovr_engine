@@ -1,4 +1,4 @@
-.. image:: http://freemoovr.org/assets/FreemooVR-airplane-640.png
+.. image:: http://freemoovr_engine.org/assets/FreemooVR-airplane-640.png
     :alt: FreemooVR
     :width: 640
     :height: 263
@@ -33,7 +33,7 @@ This cube map is then projected onto a 3D shape model of the display
 surface. From there, this image is warped to the physical display
 output.
 
-freemoovr nodes
+freemoovr_engine nodes
 ===========
 
 display_server - the FreemooVR display server

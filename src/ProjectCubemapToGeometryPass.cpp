@@ -21,7 +21,7 @@
 #include "ProjectCubemapToGeometryPass.h"
 #include "InvalidBoundsCallback.h"
 
-#include "freemoovr/freemoovr_assert.h"
+#include "freemoovr_engine/freemoovr_assert.h"
 
 ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string freemoovr_basepath,
                                                              osg::TextureCubeMap* texture,

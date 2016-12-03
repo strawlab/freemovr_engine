@@ -5,10 +5,10 @@ import time
 import os
 import sys
 
-import roslib; roslib.load_manifest('freemoovr')
+import roslib; roslib.load_manifest('freemoovr_engine')
 import std_msgs.msg
 import rospy
-from freemoovr.msg import TrackballManipulatorState, ROSPath
+from freemoovr_engine.msg import TrackballManipulatorState, ROSPath
 from geometry_msgs.msg import Quaternion, Point
 import rosbag
 

@@ -1,6 +1,6 @@
 from libcpp.string cimport string
 
-cdef extern from "DisplaySurfaceArbitraryGeometry.h" namespace "freemoovr":
+cdef extern from "DisplaySurfaceArbitraryGeometry.h" namespace "freemoovr_engine":
     cdef cppclass DisplaySurfaceArbitraryGeometry:
         DisplaySurfaceArbitraryGeometry(string filename, double precision) nogil except +
         int texcoord2worldcoord( double u, double v, double &x, double &y, double &z )

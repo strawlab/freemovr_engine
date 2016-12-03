@@ -55,12 +55,12 @@ apt-get upgrade --yes
 DEBIAN_FRONTEND=noninteractive apt-get install --yes python-rosinstall ros-hydro-desktop-full make
 
 # ------ install our overlay ------------
-ROSINSTALL_SPEC_PATH="/tmp/freemoovr.rosinstall"
+ROSINSTALL_SPEC_PATH="/tmp/freemoovr_engine.rosinstall"
 
 # ---- create a .rosinstall spec file for this git revision -------------
 cat > ${ROSINSTALL_SPEC_PATH} <<EOF
-- git: {local-name: freemoovr, uri: 'https://github.com/strawlab/freemoovr.git', version: freemoovr-hydro}
-- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: freemoovr-hydro}
+- git: {local-name: freemoovr_engine, uri: 'https://github.com/strawlab/freemoovr_engine.git', version: freemoovr_engine-hydro}
+- git: {local-name: rosgobject, uri: 'https://github.com/strawlab/rosgobject.git', version: freemoovr_engine-hydro}
 EOF
 
 # ---- script to ensure a line in a file ----
@@ -102,7 +102,7 @@ if __name__ == '__main__':
 EOF
 
 # ---- install our ROS stuff
-export FREEMOOVR_TARGET="/opt/ros/ros-freemoovr.hydro"
+export FREEMOOVR_TARGET="/opt/ros/ros-freemoovr_engine.hydro"
 rosinstall ${FREEMOOVR_TARGET} /opt/ros/hydro/.rosinstall ${ROSINSTALL_SPEC_PATH}
 
 source ${FREEMOOVR_TARGET}/setup.bash
@@ -119,7 +119,7 @@ chmod -R a+rX /etc/ros
 
 rosdep update
 
-rosdep install freemoovr --default-yes
-rosmake freemoovr
+rosdep install freemoovr_engine --default-yes
+rosmake freemoovr_engine
 
 chmod -R a+rX ${FREEMOOVR_TARGET}

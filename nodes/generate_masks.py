@@ -10,18 +10,18 @@ import scipy.misc
 
 # ROS imports
 import roslib;
-roslib.load_manifest('freemoovr')
+roslib.load_manifest('freemoovr_engine')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('std_srvs')
 roslib.load_manifest('camera_trigger')
 import rospy
 
-# local freemoovr imports
-import freemoovr.display_client as display_client
+# local freemoovr_engine imports
+import freemoovr_engine.display_client as display_client
 import std_srvs.srv
 import camera_trigger.srv
 
-from freemoovr.calib.acquire import CameraHandler, SimultaneousCameraRunner
+from freemoovr_engine.calib.acquire import CameraHandler, SimultaneousCameraRunner
 from rosutils.io import decode_url
 
 class GenMasks:

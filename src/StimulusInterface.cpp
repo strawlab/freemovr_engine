@@ -1,5 +1,5 @@
 // This is used both by the class library and by the application.
-#include "freemoovr/StimulusInterface.hpp"
+#include "freemoovr_engine/StimulusInterface.hpp"
 #include "util.h"
 
 #include <osg/MatrixTransform>
