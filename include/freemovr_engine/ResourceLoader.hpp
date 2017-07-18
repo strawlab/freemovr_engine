@@ -12,8 +12,8 @@ class ResourceLoader
   ResourceLoader();
   virtual ~ResourceLoader() {}
 
-  // This is called when initializing the plugin to tell it where to find freemoovr_engine's data.
-  virtual void set_freemoovr_base_path(std::string path);
+  // This is called when initializing the plugin to tell it where to find freemovr_engine's data.
+  virtual void set_freemovr_base_path(std::string path);
 
   virtual std::string get_plugin_shader_path(std::string name) const;
   virtual std::string get_plugin_data_path(std::string name) const;
@@ -23,7 +23,7 @@ class ResourceLoader
 
 protected:
 
-  std::string _freemoovr_base_path;
+  std::string _freemovr_base_path;
 };
 
 #endif // ResourceLoader.hpp

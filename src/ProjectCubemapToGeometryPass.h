@@ -9,11 +9,11 @@
 #include <osg/Texture2D>
 
 #include "DisplaySurfaceGeometry.hpp"
-#include "freemoovr_engine/ResourceLoader.hpp"
+#include "freemovr_engine/ResourceLoader.hpp"
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {
 public:
-    ProjectCubemapToGeometryPass(std::string freemoovr_basepath,
+    ProjectCubemapToGeometryPass(std::string freemovr_basepath,
                                  osg::TextureCubeMap* texture,
                                  osg::Uniform::Callback* observer_position_cb,
                                  DisplaySurfaceGeometry* geometry_parameters,

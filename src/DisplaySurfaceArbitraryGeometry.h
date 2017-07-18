@@ -1,5 +1,5 @@
-#ifndef FREEMOOVR_DISPLAY_SURFACE_ARBITRARY_GEOMETRY_H
-#define FREEMOOVR_DISPLAY_SURFACE_ARBITRARY_GEOMETRY_H
+#ifndef FREEMOVR_DISPLAY_SURFACE_ARBITRARY_GEOMETRY_H
+#define FREEMOVR_DISPLAY_SURFACE_ARBITRARY_GEOMETRY_H
 #include <osg/Group>
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -11,7 +11,7 @@
 
 #include "DisplaySurfaceGeometry.hpp"
 
-namespace freemoovr_engine {
+namespace freemovr_engine {
 
 struct TriangleIndex {
   TriangleIndex( unsigned int p1, unsigned int p2, unsigned int p3) : _p1(p1), _p2(p2), _p3(p3) {}

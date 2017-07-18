@@ -1,13 +1,13 @@
-freemoovr_engine
+freemovr_engine
 ============
 
-The freemoovr_engine package was written by Andrew Straw at the Research
+The freemovr_engine package was written by Andrew Straw at the Research
 Institute of Molecular Pathology (IMP), Vienna, Austria.
 
 other parts
 ===========
 
-The freemoovr_engine package includes the following other parts.
+The freemovr_engine package includes the following other parts.
 
 src/base64.cpp and src/base64.h
 -------------------------------

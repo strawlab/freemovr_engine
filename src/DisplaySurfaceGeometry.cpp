@@ -435,7 +435,7 @@ void DisplaySurfaceGeometry::parse_json(json_t *root) {
             precision = json_number_value( precision_json );
         }
 
-        _geom = new freemoovr_engine::DisplaySurfaceArbitraryGeometry(filename,precision);
+        _geom = new freemovr_engine::DisplaySurfaceArbitraryGeometry(filename,precision);
     } else {
         std::ostringstream os;
         os << "unknown model " << model;

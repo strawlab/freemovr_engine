@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # ROS imports
-import roslib; roslib.load_manifest('freemoovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
 import rospy
 
-import freemoovr_engine.srv
-import freemoovr_engine.msg
-import freemoovr_engine.display_client as display_client
+import freemovr_engine.srv
+import freemovr_engine.msg
+import freemovr_engine.display_client as display_client
 
 import json
 import argparse
@@ -164,7 +164,7 @@ class ViewportDefiner(HasTraits):
             color = (0,0,0,1)
         elif self.display_mode.startswith('white '):
             color = (1,1,1,1)
-            
+
         self.display_server.show_pixels(self._image)
 
     def get_viewport_verts(self):

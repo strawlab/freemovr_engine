@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#ifndef FREEMOOVR_UTIL_H
-#define FREEMOOVR_UTIL_H
+#ifndef FREEMOVR_UTIL_H
+#define FREEMOVR_UTIL_H
 
 #include <string>
 #include <osg/Shader>

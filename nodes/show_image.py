@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('freemoovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
 import rospy
 
 import os
@@ -9,8 +9,8 @@ import argparse
 import numpy as np
 import scipy.misc
 
-import freemoovr_engine.srv
-import freemoovr_engine.display_client as display_client
+import freemovr_engine.srv
+import freemovr_engine.display_client as display_client
 
 def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     rospy.init_node('show_image')
@@ -72,12 +72,12 @@ def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     dsc.show_pixels(arr)
 
 def main():
-    wd = roslib.packages.get_pkg_dir('freemoovr_engine')
+    wd = roslib.packages.get_pkg_dir('freemovr_engine')
     default_fname = os.path.join(wd,'data','vienna-morning.jpg')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('fname',nargs='?',default=default_fname)
-    parser.add_argument('--rgb', help='RGB tuple r,g,b (float, 0...1)', default="-1,-1,-1")    
+    parser.add_argument('--rgb', help='RGB tuple r,g,b (float, 0...1)', default="-1,-1,-1")
     parser.add_argument('--white', action='store_true', help='show a white screen')
     parser.add_argument('--black', action='store_true', help='show a black screen')
     parser.add_argument('--viewport', type=str, help='only show on this viewport')
@@ -87,7 +87,7 @@ def main():
     parser.add_argument('--pixel', type=str, help='light this pixel', metavar='x,y')
     parser.add_argument('--scale', action='store_true', help='scale the image to fullscreen')
     parser.add_argument('--pxsize', type=int, default=2)
-    
+
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
 
@@ -97,7 +97,7 @@ def main():
             tuple(map(int,args.rgb.split(','))),
             args.pixel,
             args.pxsize,
-            scale = args.scale,   
+            scale = args.scale,
     )
 
 if __name__=='__main__':

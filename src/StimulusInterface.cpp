@@ -1,5 +1,5 @@
 // This is used both by the class library and by the application.
-#include "freemoovr_engine/StimulusInterface.hpp"
+#include "freemovr_engine/StimulusInterface.hpp"
 #include "util.h"
 
 #include <osg/MatrixTransform>
@@ -32,7 +32,7 @@ StimulusInterface::~StimulusInterface()
 }
 
 bool StimulusInterface::is_CUDA_available() {
-#ifdef FREEMOOVR_USE_CUDA
+#ifdef FREEMOVR_USE_CUDA
   return true;
 #else
   return false;
@@ -47,7 +47,7 @@ void StimulusInterface::update( const double& time, const osg::Vec3& observer_po
 }
 
 void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
-  Poco::Path base_path(_freemoovr_base_path);
+  Poco::Path base_path(_freemovr_base_path);
 
   base_path.makeDirectory();
   base_path.pushDirectory("data");
@@ -119,7 +119,7 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
       ShowCubemapProgram->addShader( ShowCubemapFragObj );
       ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-          Poco::Path shader_path = Poco::Path(_freemoovr_base_path).append("src").append("shaders");
+          Poco::Path shader_path = Poco::Path(_freemovr_base_path).append("src").append("shaders");
           ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.vert").toString());
           ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.frag").toString());
 

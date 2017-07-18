@@ -1,17 +1,17 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 
-ROS_PACKAGE_NAME = 'freemoovr_engine'
+ROS_PACKAGE_NAME = 'freemovr_engine'
 import roslib
 import rospy
 
-import freemoovr_engine.srv
+import freemovr_engine.srv
 import geometry_msgs.msg
 import std_msgs.msg
-from freemoovr_engine.msg import ROSPath
-import freemoovr_engine.msg
+from freemovr_engine.msg import ROSPath
+import freemovr_engine.msg
 from geometry_msgs.msg import Quaternion, Point
 
-import freemoovr_engine.rosmsg2json as rosmsg2json
+import freemovr_engine.rosmsg2json as rosmsg2json
 
 import sys
 import time
@@ -445,7 +445,7 @@ cdef class MyNode:
         rospy.Subscriber("~capture_frame_to_path", ROSPath, self.capture_image_callback)
         rospy.Subscriber("~capture_osg_to_path", ROSPath, self.capture_osg_callback)
         rospy.Subscriber("~trackball_manipulator_state",
-                         freemoovr_engine.msg.TrackballManipulatorState,
+                         freemovr_engine.msg.TrackballManipulatorState,
                          self.manipulator_callback)
 
         display_window_name = rospy.get_name();
@@ -454,22 +454,22 @@ cdef class MyNode:
                                 args.pbuffer)
 
         rospy.Service('~get_display_info',
-                      freemoovr_engine.srv.GetDisplayInfo,
+                      freemovr_engine.srv.GetDisplayInfo,
                       self.handle_get_display_info)
         rospy.Service('~get_geometry_info',
-                      freemoovr_engine.srv.GetDisplayInfo,
+                      freemovr_engine.srv.GetDisplayInfo,
                       self.handle_get_geom_info)
         rospy.Service('~set_display_server_mode',
-                      freemoovr_engine.srv.SetDisplayServerMode,
+                      freemovr_engine.srv.SetDisplayServerMode,
                       self.handle_set_display_server_mode)
         rospy.Service('~return_to_standby',
-                      freemoovr_engine.srv.ReturnToStandby,
+                      freemovr_engine.srv.ReturnToStandby,
                       self.handle_return_to_standby)
         rospy.Service('~blit_compressed_image',
-                      freemoovr_engine.srv.BlitCompressedImage,
+                      freemovr_engine.srv.BlitCompressedImage,
                       self.handle_blit_compressed_image)
         rospy.Service('~get_trackball_manipulator_state',
-                      freemoovr_engine.srv.GetTrackballManipulatorState,
+                      freemovr_engine.srv.GetTrackballManipulatorState,
                       self.handle_get_trackball_manipulator_state)
 
         self._pub_fps = rospy.Publisher('~framerate', std_msgs.msg.Float32)
@@ -504,7 +504,7 @@ cdef class MyNode:
 
         result['virtualDisplays'] = virtualDisplays
 
-        response = freemoovr_engine.srv.GetDisplayInfoResponse()
+        response = freemovr_engine.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
 
@@ -517,7 +517,7 @@ cdef class MyNode:
         except KeyError:
             result = {}
 
-        response = freemoovr_engine.srv.GetDisplayInfoResponse()
+        response = freemovr_engine.srv.GetDisplayInfoResponse()
         response.info_json = json.dumps(result)
         return response
 
@@ -525,12 +525,12 @@ cdef class MyNode:
     def handle_set_display_server_mode(self, request):
         with self._mode_lock:
             self._mode_change = request.mode
-        return freemoovr_engine.srv.SetDisplayServerModeResponse()
+        return freemovr_engine.srv.SetDisplayServerModeResponse()
 
     def handle_return_to_standby(self,request):
         with self._mode_lock:
             self._mode_change = 'StimulusStandby'
-        return freemoovr_engine.srv.ReturnToStandbyResponse()
+        return freemovr_engine.srv.ReturnToStandbyResponse()
 
     def handle_blit_compressed_image(self,request):
         # this is called in some callback thread by ROS
@@ -549,14 +549,14 @@ cdef class MyNode:
                                 'plugin': plugin,
                                 'topic_name': 'blit_images',
                                 'msg_json': json_image})
-        return freemoovr_engine.srv.BlitCompressedImageResponse()
+        return freemovr_engine.srv.BlitCompressedImageResponse()
 
     def handle_get_trackball_manipulator_state(self,request):
         # This is called in some callback thread by ROS.
         # (Should it be handled in draw thread?)
         cdef TrackballManipulatorState ts
 
-        response = freemoovr_engine.srv.GetTrackballManipulatorStateResponse()
+        response = freemovr_engine.srv.GetTrackballManipulatorStateResponse()
         result = response.data
         ts = self.dsosg.getTrackballManipulatorState()
         result.rotation = osg_quat_to_msg_quat(ts.rotation)

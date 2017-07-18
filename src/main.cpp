@@ -29,13 +29,13 @@ int main(int argc, char**argv) {
       exit(0);
   }
 
-  std::string config_filename = "~/freemoovr_engine-devel/freemoovr_engine/freemoovr_engine/config/config.json";
+  std::string config_filename = "~/freemovr_engine-devel/freemovr_engine/freemovr_engine/config/config.json";
   while(arguments.read("--config", config_filename));
 
   std::string display_mode = "vr_display";
   while(arguments.read("--display-mode", display_mode));
 
-  std::string freemoovr_basepath = "/home/john/Programming/freemoovr_engine.git/freemoovr_engine/";
+  std::string freemovr_basepath = "/home/john/Programming/freemovr_engine.git/freemovr_engine/";
   float observer_radius = 0.01;
   bool two_pass = false;
   bool show_geom_coords = false;
@@ -44,7 +44,7 @@ int main(int argc, char**argv) {
   osg::Quat observer_orientation(0,0,0,1);
 
   dsosg = new dsosg::DSOSG(
-                        freemoovr_basepath,
+                        freemovr_basepath,
                         display_mode,
                         observer_radius,
                         config_filename,

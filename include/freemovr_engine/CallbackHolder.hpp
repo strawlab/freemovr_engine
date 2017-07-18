@@ -5,7 +5,7 @@
 #include <osg/Referenced>
 #include <osg/Vec4>
 
-namespace freemoovr_engine{
+namespace freemovr_engine{
 
 struct BackgroundColorCallback : public osg::Referenced
 {

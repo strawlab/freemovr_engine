@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#include "freemoovr_engine/StimulusInterface.hpp"
+#include "freemovr_engine/StimulusInterface.hpp"
 
 #include "Poco/ClassLibrary.h"
 #include "Poco/SharedMemory.h"
@@ -83,7 +83,7 @@ void Stimulus3DShaderDemo::post_init(bool slave) {
     _group->setName("Stimulus3DShaderDemo._group");
 
     _slave = slave;
-    {    
+    {
       Poco::NamedMutex::ScopedLock lock(_memlock);
       *_mem.begin() = 'a';
     }

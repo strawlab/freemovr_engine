@@ -1,5 +1,5 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#include "freemoovr_engine/StimulusInterface.hpp"
+#include "freemovr_engine/StimulusInterface.hpp"
 #include "util.h"
 #include "json2osg.hpp"
 #include "base64.h"
@@ -24,7 +24,7 @@
 
 #include <jansson.h>
 
-#include "freemoovr_engine/freemoovr_assert.h"
+#include "freemovr_engine/freemovr_assert.h"
 
 class StimulusLatencyTimestamp: public StimulusInterface
 {

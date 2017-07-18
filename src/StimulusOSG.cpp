@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#include "freemoovr_engine/StimulusInterface.hpp"
-#include "freemoovr_engine/freemoovr_assert.h"
+#include "freemovr_engine/StimulusInterface.hpp"
+#include "freemovr_engine/freemovr_assert.h"
 
 #include "json2osg.hpp"
 
@@ -143,7 +143,7 @@ void _load_skybox_basename( std::string basename ) {
 }
 
 void _update_pat() {
-    freemoovr_assert(switch_node.valid());
+    freemovr_assert(switch_node.valid());
     switch_node->setPosition( model_position );
     switch_node->setScale( model_scale );
     osg::Matrix m;
@@ -194,7 +194,7 @@ void receive_json_message(const std::string& topic_name, const std::string& json
     json_error_t error;
 
     root = json_loads(json_message.c_str(), 0, &error);
-    freemoovr_assert(root != NULL);
+    freemovr_assert(root != NULL);
 
     if (topic_name=="osg_filename") {
         _load_stimulus_filename( parse_string(root) );
@@ -226,22 +226,22 @@ void receive_json_message(const std::string& topic_name, const std::string& json
         data_json = json_object_get(nextroot, "position");
         osg::Vec3 position = parse_vec3(data_json);
         data_json = json_object_get(nextroot, "orientation"); // we interpret the quaternion as 3 Euler angles and w as scalefactor (HACK!)
-        
+
         osg::Quat attitude = parse_quat(data_json);
-#ifdef _DEBUG        
+#ifdef _DEBUG
         std::cout << "osg_submodel_pose: name: " << name <<
         " pos: " << position.x() << ", " << position.y() << ", " << position.z() <<
-        " euler orientation: " << attitude.x()  << ", " << attitude.y()  << ", " << attitude.z()  << 
+        " euler orientation: " << attitude.x()  << ", " << attitude.y()  << ", " << attitude.z()  <<
         " scale: " << attitude.w()  << std::endl;
 #endif
         try {
             osg::Node* n = SubmodelMap.at(name);
 
-            osg::Matrix m; 
+            osg::Matrix m;
             m.makeIdentity();
 
             // use xyz as Euler angles
-            osg::Quat q=osg::Quat(  
+            osg::Quat q=osg::Quat(
                 attitude.x(), osg::Vec3(1.0,0.0,0.0),   // rotate around X-axis
                 attitude.y(), osg::Vec3(0.0,1.0,0.0),   // rotate around Y-axis
                 attitude.z(), osg::Vec3(0.0,0.0,1.0));  // rotate around Z-axis

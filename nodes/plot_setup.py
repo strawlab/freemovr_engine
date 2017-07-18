@@ -5,10 +5,10 @@
 # the "camera" calibration for the display.
 
 # ROS imports
-import roslib; roslib.load_manifest('freemoovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
 import rospy
 import pymvg
-import freemoovr_engine.simple_geom as simple_geom
+import freemovr_engine.simple_geom as simple_geom
 
 import argparse
 import numpy as np

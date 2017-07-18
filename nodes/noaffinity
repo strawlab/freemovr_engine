@@ -1,8 +1,8 @@
 #!/bin/bash
 
-FREEMOOVR_DIR=`python -c "import roslib.packages; pkg_dir = roslib.packages.get_pkg_dir('freemoovr_engine'); print pkg_dir"`
+FREEMOVR_DIR=`python -c "import roslib.packages; pkg_dir = roslib.packages.get_pkg_dir('freemovr_engine'); print pkg_dir"`
 
 export LD_PRELOAD=libnoaffinity.so
-export LD_LIBRARY_PATH=$FREEMOOVR_DIR/lib/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$FREEMOVR_DIR/lib/:$LD_LIBRARY_PATH
 
 $*

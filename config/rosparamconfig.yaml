@@ -21,6 +21,6 @@ geom:
 gamma: 1.0
 red_max: false
 tethered_mode: false
-p2c: $(find freemoovr_engine)/config/p2c.exr
-p2g: $(find freemoovr_engine)/config/p2g.exr
+p2c: $(find freemovr_engine)/config/p2c.exr
+p2g: $(find freemovr_engine)/config/p2g.exr
 stimulus_plugins: []

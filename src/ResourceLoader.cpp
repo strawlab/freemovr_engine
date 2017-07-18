@@ -1,4 +1,4 @@
-#include "freemoovr_engine/ResourceLoader.hpp"
+#include "freemovr_engine/ResourceLoader.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 
-#include "freemoovr_engine/freemoovr_assert.h"
+#include "freemovr_engine/freemovr_assert.h"
 
 ResourceLoader::ResourceLoader()
 {
@@ -18,7 +18,7 @@ ResourceLoader::ResourceLoader()
 
 std::string ResourceLoader::get_plugin_shader_path(std::string name) const
 {
-    Poco::Path path(_freemoovr_base_path);
+    Poco::Path path(_freemovr_base_path);
     path.makeDirectory();
     path.append("src").append("shaders").append(name);
     return path.absolute().toString();
@@ -26,7 +26,7 @@ std::string ResourceLoader::get_plugin_shader_path(std::string name) const
 
 std::string ResourceLoader::get_plugin_data_path(std::string name) const
 {
-    Poco::Path path(_freemoovr_base_path);
+    Poco::Path path(_freemovr_base_path);
     path.makeDirectory();
     path.append("data").append(name);
     return path.absolute().toString();
@@ -91,6 +91,6 @@ void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name) c
     shader->loadShaderSourceFromFile(path.absolute().toString());
 }
 
-void ResourceLoader::set_freemoovr_base_path(std::string path) {
-  _freemoovr_base_path = path;
+void ResourceLoader::set_freemovr_base_path(std::string path) {
+  _freemovr_base_path = path;
 }

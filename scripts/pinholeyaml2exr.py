@@ -8,18 +8,18 @@ import matplotlib.pyplot as plt
 
 # EXR stuff
 import OpenEXR, Imath  # pip install OpenEXR
-FREEMOOVR_EXR_PIXEL_TYPE = Imath.PixelType(OpenEXR.FLOAT)
+FREEMOVR_EXR_PIXEL_TYPE = Imath.PixelType(OpenEXR.FLOAT)
 
 def save_exr( fname, r=None, g=None, b=None, comments=''):
-    """saves exr file. Copied from freemoovr_engine.exr"""
+    """saves exr file. Copied from freemovr_engine.exr"""
     r = np.array(r); assert r.ndim==2
     g = np.array(g); assert g.ndim==2; assert g.shape==r.shape
     b = np.array(b); assert b.ndim==2; assert b.shape==r.shape
 
     header = OpenEXR.Header(r.shape[1], r.shape[0])
-    header['channels'] = {'R': Imath.Channel(FREEMOOVR_EXR_PIXEL_TYPE),
-                          'G': Imath.Channel(FREEMOOVR_EXR_PIXEL_TYPE),
-                          'B': Imath.Channel(FREEMOOVR_EXR_PIXEL_TYPE),
+    header['channels'] = {'R': Imath.Channel(FREEMOVR_EXR_PIXEL_TYPE),
+                          'G': Imath.Channel(FREEMOVR_EXR_PIXEL_TYPE),
+                          'B': Imath.Channel(FREEMOVR_EXR_PIXEL_TYPE),
                           }
     header['comments'] = comments
     out = OpenEXR.OutputFile(fname, header)

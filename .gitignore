@@ -5,6 +5,6 @@ cfg/*.cfgc
 cfg/cpp
 lib
 msg_gen
-src/freemoovr_engine/msg
-src/freemoovr_engine/srv
+src/freemovr_engine/msg
+src/freemovr_engine/srv
 srv_gen

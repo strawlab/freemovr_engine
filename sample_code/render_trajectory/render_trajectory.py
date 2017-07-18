@@ -4,11 +4,11 @@ import time
 import numpy as np
 import tempfile
 
-import roslib; roslib.load_manifest('freemoovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
 import rospy
-import freemoovr_engine.display_client
-import freemoovr_engine.msg
-from freemoovr_engine.msg import ROSPath
+import freemovr_engine.display_client
+import freemovr_engine.msg
+from freemovr_engine.msg import ROSPath
 from geometry_msgs.msg import Pose
 
 TAU = 2*np.pi
@@ -27,7 +27,7 @@ class RenderTrajectory:
         self.output_dir = output_dir
         self.output_fname_fmt = output_fname_fmt
 
-        freemoovr_engine.display_client.DisplayServerProxy.set_stimulus_mode('Stimulus3DDemo')
+        freemovr_engine.display_client.DisplayServerProxy.set_stimulus_mode('Stimulus3DDemo')
 
         self.dscs = {}
         self.capture = {}
@@ -36,7 +36,7 @@ class RenderTrajectory:
                           ('cubemap','/ds_cubemap'),
                           ('geometry','/ds_geometry'),
                           ]:
-            p=freemoovr_engine.display_client.DisplayServerProxy(display_server_node_name=node,
+            p=freemovr_engine.display_client.DisplayServerProxy(display_server_node_name=node,
                                                       wait=True)
             self.dscs[name]=p
 
@@ -47,7 +47,7 @@ class RenderTrajectory:
 
             if name != 'cubemap':
                 cam_pub = rospy.Publisher(p.name+'/trackball_manipulator_state',
-                                          freemoovr_engine.msg.TrackballManipulatorState,
+                                          freemovr_engine.msg.TrackballManipulatorState,
                                           latch=True)
                 self.cam[name] = cam_pub
         self.pose_pub = rospy.Publisher('pose', Pose, latch=True)
@@ -66,7 +66,7 @@ class RenderTrajectory:
                 # easiest way to get these:
                 #   rosservice call /ds_geometry/get_trackball_manipulator_state
                 if name=='vr':
-                    msg = freemoovr_engine.msg.TrackballManipulatorState()
+                    msg = freemovr_engine.msg.TrackballManipulatorState()
                     msg.rotation.x = 0.340491356063
                     msg.rotation.y = 0.13693607086
                     msg.rotation.z = 0.313095377359
@@ -76,7 +76,7 @@ class RenderTrajectory:
                     msg.center.z = 2.26704955101
                     msg.distance = 1.5655520953
                 elif name=='geometry':
-                    msg = freemoovr_engine.msg.TrackballManipulatorState()
+                    msg = freemovr_engine.msg.TrackballManipulatorState()
                     msg.rotation.x = 0.122742295197
                     msg.rotation.y = 0.198753058426
                     msg.rotation.z = 0.873456803025

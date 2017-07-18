@@ -1,11 +1,11 @@
 <launch>
 
-  <node name="display_server_demo" pkg="freemoovr_engine" type="display_server" args="--mode overview">
-    <rosparam command="load" file="$(find freemoovr_engine)/config/rosparamconfig.yaml" />
-    <param name="p2g" type="str" value="$(find freemoovr_engine)/config/p2g.exr" />
+  <node name="display_server_demo" pkg="freemovr_engine" type="display_server" args="--mode overview">
+    <rosparam command="load" file="$(find freemovr_engine)/config/rosparamconfig.yaml" />
+    <param name="p2g" type="str" value="$(find freemovr_engine)/config/p2g.exr" />
     <param name="display/windowDecoration" type="bool" value="true" />
   </node>
 
-  <node name="send_pose" pkg="freemoovr_engine" type="send_pose"/>
+  <node name="send_pose" pkg="freemovr_engine" type="send_pose"/>
 
 </launch>

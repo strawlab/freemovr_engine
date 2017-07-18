@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-#ifndef FREEMOOVR_EXRUTIL_H
-#define FREEMOOVR_EXRUTIL_H
+#ifndef FREEMOVR_EXRUTIL_H
+#define FREEMOVR_EXRUTIL_H
 
 #include <string>
 #include <osg/Image>

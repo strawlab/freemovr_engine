@@ -1,7 +1,7 @@
 import tempfile
 
 import roslib;
-roslib.load_manifest('freemoovr_engine')
+roslib.load_manifest('freemovr_engine')
 roslib.load_manifest('motmot_ros_utils')
 import rospy
 

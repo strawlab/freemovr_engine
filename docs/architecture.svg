@@ -169,9 +169,9 @@
          id="tspan2987"
          x="22.857143"
          y="58.076458"
-         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">FreemooVR display_server architecture overview</tspan></text>
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial">FreemoVR display_server architecture overview</tspan></text>
     <image
-       
+
        xlink:href="images/architecture_virtual_world.jpg"
        y="68.790749"
        x="20.714293"
@@ -211,7 +211,7 @@
          style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Arial;-inkscape-font-specification:Arial"
          id="tspan3076">• defined in lab frame</tspan></text>
     <image
-       
+
        xlink:href="images/architecture_cubemap.png"
        y="68.71933"
        x="266.42856"
@@ -241,7 +241,7 @@
          x="266.41281"
          sodipodi:role="line">• from viewpoint of observer in lab frame</tspan></text>
     <image
-       
+
        xlink:href="images/architecture_geometry_texture.jpg"
        y="69.505043"
        x="-669.28571"
@@ -423,7 +423,7 @@
        d="m 333.53037,304.714 0,-14.28572"
        style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#Arrow1Send)" />
     <image
-       
+
        xlink:href="images/cyl-texcoords.png"
        width="123.26724"
        height="151.84598"
@@ -434,7 +434,7 @@
        id="g3571"
        transform="translate(-11.069118,0.33542783)">
       <image
-         
+
          xlink:href="images/panels_full.png"
          y="416.75507"
          x="642.71429"
@@ -466,7 +466,7 @@
            x="691.92859"
            sodipodi:role="line">v</tspan></text>
       <image
-         
+
          xlink:href="images/panels_x.png"
          y="454.61221"
          x="642.49066"
@@ -474,7 +474,7 @@
          height="9.2857141"
          width="36.155239" />
       <image
-         
+
          xlink:href="images/panels_y.png"
          y="416.82343"
          x="680.534"

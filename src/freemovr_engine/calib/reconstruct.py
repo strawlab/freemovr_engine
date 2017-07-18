@@ -1,7 +1,7 @@
 import json
 
 import roslib;
-roslib.load_manifest('freemoovr_engine')
+roslib.load_manifest('freemovr_engine')
 roslib.load_manifest('tf')
 import tf
 
@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate
 
-import freemoovr_engine.simple_geom as simple_geom
+import freemovr_engine.simple_geom as simple_geom
 
 class PointCloudTransformer(object):
     def __init__(self, scale=None, translate=None, rotate=None):

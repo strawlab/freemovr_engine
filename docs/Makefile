@@ -79,17 +79,17 @@ qthelp: png_images
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/FreemooVR.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/FreemoVR.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/FreemooVR.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/FreemoVR.qhc"
 
 devhelp: png_images
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/FreemooVR"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/FreemooVR"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/FreemoVR"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/FreemoVR"
 	@echo "# devhelp"
 
 epub: png_images

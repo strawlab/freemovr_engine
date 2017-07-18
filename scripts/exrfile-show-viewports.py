@@ -4,8 +4,8 @@ import matplotlib.patches as patches
 import itertools
 
 import roslib
-roslib.load_manifest('freemoovr_engine')
-import freemoovr_engine.exr
+roslib.load_manifest('freemovr_engine')
+import freemovr_engine.exr
 import numpy as np
 import scipy.ndimage.measurements
 import scipy.signal
@@ -31,7 +31,7 @@ def exr_filename_to_coordinates(fname):
     """opens an exr file and returns a H,W,4 shaped array with the
     texture coordinates u,v and the pixel indices x,y
     """
-    u, v, a = freemoovr_engine.exr.read_exr(fname)
+    u, v, a = freemovr_engine.exr.read_exr(fname)
     y, x = np.meshgrid(np.arange(u.shape[1]), np.arange(u.shape[0]))
     coordinates = np.dstack((u,v,x,y))
     return coordinates

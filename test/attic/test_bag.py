@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 
-import roslib; roslib.load_manifest('freemoovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
 import rosbag
 
 import sensor_msgs.msg

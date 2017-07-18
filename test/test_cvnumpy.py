@@ -1,6 +1,6 @@
-import roslib; roslib.load_manifest('freemoovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
 
-import freemoovr_engine.cvnumpy as cvnumpy
+import freemovr_engine.cvnumpy as cvnumpy
 import numpy as np
 
 def test_rodrigues_cv():

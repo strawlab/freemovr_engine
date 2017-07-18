@@ -2,8 +2,8 @@
 import numpy as np
 
 # ROS imports
-import roslib; roslib.load_manifest('freemoovr_engine')
-import freemoovr_engine.dlt as dlt
+import roslib; roslib.load_manifest('freemovr_engine')
+import freemovr_engine.dlt as dlt
 from pymvg.camera_model import CameraModel
 
 # some sample data -----------------------

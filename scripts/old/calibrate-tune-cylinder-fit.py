@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 
 import roslib;
-roslib.load_manifest('freemoovr_engine')
+roslib.load_manifest('freemovr_engine')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('rosgobject')
 
@@ -191,7 +191,7 @@ class Tune(object):
         print "ND",self._nd
 
         seg.set_max_iterations (1000)
- 
+
         seg.set_distance_threshold (self._dt)
         print "DT",self._dt
 
@@ -213,7 +213,7 @@ class Tune(object):
                                     cloud.to_list())
             self.pubptsinliers.publish(pts)
 
-            self.cx,self.cy,self.cz,self.ax,self.ay,self.az,self.radius = model 
+            self.cx,self.cy,self.cz,self.ax,self.ay,self.az,self.radius = model
         finally:
             self._exbtn.set_sensitive(True)
 

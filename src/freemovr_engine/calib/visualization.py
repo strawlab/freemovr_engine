@@ -21,7 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d
 
-import freemoovr_engine.simple_geom as simple_geom
+import freemovr_engine.simple_geom as simple_geom
 
 def _points_check(points, ensure_ndarray=False):
     if len(points):
@@ -34,7 +34,7 @@ def _points_check(points, ensure_ndarray=False):
 def create_point_cloud(points, frame_id='/'):
     _points_check(points)
     header = rospy.Header(frame_id=frame_id)
-    return create_cloud_xyz32(header, points)    
+    return create_cloud_xyz32(header, points)
 
 def create_point_cloud_message_publisher(points, topic_name=None, publish_now=False, latch=False, frame_id='/'):
     publisher = rospy.Publisher(topic_name, PointCloud2, latch=latch)
@@ -175,7 +175,7 @@ def show_pointcloud_3d_plot(points, ax=None):
     if not ax:
         ax = plt.gca(projection='3d')
     ax.plot(points[:,0],points[:,1],points[:,2],'o')
-        
+
 def show_pointcloud_2d_plots(points, fig=None):
     points = _points_check(points, ensure_ndarray=True)
     x = points[:,0]

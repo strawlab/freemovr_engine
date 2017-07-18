@@ -10,18 +10,18 @@ import scipy.misc
 
 # ROS imports
 import roslib;
-roslib.load_manifest('freemoovr_engine')
+roslib.load_manifest('freemovr_engine')
 roslib.load_manifest('motmot_ros_utils')
 roslib.load_manifest('std_srvs')
 roslib.load_manifest('camera_trigger')
 import rospy
 
-# local freemoovr_engine imports
-import freemoovr_engine.display_client as display_client
+# local freemovr_engine imports
+import freemovr_engine.display_client as display_client
 import std_srvs.srv
 import camera_trigger.srv
 
-from freemoovr_engine.calib.acquire import CameraHandler, SimultaneousCameraRunner
+from freemovr_engine.calib.acquire import CameraHandler, SimultaneousCameraRunner
 from rosutils.io import decode_url
 
 class GenMasks:
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     argv = rospy.myargv()
     args = parser.parse_args(argv[1:])
-    
+
     rospy.init_node('generate_masks')
 
     config = {}

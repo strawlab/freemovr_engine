@@ -12,15 +12,15 @@
 
 struct CollectTriangleOperator {
   CollectTriangleOperator():_gi(0) {}
-  void setDisplaySurfaceArbitraryGeometry(freemoovr_engine::DisplaySurfaceArbitraryGeometry* gi) { _gi = gi; }
-  freemoovr_engine::DisplaySurfaceArbitraryGeometry* _gi;
+  void setDisplaySurfaceArbitraryGeometry(freemovr_engine::DisplaySurfaceArbitraryGeometry* gi) { _gi = gi; }
+  freemovr_engine::DisplaySurfaceArbitraryGeometry* _gi;
   inline void operator()(unsigned int p1, unsigned int p2, unsigned int p3) {
     _gi->addTriangle(p1,p2,p3);
   }
 };
 typedef osg::TriangleIndexFunctor<CollectTriangleOperator> CollectTriangleIndexFunctor;
 
-using namespace freemoovr_engine;
+using namespace freemovr_engine;
 
 DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string filename,double precision) : _precision(precision) {
   osg::ref_ptr<osg::Node> loadedModel = osgDB::readNodeFile(filename);

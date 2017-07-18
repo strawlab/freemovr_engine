@@ -3,8 +3,8 @@
 import argparse
 import numpy as np
 
-import roslib; roslib.load_manifest('freemoovr_engine')
-from freemoovr_engine.exr import save_exr
+import roslib; roslib.load_manifest('freemovr_engine')
+from freemovr_engine.exr import save_exr
 
 def gen_exr(fname=None, width=None, height=None, luminance=None):
     u = np.linspace( 0.0, 1.0, width )

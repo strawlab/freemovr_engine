@@ -6,11 +6,11 @@ import scipy
 import tempfile
 
 import roslib.packages
-roslib.load_manifest('freemoovr_engine')
-import roslib; roslib.load_manifest('freemoovr_engine')
-import freemoovr_engine.calib.pinhole.pinhole_wizard as pw
+roslib.load_manifest('freemovr_engine')
+import roslib; roslib.load_manifest('freemovr_engine')
+import freemovr_engine.calib.pinhole.pinhole_wizard as pw
 
-pkg_dir = roslib.packages.get_pkg_dir('freemoovr_engine')
+pkg_dir = roslib.packages.get_pkg_dir('freemovr_engine')
 data_fname = os.path.join( pkg_dir, 'data/calib_pinhole_sample/pinhole_wizard_sample.yaml')
 
 os.environ['RUNNING_NOSE'] = '1'

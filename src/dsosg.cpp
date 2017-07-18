@@ -31,7 +31,7 @@
 
 #include <osgViewer/ViewerEventHandlers>
 
-#ifdef FREEMOOVR_USE_CUDA
+#ifdef FREEMOVR_USE_CUDA
 #include <osgCudaInit/Init> // ubuntu: apt-get install osgcompute
 #endif
 
@@ -51,9 +51,9 @@
 #include "CameraImageToDisplayImagePass.h"
 #include "GeometryTextureToDisplayImagePass.h"
 
-#include "freemoovr_engine/freemoovr_assert.h"
-#include "freemoovr_engine/ResourceLoader.hpp"
-#include "freemoovr_engine/CallbackHolder.hpp"
+#include "freemovr_engine/freemovr_assert.h"
+#include "freemovr_engine/ResourceLoader.hpp"
+#include "freemovr_engine/CallbackHolder.hpp"
 
 // Notes:
 //    Front face culling for dome projection:
@@ -221,7 +221,7 @@ private:
   CameraList Cameras;
 };
 
-struct BackgroundCallback : public freemoovr_engine::BackgroundColorCallback {
+struct BackgroundCallback : public freemovr_engine::BackgroundColorCallback {
 public:
     BackgroundCallback(CameraCube* cc) : _camera_cube(cc) {}
     void setBackgroundColorImplementation(const osg::Vec4& color) const {
@@ -294,7 +294,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
              std::string config_fname, bool two_pass, bool show_geom_coords,
              bool tethered_mode, bool slave, unsigned int cubemap_resolution) :
     _current_stimulus(NULL), _mode(mode),
-    _freemoovr_basepath(datadir),
+    _freemovr_basepath(datadir),
     _config_file_path(config_fname),
     _tethered_mode(tethered_mode), _wcc(NULL), _g2di(NULL), _two_pass(two_pass)
 
@@ -305,11 +305,11 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
     bool ignore_missing_plugins = false;
 
     // ensure we interpret this as a directory (ensure trailing slash)
-    _freemoovr_basepath.makeAbsolute(); _freemoovr_basepath.makeDirectory();
+    _freemovr_basepath.makeAbsolute(); _freemovr_basepath.makeDirectory();
     // ensure we interpret this as a file
     _config_file_path.makeAbsolute(); _config_file_path.makeFile();
 
-    Poco::Path shader_path(_freemoovr_basepath);
+    Poco::Path shader_path(_freemovr_basepath);
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
 
     // Check the mode is valid.
@@ -339,7 +339,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
 
     std::string config_data_dir = _config_file_path.parent().toString();
 
-    // Add the freemoovr_engine defaut stimulus plugins
+    // Add the freemovr_engine defaut stimulus plugins
     Poco::Path default_plugin_path = libdir;
     std::string default_lib_dir = default_plugin_path.toString();
 
@@ -413,7 +413,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
                     throw;
                 }
 
-                _stimulus_plugins[ plugin_name ]->set_freemoovr_base_path(_freemoovr_basepath.toString());
+                _stimulus_plugins[ plugin_name ]->set_freemovr_base_path(_freemovr_basepath.toString());
 
                 try {
                     _stimulus_plugins[ plugin_name ]->post_init(slave);
@@ -448,7 +448,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
         _current_stimulus = _stimulus_plugins["Stimulus3DDemo"];
     }
 
-    freemoovr_assert(_current_stimulus != NULL);
+    freemovr_assert(_current_stimulus != NULL);
     std::cout << "current stimulus name: " << _current_stimulus->name() << std::endl;
 
     _active_3d_world->addChild( _current_stimulus->get_3d_world() );
@@ -522,7 +522,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
     _root->addChild( _observer_geometry_pat );
 
     // render cubemap onto geometry
-    _pctcp = new ProjectCubemapToGeometryPass(_freemoovr_basepath.toString(),
+    _pctcp = new ProjectCubemapToGeometryPass(_freemovr_basepath.toString(),
                                               _cubemap_maker->get_cubemap(),
                                               _observer_cb,
                                               geometry_parameters);
@@ -599,7 +599,7 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
             }
         } else {
             json_t *p2g_json = json_object_get(json_config, "p2g");
-            freemoovr_assert(p2g_json != NULL);
+            freemovr_assert(p2g_json != NULL);
             Poco::Path p2g_path = _config_file_path.parent().resolve(
                                     Poco::Path(json_string_value(p2g_json)));
             std::string p2g_filename = p2g_path.toString();
@@ -622,13 +622,13 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
 void DSOSG::loadDisplayCalibrationFile(std::string p2g_filename,
                                        bool show_geom_coords) {
 
-    freemoovr_assert_msg((_mode==std::string("overview") ||
+    freemovr_assert_msg((_mode==std::string("overview") ||
                       _mode==std::string("vr_display")),
                      "must be in 'overview' or 'vr_display' mode");
-    freemoovr_assert_msg(!_two_pass,
+    freemovr_assert_msg(!_two_pass,
                      "NotImplemented: loadDisplayCalibrationFile() two-pass");
 
-    Poco::Path shader_path(_freemoovr_basepath);
+    Poco::Path shader_path(_freemovr_basepath);
     shader_path.pushDirectory("src"); shader_path.pushDirectory("shaders");
 
     if (_g2di != NULL) {
@@ -637,7 +637,7 @@ void DSOSG::loadDisplayCalibrationFile(std::string p2g_filename,
     }
 
     if (_g2d_hud_cam_root != NULL) {
-        freemoovr_assert(_debug_hud_cam!=NULL);
+        freemovr_assert(_debug_hud_cam!=NULL);
         _debug_hud_cam->removeChild( _g2d_hud_cam_root );
         // delete _g2d_hud_cam_root; // TODO: why won't gcc let me do this?
     }
@@ -680,7 +680,7 @@ void DSOSG::loadDisplayGeomJSON(std::string geom_json_buf) {
         throw std::runtime_error("error in json");
     }
 
-    freemoovr_assert_msg(json_is_object(json_geom),"valid projector geometry not found");
+    freemovr_assert_msg(json_is_object(json_geom),"valid projector geometry not found");
 
     DisplaySurfaceGeometry* geometry_parameters = new DisplaySurfaceGeometry(json_geom);
     _pctcp->replace_display_surface_geometry( geometry_parameters );
@@ -729,13 +729,13 @@ void DSOSG::set_stimulus_plugin(const std::string& name) {
 
 std::vector<std::string> DSOSG::stimulus_get_topic_names(const std::string& plugin_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    freemoovr_assert(stimulus!=NULL);
+    freemovr_assert(stimulus!=NULL);
     return stimulus->get_topic_names();
 }
 
 std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, const std::string& topic_name) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    freemoovr_assert(stimulus!=NULL);
+    freemovr_assert(stimulus!=NULL);
     try {
         return stimulus->get_message_type( topic_name );
     } catch (...) {
@@ -746,7 +746,7 @@ std::string DSOSG::stimulus_get_message_type(const std::string& plugin_name, con
 
 void DSOSG::stimulus_receive_json_message(const std::string& plugin_name, const std::string& topic_name, const std::string& json_message) {
     StimulusInterface* stimulus = _stimulus_plugins[plugin_name];
-    freemoovr_assert(stimulus!=NULL);
+    freemovr_assert(stimulus!=NULL);
     stimulus->receive_json_message( topic_name, json_message );
 }
 
@@ -850,7 +850,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
     if (use_pbuffer) {
         pbuffer = osg::GraphicsContext::createGraphicsContext(traits.get());
-        freemoovr_assert(pbuffer.valid());
+        freemovr_assert(pbuffer.valid());
     }
 
     _viewer->addEventHandler(new osgViewer::ScreenCaptureHandler(
@@ -894,7 +894,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
 
         osg::ref_ptr<osg::GraphicsContext> gc;
         gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-        freemoovr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
+        freemovr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
         _viewer->getCamera()->setGraphicsContext(gc.get());
         _viewer->getCamera()->setClearColor(osg::Vec4(0.3f, 0.3f, 0.3f, 0.0f)); // clear dark gray
 
@@ -919,7 +919,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
     else if (_mode==std::string("vr_display")) {
         osg::ref_ptr<osg::GraphicsContext> gc;
         gc = osg::GraphicsContext::createGraphicsContext(traits.get());
-        freemoovr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
+        freemovr_assert_msg(gc.valid(),"could not create a graphics context with your desired traits");
         _viewer->getCamera()->setGraphicsContext(gc.get());
         _viewer->getCamera()->setViewport(new osg::Viewport(0,0, traits->width, traits->height));
         GLenum buffer = traits->doubleBuffer ? GL_BACK : GL_FRONT;
@@ -948,7 +948,7 @@ void DSOSG::setup_viewer(const std::string& viewer_window_name, const std::strin
     setWindowName(viewer_window_name);
     resized(width, height); // notify listeners that we have a new size
 
-#ifdef FREEMOOVR_USE_CUDA
+#ifdef FREEMOVR_USE_CUDA
     osgCuda::setupOsgCudaAndViewer( *_viewer );
 #endif
 
@@ -1038,7 +1038,7 @@ void DSOSG::setWindowName(std::string name) {
 };
 
 void DSOSG::setCaptureImageFilename(std::string name) {
-    freemoovr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
+    freemovr_assert(_wcc!=NULL); // need to be in pbuffer or overview-type mode
     _wcc->set_next_filename( name );
 }
 
@@ -1048,7 +1048,7 @@ void DSOSG::setCaptureOSGFilename(std::string name) {
 }
 
 TrackballManipulatorState DSOSG::getTrackballManipulatorState() {
-    freemoovr_assert(_cameraManipulator.valid());
+    freemovr_assert(_cameraManipulator.valid());
     TrackballManipulatorState result;
     result.rotation = _cameraManipulator->getRotation();
     result.center =  _cameraManipulator->getCenter();
@@ -1079,7 +1079,7 @@ void DSOSG::setRedMax(bool red_max) {
 }
 
 bool DSOSG::is_CUDA_available() {
-#ifdef FREEMOOVR_USE_CUDA
+#ifdef FREEMOVR_USE_CUDA
   return true;
 #else
   return false;

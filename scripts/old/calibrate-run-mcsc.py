@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import roslib;
-roslib.load_manifest('freemoovr_engine')
+roslib.load_manifest('freemovr_engine')
 import rospy
 
 from calib.io import MultiCalSelfCam

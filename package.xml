@@ -1,13 +1,13 @@
 <package>
-  <name>freemoovr_engine</name>
+  <name>freemovr_engine</name>
   <version>0.0.1</version>
   <description>
-    freemoovr_engine
+    freemovr_engine
   </description>
   <author>Andrew Straw</author>
   <maintainer email="strawman@astraw.com">Andrew Straw</maintainer>
   <license>TODO</license>
-  <url>https://strawlab.org/freemoovr_engine</url>
+  <url>https://strawlab.org/freemovr_engine</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -38,9 +38,9 @@
   <run_depend>python-ode</run_depend>
   <run_depend>python-scipy</run_depend>
   <run_depend>python-pymvg</run_depend>
-  
+
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lfreemoovr_engine"/>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lfreemovr_engine"/>
   </export>
 
 </package>

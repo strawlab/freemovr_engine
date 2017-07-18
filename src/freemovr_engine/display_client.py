@@ -1,8 +1,8 @@
 import rospy
 import std_msgs.msg
 import geometry_msgs.msg
-import freemoovr_engine.srv
-import freemoovr_engine.msg
+import freemovr_engine.srv
+import freemovr_engine.msg
 
 import warnings
 import tempfile
@@ -44,9 +44,9 @@ class DisplayServerProxy(object):
             _ = self.get_display_info(nocache=True) # fill our cache
 
         self.set_display_server_mode_proxy = rospy.ServiceProxy(self.get_fullname('set_display_server_mode'),
-                                                                freemoovr_engine.srv.SetDisplayServerMode)
+                                                                freemovr_engine.srv.SetDisplayServerMode)
         self.blit_compressed_image_proxy = rospy.ServiceProxy(self.get_fullname('blit_compressed_image'),
-                                                                freemoovr_engine.srv.BlitCompressedImage)
+                                                                freemovr_engine.srv.BlitCompressedImage)
     @property
     def name(self):
         return self._server_node_name
@@ -92,7 +92,7 @@ class DisplayServerProxy(object):
         # return to standby mode in server if needed
         if mode != 'standby':
             return_to_standby_proxy = rospy.ServiceProxy(self.get_fullname('return_to_standby'),
-                                                         freemoovr_engine.srv.ReturnToStandby)
+                                                         freemovr_engine.srv.ReturnToStandby)
 
             return_to_standby_proxy()
             self._spin_wait_for_mode('StimulusStandby') # wait until in standby mode
@@ -132,7 +132,7 @@ class DisplayServerProxy(object):
                 self._info_cached[paramname] = rospy.get_param(self._server_node_name+'/'+paramname)
             try:
                 get_info_proxy = rospy.ServiceProxy(self.get_fullname(servicename),
-                                                            freemoovr_engine.srv.GetDisplayInfo)
+                                                            freemovr_engine.srv.GetDisplayInfo)
                 result = get_info_proxy()
                 self._info_cached[paramname] = json.loads(result.info_json)
             except:
@@ -198,7 +198,7 @@ class DisplayServerProxy(object):
 
     def show_image(self, fname, unlink=False):
         try:
-            image = freemoovr_engine.msg.FreemooVRCompressedImage()
+            image = freemovr_engine.msg.FreemoVRCompressedImage()
             image.format = os.path.splitext(fname)[-1]
             image.data = open(fname).read()
         finally:
@@ -247,10 +247,10 @@ class RenderFrameSlave:
         self.dsc = dsc
 
         self.path_pub = rospy.Publisher(self.dsc.name+'/capture_frame_to_path',
-                                        freemoovr_engine.msg.ROSPath,
+                                        freemovr_engine.msg.ROSPath,
                                         latch=True)
         self.cam_pub = rospy.Publisher(self.dsc.name+'/trackball_manipulator_state',
-                                       freemoovr_engine.msg.TrackballManipulatorState,
+                                       freemovr_engine.msg.TrackballManipulatorState,
                                        latch=True)
 
         self.pose_pub = rospy.Publisher(self.dsc.name+'/pose',
