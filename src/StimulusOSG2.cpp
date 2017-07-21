@@ -95,7 +95,7 @@ StringUtils* StringUtils::instance()
     return &s_StringUtils;
 }
 
-class AnimController 
+class AnimController
 {
 public:
     typedef std::vector<std::string> AnimationMapVector;
@@ -104,7 +104,7 @@ public:
         _model(0),
         _focus(0) {}
 
-    bool setModel(osgAnimation::BasicAnimationManager* model) 
+    bool setModel(osgAnimation::BasicAnimationManager* model)
     {
         _model = model;
         _map.clear();
@@ -119,16 +119,16 @@ public:
         return true;
     }
 
-    bool list(std::ostream &output) 
+    bool list(std::ostream &output)
     {
         for(osgAnimation::AnimationMap::iterator it = _map.begin(); it != _map.end(); it++)
             output << "Animation=\"" << it->first << "\"" << std::endl;
         return true;
     }
 
-    bool play() 
+    bool play()
     {
-        if(_focus < _amv.size()) 
+        if(_focus < _amv.size())
         {
 #ifdef _DEBUG
             std::cout << "Play " << _amv[_focus] << std::endl;
@@ -140,7 +140,7 @@ public:
         return false;
     }
 
-    bool play(const std::string& name) 
+    bool play(const std::string& name)
     {
         for(unsigned int i = 0; i < _amv.size(); i++) if(_amv[i] == name) _focus = i;
         _model->playAnimation(_map[name].get());
@@ -164,9 +164,9 @@ public:
         return true;
     }
 
-    bool stop() 
+    bool stop()
     {
-        if(_focus < _amv.size()) 
+        if(_focus < _amv.size())
         {
 #ifdef _DEBUG
             std::cout << "Stop " << _amv[_focus] << std::endl;
@@ -177,14 +177,14 @@ public:
         return false;
     }
 
-    bool stop(const std::string& name) 
+    bool stop(const std::string& name)
     {
         for(unsigned int i = 0; i < _amv.size(); i++) if(_amv[i] == name) _focus = i;
         _model->stopAnimation(_map[name].get());
         return true;
-    }    
+    }
 
-    bool next() 
+    bool next()
     {
         _focus = (_focus + 1) % _map.size();
 #ifdef _DEBUG
@@ -193,7 +193,7 @@ public:
         return true;
     }
 
-    bool previous() 
+    bool previous()
     {
         _focus = (_map.size() + _focus - 1) % _map.size();
 #ifdef _DEBUG
@@ -202,12 +202,12 @@ public:
         return true;
     }
 
-    const std::string& getCurrentAnimationName() const 
+    const std::string& getCurrentAnimationName() const
     {
         return _amv[_focus];
     }
 
-    const AnimationMapVector& getAnimationMap() const 
+    const AnimationMapVector& getAnimationMap() const
     {
         return _amv;
     }
@@ -555,7 +555,7 @@ void _load_stimulus_filename( std::string osg_filename ) {
 
     // Here we do fadein animation
     MaterialFinderVisitor nv(*tmp);
-    tmp->accept(nv);    
+    tmp->accept(nv);
     nv.postVisit(*tmp);
     def.materials = nv.materials;
 
@@ -688,7 +688,7 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 #endif
 
     if (topic_name=="osg2_filename")
-    {        
+    {
         std::string fileName = parse_string(root);
 
         // Special case of unloading all the models by loading /dev/null
@@ -724,7 +724,7 @@ void receive_json_message(const std::string& topic_name, const std::string& json
             return;
         }
 
-        // No unload, so load        
+        // No unload, so load
         // NOTE: This call is creating valid entry in the
         // _models map, which later are refered by the fileName
         _load_stimulus_filename( fileName );
@@ -826,17 +826,17 @@ void receive_json_message(const std::string& topic_name, const std::string& json
         json_t *data_json;
         json_t *nextroot;
         nextroot = json_object_get(root, "header");
-        data_json = json_object_get(nextroot, "frame_id");        
+        data_json = json_object_get(nextroot, "frame_id");
         std::string name = json_string_value(data_json);
         nextroot = json_object_get(root, "pose");
-        data_json = json_object_get(nextroot, "position");        
+        data_json = json_object_get(nextroot, "position");
         osg::Vec3 position = parse_vec3(data_json);
         data_json = json_object_get(nextroot, "orientation"); // we interpret the quaternion as 3 Euler angles and w as scalefactor (HACK!)
         osg::Quat attitude = parse_quat(data_json);
-#ifdef _DEBUG        
+#ifdef _DEBUG
         std::cout << "osg2_submodel_pose: name: " << name <<
         " pos: " << position.x() << ", " << position.y() << ", " << position.z() <<
-        " euler orientation: " << attitude.x()  << ", " << attitude.y()  << ", " << attitude.z()  << 
+        " euler orientation: " << attitude.x()  << ", " << attitude.y()  << ", " << attitude.z()  <<
         " scale: " << attitude.w()  << std::endl;
 #endif
         try {
@@ -853,11 +853,11 @@ void receive_json_message(const std::string& topic_name, const std::string& json
             // Just a bit of paranoia (otherwise will crash)
             if (n == 0) throw std::out_of_range("No root node for this file");
 
-            osg::Matrix m; 
+            osg::Matrix m;
             m.makeIdentity();
 
             // use xyz as Euler angles
-            osg::Quat q=osg::Quat(  
+            osg::Quat q=osg::Quat(
                 attitude.x(), osg::Vec3(1.0,0.0,0.0),   // rotate around X-axis
                 attitude.y(), osg::Vec3(0.0,1.0,0.0),   // rotate around Y-axis
                 attitude.z(), osg::Vec3(0.0,0.0,1.0));  // rotate around Z-axis
@@ -959,7 +959,7 @@ private:
     };
 
     typedef std::map< std::string, ModelDefinition >        ModelDefinitions;
-    ModelDefinitions    _models;    
+    ModelDefinitions    _models;
 };
 
 
