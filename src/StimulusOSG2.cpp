@@ -1,5 +1,5 @@
-#include "flyvr/StimulusInterface.hpp"
-#include "flyvr/flyvr_assert.h"
+#include "freemovr_engine/StimulusInterface.hpp"
+#include "freemovr_engine/freemovr_assert.h"
 
 #include "json2osg.hpp"
 
@@ -621,7 +621,7 @@ void _update_pat(const std::string& filename)
 {
     ModelDefinition& def = _models[filename];
 
-    flyvr_assert(def.switch_node.valid());
+    freemovr_assert(def.switch_node.valid());
     def.switch_node->setPosition( def.model_position );
     def.switch_node->setScale( def.model_scale );
 
@@ -681,7 +681,7 @@ void receive_json_message(const std::string& topic_name, const std::string& json
     json_error_t error;
 
     root = json_loads(json_message.c_str(), 0, &error);
-    flyvr_assert(root != NULL);
+    freemovr_assert(root != NULL);
 
 #ifdef _DEBUG
     std::cout << "topic name: " << topic_name << ", json: " << json_message << std::endl;

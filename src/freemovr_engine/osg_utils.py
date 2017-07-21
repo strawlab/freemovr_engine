@@ -8,8 +8,8 @@ import rospy
 import std_msgs.msg
 import geometry_msgs.msg
 
-roslib.load_manifest('flyvr')
-import flyvr.display_client as display_client
+roslib.load_manifest('freemovr_engine')
+import freemovr_engine.display_client as display_client
 
 
 def build_move_node_message(name, x=0, y=0, z=0, scale=1, hidden=False, orientation_x=0, orientation_y=0, orientation_z=0):
@@ -30,7 +30,7 @@ def parse_osg_file(name):
     """
     returns a list of named nodes and a list of animations present in the osg file
     """
-    stdout = subprocess.check_output("rosrun flyvr parseosg %s" % name, shell=True)
+    stdout = subprocess.check_output("rosrun freemovr_engine parseosg %s" % name, shell=True)
     nodes = []
     animations = []
     for line in stdout.split('\n'):
