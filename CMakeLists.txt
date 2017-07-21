@@ -123,7 +123,7 @@ IF(BUILD_WITH_ROS)
   add_library(StimulusOSG src/StimulusOSG.cpp)
   TARGET_LINK_LIBRARIES(StimulusOSG ${OSG_LIBS} ${POCO_LIBRARIES} freemovr_engine)
 
-  rosbuild_add_library(StimulusOSG2 src/StimulusOSG2.cpp)
+  add_library(StimulusOSG2 src/StimulusOSG2.cpp)
   TARGET_LINK_LIBRARIES(StimulusOSG2 ${OSG_LIBS} ${POCO_LIBRARIES} flyvr)
 
   # build the main display server node ----------
@@ -140,7 +140,7 @@ IF(BUILD_WITH_ROS)
       ${OSG_COMPUTE_LIBRARIES} DisplaySurfaceArbitraryGeometry)
 
   # build another small executable for parsing osg files for animations
-  rosbuild_add_executable(parseosg src/parseosg.cpp)
+  add_executable(parseosg src/parseosg.cpp)
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
   INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/include")
   TARGET_LINK_LIBRARIES(parseosg ${OSG_LIBS})
