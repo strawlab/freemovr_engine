@@ -7,10 +7,16 @@
 FreemoVR - virtual reality engine
 ******************************
 
-FreemoVR is a virtual reality engine built on [ROS](http://ros.org) and
-[OpenSceneGraph](http://www.openscenegraph.org). It manages
+FreemoVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
+`OpenSceneGraph <http://www.openscenegraph.org>`_. It manages
 multi-computer realtime tracking and display with the goal of being
 useful for scientific studies of vision.
+
+Discussion
+----------
+
+For questions or discussion, please use `the "freemovr" Google
+Group <https://groups.google.com/forum/#!forum/freemovr>`_.
 
 .. contents::
 
