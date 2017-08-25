@@ -3,9 +3,9 @@
     :width: 640
     :height: 263
 
-******************************
+*********************************
 FreemoVR - virtual reality engine
-******************************
+*********************************
 
 FreemoVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
 `OpenSceneGraph <http://www.openscenegraph.org>`_. It manages
@@ -13,7 +13,7 @@ multi-computer realtime tracking and display with the goal of being
 useful for scientific studies of vision.
 
 Discussion
-----------
+==========
 
 For questions or discussion, please use `the "freemovr" Google
 Group <https://groups.google.com/forum/#!forum/freemovr>`_.
@@ -22,9 +22,6 @@ Group <https://groups.google.com/forum/#!forum/freemovr>`_.
 
 * `installation and getting started <docs/getting_started.rst>`_
 * `using the joystick for input <docs/joystick.rst>`_
-
-FreemoVR architecture overview
-***************************
 
 Theory of operation
 ===================
@@ -40,10 +37,10 @@ surface. From there, this image is warped to the physical display
 output.
 
 freemovr_engine nodes
-===========
+=====================
 
 display_server - the FreemoVR display server
-----------------------------------------
+--------------------------------------------
 
 The FreemoVR display server node runs locally on the computer(s) connected
 to the physical display. During a typical experiment, it will be
@@ -53,7 +50,7 @@ scenegraph and the calibrated screen layout, the node will compute the
 images shown on the projectors.
 
 viewport_definer.py - FreemoVR viewport definer
--------------------------------------------
+-----------------------------------------------
 
 Runs a GUI program that allows the user to interactively define the
 viewports for all connected projectors.
