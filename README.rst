@@ -1,7 +1,7 @@
-.. image:: http://freemovr_engine.org/assets/FreemoVR-airplane-640.png
+.. image:: https://strawlab.org/assets/freemovr/freemovr-principle.png
     :alt: FreemoVR
-    :width: 640
-    :height: 263
+    :width: 446
+    :height: 184
 
 *********************************
 FreemoVR - virtual reality engine
