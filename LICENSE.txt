@@ -1,8 +1,15 @@
 freemovr_engine
-============
+===============
 
-The freemovr_engine package was written by Andrew Straw at the Research
-Institute of Molecular Pathology (IMP), Vienna, Austria.
+## License
+
+With the exception of third party software (see "other parts" below), the
+software, documentation and other resouces are licensed under either of
+
+* Apache License, Version 2.0,
+  (./LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license (./LICENSE-MIT or http://opensource.org/licenses/MIT)
+  at your option.
 
 other parts
 ===========
