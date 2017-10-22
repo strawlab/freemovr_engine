@@ -116,23 +116,23 @@ void ProjectCubemapToGeometryPass::create_output_texture() {
 
 void ProjectCubemapToGeometryPass::setup_camera()
 {
-        // clearing
-        _camera->setClearColor(osg::Vec4(0.0f,0.0f,0.0f,0.0f)); // clear black
-        _camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // clearing
+    _camera->setClearColor(osg::Vec4(0.0f,0.0f,0.0f,0.0f)); // clear black
+    _camera->setClearMask(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // projection and view
-        _camera->setProjectionMatrix(osg::Matrix::ortho2D(0,1,0,1));
-        _camera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-        _camera->setViewMatrix(osg::Matrix::identity());
+    // projection and view
+    _camera->setProjectionMatrix(osg::Matrix::ortho2D(0,1,0,1));
+    _camera->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+    _camera->setViewMatrix(osg::Matrix::identity());
 
-        // viewport
-        _camera->setViewport(0, 0, _tex_width+1, _tex_height);
-        // off by one error in the width? removes visible seam!
+    // viewport
+    _camera->setViewport(0, 0, _tex_width+1, _tex_height);
+    // off by one error in the width? removes visible seam!
 
     _camera->setRenderOrder(osg::Camera::PRE_RENDER);
-        _camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
+    _camera->setRenderTargetImplementation(osg::Camera::FRAME_BUFFER_OBJECT);
 
-        // attach the output texture
+    // attach the output texture
     _camera->attach(osg::Camera::COLOR_BUFFER, _out_texture.get(), 0);
 
 }
@@ -157,10 +157,10 @@ osg::ref_ptr<osg::Program> ProjectCubemapToGeometryPass::set_shader(osg::ref_ptr
 // use shaders to generate a texture
 osg::ref_ptr<osg::Group> ProjectCubemapToGeometryPass::create_textured_geometry() const
 {
-        osg::ref_ptr<osg::Group> top_group = new osg::Group;
+    osg::ref_ptr<osg::Group> top_group = new osg::Group;
     top_group->addDescription("ProjectCubemapToGeometryPass textured geometry top node");
 
-        osg::ref_ptr<osg::Geode> geode = new osg::Geode;
+    osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     osg::ref_ptr<osg::Geometry> this_geom = _geometry_parameters->make_geom();
 
     // Force bounding box to be undefined, since we change vertex
