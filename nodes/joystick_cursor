@@ -2,7 +2,7 @@
 # /* -*- Mode: Python; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 import argparse
 
-import roslib; roslib.load_manifest('freemovr_engine')
+import roslib
 import rospy
 
 import freemovr_engine.msg
@@ -30,7 +30,7 @@ class App:
 
         self.pub = rospy.Publisher('sprite_pose', Pose2D)
         self.pubclick = rospy.Publisher('joy_click_pose', Pose2D)
-        joy_sub = rospy.Subscriber('joy', Joy, self.joy_callback)
+        rospy.Subscriber('joy', Joy, self.joy_callback)
 
         self.cur_joy_x = 0
         self.cur_joy_y = 0
