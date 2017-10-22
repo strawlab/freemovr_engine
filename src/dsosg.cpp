@@ -458,16 +458,27 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
     _active_2d_hud->addChild( _current_stimulus->get_2d_hud() );
     _hud_cam->addChild(_active_2d_hud);
 
+// TODO FIXME XXX figure out why this prevents a segfault.
+#ifdef FREEMOVR_HACK_AVOID_SEGFAULT
+    _root->addChild( _active_3d_world );
+#else
     if ( _mode==std::string("virtual_world") || _mode==std::string("overview")) {
         _root->addChild( _active_3d_world );
     }
+#endif
 
     _observer_pat->addDescription("observer position attitute transform node");
     _observer_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));
     _observer_pat->setAttitude(osg::Quat(osg::inDegrees(0.0f),osg::Vec3(0.0f,0.0f,1.0f)));
     _observer_pat->setDataVariance(osg::Object::DYNAMIC);
+
+// TODO FIXME XXX figure out why this prevents a segfault.
+#ifdef FREEMOVR_HACK_AVOID_SEGFAULT
+    {
+#else
     if (_mode==std::string("overview") || _mode==std::string("virtual_world") ||
         _mode==std::string("geometry")) {
+#endif
         if (observer_radius != 0.0f) {
             _observer_marker_pat = new osg::PositionAttitudeTransform;
             _observer_marker_pat->setPosition(osg::Vec3(0.0f,0.0f,0.0f));

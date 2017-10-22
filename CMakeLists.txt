@@ -55,6 +55,8 @@ ELSE(OSG_COMPUTE_FOUND)
   MESSAGE("Building Without CUDA support")
 ENDIF(OSG_COMPUTE_FOUND)
 
+add_definitions( -DFREEMOVR_HACK_AVOID_SEGFAULT )
+
 ADD_LIBRARY(DisplaySurfaceArbitraryGeometry SHARED src/DisplaySurfaceArbitraryGeometry.cpp)
 TARGET_LINK_LIBRARIES(DisplaySurfaceArbitraryGeometry ${OSG_LIBS})
 
