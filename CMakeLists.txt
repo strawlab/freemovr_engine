@@ -89,7 +89,7 @@ IF(BUILD_WITH_ROS)
     ${PYTHON_INCLUDE_DIRS}
     )
 
-  catkin_install_python(PROGRAMS nodes/calibration.py nodes/calibration_generate_exr.py
+  catkin_install_python(PROGRAMS nodes/calibration_generate_exr.py
     nodes/demo_switch_calibration nodes/generate_masks.py
     # TODO add the rest of the programs in nodes/
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
