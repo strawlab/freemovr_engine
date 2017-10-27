@@ -18,6 +18,16 @@ Discussion
 For questions or discussion, please use `the "freemovr" Google
 Group <https://groups.google.com/forum/#!forum/freemovr>`_.
 
+Installation
+============
+
+For installation, we recommend using 
+`our Ansible playbooks <https://github.com/strawlab/strawlab-ansible-roles.git>`_.
+In particular, the "ros-kinetic-freemovr-engine" role or the "ros-kinetic-freemovr"
+role install either the FreemoVR engine alone or a 
+`full FreemoVR system, including flydra <https://strawlab.org/freemovr>`_ (on
+Ubuntu 16.04 with ROS Kinetic).
+
 License
 =======
 
