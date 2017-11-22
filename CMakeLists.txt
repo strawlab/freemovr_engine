@@ -62,6 +62,26 @@ TARGET_LINK_LIBRARIES(DisplaySurfaceArbitraryGeometry ${OSG_LIBS})
 
 SET(CYTHON_EXECUTABLE cython) # hack. Should use CMAKE_FIND_PROGRAM, but that ignores $PATH.
 
+# Add display_server
+ADD_CUSTOM_COMMAND(OUTPUT display_server.cpp
+COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
+DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
+
+
+# build non-ROS programs  ----------
+ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
+
+# Generate .pyx -> .cpp
+ADD_CUSTOM_COMMAND(OUTPUT PyDisplaySurfaceArbitraryGeometry.cpp
+COMMAND ${CYTHON_EXECUTABLE} --cplus -o PyDisplaySurfaceArbitraryGeometry.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/PyDisplaySurfaceArbitraryGeometry.pyx"
+DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/PyDisplaySurfaceArbitraryGeometry.pyx")
+
+# Compile the generated .cpp
+ADD_LIBRARY(PyDisplaySurfaceArbitraryGeometry SHARED PyDisplaySurfaceArbitraryGeometry.cpp)
+TARGET_LINK_LIBRARIES(PyDisplaySurfaceArbitraryGeometry ${OSG_LIBS} DisplaySurfaceArbitraryGeometry)
+set_target_properties(PyDisplaySurfaceArbitraryGeometry PROPERTIES PREFIX "")
+
+
 IF(BUILD_WITH_ROS)
   MESSAGE("Building With ROS")
   find_package(catkin REQUIRED message_generation sensor_msgs geometry_msgs roscpp)
@@ -183,22 +203,3 @@ ELSE(BUILD_WITH_ROS)
     ${OSG_COMPUTE_LIBRARIES})
 
 ENDIF(BUILD_WITH_ROS)
-
-# Add display_server
-ADD_CUSTOM_COMMAND(OUTPUT display_server.cpp
-  COMMAND ${CYTHON_EXECUTABLE} --embed --cplus -o display_server.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/display_server.pyx")
-
-
-# build non-ROS programs  ----------
-ADD_LIBRARY(noaffinity SHARED src/noaffinity.c)
-
-# Generate .pyx -> .cpp
-ADD_CUSTOM_COMMAND(OUTPUT PyDisplaySurfaceArbitraryGeometry.cpp
-  COMMAND ${CYTHON_EXECUTABLE} --cplus -o PyDisplaySurfaceArbitraryGeometry.cpp "${CMAKE_CURRENT_SOURCE_DIR}/src/PyDisplaySurfaceArbitraryGeometry.pyx"
-  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/PyDisplaySurfaceArbitraryGeometry.pyx")
-
-# Compile the generated .cpp
-ADD_LIBRARY(PyDisplaySurfaceArbitraryGeometry SHARED PyDisplaySurfaceArbitraryGeometry.cpp)
-TARGET_LINK_LIBRARIES(PyDisplaySurfaceArbitraryGeometry ${OSG_LIBS} DisplaySurfaceArbitraryGeometry)
-set_target_properties(PyDisplaySurfaceArbitraryGeometry PROPERTIES PREFIX "")
