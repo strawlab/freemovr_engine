@@ -4,7 +4,10 @@ project(freemovr_engine)
 SET(BUILD_WITH_ROS ON CACHE BOOL "Building with ROS")
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/freemovr_engine/cmake/Modules/")
-SET(CUDA_TOOLKIT_ROOT "/usr/local/cuda")
+
+# We detect presence of CUDA and osgCompute libs and compile with or without them. To enable CUDA
+# on ubuntu 16.04, enable strawlab deb repo and then install `osgcompute` deb package.
+SET(CUDA_TOOLKIT_ROOT "/usr")
 
 FIND_PACKAGE(OpenThreads)
 FIND_PACKAGE(osg)
