@@ -10,7 +10,7 @@ FreemoVR - virtual reality engine
 FreemoVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
 `OpenSceneGraph <http://www.openscenegraph.org>`_. It manages
 multi-computer realtime tracking and display with the goal of being
-useful for scientific studies of vision.
+useful for scientific studies of vision and behavior.
 
 Discussion
 ==========
@@ -27,6 +27,12 @@ In particular, the "ros-kinetic-freemovr-engine" role or the "ros-kinetic-freemo
 role install either the FreemoVR engine alone or a
 `full FreemoVR system, including flydra <https://strawlab.org/freemovr>`_ (on
 Ubuntu 16.04 with ROS Kinetic).
+
+CUDA support
+============
+
+Stimulus plugins that make use of CUDA can be used if the osgcompute package is
+present at compilation time.
 
 License
 =======
