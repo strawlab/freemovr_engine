@@ -38,6 +38,7 @@
   <run_depend>python-ode</run_depend>
   <run_depend>python-scipy</run_depend>
   <run_depend>python-pymvg</run_depend>
+  <run_depend>python-openexr</run_depend>
 
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lfreemovr_engine"/>
