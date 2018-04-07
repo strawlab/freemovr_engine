@@ -179,13 +179,18 @@ def _get_verts_from_viewport(viewport):
     return verts
 
 def get_workspace_share_dir():
-    """get the location of the 'share' directory for this ROS invocation"""
+    """get the location of CATKIN_PACKAGE_SHARE_DESTINATION"""
     # is there no rospy API to do this?
     cmake_prefix_path = os.environ['CMAKE_PREFIX_PATH']
     first_cmake_path = cmake_prefix_path.split(os.pathsep)[0]
     split_first = os.path.split(first_cmake_path)
     if split_first[-1] == 'devel':
-        share_loc = os.path.join(*split_first[:-1],'install','share')
+        look_in_src_dir = True
+        if look_in_src_dir:
+            # in devel space. dig in ../src for these files
+            share_loc = os.path.join(*split_first[:-1],'src')
+        else:
+            share_loc = os.path.join(*split_first[:-1],'install','share')
     else:
         share_loc = os.path.join(first_cmake_path,'share')
     return share_loc
