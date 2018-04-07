@@ -12,13 +12,11 @@
 
 #include "freemovr_engine/freemovr_assert.h"
 
-ResourceLoader::ResourceLoader()
-{
-}
+ResourceLoader::ResourceLoader(std::string package_share_dir) : _package_share_dir(package_share_dir) {}
 
 std::string ResourceLoader::get_plugin_shader_path(std::string name) const
 {
-    Poco::Path path(_freemovr_base_path);
+    Poco::Path path(_package_share_dir);
     path.makeDirectory();
     path.append("src").append("shaders").append(name);
     return path.absolute().toString();
@@ -26,7 +24,7 @@ std::string ResourceLoader::get_plugin_shader_path(std::string name) const
 
 std::string ResourceLoader::get_plugin_data_path(std::string name) const
 {
-    Poco::Path path(_freemovr_base_path);
+    Poco::Path path(_package_share_dir);
     path.makeDirectory();
     path.append("data").append(name);
     return path.absolute().toString();
@@ -97,6 +95,3 @@ void ResourceLoader::load_shader_source(osg::Shader* shader, std::string name) c
     shader->loadShaderSourceFromFile(path.absolute().toString());
 }
 
-void ResourceLoader::set_freemovr_base_path(std::string path) {
-  _freemovr_base_path = path;
-}

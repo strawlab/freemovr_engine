@@ -21,6 +21,8 @@
 class Stimulus3DDemo: public StimulusInterface
 {
 public:
+Stimulus3DDemo(std::string package_share_dir) : StimulusInterface(package_share_dir) {}
+
 std::string name() const {
 	return "Stimulus3DDemo";
 }
@@ -125,9 +127,10 @@ private:
 	osg::ref_ptr<osg::Group> _virtual_world;
 };
 
+MAKE_STIMULUS_INTERFACE_LOADER(Stimulus3DDemo);
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(Stimulus3DDemo)
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(Stimulus3DDemoLoader)
 POCO_END_MANIFEST
 
 void pocoInitializeLibrary()

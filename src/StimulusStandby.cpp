@@ -16,7 +16,7 @@
 class StimulusStandby: public StimulusInterface
 {
 public:
-StimulusStandby() {
+StimulusStandby(std::string package_share_dir) : StimulusInterface(package_share_dir) {
 }
 
 std::string name() const {
@@ -65,8 +65,10 @@ private:
 	osg::ref_ptr<osg::Group> _hud;
 };
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(StimulusStandby)
+MAKE_STIMULUS_INTERFACE_LOADER(StimulusStandby);
+
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(StimulusStandbyLoader)
 POCO_END_MANIFEST
 
 // optional set up and clean up functions

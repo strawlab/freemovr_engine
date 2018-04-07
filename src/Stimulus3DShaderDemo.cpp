@@ -24,7 +24,7 @@
 class Stimulus3DShaderDemo: public StimulusInterface
 {
 public:
-    Stimulus3DShaderDemo();
+    Stimulus3DShaderDemo(std::string p);
 
     std::string name() const { return "Stimulus3DShaderDemo"; }
     void post_init(bool);
@@ -47,7 +47,8 @@ private:
 };
 
 
-Stimulus3DShaderDemo::Stimulus3DShaderDemo() :
+Stimulus3DShaderDemo::Stimulus3DShaderDemo(std::string p) :
+    StimulusInterface(p),
     _example_param(0.5),
     _mem("Stimulus3DDemo", 1024, Poco::SharedMemory::AccessMode(Poco::SharedMemory::AM_WRITE | Poco::SharedMemory::AM_READ)),
     _memlock("Stimulus3DShaderDemo")
@@ -138,8 +139,10 @@ void Stimulus3DShaderDemo::update( const double& time, const osg::Vec3& observer
     //std::cerr << *_mem.begin() << "\n";
 }
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(Stimulus3DShaderDemo)
+MAKE_STIMULUS_INTERFACE_LOADER(Stimulus3DShaderDemo);
+
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(Stimulus3DShaderDemoLoader)
 POCO_END_MANIFEST
 
 void pocoInitializeLibrary()

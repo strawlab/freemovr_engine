@@ -13,7 +13,7 @@
 
 class ProjectCubemapToGeometryPass: protected ResourceLoader {
 public:
-    ProjectCubemapToGeometryPass(std::string freemovr_basepath,
+    ProjectCubemapToGeometryPass(std::string package_share_dir,
                                  osg::TextureCubeMap* texture,
                                  osg::Uniform::Callback* observer_position_cb,
                                  DisplaySurfaceGeometry* geometry_parameters,

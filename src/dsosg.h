@@ -30,7 +30,7 @@ namespace dsosg{
         double distance;
     } TrackballManipulatorState;
 
-    typedef Poco::ClassLoader<StimulusInterface> StimulusLoader;
+    typedef Poco::ClassLoader<StimulusInterfaceLoader> StimulusLoader;
 
     class ObserverPositionCallback: public osg::Uniform::Callback {
     public:
@@ -46,7 +46,8 @@ namespace dsosg{
 
     class DSOSG {
     public:
-        DSOSG(std::string libdir, std::string freemovr_basepath, std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
+        DSOSG(std::string libdir, std::string freemovr_basepath, std::string workspace_share_dir,
+              std::string mode, float observer_radius, std::string config_fname, bool two_pass=false,
               bool show_geom_coords=false, bool tethered_mode=false, bool slave=false, unsigned int cubemap_resolution=512);
 
         std::vector<std::string> get_stimulus_plugin_names();

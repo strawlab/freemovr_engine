@@ -52,7 +52,7 @@ osg::ref_ptr<osg::Geometry> create_HUD_geom(unsigned int width, unsigned int hei
 class Stimulus2DBlit: public StimulusInterface
 {
 public:
-Stimulus2DBlit() : sprite_anchor("center") {
+Stimulus2DBlit(std::string package_share_dir) : StimulusInterface(package_share_dir), sprite_anchor("center") {
     rootg = new osg::Group;
     sprite_pat = new osg::PositionAttitudeTransform;
     rootg->addChild(sprite_pat);
@@ -264,9 +264,10 @@ private:
 
 };
 
+MAKE_STIMULUS_INTERFACE_LOADER(Stimulus2DBlit);
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(Stimulus2DBlit)
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(Stimulus2DBlitLoader)
 POCO_END_MANIFEST
 
 // optional set up and clean up functions

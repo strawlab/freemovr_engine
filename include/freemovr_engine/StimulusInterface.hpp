@@ -11,7 +11,7 @@
 class StimulusInterface: public ResourceLoader
 {
  public:
-  StimulusInterface();
+  StimulusInterface(std::string package_share_dir);
   virtual ~StimulusInterface();
 
   // Initialization. Called after the plugin path has been set. Plugins can call get_plugin_shader_dir
@@ -58,5 +58,21 @@ class StimulusInterface: public ResourceLoader
 
   osg::ref_ptr<osg::PositionAttitudeTransform> _skybox_pat;
 };
+
+class StimulusInterfaceLoader {
+public:
+  StimulusInterfaceLoader();
+  virtual ~StimulusInterfaceLoader();
+  virtual StimulusInterface* create_stimulus_interface(std::string plugin_share_dir);
+};
+
+#define MAKE_STIMULUS_INTERFACE_LOADER(x)				\
+  class x##Loader : public StimulusInterfaceLoader {			\
+  public:								\
+  x##Loader() {}							\
+  StimulusInterface* create_stimulus_interface(std::string plugin_dir) { \
+    return new x(plugin_dir);						\
+  }									\
+  };
 
 #endif // StimulusInterface.hpp

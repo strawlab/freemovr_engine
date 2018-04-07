@@ -95,6 +95,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
     cdef cppclass DSOSG:
         DSOSG(std_string libdir,
               std_string datadir,
+              std_string workspace_share_dir,
               std_string mode,
               float observer_radius,
               std_string config_data_dir,
@@ -177,30 +178,33 @@ def _get_verts_from_viewport(viewport):
             raise ValueError('expected list of tuples')
     return verts
 
+def get_workspace_share_dir():
+    """get the location of the 'share' directory for this ROS invocation"""
+    # is there no rospy API to do this?
+    cmake_prefix_path = os.environ['CMAKE_PREFIX_PATH']
+    first_cmake_path = cmake_prefix_path.split(os.pathsep)[0]
+    split_first = os.path.split(first_cmake_path)
+    if split_first[-1] == 'devel':
+        share_loc = os.path.join(*split_first[:-1],'install','share')
+    else:
+        share_loc = os.path.join(first_cmake_path,'share')
+    return share_loc
+
 def fixup_config( orig_config_dict ):
-    """fixup 'stimulus_plugins' list to lookup ROS package names
+    """fixup config to lookup ROS package names
 
     For example, this part of a config file::
 
-        stimulus_plugins:
-            - path: $(find my_ros_package)/lib
-              name: MyStimulus
+        p2g: $(find my_ros_package)/data/p2g.exr
 
     will be replaced with::
 
-        stimulus_plugins:
-            - path: /some/path/to_my_ros_package/lib
-              name: MyStimulus
+        p2g: /some/path/to_my_ros_package/data/p2g.exr
 
     This allows specifying stimuli relative to the ROS install rather
     than an absolute path. The syntax should be identical to the
     substitutions done in ROS launch files. (If it's not, it's a bug).
     """
-    def fixup( plugin_dict ):
-        pp = plugin_dict['path']
-        pp2 = rosmsg2json.fixup_path( pp )
-        plugin_dict['path'] = pp2
-        return plugin_dict
     config_dict = orig_config_dict.copy()
     if 'p2c' in config_dict:
         config_dict['p2c'] = rosmsg2json.fixup_path( config_dict['p2c'] )
@@ -209,9 +213,7 @@ def fixup_config( orig_config_dict ):
     if 'geom' in config_dict and 'filename' in config_dict['geom']:
         config_dict['geom']['filename'] = rosmsg2json.fixup_path( config_dict['geom']['filename'] )
 
-    orig_plugins = config_dict.get('stimulus_plugins',[])
-    plugins = [ fixup(p) for p in orig_plugins ]
-    config_dict['stimulus_plugins'] = plugins
+    config_dict['stimulus_plugins'] = config_dict.get('stimulus_plugins',[])
     config_file = None
     with tempfile.NamedTemporaryFile(suffix='.json',delete=False) as f:
         config_file = f.name
@@ -429,9 +431,9 @@ cdef class MyNode:
             assert plugin_lib_dir.endswith('/install/lib')
             # install mode
             plugin_data_dir = os.path.abspath(os.path.join(plugin_lib_dir,'..','share',ros_package_name))
-        print 'plugin_data_dir',plugin_data_dir
         self.dsosg = new DSOSG(std_string(plugin_lib_dir),
                                std_string(plugin_data_dir),
+                               std_string(get_workspace_share_dir()),
                                std_string(args.mode),
                                args.observer_radius,
                                std_string(config_file),

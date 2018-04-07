@@ -29,7 +29,7 @@
 class StimulusLatencyTimestamp: public StimulusInterface
 {
 public:
-    StimulusLatencyTimestamp() { _rootg = new osg::Group; };
+    StimulusLatencyTimestamp(std::string p) : StimulusInterface(p) { _rootg = new osg::Group; };
 
     void post_init(bool);
     void resized(int width,int height);
@@ -112,8 +112,10 @@ void StimulusLatencyTimestamp::post_init(bool) {
 
 }
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(StimulusLatencyTimestamp)
+MAKE_STIMULUS_INTERFACE_LOADER(StimulusLatencyTimestamp);
+
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(StimulusLatencyTimestampLoader)
 POCO_END_MANIFEST
 
 void pocoInitializeLibrary()

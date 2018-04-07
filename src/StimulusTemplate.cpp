@@ -14,7 +14,7 @@
 class StimulusTemplate: public StimulusInterface
 {
 public:
-StimulusTemplate() {
+    StimulusTemplate(std::string p) : StimulusInterface(p) {
 }
 
 std::string name() const {
@@ -34,8 +34,10 @@ void receive_json_message(const std::string& topic_name, const std::string& json
 }
 };
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(StimulusTemplate)
+MAKE_STIMULUS_INTERFACE_LOADER(StimulusTemplate);
+
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(StimulusTemplateLoader)
 POCO_END_MANIFEST
 
 // optional set up and clean up functions

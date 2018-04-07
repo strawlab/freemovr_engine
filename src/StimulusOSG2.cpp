@@ -246,8 +246,9 @@ class StimulusOSG2: public StimulusInterface
 {
 public:
 
-StimulusOSG2()
-    : _bg_r(0.5)
+StimulusOSG2(std::string p)
+    : StimulusInterface(p)
+    , _bg_r(0.5)
     , _bg_g(0.5)
     , _bg_b(0.5)
     , _bg_a(1.0)
@@ -962,9 +963,10 @@ private:
     ModelDefinitions    _models;
 };
 
+MAKE_STIMULUS_INTERFACE_LOADER(StimulusOSG2);
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(StimulusOSG2)
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(StimulusOSG2Loader)
 POCO_END_MANIFEST
 
 void pocoInitializeLibrary()
