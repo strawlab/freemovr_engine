@@ -285,10 +285,6 @@ cdef class MyNode:
             help='JSON configuration file describing the setup. '\
                  'If specified configuration is taken from here, otherwise config is taken from '\
                  'ROS parameters under this node')
-        parser.add_argument('--stimulus', type=str, default=None,
-            help="The stimulus to start in (overrides any latched ROS topic). "\
-                 "This can be a loaded stimulus name 'StimulusFoo', or a full "\
-                 "path '/path/to/libStimulusFoo.so'")
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
@@ -350,17 +346,6 @@ cdef class MyNode:
 
             config_dict, config_file = fixup_config( config_dict )
 
-        if args.stimulus and os.path.isfile(args.stimulus):
-            rospy.loginfo("adding stimulus plugin %s" % args.stimulus)
-            dirname,stimname = os.path.split(os.path.abspath(args.stimulus))
-            stimname = os.path.splitext(stimname)[0].replace('lib','')
-            config_dict['stimulus_plugins'].append(
-                dict(path=dirname,
-                     name=stimname))
-            args.stimulus = stimname
-
-            config_dict, config_file = fixup_config( config_dict )
-
         self._config_dict = config_dict
         rospy.loginfo("config_file = %s" % config_file)
 
@@ -411,11 +396,7 @@ cdef class MyNode:
                     rospy.loginfo('got latched simulus mode %s' % self._mode_change)
                     break
         with self._mode_lock:
-            if args.stimulus is not None:
-                self._mode_change = args.stimulus
-            elif self._mode_change is None:
-                self._mode_change = 'Stimulus3DDemo'
-
+            if self._mode_change is None:
                 self._mode_change = 'Stimulus3DDemo'
 
         rospy.loginfo('selecting initial simulus mode %s' % self._mode_change)
