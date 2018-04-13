@@ -155,7 +155,8 @@ class StimulusOSG: public StimulusInterface
 {
 public:
 
-StimulusOSG() :
+StimulusOSG(std::string p) :
+   StimulusInterface(p),
     _bg_r(0.5), _bg_g(0.5), _bg_b(0.5), _bg_a(1.0),
     model_scale(1.0,1.0,1.0),
     model_position(0.,0.,0.) {
@@ -448,9 +449,10 @@ private:
     AnimController _anim;
 };
 
+MAKE_STIMULUS_INTERFACE_LOADER(StimulusOSG);
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(StimulusOSG)
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(StimulusOSGLoader)
 POCO_END_MANIFEST
 
 void pocoInitializeLibrary()

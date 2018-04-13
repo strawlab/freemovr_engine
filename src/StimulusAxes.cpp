@@ -21,6 +21,8 @@
 class StimulusAxes: public StimulusInterface
 {
 public:
+StimulusAxes(std::string p) : StimulusInterface(p) {}
+
 std::string name() const {
 	return "StimulusAxes";
 }
@@ -98,9 +100,10 @@ private:
     osg::ref_ptr<osg::Box> _plane_z;
 };
 
+MAKE_STIMULUS_INTERFACE_LOADER(StimulusAxes);
 
-POCO_BEGIN_MANIFEST(StimulusInterface)
-POCO_EXPORT_CLASS(StimulusAxes)
+POCO_BEGIN_MANIFEST(StimulusInterfaceLoader)
+POCO_EXPORT_CLASS(StimulusAxesLoader)
 POCO_END_MANIFEST
 
 void pocoInitializeLibrary()

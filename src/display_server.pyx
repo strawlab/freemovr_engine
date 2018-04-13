@@ -95,6 +95,7 @@ cdef extern from "dsosg.h" namespace "dsosg":
     cdef cppclass DSOSG:
         DSOSG(std_string libdir,
               std_string datadir,
+              std_string workspace_share_dir,
               std_string mode,
               float observer_radius,
               std_string config_data_dir,
@@ -177,30 +178,38 @@ def _get_verts_from_viewport(viewport):
             raise ValueError('expected list of tuples')
     return verts
 
+def get_workspace_share_dir():
+    """get the location of CATKIN_PACKAGE_SHARE_DESTINATION"""
+    # is there no rospy API to do this?
+    cmake_prefix_path = os.environ['CMAKE_PREFIX_PATH']
+    first_cmake_path = cmake_prefix_path.split(os.pathsep)[0]
+    split_first = os.path.split(first_cmake_path)
+    if split_first[-1] == 'devel':
+        look_in_src_dir = True
+        if look_in_src_dir:
+            # in devel space. dig in ../src for these files
+            share_loc = os.path.join(*split_first[:-1],'src')
+        else:
+            share_loc = os.path.join(*split_first[:-1],'install','share')
+    else:
+        share_loc = os.path.join(first_cmake_path,'share')
+    return share_loc
+
 def fixup_config( orig_config_dict ):
-    """fixup 'stimulus_plugins' list to lookup ROS package names
+    """fixup config to lookup ROS package names
 
     For example, this part of a config file::
 
-        stimulus_plugins:
-            - path: $(find my_ros_package)/lib
-              name: MyStimulus
+        p2g: $(find my_ros_package)/data/p2g.exr
 
     will be replaced with::
 
-        stimulus_plugins:
-            - path: /some/path/to_my_ros_package/lib
-              name: MyStimulus
+        p2g: /some/path/to_my_ros_package/data/p2g.exr
 
     This allows specifying stimuli relative to the ROS install rather
     than an absolute path. The syntax should be identical to the
     substitutions done in ROS launch files. (If it's not, it's a bug).
     """
-    def fixup( plugin_dict ):
-        pp = plugin_dict['path']
-        pp2 = rosmsg2json.fixup_path( pp )
-        plugin_dict['path'] = pp2
-        return plugin_dict
     config_dict = orig_config_dict.copy()
     if 'p2c' in config_dict:
         config_dict['p2c'] = rosmsg2json.fixup_path( config_dict['p2c'] )
@@ -209,9 +218,7 @@ def fixup_config( orig_config_dict ):
     if 'geom' in config_dict and 'filename' in config_dict['geom']:
         config_dict['geom']['filename'] = rosmsg2json.fixup_path( config_dict['geom']['filename'] )
 
-    orig_plugins = config_dict.get('stimulus_plugins',[])
-    plugins = [ fixup(p) for p in orig_plugins ]
-    config_dict['stimulus_plugins'] = plugins
+    config_dict['stimulus_plugins'] = config_dict.get('stimulus_plugins',[])
     config_file = None
     with tempfile.NamedTemporaryFile(suffix='.json',delete=False) as f:
         config_file = f.name
@@ -283,10 +290,6 @@ cdef class MyNode:
             help='JSON configuration file describing the setup. '\
                  'If specified configuration is taken from here, otherwise config is taken from '\
                  'ROS parameters under this node')
-        parser.add_argument('--stimulus', type=str, default=None,
-            help="The stimulus to start in (overrides any latched ROS topic). "\
-                 "This can be a loaded stimulus name 'StimulusFoo', or a full "\
-                 "path '/path/to/libStimulusFoo.so'")
 
         # use argparse, but only after ROS did its thing
         argv = rospy.myargv()
@@ -348,17 +351,6 @@ cdef class MyNode:
 
             config_dict, config_file = fixup_config( config_dict )
 
-        if args.stimulus and os.path.isfile(args.stimulus):
-            rospy.loginfo("adding stimulus plugin %s" % args.stimulus)
-            dirname,stimname = os.path.split(os.path.abspath(args.stimulus))
-            stimname = os.path.splitext(stimname)[0].replace('lib','')
-            config_dict['stimulus_plugins'].append(
-                dict(path=dirname,
-                     name=stimname))
-            args.stimulus = stimname
-
-            config_dict, config_file = fixup_config( config_dict )
-
         self._config_dict = config_dict
         rospy.loginfo("config_file = %s" % config_file)
 
@@ -409,11 +401,7 @@ cdef class MyNode:
                     rospy.loginfo('got latched simulus mode %s' % self._mode_change)
                     break
         with self._mode_lock:
-            if args.stimulus is not None:
-                self._mode_change = args.stimulus
-            elif self._mode_change is None:
-                self._mode_change = 'Stimulus3DDemo'
-
+            if self._mode_change is None:
                 self._mode_change = 'Stimulus3DDemo'
 
         rospy.loginfo('selecting initial simulus mode %s' % self._mode_change)
@@ -429,9 +417,9 @@ cdef class MyNode:
             assert plugin_lib_dir.endswith('/install/lib')
             # install mode
             plugin_data_dir = os.path.abspath(os.path.join(plugin_lib_dir,'..','share',ros_package_name))
-        print 'plugin_data_dir',plugin_data_dir
         self.dsosg = new DSOSG(std_string(plugin_lib_dir),
                                std_string(plugin_data_dir),
+                               std_string(get_workspace_share_dir()),
                                std_string(args.mode),
                                args.observer_radius,
                                std_string(config_file),

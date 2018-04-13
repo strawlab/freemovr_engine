@@ -23,7 +23,11 @@
 
 #include <stdexcept>
 
-StimulusInterface::StimulusInterface() :  _skybox_pat(NULL)
+StimulusInterfaceLoader::StimulusInterfaceLoader() {}
+StimulusInterfaceLoader::~StimulusInterfaceLoader() {}
+StimulusInterface* StimulusInterfaceLoader::create_stimulus_interface(std::string plugin_share_dir) {return NULL;}
+
+StimulusInterface::StimulusInterface(std::string package_share_dir) :  _skybox_pat(NULL), ResourceLoader(package_share_dir)
 {
 }
 
@@ -47,7 +51,7 @@ void StimulusInterface::update( const double& time, const osg::Vec3& observer_po
 }
 
 void StimulusInterface::add_default_skybox(osg::ref_ptr<osg::Group> top) {
-  Poco::Path base_path(_freemovr_base_path);
+  Poco::Path base_path(_package_share_dir);
 
   base_path.makeDirectory();
   base_path.pushDirectory("data");
@@ -119,7 +123,7 @@ void StimulusInterface::add_skybox(osg::ref_ptr<osg::Group> top, std::string bas
       ShowCubemapProgram->addShader( ShowCubemapFragObj );
       ShowCubemapProgram->addShader( ShowCubemapVertObj );
 
-          Poco::Path shader_path = Poco::Path(_freemovr_base_path).append("src").append("shaders");
+          Poco::Path shader_path = Poco::Path(_package_share_dir).append("src").append("shaders");
           ShowCubemapVertObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.vert").toString());
           ShowCubemapFragObj->loadShaderSourceFromFile(Poco::Path(shader_path).append("CubeBackground.frag").toString());
 

@@ -23,18 +23,17 @@
 
 #include "freemovr_engine/freemovr_assert.h"
 
-ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string freemovr_basepath,
+ProjectCubemapToGeometryPass::ProjectCubemapToGeometryPass(std::string package_share_dir,
                                                              osg::TextureCubeMap* texture,
                                                              osg::Uniform::Callback* observer_position_cb,
                                                              DisplaySurfaceGeometry* geometry_parameters,
                                                              unsigned int tex_width,
                                                              unsigned int tex_height) :
+    ResourceLoader(package_share_dir),
     _geometry_parameters( geometry_parameters), _tex_width(tex_width), _tex_height(tex_height), _observer_position_callback(observer_position_cb)
  {
      freemovr_assert( texture!=NULL );
      freemovr_assert( geometry_parameters!=NULL );
-
-     set_freemovr_base_path(freemovr_basepath);
 
     _top = new osg::Group;
     _top->addDescription("ProjectCubemapToGeometryPass top node");

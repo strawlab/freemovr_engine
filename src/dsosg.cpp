@@ -290,7 +290,8 @@ osg::Group* ShowCubemap(osg::TextureCubeMap* texture, Poco::Path shader_path){
 }
 
 // constructor
-DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float observer_radius,
+DSOSG::DSOSG(std::string libdir, std::string datadir, std::string workspace_share_dir,
+             std::string mode, float observer_radius,
              std::string config_fname, bool two_pass, bool show_geom_coords,
              bool tethered_mode, bool slave, unsigned int cubemap_resolution) :
     _current_stimulus(NULL), _mode(mode),
@@ -334,21 +335,20 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
     _root->addChild( _hud_cam );
 
     std::string geom_filename;
-    std::vector<std::string> stimulus_plugin_paths;
+    std::vector<std::string> stimulus_plugin_packages;
     std::vector<std::string> stimulus_plugin_names;
 
     std::string config_data_dir = _config_file_path.parent().toString();
 
     // Add the freemovr_engine defaut stimulus plugins
-    Poco::Path default_plugin_path = libdir;
-    std::string default_lib_dir = default_plugin_path.toString();
+    std::string default_plugin_package = "freemovr_engine";
 
-    stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DDemo");
-    stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus3DShaderDemo");
-    stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("Stimulus2DBlit");
-    stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusStandby");
-    stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusOSG");
-    stimulus_plugin_paths.push_back(default_lib_dir); stimulus_plugin_names.push_back("StimulusOSG2");
+    stimulus_plugin_packages.push_back(default_plugin_package); stimulus_plugin_names.push_back("Stimulus3DDemo");
+    stimulus_plugin_packages.push_back(default_plugin_package); stimulus_plugin_names.push_back("Stimulus3DShaderDemo");
+    stimulus_plugin_packages.push_back(default_plugin_package); stimulus_plugin_names.push_back("Stimulus2DBlit");
+    stimulus_plugin_packages.push_back(default_plugin_package); stimulus_plugin_names.push_back("StimulusStandby");
+    stimulus_plugin_packages.push_back(default_plugin_package); stimulus_plugin_names.push_back("StimulusOSG");
+    stimulus_plugin_packages.push_back(default_plugin_package); stimulus_plugin_names.push_back("StimulusOSG2");
 
     if (!Poco::File(_config_file_path).exists()) {
         std::cerr << "configuration file " << _config_file_path.toString() << " does not exist." << std::endl;
@@ -371,28 +371,36 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
         exit(1);
     } else {
         for (unsigned int i=0; i<json_array_size(json_stimulus); i++) {
-            // TODO FIXME: make sure that JSON is valid ("path" and
+            // TODO FIXME: make sure that JSON is valid ("package" and
             // "name" keys exist) and fail nicely if not.
-            Poco::Path plugin_path = _config_file_path.parent().resolve(
-                                        Poco::Path(json_string_value (
-                                                    json_object_get (
-                                                    json_array_get (json_stimulus, i), "path"))));
+            freemovr_assert_msg( json_object_get( json_array_get(json_stimulus, i), "path")==NULL,
+                                 "stimulus_plugins config specified with 'path', but this should be updated to 'package'");
+            std::string plugin_package = json_string_value( json_object_get(
+                  json_array_get(json_stimulus, i), "package"));
             std::string plugin_name = json_string_value (json_object_get (json_array_get (json_stimulus, i), "name"));
-            stimulus_plugin_paths.push_back( plugin_path.toString() );
+            stimulus_plugin_packages.push_back( plugin_package );
             stimulus_plugin_names.push_back( plugin_name );
         }
     }
 
+    Poco::Path pkg_share_dir = workspace_share_dir;
+
+    // CATKIN_PACKAGE_LIB_DESTINATION
+    Poco::Path pkg_lib_dir = libdir;
+
     {
         // load the shared library for each plugin path
-        for (unsigned int i=0; i<stimulus_plugin_paths.size(); i++) {
+        for (unsigned int i=0; i<stimulus_plugin_packages.size(); i++) {
             std::string plugin_name = stimulus_plugin_names.at(i);
-            Poco::Path path_parent(stimulus_plugin_paths.at(i));
+            std::string plugin_package = stimulus_plugin_packages.at(i);
+
             Poco::Path path_leaf("lib" + plugin_name + Poco::SharedLibrary::suffix()); // append .dll or .so
 
-            Poco::Path path_lib = path_parent;
-            path_lib.append(path_leaf);
-            path_lib.makeAbsolute();
+            Poco::Path path_pkg_share = pkg_share_dir; // copy
+            path_pkg_share.append( plugin_package );
+
+            Poco::Path path_lib = pkg_lib_dir; // copy
+            path_lib.append( path_leaf );
             std::string lib_name = path_lib.toString();
 
             if (Poco::File(path_lib).exists()) {
@@ -405,7 +413,12 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
                 }
 
                 try {
-                    _stimulus_plugins[ plugin_name ] = _stimulus_loader.create(plugin_name);
+                    std::string loader_name = plugin_name + std::string("Loader");
+                    StimulusInterfaceLoader *loader = _stimulus_loader.create(loader_name);
+
+                    // CATKIN_PACKAGE_SHARE_DESTINATION
+                    std::string pkg_share_dir_str = path_pkg_share.toString();
+                    _stimulus_plugins[ plugin_name ] = loader->create_stimulus_interface(pkg_share_dir_str);
                 } catch (Poco::Exception& exc) {
                     std::cerr << "ERROR loading plugin from file " << lib_name << ": " << plugin_name << ": " << exc.displayText() << std::endl;
                     throw;
@@ -413,8 +426,6 @@ DSOSG::DSOSG(std::string libdir, std::string datadir, std::string mode, float ob
                     std::cerr << "ERROR loading plugin from file " << lib_name << ": " << plugin_name << std::endl;
                     throw;
                 }
-
-                _stimulus_plugins[ plugin_name ]->set_freemovr_base_path(_freemovr_basepath.toString());
 
                 try {
                     _stimulus_plugins[ plugin_name ]->post_init(slave);
