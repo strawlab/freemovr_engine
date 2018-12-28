@@ -113,7 +113,7 @@ def get_camera_for_boards(rows,width=0,height=0):
     for k in info_dict:
         info = info_dict[k]['info']
         for xys in info_dict[k]['corners']:
-            goodcorners.append( (xys,info) )
+            goodcorners.append( (np.array(xys,dtype=np.float32),info) )
 
         if mpl_debug:
             N = info.n_cols
