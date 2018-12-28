@@ -107,7 +107,6 @@ def get_camera_for_boards(rows,width=0,height=0):
         assert len(this_corners)==r['rows']*r['columns']
         this_list.append( this_corners )
 
-    boards = []
     goodcorners = []
     mpl_debug = False
     mpl_lines = []
@@ -136,7 +135,7 @@ def get_camera_for_boards(rows,width=0,height=0):
             plt.plot( this_xs, this_ys )
         plt.show()
 
-    cal = camera_calibration.calibrator.MonoCalibrator(boards)
+    cal = camera_calibration.calibrator.MonoCalibrator([])
     cal.size = (width,height)
     r = cal.cal_fromcorners(goodcorners)
     msg = cal.as_message()
