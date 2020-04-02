@@ -1,5 +1,6 @@
 # distutils: language=c++
 # distutils: sources = src/DisplaySurfaceGeometry.cpp src/DisplaySurfaceArbitraryGeometry.cpp
+# distutils: language_level: 2
 
 from libcpp.string cimport string
 import freemovr_engine
