@@ -5,7 +5,7 @@
 
 #include <osg/Geometry>
 
-#include <jansson.h>
+#include <jansson.h> // install on Ubuntu with `sudo apt install libjansson-dev`
 
 class GeomModel {
 public:

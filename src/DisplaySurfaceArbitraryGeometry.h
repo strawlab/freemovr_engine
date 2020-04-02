@@ -1,6 +1,6 @@
 #ifndef FREEMOVR_DISPLAY_SURFACE_ARBITRARY_GEOMETRY_H
 #define FREEMOVR_DISPLAY_SURFACE_ARBITRARY_GEOMETRY_H
-#include <osg/Group>
+#include <osg/Group> // install with "sudo apt install libopenscenegraph-dev"
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Array>
