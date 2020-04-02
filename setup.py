@@ -1,11 +1,18 @@
-## ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
+from setuptools import setup, find_packages
+from os import path
+from io import open
 
-from distutils.core import setup
-from catkin_pkg.python_setup import generate_distutils_setup
+here = path.abspath(path.dirname(__file__))
 
-# fetch values from package.xml
-setup_args = generate_distutils_setup(
-        packages=['freemovr_engine'],
-        package_dir={'': 'src'})
+# Get the long description from the README file
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
-setup(**setup_args)
+setup(
+    name='freemovr_engine',
+    description='the FreemoVR virtual reality engine',
+    long_description_content_type='text/x-rst',
+    url='https://github.com/strawlab/freemovr_engine',
+    package_dir={'': 'src'},
+    packages=find_packages(where='src'),
+)

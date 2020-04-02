@@ -8,3 +8,4 @@ msg_gen
 src/freemovr_engine/msg
 src/freemovr_engine/srv
 srv_gen
+src/freemovr_engine.egg-info
