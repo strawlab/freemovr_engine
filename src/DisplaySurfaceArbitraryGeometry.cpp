@@ -100,13 +100,13 @@ osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texc
   // copy the vertices and texcoords
   osg::Vec3Array* verts = new osg::Vec3Array;
   osg::Vec3Array *orig_verts = dynamic_cast<osg::Vec3Array*>(_geom_with_triangles->getVertexArray());
-  for (int i=0; i<orig_verts->size(); ++i) {
+  for (uint i=0; i<orig_verts->size(); ++i) {
     verts->push_back( orig_verts->at(i) );
   }
 
   osg::Vec2Array* tc = new osg::Vec2Array;
   osg::Vec2Array *orig_tcs = (osg::Vec2Array *)_geom_with_triangles->getTexCoordArray(0);
-  for (int i=0; i<orig_tcs->size(); ++i) {
+  for (uint i=0; i<orig_tcs->size(); ++i) {
     tc->push_back( orig_tcs->at(i) );
   }
 
@@ -206,7 +206,7 @@ int DisplaySurfaceArbitraryGeometry::invert_coord( double in0, double in1, doubl
   osgUtil::LineSegmentIntersector::Intersection& best_intersection = tmp;
   bool found_any = false;
 
-  for (int i=0; i<_lineseg_starters->size(); ++i) {
+  for (uint i=0; i<_lineseg_starters->size(); ++i) {
     osg::Vec3 a = in_vert + _lineseg_starters->at(i);
     osg::Vec3 b = in_vert - _lineseg_starters->at(i);
 
