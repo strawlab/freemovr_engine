@@ -1,3 +1,5 @@
+# distutils: language=c++
+
 from libcpp.string cimport string
 import freemovr_engine
 import sys

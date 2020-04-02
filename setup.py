@@ -1,6 +1,8 @@
 from setuptools import setup, find_packages
 from os import path
 from io import open
+import numpy
+from Cython.Build import cythonize
 
 here = path.abspath(path.dirname(__file__))
 
@@ -15,4 +17,8 @@ setup(
     url='https://github.com/strawlab/freemovr_engine',
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
+    ext_modules = cythonize("./src/PyDisplaySurfaceArbitraryGeometry.pyx",
+        compiler_directives={'language_level': 2},
+        ),
+    include_dirs=[numpy.get_include(),'/usr/include','/usr/include/x86_64-linux-gnu'],
 )
