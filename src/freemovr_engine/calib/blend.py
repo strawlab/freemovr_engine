@@ -190,7 +190,7 @@ class Blender:
 
         # sum over all distance gradients
         gradSum = np.zeros_like(pg)
-        for gradient in self._gradients.values():
+        for gradient in list(self._gradients.values()):
             gradSum += gradient
         if self._debug_exr:
             save_exr(

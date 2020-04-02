@@ -15,7 +15,7 @@ def rodrigues2matrix(params):
         rvec = np.array(params,dtype=np.float)
         rvec.shape = (1,3)
     except:
-        print 'bad rvec',rvec
+        print('bad rvec',rvec)
         raise
 
     theta = np.sqrt(np.sum(rvec**2))

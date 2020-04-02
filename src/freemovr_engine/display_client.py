@@ -8,14 +8,14 @@ import warnings
 import tempfile
 import time
 import os.path
-import xmlrpclib
+import xmlrpc.client
 
 import json
 import numpy as np
 import scipy.misc
 
 #re-export the fill polygon helper
-import fill_polygon as fp
+from . import fill_polygon as fp
 fill_polygon = fp.fill_polygon
 
 class DisplayServerProxy(object):
@@ -236,7 +236,7 @@ class DisplayServerProxy(object):
 
     def set_binary_exr(self, path):
         with open(path,'rb') as f:
-            b = xmlrpclib.Binary(f.read())
+            b = xmlrpc.client.Binary(f.read())
             rospy.set_param(self._server_node_name+"/p2g", b)
 
 class RenderFrameSlave:
