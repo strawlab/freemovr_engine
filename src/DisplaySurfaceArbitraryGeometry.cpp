@@ -10,6 +10,8 @@
 #include <osgUtil/LineSegmentIntersector>
 #include <osgUtil/IntersectionVisitor>
 
+using std::isnan;
+
 struct CollectTriangleOperator {
   CollectTriangleOperator():_gi(0) {}
   void setDisplaySurfaceArbitraryGeometry(freemovr_engine::DisplaySurfaceArbitraryGeometry* gi) { _gi = gi; }
