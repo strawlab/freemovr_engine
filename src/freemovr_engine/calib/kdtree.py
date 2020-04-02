@@ -158,7 +158,7 @@ class Node(object):
             dict(cls=self.__class__.__name__, data=repr(self.data))
 
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.data is not None
 
     def __eq__(self, other):
@@ -176,7 +176,7 @@ def require_axis(f):
         if None in (self.axis, self.sel_axis):
             raise ValueError('%(func_name) requires the node %(node)s '
                     'to have an axis and a sel_axis function' %
-                    dict(func_name=f.func_name, node=repr(self)))
+                    dict(func_name=f.__name__, node=repr(self)))
 
         return f(self, *args, **kwargs)
 
@@ -372,7 +372,7 @@ class KDNode(Node):
         Squared distance between the current Node
         and the given point
         """
-        r = range(self.dimensions)
+        r = list(range(self.dimensions))
         return sum([self.axis_dist(point, i) for i in r])
 
 
@@ -393,7 +393,7 @@ class KDNode(Node):
             best = self
 
         # sort the children, nearer one first
-        children = iter(sorted(self.children, key=lambda (c, p): c.axis_dist(point, self.axis)))
+        children = iter(sorted(self.children, key=lambda c_p: c_p[0].axis_dist(point, self.axis)))
 
 
         c1, _ = next(children, (None, None))
@@ -422,7 +422,7 @@ class KDNode(Node):
             best.append(self)
 
         # sort the children, nearer one first (is this really necessairy?)
-        children = sorted(self.children, key=lambda (c, p): c.dist(point))
+        children = sorted(self.children, key=lambda c_p1: c_p1[0].dist(point))
 
         for child, p in children:
             # check if child node needs to be recursed
@@ -456,7 +456,7 @@ class KDNode(Node):
         The child is selected by sel_func which is either min or max
         (or a different function with similar semantics). """
 
-        max_key = lambda (child, parent): child.data[axis]
+        max_key = lambda child_parent: child_parent[0].data[axis]
 
 
         # we don't know our parent, so we include None
@@ -554,14 +554,14 @@ def visualize(tree, max_level=100, node_width=10, left_padding=5):
     for node in level_order(tree, include_all=True):
 
         if in_level == 0:
-            print
-            print
-            print ' '*left_padding,
+            print()
+            print()
+            print(' '*left_padding, end=' ')
 
         width = int(max_width*node_width/per_level)
 
         node_str = (str(node.data) if node else '').center(width)
-        print node_str,
+        print(node_str, end=' ')
 
         in_level += 1
 
@@ -573,5 +573,5 @@ def visualize(tree, max_level=100, node_width=10, left_padding=5):
         if level > height:
             break
 
-    print
-    print
+    print()
+    print()

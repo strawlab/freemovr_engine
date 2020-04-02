@@ -54,7 +54,7 @@ GObject.type_register(CellRendererButton)
 
 if __name__ == "__main__":
     def _clicked(*args):
-        print "click", args
+        print("click", args)
         pass
 
     w = Gtk.Window(title="CellRendererText Example")

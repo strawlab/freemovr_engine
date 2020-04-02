@@ -39,7 +39,7 @@ def _fill_polygon(polygon, canvas, color=1):
     min_y = min(y for y,x in polygon)
     max_y = max(y for y,x in polygon)
     polygon = [(float(y),float(x)) for y,x in polygon]
-    for y in xrange(min_y, max_y+1):
+    for y in range(min_y, max_y+1):
         nodes = []
         j = -1
         for i,p in enumerate(polygon):

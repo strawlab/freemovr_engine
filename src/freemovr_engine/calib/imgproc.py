@@ -128,7 +128,7 @@ class DotBGFeatureDetector:
             #labelled objects, although for that is assumed by other parts of the
             #ndimage code.
             for n in range(1,maxlabel+1): #0 is code for unlabelled
-                row,col = map(int,scipy.ndimage.measurements.center_of_mass(diff,lbls,n))
+                row,col = list(map(int,scipy.ndimage.measurements.center_of_mass(diff,lbls,n)))
                 if exact_luminance:
                     blob = imarr[slcs[n-1]]
                     lum = blob.sum()/np.count_nonzero(blob)
@@ -194,7 +194,7 @@ class DotBGFeatureDetector:
         self._show_img(diff, "D")
 
         if self._debug:
-            print "diff max: %d (thresh: %d) %s" % (dmax, thresh, self._name)
+            print("diff max: %d (thresh: %d) %s" % (dmax, thresh, self._name))
 
         if dmax < thresh:
             features = []
@@ -214,7 +214,7 @@ class DotBGFeatureDetector:
 
         t2 = time.time()
         if self._benchmark:
-            print "%s (%s) = %.1fms" % (self._method, self._name, (t2-t1)*1000)
+            print("%s (%s) = %.1fms" % (self._method, self._name, (t2-t1)*1000))
 
         self._show_features_and_diff(feature_detector_vis_diff, dmax, features)
 
@@ -262,10 +262,10 @@ def add_crosshairs_to_nparr(arr, row, col, sz=-1, fill=255, chan=None):
             else:
                 arr[max(0,row-sz):min(row+sz,ri),max(0,col-sz):min(col+sz,ci),chan] = fill
     except:
-        print "-----"*5
-        print "ERROR PAINTING ARRAY",row,col,sz,fill,chan,arr.shape
+        print("-----"*5)
+        print("ERROR PAINTING ARRAY",row,col,sz,fill,chan,arr.shape)
         traceback.print_exc()
-        print "-----"*5
+        print("-----"*5)
 
 
 

@@ -39,10 +39,10 @@ class PointCloudTransformer(object):
 
     def save_as_json(self, fname):
         s = float(self._s)
-        t = map( float, [i for i in self._t[0]])
+        t = list(map( float, [i for i in self._t[0]]))
         R = []
         for row in self._R:
-            R.append( map( float, [i for i in row] ) )
+            R.append( list(map( float, [i for i in row] )) )
         result = {'s':s,
                   't':t,
                   'R':R}
@@ -100,7 +100,7 @@ class CylinderPointCloudTransformer(PointCloudTransformer):
         rotation_angle = simple_geom.angle_between_vectors((0, 0, 1), axis)
         rotation_quaternion = tf.transformations.quaternion_about_axis(rotation_angle, axis)
 
-        print "FIXING SCALE " * 5
+        print(("FIXING SCALE " * 5))
         self._s = 1.0/radius
 
         #rotate points

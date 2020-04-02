@@ -136,6 +136,6 @@ class StimulusOSG2Controller(object):
 if __name__ == "__main__":
     import sys
     n,a = parse_osg_file(sys.argv[1])
-    print "nodes:",",".join(n)
-    print "animations:",",".join(a)
+    print("nodes:",",".join(n))
+    print("animations:",",".join(a))
 

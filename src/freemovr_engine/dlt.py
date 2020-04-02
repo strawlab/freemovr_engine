@@ -1,5 +1,5 @@
 import numpy as np
-import ransac
+from . import ransac
 
 def calc_reprojection_error( pmat, X3d, x2d ):
     X3dht = np.hstack( (X3d, np.ones( (len(X3d),1))) ).T
@@ -83,7 +83,7 @@ def build_Bc(X3d,x2d):
 
     assert len(X3d)==len(x2d)
     if len(X3d) < 6:
-        print 'WARNING: 2 equations and 11 unknowns means we need 6 points!'
+        print('WARNING: 2 equations and 11 unknowns means we need 6 points!')
     for i in range(len(X3d)):
         X = X3d[i,0]
         Y = X3d[i,1]
@@ -213,9 +213,9 @@ def print_summary(results,n_pts=None):
             testpts = results['X3d'][:n_pts]
             test2d = camera.project_3d_to_pixel(testpts, distorted=True)
             for i in range(len(testpts)):
-                print '%s -> %s (expect %s, err %.1f)'%(testpts[i], test2d[i], results['x2d'][i], results['reprojection_error'][i])
+                print('%s -> %s (expect %s, err %.1f)'%(testpts[i], test2d[i], results['x2d'][i], results['reprojection_error'][i]))
         #print '%d inliers, camera center: %s'%(len(results['x2d']), results['center'])
-        print 'mean err: %.1f'%(results['mean_reprojection_error'],)
+        print('mean err: %.1f'%(results['mean_reprojection_error'],))
 
     finally:
         np.set_printoptions(**opts)

@@ -44,7 +44,7 @@ def gen_spiral_snake(w, h, sw, sh=None, startw=0, starth=0):
     w *= int((1.0/sw))
     h *= int((1.0/sh))
 
-    for dumb in xrange(w*h):
+    for dumb in range(w*h):
         if abs(x) == abs(y) and [dx,dy] != [1,0] or x>0 and y == 1-x:  
             dx, dy = -dy, dx            # corner, change direction
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         for _x,_y in gen:
             x.append(_x)
             y.append(_y)
-        print len(x)
+        print(len(x))
         plt.plot(x,y)
         #plt.xlim(-180,180)
         #plt.ylim(-50,50)
