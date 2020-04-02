@@ -1,9 +1,5 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 
-# ROS imports
-import roslib; roslib.load_manifest('freemovr_engine')
-import rosbag
-
 # standard Python stuff
 import json
 import numpy as np

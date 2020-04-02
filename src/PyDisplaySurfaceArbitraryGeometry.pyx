@@ -1,4 +1,5 @@
 # distutils: language=c++
+# distutils: sources = src/DisplaySurfaceGeometry.cpp src/DisplaySurfaceArbitraryGeometry.cpp
 
 from libcpp.string cimport string
 import freemovr_engine
