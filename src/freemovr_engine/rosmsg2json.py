@@ -123,7 +123,7 @@ def fixup_value( orig_value, keyname):
 
 def is_equal(ros_msg, dict_msg):
     ros_keys = set(ros_msg.__slots__)
-    dict_keys_real = dict_msg.keys()
+    dict_keys_real = list(dict_msg.keys())
     dict_keys = set([fixup_keyname(k) for k in dict_keys_real])
     a = ros_keys-dict_keys
     b = dict_keys-ros_keys

@@ -10,7 +10,7 @@ import dynamic_reconfigure.encoding
 import numpy as np
 import time
 import os.path
-import Queue
+import queue
 
 class CameraHandler(object):
     def __init__(self,topic_prefix='',debug=False,enable_dynamic_reconfigure=False):
@@ -30,7 +30,7 @@ class CameraHandler(object):
     def reconfigure(self, **params):
         if self.recon is not None:
             changed = {}
-            for k,v in params.items():
+            for k,v in list(params.items()):
                 if k in self.recon_cache:
                     if self.recon_cache[k] != v:
                         changed[k] = v
@@ -46,7 +46,7 @@ class CameraHandler(object):
                     while True:
                         try:
                             self.im_queue.get_nowait()
-                        except Queue.Empty:
+                        except queue.Empty:
                             break
 
     def set_im_queue(self,q):
@@ -57,16 +57,16 @@ class CameraHandler(object):
             return
         try:
             if self.debug:
-                print "%s got image: %f" % (self.topic_prefix, msg.header.stamp.to_sec())
+                print("%s got image: %f" % (self.topic_prefix, msg.header.stamp.to_sec()))
             self.im_queue.put_nowait((self.topic_prefix,msg))
-        except Queue.Full:
+        except queue.Full:
             if self.debug:
-                print self.topic_prefix,"full"
+                print(self.topic_prefix,"full")
 
 class _Runner(object):
     def __init__(self,cam_handlers,ros_latency=0.2,queue_depth=20):
         self.cam_handlers = cam_handlers
-        self.im_queue = Queue.Queue(len(cam_handlers)*queue_depth)
+        self.im_queue = queue.Queue(len(cam_handlers)*queue_depth)
         for ch in self.cam_handlers:
             ch.set_im_queue(self.im_queue)
         self.ros_latency = ros_latency
@@ -104,12 +104,12 @@ class _Runner(object):
         while 1:
             try:
                 q.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 break
 
     def _is_done(self,rdict,n_per_camera,verbose=False):
         done=True
-        for topic_prefix in rdict.keys():
+        for topic_prefix in list(rdict.keys()):
             if verbose:
                 rospy.loginfo('  _is_done() has %d frames for %r'%(len(rdict[topic_prefix]), topic_prefix))
             if len(rdict[topic_prefix]) < n_per_camera:
@@ -135,7 +135,7 @@ class SimultaneousCameraRunner(_Runner):
         while not self._is_done(self._result,n_per_camera,verbose=verbose):
             try:
                 topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
-            except Queue.Empty:
+            except queue.Empty:
                 continue
             t_image = msg.header.stamp.to_sec()
             if t_image > t_latest:
@@ -163,7 +163,7 @@ class SequentialCameraRunner(_Runner):
         while not self._is_done(self._result,n_per_camera,verbose=verbose):
             try:
                 topic_prefix, msg = self.im_queue.get(1,10.0) # block, 10 second timeout
-            except Queue.Empty:
+            except queue.Empty:
                 continue
 
             t_image = msg.header.stamp.to_sec()

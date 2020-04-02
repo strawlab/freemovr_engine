@@ -1159,7 +1159,7 @@ class UI(object):
                     #print 'using normal camera'
                     camera = c1
                 else:
-                    print 'using flipped camera'
+                    print('using flipped camera')
                     camera = c2
             elif 1:
                 farr = self.geom.compute_for_camera_view( c1,
@@ -1171,7 +1171,7 @@ class UI(object):
                 good = ~np.isnan( u )
                 npix=np.sum( np.nonzero( good ) )
                 if npix==0:
-                    print 'using flipped camera, otherwise npix = 0'
+                    print('using flipped camera, otherwise npix = 0')
                     camera = c1.get_flipped_camera()
                 else:
                     camera = c1
@@ -1218,7 +1218,7 @@ class UI(object):
                 good = ~np.isnan( u )
                 npix=np.sum( np.nonzero( good ) )
                 if npix==0:
-                    print 'using flipped camera, otherwise npix = 0'
+                    print('using flipped camera, otherwise npix = 0')
                     camera = c1.get_flipped_camera()
                 else:
                     camera = c1
@@ -1269,8 +1269,8 @@ class UI(object):
 
             u = farr[:,:,0]
             good = ~np.isnan( u )
-            print 'showing beachball for %r'%row[VS_VDISP]
-            print '  npix0',np.sum( np.nonzero( good ) )
+            print('showing beachball for %r'%row[VS_VDISP])
+            print('  npix0',np.sum( np.nonzero( good ) ))
 
             arr2 = simple_geom.tcs_to_beachball(farr)
 
@@ -1283,10 +1283,10 @@ class UI(object):
 
             arr3 = maskarr[:,:,np.newaxis]*arr2
 
-            print '  npix1',np.sum(np.nonzero(arr2))
+            print('  npix1',np.sum(np.nonzero(arr2)))
             arr = arr+arr3
 
-            print '  npix2',np.sum(np.nonzero(arr))
+            print('  npix2',np.sum(np.nonzero(arr)))
 
         # draw individual points ---------------
 

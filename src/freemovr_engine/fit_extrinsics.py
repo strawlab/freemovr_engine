@@ -13,7 +13,7 @@ PLOT=int(os.environ.get('PLOT',0))
 if PLOT:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
-    from plot_utils import get_3d_verts, plot_camera
+    from .plot_utils import get_3d_verts, plot_camera
 
 import roslib; roslib.load_manifest('freemovr_engine')
 from tf.transformations import quaternion_from_matrix, \
@@ -148,11 +148,11 @@ class ObjectiveFunction:
             try:
                 assert np.allclose(R, R2)
             except:
-                print
-                print 'R'
-                print R
-                print 'R2'
-                print R2
+                print()
+                print('R')
+                print(R)
+                print('R2')
+                print(R2)
                 raise
 
         C = self.base_cam.get_camcenter()
@@ -192,12 +192,12 @@ class ObjectiveFunction:
 
         me = np.mean(each_err)
         if 0:
-            print
-            print 'params', params
-            print 'found'
-            print np.hstack( (found, self.x2d, each_err[:,np.newaxis]) )
-            print 'mean reproj error: ',me
-            print
+            print()
+            print('params', params)
+            print('found')
+            print(np.hstack( (found, self.x2d, each_err[:,np.newaxis]) ))
+            print('mean reproj error: ',me)
+            print()
 
         if PLOT and self.debug:
             assert len(each_err)==len(self.x2d)
@@ -262,7 +262,7 @@ def fit_extrinsics_iterative(base_cam,X3d,x2d, geom=None):
         results = scipy.optimize.fmin( obj.err, obj.get_start_guess(),
                                        full_output=True )
         result, fval = results[:2]
-        print 'fval, last_fval',fval, last_fval
+        print('fval, last_fval',fval, last_fval)
         if fval > last_fval:
             # we're not getting better
             break
@@ -270,7 +270,7 @@ def fit_extrinsics_iterative(base_cam,X3d,x2d, geom=None):
         if abs(fval-last_fval) < eps:
             break
         last_fval=fval
-    print 'did %d iterations'%(i+1,)
+    print('did %d iterations'%(i+1,))
 
     if 0:
         obj = ObjectiveFunction(base_cam, X3d, x2d)#, geom=geom)
@@ -284,12 +284,12 @@ def fit_extrinsics_iterative(base_cam,X3d,x2d, geom=None):
         result = results[0]
         if 1:
             result, Jmin, T, feval, iters, accept, retval = results
-            print 'Jmin',Jmin
-            print 'T',T
-            print 'fevel',feval
-            print 'iters',iters
-            print 'accept',accept
-            print 'retval',retval
+            print('Jmin',Jmin)
+            print('T',T)
+            print('fevel',feval)
+            print('iters',iters)
+            print('accept',accept)
+            print('retval',retval)
     cam = obj.make_cam_from_params(result)
 
     if 1:
@@ -369,7 +369,7 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
 
     if (mean_cam_z < 0 or cum > 20) and 0:
         # hmm, we have a flipped view of the camera.
-        print '-'*80,'HACK ON'
+        print('-'*80,'HACK ON')
         center, lookat, up = cam_model.get_view()
         #cam2 = cam_model.get_view_camera( -center, lookat, -up )
         cam2 = cam_model.get_view_camera( center, lookat, up )
