@@ -12,6 +12,7 @@ import freemovr_engine.msg
 from geometry_msgs.msg import Quaternion, Point
 
 import freemovr_engine.rosmsg2json as rosmsg2json
+import freemovr_engine.fixup_path as fixup_path
 
 import sys
 import time
@@ -212,11 +213,11 @@ def fixup_config( orig_config_dict ):
     """
     config_dict = orig_config_dict.copy()
     if 'p2c' in config_dict:
-        config_dict['p2c'] = rosmsg2json.fixup_path( config_dict['p2c'] )
+        config_dict['p2c'] = fixup_path.fixup_path( config_dict['p2c'] )
     if 'p2g' in config_dict:
-        config_dict['p2g'] = rosmsg2json.fixup_path( config_dict['p2g'] )
+        config_dict['p2g'] = fixup_path.fixup_path( config_dict['p2g'] )
     if 'geom' in config_dict and 'filename' in config_dict['geom']:
-        config_dict['geom']['filename'] = rosmsg2json.fixup_path( config_dict['geom']['filename'] )
+        config_dict['geom']['filename'] = fixup_path.fixup_path( config_dict['geom']['filename'] )
 
     config_dict['stimulus_plugins'] = config_dict.get('stimulus_plugins',[])
     config_file = None
@@ -574,14 +575,14 @@ cdef class MyNode:
         self.set_var('_red_max', msg.data)
 
     def p2g_calibration_filename_callback(self, msg):
-        p2g_filename = rosmsg2json.fixup_path(msg.data)
+        p2g_filename = fixup_path.fixup_path(msg.data)
         self.set_var('_p2g_filename', p2g_filename)
 
     def geom_json_buf_callback(self, msg):
         geom_json_buf = msg.data
         geom_dict = json.loads( geom_json_buf )
         if geom_dict['model'] == 'from_file':
-            geom_dict['filename'] = rosmsg2json.fixup_path(geom_dict['filename'])
+            geom_dict['filename'] = fixup_path.fixup_path(geom_dict['filename'])
         geom_json_buf_fixed = json.dumps(geom_dict)
         self.set_var('_geom_json_buf', geom_json_buf_fixed)
 
