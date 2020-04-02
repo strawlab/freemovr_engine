@@ -7,6 +7,7 @@ import rosbag
 # standard Python stuff
 import json
 import numpy as np
+import freemovr_engine.fixup_path as fixup_path
 
 class Vec3:
     def __init__(self,x=0, y=0, z=0):
@@ -630,9 +631,8 @@ class Geometry:
             self.model = PlanarRectangle(**kwargs)
         elif geom_dict['model']=='from_file':
             import PyDisplaySurfaceArbitraryGeometry as pdsag
-            import freemovr_engine.rosmsg2json as rosmsg2json
             self.model = pdsag.ArbitraryGeometry(
-                filename=rosmsg2json.fixup_path( geom_dict['filename'] ),
+                filename=fixup_path.fixup_path( geom_dict['filename'] ),
                 precision=geom_dict.get('precision',1e-6))
         else:
             raise ValueError("unknown model type: %s"%geom_dict['model'])
