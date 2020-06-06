@@ -90,7 +90,7 @@ def create_cloud(header, fields, points):
     @type  fields: iterable of L{sensor_msgs.msg.PointField}
     @param points: The point cloud points.
     @type  points: list of iterables, i.e. one iterable for each point, with the
-                   elements of each iterable being the values of the fields for 
+                   elements of each iterable being the values of the fields for
                    that point (in the same order as the fields parameter)
     @return: The point cloud.
     @rtype:  L{sensor_msgs.msg.PointCloud2}
