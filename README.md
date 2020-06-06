@@ -1,25 +1,20 @@
-.. image:: https://strawlab.org/assets/freemovr/freemovr-principle.png
-    :alt: FreemoVR
-    :width: 446
-    :height: 184
+# FreemoVR - virtual reality engine
 
-*********************************
-FreemoVR - virtual reality engine
-*********************************
+**This branch is for noetic development**
 
 FreemoVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
 `OpenSceneGraph <http://www.openscenegraph.org>`_. It manages
 multi-computer realtime tracking and display with the goal of being
 useful for scientific studies of vision and behavior.
 
-Discussion
-==========
+<img src="https://strawlab.org/assets/freemovr/freemovr-principle.png" alt="FreemoVR" width="446px" height="184px"/>
+
+## Discussion
 
 For questions or discussion, please use `the "freemovr" Google
 Group <https://groups.google.com/forum/#!forum/freemovr>`_.
 
-Installation
-============
+## Installation
 
 For installation, we recommend using
 `our Ansible playbooks <https://github.com/strawlab/strawlab-ansible-roles.git>`_.
@@ -28,14 +23,12 @@ role install either the FreemoVR engine alone or a
 `full FreemoVR system, including flydra <https://strawlab.org/freemovr>`_ (on
 Ubuntu 16.04 with ROS Kinetic).
 
-CUDA support
-============
+## CUDA support
 
 Stimulus plugins that make use of CUDA can be used if the osgcompute package is
 present at compilation time.
 
-License
-=======
+## License
 
 With the exception of third party software (see "other parts" in LICENSE.txt),
 the software, documentation and other resouces are licensed under either of
@@ -45,29 +38,24 @@ the software, documentation and other resouces are licensed under either of
 * MIT license (./LICENSE-MIT or http://opensource.org/licenses/MIT)
   at your option.
 
-Contribution
-============
+## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally
 submitted for inclusion in the work by you, as defined in the Apache-2.0
 license, shall be dual licensed as above, without any additional terms or
 conditions.
 
-Code of conduct
-===============
+## Code of conduct
 
 Anyone who interacts with freemovr_engine in any space including but not limited
 to this GitHub repository is expected to follow our [code of
 conduct](https://github.com/strawlab/freemovr_engine/blob/master/code_of_conduct.md).
 
 
-.. contents::
+* [installation and getting started](docs/getting_started.rst)
+* [using the joystick for input](docs/joystick.rst)
 
-* `installation and getting started <docs/getting_started.rst>`_
-* `using the joystick for input <docs/joystick.rst>`_
-
-Theory of operation
-===================
+## Theory of operation
 
 A moving observer has a pose within a global coordinate frame. Objects
 within the global frame may also move or be updated (e.g. a moving
@@ -79,11 +67,9 @@ This cube map is then projected onto a 3D shape model of the display
 surface. From there, this image is warped to the physical display
 output.
 
-freemovr_engine nodes
-=====================
+## freemovr_engine nodes
 
-display_server - the FreemoVR display server
---------------------------------------------
+### display_server - the FreemoVR display server
 
 The FreemoVR display server node runs locally on the computer(s) connected
 to the physical display. During a typical experiment, it will be
@@ -92,14 +78,12 @@ graphics engine on the basis of the fly's current position. Given the
 scenegraph and the calibrated screen layout, the node will compute the
 images shown on the projectors.
 
-viewport_definer.py - FreemoVR viewport definer
------------------------------------------------
+### viewport_definer.py - FreemoVR viewport definer
 
 Runs a GUI program that allows the user to interactively define the
 viewports for all connected projectors.
 
-Glossary
-========
+## Glossary
 
 **Display Coordinates** - the native pixel indices on a physical
 display. These are 2D.
@@ -134,11 +118,9 @@ projection screen is shown.)
 illuminated by a physical display (either by projection or direct
 illumination like an LCD screen).
 
-Developing
-==========
+## Developing
 
 When developing a stimulus, you can launch the display_server
 with that stimulus loaded like the following
 
 ``./bin/display_server --stimulus lib/libStimulusLatencyTimestamp.so``
-
