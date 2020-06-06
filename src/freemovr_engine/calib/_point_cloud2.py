@@ -6,6 +6,7 @@ Serialization of sensor_msgs.PointCloud2 messages.
 Author: Tim Field
 """
 
+from __future__ import print_function
 import roslib; roslib.load_manifest('sensor_msgs')
 
 import ctypes
