@@ -7,6 +7,8 @@
 #   do not check dimensions on add
 #   do not call len() on self.data, used previously provided dimensionality
 
+from __future__ import print_function
+
 import math
 from collections import deque
 
