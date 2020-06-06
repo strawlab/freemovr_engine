@@ -1,5 +1,7 @@
 # FreemoVR - virtual reality engine
 
+**This branch is for noetic development**
+
 FreemoVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
 `OpenSceneGraph <http://www.openscenegraph.org>`_. It manages
 multi-computer realtime tracking and display with the goal of being
