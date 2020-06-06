@@ -15,13 +15,15 @@
   <build_depend>geometry_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>osg</build_depend>
   <!--rosdep name="osgcompute"/-->
+  <!--
+  <build_depend>osg</build_depend>
   <build_depend>openexr</build_depend>
   <build_depend>libxmu</build_depend>
   <build_depend>libxi</build_depend>
   <build_depend>poco</build_depend>
   <build_depend>jansson</build_depend>
+  -->
   <build_depend>cython</build_depend>
 
   <run_depend>roscpp</run_depend>
@@ -34,11 +36,13 @@
 <!--  <run_depend>rosgobject</run_depend> -->
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>camera_calibration</run_depend>
+  <!--
   <run_depend>python-yaml</run_depend>
   <run_depend>python-ode</run_depend>
   <run_depend>python-scipy</run_depend>
   <run_depend>python-pymvg</run_depend>
   <run_depend>python-openexr</run_depend>
+  -->
 
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lfreemovr_engine"/>
