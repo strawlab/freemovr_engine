@@ -12,6 +12,12 @@ useful for scientific studies of vision and behavior.
 For questions or discussion, please use `the "freemovr" Google
 Group <https://groups.google.com/forum/#!forum/freemovr>`_.
 
+## Building with Docker
+
+The build process can be run using Docker:
+
+    docker build -t freemovr-engine --file Dockerfile .
+
 ## Installation
 
 For installation, we recommend using `our Ansible playbooks
