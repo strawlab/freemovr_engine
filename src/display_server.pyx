@@ -19,11 +19,11 @@ import time
 import os.path
 import warnings
 import threading
-import Queue
+import queue
 import tempfile
 import json
 import argparse
-import xmlrpclib
+import xmlrpc.client
 import socket
 
 import numpy as np
@@ -49,6 +49,12 @@ cdef extern from "<string>" namespace "std":
 
 cdef extern from "stdint.h":
     ctypedef int uint32_t
+
+def std_string_(x):
+    if type(x) == bytes:
+        return std_string(x)
+    else:
+        return std_string(x.encode('utf-8'))
 
 # -------------------------------------------- OSG -----
 
@@ -223,7 +229,7 @@ def fixup_config( orig_config_dict ):
     config_file = None
     with tempfile.NamedTemporaryFile(suffix='.json',delete=False) as f:
         config_file = f.name
-        f.write(json.dumps(config_dict))
+        f.write(json.dumps(config_dict).encode('utf-8'))
     rospy.loginfo("converted paths and saved config file to: %s"%config_file)
     return config_dict, config_file
 
@@ -262,7 +268,7 @@ cdef class MyNode:
 
     def __init__(self,ros_package_name):
         self._current_subscribers = []
-        self._commands = Queue.Queue()
+        self._commands = queue.Queue()
         self._commands_lock = threading.Lock()
         self._pose_lock = threading.Lock()
         self._mode_lock = threading.Lock()
@@ -337,7 +343,7 @@ cdef class MyNode:
             #the exr file can be specified as a base64 string. In that case we decode it and write it
             #to a tmp file
             p2g = config_dict.get('p2g',None)
-            if isinstance(p2g, xmlrpclib.Binary):
+            if isinstance(p2g, xmlrpc.client.Binary):
                 with tempfile.NamedTemporaryFile(suffix='.exr',delete=False) as exr:
                     exr.write(p2g.data)
                     exrfile = exr.name
@@ -418,12 +424,12 @@ cdef class MyNode:
             assert plugin_lib_dir.endswith('/install/lib')
             # install mode
             plugin_data_dir = os.path.abspath(os.path.join(plugin_lib_dir,'..','share',ros_package_name))
-        self.dsosg = new DSOSG(std_string(plugin_lib_dir),
-                               std_string(plugin_data_dir),
-                               std_string(get_workspace_share_dir()),
-                               std_string(args.mode),
+        self.dsosg = new DSOSG(std_string_(plugin_lib_dir),
+                               std_string_(plugin_data_dir),
+                               std_string_(get_workspace_share_dir()),
+                               std_string_(args.mode),
                                args.observer_radius,
-                               std_string(config_file),
+                               std_string_(config_file),
                                args.two_pass,
                                args.show_geom_coords,
                                tethered_mode,
@@ -439,7 +445,7 @@ cdef class MyNode:
 
         display_window_name = rospy.get_name();
         display_json_str = json.dumps(config_dict['display'])
-        self.dsosg.setup_viewer(std_string(display_window_name),std_string(display_json_str),
+        self.dsosg.setup_viewer(std_string_(display_window_name),std_string_(display_json_str),
                                 args.pbuffer)
 
         rospy.Service('~get_display_info',
@@ -590,13 +596,13 @@ cdef class MyNode:
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
         rospy.loginfo("will capture next image frame to filename: %r"%fname)
-        self.dsosg.setCaptureImageFilename(std_string(fname))
+        self.dsosg.setCaptureImageFilename(std_string_(fname))
 
     def capture_osg_callback(self, msg):
         d = rosmsg2json.rosmsg2dict(msg)
         fname = d['data']
         rospy.loginfo("will capture next osg frame to filename: %r"%fname)
-        self.dsosg.setCaptureOSGFilename(std_string(fname))
+        self.dsosg.setCaptureOSGFilename(std_string_(fname))
 
     def manipulator_callback(self, msg):
         # This is called in some callback thread by ROS.
@@ -615,12 +621,14 @@ cdef class MyNode:
 
     def register_subscribers(self, plugin):
         # establish new topic name listeners
-        tmp = self.dsosg.stimulus_get_topic_names(std_string(plugin))
+        tmp = self.dsosg.stimulus_get_topic_names(std_string_(plugin))
         new_topic_names = [tmp.at(i).c_str() for i in range(tmp.size())]
 
         for tn in new_topic_names:
-            msg_type = self.dsosg.stimulus_get_message_type(std_string(plugin),std_string(tn))
-            self.create_subscriber( plugin, tn, msg_type.c_str() )
+            tn = tn.decode('utf-8')
+            msg_type = self.dsosg.stimulus_get_message_type(std_string_(plugin),std_string_(tn))
+            msg_type = msg_type.decode('utf-8')
+            self.create_subscriber( plugin, tn, msg_type )
 
     def stimulus_plugin_callback(self, msg, callback_args):
         # This is called in some callback thread by ROS. After
@@ -666,12 +674,12 @@ cdef class MyNode:
                 while True:
                     try:
                         cmd_dict = self._commands.get_nowait()
-                    except Queue.Empty:
+                    except queue.Empty:
                         break
 
-                    self.dsosg.stimulus_receive_json_message(std_string(cmd_dict['plugin']),
-                                                          std_string(cmd_dict['topic_name']),
-                                                          std_string(cmd_dict['msg_json']))
+                    self.dsosg.stimulus_receive_json_message(std_string_(cmd_dict['plugin']),
+                                                          std_string_(cmd_dict['topic_name']),
+                                                          std_string_(cmd_dict['msg_json']))
 
             with self._mode_lock:
                 if self._mode_change:
@@ -683,7 +691,7 @@ cdef class MyNode:
 
                     # activate plugin
                     rospy.loginfo("Setting stimulus plugin %s" % self._mode_change)
-                    self.dsosg.set_stimulus_plugin(std_string(self._mode_change))
+                    self.dsosg.set_stimulus_plugin(std_string_(self._mode_change))
 
                     if self._subscription_mode == 'current_only':
                         plugin = self.dsosg.get_current_stimulus_plugin_name()
