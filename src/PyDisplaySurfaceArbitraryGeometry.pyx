@@ -1,6 +1,6 @@
 # distutils: language=c++
 # distutils: sources = src/DisplaySurfaceGeometry.cpp src/DisplaySurfaceArbitraryGeometry.cpp
-# distutils: language_level: 2
+# cython: language_level=2
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
 from libcpp.string cimport string

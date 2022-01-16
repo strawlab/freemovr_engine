@@ -1,4 +1,5 @@
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
+# cython: language_level=2
 
 ROS_PACKAGE_NAME = 'freemovr_engine'
 import roslib
