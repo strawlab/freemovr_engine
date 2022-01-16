@@ -1,7 +1,5 @@
 # FreemoVR - virtual reality engine
 
-**This branch is for noetic development**
-
 FreemoVR is a virtual reality engine built on `ROS <http://ros.org>`_ and
 `OpenSceneGraph <http://www.openscenegraph.org>`_. It manages
 multi-computer realtime tracking and display with the goal of being
@@ -16,12 +14,10 @@ Group <https://groups.google.com/forum/#!forum/freemovr>`_.
 
 ## Installation
 
-For installation, we recommend using
-`our Ansible playbooks <https://github.com/strawlab/strawlab-ansible-roles.git>`_.
-In particular, the "ros-kinetic-freemovr-engine" role or the "ros-kinetic-freemovr"
-role install either the FreemoVR engine alone or a
-`full FreemoVR system, including flydra <https://strawlab.org/freemovr>`_ (on
-Ubuntu 16.04 with ROS Kinetic).
+For installation, we recommend using `our Ansible playbooks
+<https://github.com/strawlab/strawlab-ansible-roles.git>`_. In particular, the
+"ros-noetic-freemovr-engine" role installs the FreemoVR engine (on Ubuntu 20.04
+with ROS Noetic).
 
 ## CUDA support
 
