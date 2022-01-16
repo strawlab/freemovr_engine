@@ -338,6 +338,7 @@ cdef class MyNode:
                     config_dict = json.load(f)
                 except ValueError:
                     pass
+            config_dict, config_file = fixup_config( config_dict )
         elif config_dict:
             self._using_ros_config = True
             rospy.loginfo("using ros config")
