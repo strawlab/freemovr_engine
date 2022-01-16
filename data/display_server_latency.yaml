@@ -11,7 +11,7 @@ geom:
   base: {x: 0.0, y: 0.0, z: -0.075}
   model: cylinder
   radius: 0.0555
-p2g: $(find freemovr_engine)/config/p2g.exr
+p2g: package://freemovr_engine/config/p2g.exr
 stimulus_plugins:
-- {name: StimulusLatencyTimestamp, path: $(find freemovr_engine)/lib}
+- {name: StimulusLatencyTimestamp, path: package://freemovr_engine/lib}
 

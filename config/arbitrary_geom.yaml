@@ -1,4 +1,4 @@
 geom:
   model: from_file
-  filename: $(find freemovr_engine)/data/flycube.osg
-p2g: $(find freemovr_engine)/data/monitor_1920x1080.exr
+  filename: package://freemovr_engine/data/flycube.osg
+p2g: package://freemovr_engine/data/monitor_1920x1080.exr

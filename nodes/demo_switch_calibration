@@ -17,9 +17,9 @@ def switch_calibration(period):
                             "radius": 0.046,
                             "axis": {"y": 0.0, "x": 0.0, "z": 0.144}})
     geom_buf2 = json.dumps({'model': 'from_file',
-                            'filename': '$(find freemovr_engine)/data/flycube.osg'})
-    filename_and_geom_list = [('$(find freemovr_engine)/config/p2g.exr',geom_buf1),
-                              ('$(find freemovr_engine)/data/monitor_1920x1080.exr',geom_buf2)
+                            'filename': 'package://freemovr_engine/data/flycube.osg'})
+    filename_and_geom_list = [('package://freemovr_engine/config/p2g.exr',geom_buf1),
+                              ('package://freemovr_engine/data/monitor_1920x1080.exr',geom_buf2)
                              ]
     current_index = 0
     while not rospy.is_shutdown():
