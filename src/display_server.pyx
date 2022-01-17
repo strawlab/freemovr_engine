@@ -717,12 +717,12 @@ cdef class MyNode:
 
             if self._p2g_filename is not None:
                 self.dsosg.loadDisplayCalibrationFile(
-                    self.get_and_clear_var('_p2g_filename'),
+                    std_string_(self.get_and_clear_var('_p2g_filename')),
                     0)
 
             if self._geom_json_buf is not None:
                 self.dsosg.loadDisplayGeomJSON(
-                    self.get_and_clear_var('_geom_json_buf')
+                    std_string_(self.get_and_clear_var('_geom_json_buf')),
                     )
 
             with nogil:
