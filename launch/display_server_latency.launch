@@ -1,6 +1,6 @@
 <launch>
   <!-- Spawn the display server. -->
-  <node name="display_server" pkg="freemovr_engine" type="display_server" args="--stimulus=StimulusLatencyTimestamp">
+  <node name="display_server" pkg="freemovr_engine" type="display_server" args="--stimulus=StimulusLatencyTimestamp" required="true">
     <rosparam command="load" file="$(find freemovr_engine)/data/display_server_latency.yaml" />
   </node>
 

@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="display_server" pkg="freemovr_engine" type="display_server" args="--mode overview --throttle">
+  <node name="display_server" pkg="freemovr_engine" type="display_server" args="--mode overview --throttle" required="true">
     <rosparam command="load" file="$(find freemovr_engine)/config/rosparamconfig.yaml" />
     <param name="p2g" type="str" value="$(find freemovr_engine)/config/p2g.exr" />
     <param name="display/windowDecoration" type="bool" value="true" />
