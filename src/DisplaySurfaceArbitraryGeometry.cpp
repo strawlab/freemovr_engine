@@ -84,17 +84,17 @@ DisplaySurfaceArbitraryGeometry::DisplaySurfaceArbitraryGeometry(std::string fil
 osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texcoord_colors) const {
   // Make copy of geometry for drawing. Use only triangles.
   osg::ref_ptr<osg::Geometry> this_geom = new osg::Geometry();
+
+  osg::ref_ptr<osg::DrawElementsUInt> triPrimitives = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
   {
     // Now create triangles with these new verts.
     for (unsigned int i=0; i<_triangle_indices.size(); ++i) {
-      osg::DrawElementsUInt* tri =
-        new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 0);
       TriangleIndex tri_idxs = _triangle_indices.at(i);
-      tri->push_back( tri_idxs._p1 );
-      tri->push_back( tri_idxs._p2 );
-      tri->push_back( tri_idxs._p3 );
-      this_geom->addPrimitiveSet(tri);
+      triPrimitives->push_back( tri_idxs._p1 );
+      triPrimitives->push_back( tri_idxs._p2 );
+      triPrimitives->push_back( tri_idxs._p3 );
     }
+    this_geom->addPrimitiveSet(triPrimitives.get());
   }
 
   // copy the vertices and texcoords
@@ -103,14 +103,13 @@ osg::ref_ptr<osg::Geometry> DisplaySurfaceArbitraryGeometry::make_geom(bool texc
   for (uint i=0; i<orig_verts->size(); ++i) {
     verts->push_back( orig_verts->at(i) );
   }
+  this_geom->setVertexArray(verts);
 
   osg::Vec2Array* tc = new osg::Vec2Array;
   osg::Vec2Array *orig_tcs = (osg::Vec2Array *)_geom_with_triangles->getTexCoordArray(0);
   for (uint i=0; i<orig_tcs->size(); ++i) {
     tc->push_back( orig_tcs->at(i) );
   }
-
-  this_geom->setVertexArray(verts);
   this_geom->setTexCoordArray(0,tc);
   // FIXME: add normals?
 
