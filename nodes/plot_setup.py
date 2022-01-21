@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Given camera/display correspondences (under a certain geometry), a
 # camera calibration, and the description of the geometry, establish
