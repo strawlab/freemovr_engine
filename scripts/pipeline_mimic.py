@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import scipy.misc
+import imagio
 
 import roslib
 roslib.load_manifest('freemovr_engine')
@@ -20,7 +20,7 @@ def make_xy_circle_at_z(z, r=0.5, n=1024):
 def get_rotation(face):
     if face==0: # -X
         R = np.array( [[-1,0,0],
-                       [0,01,0],
+                       [0, 1,0],
                        [0,0,1]])
     elif face==1: # -Y
         R = np.array( [[0,-1,0],
@@ -275,7 +275,7 @@ if 1:
         geom_image = np.clip(geom_image,0,1)
         gi2 = (geom_image*255).astype(np.uint8)
         fname = 'geom_image.png'
-        scipy.misc.imsave(fname,gi2[::-1])
+        imageio.imwrite(fname,gi2[::-1])
         print 'saved',fname
     if 0:
         fig = plt.figure()

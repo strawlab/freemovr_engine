@@ -4,6 +4,7 @@ import os
 import yaml
 import scipy
 import tempfile
+import imageio
 
 import roslib.packages
 roslib.load_manifest('freemovr_engine')
@@ -35,7 +36,7 @@ def check_pinhole_calibration( method ):
                 row[pw.VS_SHOW_BEACHBALL]=False
 
                 fname = 'beachball_%s_%s.png'%(vdisp,method.replace(' ','_'))
-                scipy.misc.imsave(fname,arr)
+                imageio.imwrite(fname,arr)
                 print 'saved',fname
 
 def test_data_roundtrip():

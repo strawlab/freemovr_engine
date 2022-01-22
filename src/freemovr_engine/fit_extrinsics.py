@@ -2,6 +2,7 @@
 import roslib; roslib.load_manifest('freemovr_engine')
 
 import scipy.optimize
+import imageio
 from pymvg.camera_model import CameraModel
 from pymvg.util import get_rotation_matrix_and_quaternion
 import freemovr_engine.simple_geom as simple_geom
@@ -312,7 +313,7 @@ def save_point_image(fname, sz, x2d ):
     for xy in x2d:
         x,y=xy
         im[y-3:y+3,x-3:x+3] = 255
-    scipy.misc.imsave(fname,im)
+    imageio.imwrite(fname,im)
 
 def fit_extrinsics(base_cam,X3d,x2d,geom=None):
     assert x2d.ndim==2
@@ -381,4 +382,3 @@ def fit_extrinsics(base_cam,X3d,x2d,geom=None):
                   mean_cam_z = mean_cam_z,
                   )
     return result
-

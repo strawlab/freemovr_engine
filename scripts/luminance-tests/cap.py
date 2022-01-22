@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import scipy.misc
+import imagio
 import time
 
 import roslib;
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             img = imgs[camn][:,:,n]
             assert img.dtype == np.uint8
 
-            scipy.misc.imsave("gray%d_%d.png" % (g,n), img)
+            imageio.imwrite("gray%d_%d.png" % (g,n), img)
 
     print "DONE"
     rospy.spin()

@@ -12,7 +12,7 @@ import xmlrpc.client
 
 import json
 import numpy as np
-import scipy.misc
+import imageio
 
 #re-export the fill polygon helper
 from . import fill_polygon as fp
@@ -208,7 +208,7 @@ class DisplayServerProxy(object):
 
     def show_pixels(self, arr):
         fname = tempfile.mktemp('.png')
-        scipy.misc.imsave(fname,arr)
+        imageio.imwrite(fname,arr)
         self.show_image(fname, unlink=True)
 
     def new_image(self, color, mask=None, nchan=None, dtype=np.uint8):
@@ -331,6 +331,3 @@ class OSGFileStimulusSlave(StimulusSlave):
             raise ValueError("scale must be 3-tuple of x,y,z (m)")
         msg = geometry_msgs.msg.Vector3(*xyz)
         self.pub_stimulus_scale.publish(msg)
-
-
-

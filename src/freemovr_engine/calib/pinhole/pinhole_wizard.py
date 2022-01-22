@@ -9,7 +9,7 @@ import datetime
 import tempfile
 
 import numpy as np
-import scipy.misc
+import imagio
 import pkgutil
 
 import roslib; roslib.load_manifest('freemovr_engine')
@@ -345,7 +345,7 @@ class ProxyDisplayClient(object):
             return self._gi
 
     def show_pixels(self,arr):
-        scipy.misc.imsave(self._file, arr)
+        imageio.imwrite(self._file, arr)
         self._img.set_from_file(self._file)
         if self._dsc is not None:
             self._dsc.show_pixels(arr)
@@ -816,7 +816,7 @@ class UI(object):
             imi[:,:,0] = ri
             imi[:,:,1] = gi
             imi[:,:,2] = bi
-            scipy.misc.imsave(fname+'.png', imi)
+            imageio.imwrite(fname+'.png', imi)
 
     def on_save_calibration_exr(self,*args):
         filechooserdialog = Gtk.FileChooserDialog(title="FileChooserDialog",
