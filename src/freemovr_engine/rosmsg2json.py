@@ -64,7 +64,7 @@ def rosmsg2dict(msg):
                                        'orientation':rosmsg2dict(h.orientation)}
             elif vartype == 'uint8[]':
                 # since ROS message keys have to be valid Python identifiers, we can put metadata here
-                plain_dict[varname + ' (base64)'] = base64.b64encode( getattr(msg,varname))
+                plain_dict[varname + ' (base64)'] = base64.b64encode( getattr(msg,varname) ).decode('ascii')
             elif matchobj and matchobj.group(1) in BASIC_TYPES:
                 # this must follow 'uint8[]' special case above
                 plain_dict[varname] = getattr(msg,varname)
@@ -161,9 +161,9 @@ def test_image():
     msg = freemovr_engine.msg.FreemoVRCompressedImage()
     msg.format = '.png'
     # Smallest PNG image. ( See http://garethrees.org/2007/11/14/pngcrush/ )
-    msg.data = ('\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06'
-                '\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00'
-                '\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82')
+    msg.data = (b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06'
+                b'\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00'
+                b'\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82')
     compare(msg)
 
 def test_header():

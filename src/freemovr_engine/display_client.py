@@ -200,7 +200,7 @@ class DisplayServerProxy(object):
         try:
             image = freemovr_engine.msg.FreemoVRCompressedImage()
             image.format = os.path.splitext(fname)[-1]
-            image.data = open(fname).read()
+            image.data = open(fname,mode='rb').read()
         finally:
             if unlink:
                 os.unlink(fname)

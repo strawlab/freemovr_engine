@@ -51,7 +51,7 @@ class App:
         fname = os.path.join(_pkg_dir,"data","cursor.png")
         image = freemovr_engine.msg.FreemoVRCompressedImage()
         image.format = os.path.splitext(fname)[-1]
-        image.data = open(fname).read()
+        image.data = open(fname,mode='rb').read()
         publisher.publish(image)
 
     def _gain_func(self, x):
@@ -69,7 +69,7 @@ class App:
             self.button_state = cur_state
 
             if self.button_state:
-                print '%.1f %.1f'%(self.x, self.y)
+                print('%.1f %.1f'%(self.x, self.y))
                 self.pubclick.publish(
                     Pose2D(float(self.x), float(self.y), 0.0))
 
@@ -96,7 +96,7 @@ def main():
     args = parser.parse_args(argv[1:])
 
     app = App(button=args.button)
-	app.run()
+    app.run()
 
 if __name__=='__main__':
     main()
