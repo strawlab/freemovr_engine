@@ -8,6 +8,7 @@ import argparse
 
 import numpy as np
 import scipy.misc
+import imageio
 
 import freemovr_engine.srv
 import freemovr_engine.display_client as display_client
@@ -30,7 +31,7 @@ def show_image(ds,viewport,fname,white,black,rgb,pixel, ptsize, scale=False):
     elif black:
         arr = dsc.new_image(dsc.IMAGE_COLOR_BLACK, mask)
     else:
-        arr = scipy.misc.imread(fname)
+        arr = imageio.imread(fname)
         if arr.shape!=(dsc.height,dsc.width):
             arr = arr[0:min(dsc.height,arr.shape[0]),0:min(dsc.width,arr.shape[1]),:]
         if mask != None:
