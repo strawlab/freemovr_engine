@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """filter ROS transform into simple Transform message"""
 import argparse
 

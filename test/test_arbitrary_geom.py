@@ -8,7 +8,7 @@ import PyDisplaySurfaceArbitraryGeometry
 import freemovr_engine.fixup_path as fixup_path
 
 def test_arbitrary_geom():
-    filename = fixup_path.fixup_path( '$(find freemovr_engine)/data/pyramid.osg' )
+    filename = fixup_path.fixup_path( 'package://freemovr_engine/data/pyramid.osg' )
     model = PyDisplaySurfaceArbitraryGeometry.ArbitraryGeometry(filename=filename,precision=1e-6)
 
     # Use a few special texcoords because not all in range [0,1] are

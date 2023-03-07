@@ -226,10 +226,6 @@ struct AnimationManagerFinder : public osg::NodeVisitor
     osg::ref_ptr<osgAnimation::BasicAnimationManager> _am;
     AnimationManagerFinder() : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN) {}
     void apply(osg::Node& node) {
-#if 0
-        if (_am.valid())
-            return;osg_filenamef
-#endif
         if (node.getUpdateCallback()) {
             osgAnimation::AnimationManagerBase* b = dynamic_cast<osgAnimation::AnimationManagerBase*>(node.getUpdateCallback());
             if (b) {
@@ -586,7 +582,7 @@ void _load_stimulus_filename( std::string osg_filename ) {
 void _load_skybox_basename( std::string basename ) {
 
     if (!top) {
-        std::cerr << "top node MaterialAlphaPairnot defined!?" << std::endl;
+        std::cerr << "top node not defined!?" << std::endl;
         return;
     }
 

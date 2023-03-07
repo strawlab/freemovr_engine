@@ -338,6 +338,7 @@ cdef class MyNode:
                     config_dict = json.load(f)
                 except ValueError:
                     pass
+            config_dict, config_file = fixup_config( config_dict )
         elif config_dict:
             self._using_ros_config = True
             rospy.loginfo("using ros config")
@@ -716,12 +717,12 @@ cdef class MyNode:
 
             if self._p2g_filename is not None:
                 self.dsosg.loadDisplayCalibrationFile(
-                    self.get_and_clear_var('_p2g_filename'),
+                    std_string_(self.get_and_clear_var('_p2g_filename')),
                     0)
 
             if self._geom_json_buf is not None:
                 self.dsosg.loadDisplayGeomJSON(
-                    self.get_and_clear_var('_geom_json_buf')
+                    std_string_(self.get_and_clear_var('_geom_json_buf')),
                     )
 
             with nogil:

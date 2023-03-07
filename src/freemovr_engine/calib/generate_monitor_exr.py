@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- Mode: python; tab-width: 4; indent-tabs-mode: nil -*-
 import argparse
 import numpy as np

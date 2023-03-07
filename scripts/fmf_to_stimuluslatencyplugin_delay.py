@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """This script takes a fmf video recorded with fview
 !!! MAKE SURE YOU TICKED 'USE HOST TIMESTAMPS' IN FVIEW !!!
 and prints the delay for each frame.

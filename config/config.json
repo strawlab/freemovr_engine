@@ -15,5 +15,5 @@
       "windowDecoration": true,
       "virtualDisplays":[{"id":"vdisp","viewport":[[0, 0], [1024, 0], [1024, 0], [0, 768]]}]
   },
-  "p2g":"$(find freemovr_engine)/config/p2g.exr"
+  "p2g":"package://freemovr_engine/config/p2g.exr"
 }

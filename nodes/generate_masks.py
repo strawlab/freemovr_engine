@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # standard Python imports
 import argparse
@@ -6,7 +6,7 @@ import os.path
 
 import yaml
 import numpy as np
-import scipy.misc
+import imagio
 
 # ROS imports
 import roslib;
@@ -74,7 +74,7 @@ class GenMasks:
                 for cam in imgs:
                     fname = self.mask_dir + "/%s-new.png" % cam.split("/")[-1]
                     print fname, imgs[cam].shape,imgs[cam].dtype
-                    scipy.misc.imsave(fname,imgs[cam].squeeze())
+                    imageio.imwrite(fname,imgs[cam].squeeze())
                     rospy.loginfo("wrote %s " % fname)
                 self.mode = self.MODE_WAIT
 
@@ -115,4 +115,3 @@ if __name__ == '__main__':
                  mask_dir=mask_dir,
                  trigger="camera_trigger")
     c.run()
-

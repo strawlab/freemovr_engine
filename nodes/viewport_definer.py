@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # ROS imports
 import roslib; roslib.load_manifest('freemovr_engine')
 import rospy

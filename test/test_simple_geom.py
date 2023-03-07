@@ -102,7 +102,7 @@ def _get_inputs():
     radius = 1
 
     # ArbitraryGeometry
-    filename = fixup_path.fixup_path( '$(find freemovr_engine)/data/pyramid.osg' )
+    filename = fixup_path.fixup_path( 'package://freemovr_engine/data/pyramid.osg' )
 
     inputs = [ (simple_geom.PlanarRectangle, dict(lowerleft=ll, upperleft=ul, lowerright=lr)),
                (simple_geom.Cylinder, dict(base=base, axis=axis, radius=radius)),

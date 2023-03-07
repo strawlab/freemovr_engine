@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Serialization of sensor_msgs.PointCloud2 messages.
